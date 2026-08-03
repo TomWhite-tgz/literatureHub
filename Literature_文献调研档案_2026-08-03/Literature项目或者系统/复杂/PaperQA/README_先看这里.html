@@ -1,0 +1,290 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>README_先看这里</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../index.html">← 返回总览</a><h1>PaperQA 发展脉络与资料索引</h1>
+<blockquote>
+<p>归档日期：2026-07-28<br />
+建议先读本文，再按 <code>papers/ → code/ → datasets/ → blogs/</code> 查看原始资料。</p>
+</blockquote>
+<p>可视化导读：<a href="PaperQA_项目谱系与技术架构.html"><code>PaperQA_项目谱系与技术架构.html</code></a></p>
+<h2>一句话结论</h2>
+<p>PaperQA 不是几个互不相关的项目，而是一条连续演进的科学文献 Agent 主线：</p>
+<pre><code class="language-text">PaperQA / LitQA v0（2023）
+        ↓
+LAB-Bench / LitQA2 + PaperQA2（2024）
+        ├─ WikiCrow：批量写带引用的综述
+        ├─ ContraCrow：跨论文寻找矛盾
+        └─ Aviary：把 LitQA2 做成可训练、可评测的 Agent 环境
+        ↓
+开源仓库 v5+ 统称 PaperQA2；2025-12 改用日期版本号
+        ↓
+PaperQA3 / Edison Literature（2026）
+        └─ 同时作为 Edison Literature 和 Kosmos 的文献检索底层
+</code></pre>
+<p><code>inproxima/paperqa</code> 是从 <code>Future-House/paper-qa</code> fork 出来的副本，不是另一条 PaperQA 技术路线。其归档 HEAD <code>1bde36c</code> 也存在于官方仓库历史中；当前官方主仓库仍是 <code>Future-House/paper-qa</code>。</p>
+<h2>发展时间线</h2>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>名称与资料</th>
+<th>这一阶段真正增加了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2023-02</td>
+<td>PaperQA 开源仓库初始提交</td>
+<td>从本地科学论文中检索、筛证据、生成带引文回答。</td>
+</tr>
+<tr>
+<td>2023-12</td>
+<td><strong>PaperQA v1 论文</strong>、<strong>LitQA v0</strong>、第一版 <strong>WikiCrow</strong></td>
+<td>把 RAG 拆成 Agent 可调用的 <code>SEARCH → GATHER_EVIDENCE → ANSWER_QUESTION</code>；允许根据中间结果再次检索。LitQA v0 有 50 道必须检索全文才能可靠回答的问题。</td>
+</tr>
+<tr>
+<td>2024-07</td>
+<td><strong>LAB-Bench</strong></td>
+<td>将 LitQA 扩展为 LitQA2，并与图表理解、数据库操作、序列推理等任务组成 2,400+ 题的生物研究能力评测集；公开部分已归档。</td>
+</tr>
+<tr>
+<td>2024-09</td>
+<td><strong>PaperQA2 论文</strong>；代码发布 <code>v5.0.0</code></td>
+<td>关键升级是 Agent 式迭代查询扩展、LLM 重排与 contextual summarization（RCS）、沿引用图补充论文，以及更丰富的文献元数据。论文同时评测问答、WikiCrow 综述和 ContraCrow 矛盾发现。</td>
+</tr>
+<tr>
+<td>2024-12</td>
+<td><strong>Aviary</strong></td>
+<td>把 LitQA2 等科学任务包装为 Agent 环境，并研究训练/优化工具调用策略；它是 PaperQA2 复现和 Agent 训练支线，不是 PaperQA 的替代品。</td>
+</tr>
+<tr>
+<td>2025-03</td>
+<td><strong>RAG-QA Arena Science</strong> 评测博客</td>
+<td>FutureHouse 将 PaperQA2 与其他 RAG 系统作横向比较。该外部基准的论文与代码也一并归档，便于判断官方宣传所依据的测试。</td>
+</tr>
+<tr>
+<td>2025-12</td>
+<td>PaperQA 开源仓库改为 CalVer</td>
+<td><code>paper-qa &gt;= 5</code> 仍称 PaperQA2，但 Git tag 从 <code>v5.x</code> 变成 <code>v2025.12.17</code> 等日期版本。同期加入表格、图片、公式、非英文、Office 文档及 Docling/Nemotron Parse 等读取能力。</td>
+</tr>
+<tr>
+<td>2026-02</td>
+<td><strong>PaperQA3 / Edison Literature</strong></td>
+<td>Agent 可按需查看图、表和页面，能处理论文、专利和临床试验；不再强制遵循 PaperQA2 的严格回答循环，而是让现代 reasoning LLM 自行检查文档、复查片段并决定何时结束。它也是 Kosmos 的文献检索底层。</td>
+</tr>
+<tr>
+<td>2026-02～05</td>
+<td><strong>LABBench2</strong></td>
+<td>近 1,900 个更贴近实际研究的任务；其中 LitQA3、FigQA2、PatentQA、TrialQA 被用于 PaperQA3/Edison Literature 的公开评测。</td>
+</tr>
+</tbody>
+</table>
+<h3>名字为什么容易混乱</h3>
+<ul>
+<li>学术论文中的 <strong>PaperQA v1 / PaperQA2 / PaperQA3</strong> 是算法代际。</li>
+<li>Python 包曾按语义版本发布：官方人为规定 <code>paper-qa &gt;= 5</code> 叫 <strong>PaperQA2</strong>。</li>
+<li>2025-12 后包改用日期版本，例如 <code>v2026.02.16</code>；这个版本号不是“PaperQA 2026”这篇论文。</li>
+<li>截至本次归档，<strong>PaperQA3 的正式公开说明是 Edison Labs 研究博客</strong>，底层开源链接仍指向同一个 <code>Future-House/paper-qa</code> 仓库；没有发现一篇单独命名为 PaperQA3 的 arXiv 论文或独立代码仓库。</li>
+<li>Edison Literature 是面向用户的 Agent/产品名，PaperQA3 是其底层算法代际；生产系统还包含大规模索引、授权全文、内部元数据服务和推理基础设施，不能与 GitHub 包完全画等号。</li>
+</ul>
+<h2>算法主线：到底怎样工作</h2>
+<h3>PaperQA v1</h3>
+<pre><code class="language-text">问题
+  ↓
+SEARCH：LLM 生成/改写关键词，在大语料中找论文
+  ↓
+GATHER_EVIDENCE：解析全文，在页/片段级做语义检索并形成带出处的证据
+  ↓
+ANSWER_QUESTION：对证据排序、压缩并生成带页码/文献引用的答案
+  ↖──────── 信息不足时，Agent 可换词再搜 ────────┘
+</code></pre>
+<p>它使用 Semantic Scholar 的元数据和引用图，但并非“把问题交给 Semantic Scholar 就结束”。Semantic Scholar 是候选论文、元数据和引用关系的来源之一；全文获取、切块、嵌入检索、证据摘要、重排、循环控制和最终回答由 PaperQA 完成。</p>
+<h3>PaperQA2</h3>
+<p>核心不是简单地换了向量模型，而是扩大 Agent 在检索过程中的决策空间：</p>
+<ol>
+<li>LLM 根据问题发起关键词搜索，把候选论文加入当前状态。</li>
+<li>对候选全文切块、检索，再让 LLM 针对当前问题给片段打分并写“上下文化摘要”（RCS）。</li>
+<li>Agent 检查已有证据，可改写查询、继续搜索、读取引用/被引论文，或清理较差证据。</li>
+<li>证据足够后，对高分上下文再排序并生成带可追溯引文的答案。</li>
+<li>同一套工具通过换提示词和设置，能执行普通问答、WikiCrow 综述或 ContraCrow 矛盾检测。</li>
+</ol>
+<h3>PaperQA3 / Edison Literature</h3>
+<p>它保留“Agent 主动检索和核验证据”的思想，但有三项结构性变化：</p>
+<ul>
+<li><strong>多模态</strong>：论文进入候选集后，Agent 决定何时把相关图、表、公式或页面图像放入上下文，而不是把所有图片一次性塞给模型。</li>
+<li><strong>检索范围</strong>：产品侧覆盖论文、专利和临床试验，并结合撤稿、期刊质量、专利来源国等元数据判断来源可信度。</li>
+<li><strong>循环控制更自由</strong>：移除 PaperQA2 较严格的生成 harness；LLM 可以查看文档、复查片段、放大图片，并自行决定何时已有足够证据。<code>High Effort</code> 主要增加 thinking token 预算及相关超参数。</li>
+</ul>
+<h2>已归档的论文</h2>
+<table>
+<thead>
+<tr>
+<th>本地文件</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>papers/2023_PaperQA_2312.07559v2.pdf</code></td>
+<td>PaperQA v1 与 LitQA v0 主论文</td>
+</tr>
+<tr>
+<td><code>papers/2024_LAB-Bench_2407.10362.pdf</code></td>
+<td>LitQA2 所属基准</td>
+</tr>
+<tr>
+<td><code>papers/2024_PaperQA2_2409.13740v2.pdf</code></td>
+<td>PaperQA2、WikiCrow2、ContraCrow 主论文</td>
+</tr>
+<tr>
+<td><code>papers/2024_Aviary_2412.21154.pdf</code></td>
+<td>科学 Agent 环境与训练</td>
+</tr>
+<tr>
+<td><code>papers/2024_RAG-QA-Arena_2407.13998.pdf</code></td>
+<td>2025 横向评测所用外部基准</td>
+</tr>
+<tr>
+<td><code>papers/2026_LABBench2_2604.09554.pdf</code></td>
+<td>PaperQA3 相关的新一代评测</td>
+</tr>
+</tbody>
+</table>
+<h2>已归档的代码</h2>
+<table>
+<thead>
+<tr>
+<th>本地目录</th>
+<th>来源与说明</th>
+<th>归档提交</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>code/Future-House_paper-qa/</code></td>
+<td>官方 PaperQA 主仓库，保留完整 Git 历史和 tags</td>
+<td><code>d7675d7</code>（2026-06-05）</td>
+</tr>
+<tr>
+<td><code>code/inproxima_paperqa_fork/</code></td>
+<td>用户给出的 fork；用于比较，不应作为最新版主线</td>
+<td><code>1bde36c</code>（2025-02-03）</td>
+</tr>
+<tr>
+<td><code>code/Future-House_aviary/</code></td>
+<td>Aviary Agent 环境与 LitQA 评测接口</td>
+<td><code>1c061db</code>（2026-07-09）</td>
+</tr>
+<tr>
+<td><code>code/awslabs_rag-qa-arena/</code></td>
+<td>RAG-QA Arena 官方代码和数据获取脚本</td>
+<td><code>9dd32dc</code>（2024-08-13）</td>
+</tr>
+</tbody>
+</table>
+<p>官方 PaperQA 仓库的重要版本锚点：</p>
+<ul>
+<li>初始提交：<code>1c364b2</code>，2023-02-04</li>
+<li><code>v5.0.0</code>：<code>45b206d</code>，2024-09-11，官方定义的 PaperQA2 起点</li>
+<li><code>v2025.12.17</code>：<code>f3f0853</code>，改用 CalVer</li>
+<li><code>v2026.02.16</code>：与 PaperQA3-backed Edison Literature API 版本日期对应，但产品端不只包含这个 Python 包</li>
+</ul>
+<h2>已归档的数据集</h2>
+<table>
+<thead>
+<tr>
+<th>本地目录/文件</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>datasets/LitQA_v0/</code></td>
+<td>完整公开仓库；50 道题，CC BY 4.0</td>
+</tr>
+<tr>
+<td><code>datasets/LAB-Bench_LitQA2/</code></td>
+<td>LAB-Bench 公开部分完整仓库；包含 199 条公开 LitQA2 JSONL 记录及 FigQA、TableQA 等公开资料</td>
+</tr>
+<tr>
+<td><code>datasets/WikiCrow2_articles/</code></td>
+<td>从论文指定的 FutureHouse 公共 GCS 桶批量归档；共 19,249 个 <code>.txt</code> 基因综述，对象清单见 <code>metadata/WikiCrow2_GCS_manifest.json</code></td>
+</tr>
+<tr>
+<td><code>datasets/PaperQA2_WikiCrow_LitQA_evaluator_responses.xlsx</code></td>
+<td>PaperQA2 论文脚注链接的 WikiCrow/LitQA 人工评估响应表</td>
+</tr>
+<tr>
+<td><code>datasets/WikiCrow/</code></td>
+<td>WikiCrow 官方说明仓库；生成文章正文在上面的 GCS 归档中</td>
+</tr>
+<tr>
+<td><code>datasets/LABBench2_eval_harness/</code></td>
+<td>LABBench2 公开评测代码；不是完整门控题库</td>
+</tr>
+</tbody>
+</table>
+<h3>未能匿名下载的门控数据</h3>
+<ul>
+<li><code>futurehouse/aviary-paper-data</code>：包含 Aviary 使用的留出测试资料，访问需要 Hugging Face 授权。</li>
+<li><code>EdisonScientific/labbench2</code>：完整 LABBench2 题库要求登录、同意条件并提交联系信息。</li>
+</ul>
+<p>服务器返回的原始门控提示已分别保存在：</p>
+<ul>
+<li><code>metadata/aviary-paper-data_dataset-card.md</code></li>
+<li><code>metadata/LABBench2_HF_dataset-card.md</code></li>
+</ul>
+<p>这两项不能用公开匿名方式绕过；当前归档已保存论文、入口、评测 harness 和可公开的数据部分。</p>
+<h2>已归档的博客与项目页</h2>
+<ul>
+<li><code>blogs/2023_WikiCrow_PaperQA1.html</code></li>
+<li><code>blogs/2024_PaperQA2_WikiCrow_Announcement.html</code></li>
+<li><code>blogs/2024_PaperQA2_Engineering_Journey.html</code></li>
+<li><code>blogs/2024_PaperQA2_Paper_Project_Page.html</code></li>
+<li><code>blogs/2025_PaperQA2_RAG-QA-Arena.html</code></li>
+<li><code>blogs/2026_PaperQA3_Edison_Literature.html</code></li>
+<li><code>blogs/2026_LABBench2_Announcement.html</code></li>
+<li><code>blogs/2026_NVIDIA_Nemotron_PaperQA3_Case_Study.html</code></li>
+<li><code>blogs/HuggingFace_PaperQA_2312.07559.html</code></li>
+</ul>
+<p>HTML 保存的是下载时的原始页面；页面若依赖在线 JavaScript、图片 CDN 或字体，离线打开时外观可能不完整，但正文和来源地址仍可检索。</p>
+<h2>阅读顺序</h2>
+<p>若只想快速理解 PaperQA，建议依次看：</p>
+<ol>
+<li><code>papers/2023_PaperQA_2312.07559v2.pdf</code></li>
+<li><code>blogs/2024_PaperQA2_Engineering_Journey.html</code></li>
+<li><code>papers/2024_PaperQA2_2409.13740v2.pdf</code></li>
+<li><code>code/Future-House_paper-qa/README.md</code></li>
+<li><code>blogs/2026_PaperQA3_Edison_Literature.html</code></li>
+</ol>
+<p>若想复现，则从官方代码的 README 与 <code>docs/2024-10-16_litqa2-splits.json5</code> 开始，并注意论文成绩依赖的内部工具、授权全文语料和留出测试集并未全部公开。开源包可以复现算法框架，但不保证复现生产版 Edison Literature 的语料覆盖和指标。</p>
+<h2>原始入口</h2>
+<ul>
+<li>PaperQA v1：https://arxiv.org/abs/2312.07559</li>
+<li>PaperQA2：https://arxiv.org/abs/2409.13740</li>
+<li>PaperQA 官方代码：https://github.com/Future-House/paper-qa</li>
+<li>LitQA：https://github.com/Future-House/LitQA</li>
+<li>LAB-Bench：https://github.com/Future-House/LAB-Bench</li>
+<li>WikiCrow：https://github.com/Future-House/WikiCrow</li>
+<li>Aviary：https://github.com/Future-House/aviary</li>
+<li>PaperQA3 / Edison Literature：https://labs.edisonscientific.com/research/edison-literature-agent/</li>
+<li>LABBench2：https://github.com/EdisonScientific/labbench2</li>
+<li>RAG-QA Arena：https://github.com/awslabs/rag-qa-arena</li>
+</ul><footer>由 <code>Literature项目或者系统/复杂/PaperQA/README_先看这里.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

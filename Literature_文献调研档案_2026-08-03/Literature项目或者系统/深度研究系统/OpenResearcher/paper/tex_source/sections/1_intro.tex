@@ -1,0 +1,65 @@
+\section{Introduction}
+\begin{wrapfigure}{r}{0.54\textwidth}
+    \vspace{-0.75em}
+    \includegraphics[width=\linewidth]{img/teaser.png}
+    \vspace{-1.75em}
+    \caption{\small Performance comparison on BrowseComp-Plus.}
+    \vspace{-1.75em}
+    \label{fig:teaser}
+\end{wrapfigure}
+
+
+Since the release of DeepSeek-R1~\citep{guo2025deepseekr1}, there has been growing interest in collecting long-horizon reasoning trajectories from large reasoning models (LRMs) across diverse domains. Representative efforts include OpenThoughts~\citep{guha2025openthoughts}, OpenMathReasoning~\citep{moshkov2025aimo2}, and OpenCodeReasoning~\citep{ahmad2025opencodereasoning}. These trajectories are typically used to post-train smaller reasoning models via supervised fine-tuning (SFT). For instance, DeepSeek-R1-Distill~\citep{guo2025deepseekr1} achieves state-of-the-art performance solely via SFT over curated long-reasoning datasets.
+
+Recently, deep research agents--systems capable of iterative search, evidence aggregation, and multi-step reasoning--have emerged as a key frontier in LLM capabilities. Unlike short-horizon tasks such as multi-hop QA~\citep{ho2020constructing, press2023measuring, trivedi2022musique, yang2018hotpotqa} that typically require 2-5 rounds of retrieval, these systems must sustain exploration across many tool calls, reconcile heterogeneous sources, and decide when enough evidence has been gathered to produce an answer. The main training bottleneck therefore lies not only in model capacity but also in the availability of high-quality long-horizon trajectories that reflect realistic browsing behavior.
+
+% dongfu 
+% In practice, these pipelines~\citep{team2025tongyideepresearch, miromind2025mirothinker} collect such trajectories through proprietary web APIs (e.g., Serper).
+
+However, such trajectories remain scarce. Most existing approaches lack a scalable and low-cost way to generate them. For instance, Search-R1~\citep{jin2025search} produces trajectories with only 2–5 interaction turns, falling far short of realistic deep research settings. While some, such as WebExplorer
+~\citep{liu2025webexplorer} and MiroThinker~\citep{miromind2025mirothinker}, can generate longer ones, they typically rely on live web search APIs (e.g., Google Search). This reliance introduces three key limitations. First, large-scale trajectory synthesis becomes expensive, since every failed search path still incurs API cost. Second, the live web is inherently unstable, making the same data pipeline difficult to reproduce over time. Third, the resulting traces are difficult to analyze in a controlled manner: internal search events depend on a changing environment, and benchmarks such as BrowseComp~\citep{wei2025browsecomp} typically do not expose stable gold-document annotations that would allow precise analysis of when relevant evidence is surfaced, opened, or missed.
+
+This motivates the central question of this work:
+
+% \smallskip
+\vspace{1em}
+\textit{How can we synthesize high-quality, long-horizon deep research trajectories in a scalable, low-cost, reproducible, and analytically useful manner?} 
+
+\vspace{1em}
+
+% \smallskip
+We answer this question with \model, a pipeline built around two ideas. The first is to decouple corpus construction from trajectory generation: we perform a one-time online bootstrapping step to seed answer-supporting documents, build an offline corpus and search engine, and then run the multi-turn synthesis loop entirely in the local offline environment. The second is to model browsing explicitly with three minimal primitives--\texttt{search}, \texttt{open}, and \texttt{find}--so that the teacher model learns not only what to retrieve, but also how to inspect documents and localize evidence.
+
+With GPT-OSS-120B as the teacher model, \model synthesizes over 97K trajectories over a 15M-document corpus. These traces span a broad range of reasoning horizons, including a substantial tail of questions that require 100+ tool calls. After supervised fine-tuning, a 30B-A3B student reaches 54.8\% on BrowseComp-Plus~\citep{chen2025BrowseCompPlus}, outperforming strong proprietary baselines and improving over the base Nemotron-3-Nano-30B-A3B model~\citep{blakeman2025nemotron} by +34.0 points, while remaining competitive on live-web benchmarks including BrowseComp, GAIA~\citep{mialon2023gaia}, and xbench-DeepSearch~\citep{chen2025xbench}.
+
+% Equally importantly, the offline setup is not only cheaper and more reproducible, but also more amenable to analysis. Because the corpus, search backend, and browser actions are fixed, we can trace internal search events such as gold-document retrieval and opening in a way that is difficult to achieve in live-web settings~\citep{gao2025Asearcher, liu2025webexplorer, tang2025deepminer}. This controllability allows us to move beyond benchmark accuracy and conduct a series of targeted analyses on the dynamics of long-horizon deep research trajectory synthesis: which parts of trajectory supervision are actually useful (\hyperref[subsec:ablation_rq1]{RQ1}), how corpus coverage and turn budget shape synthesis quality (\hyperref[subsec:ablation_rq2]{RQ2\&3}), what role each browser primitive plays (\hyperref[subsec:ablation_rq4]{RQ4}), and where deep-research failures arise even after relevant evidence has been retrieved (\hyperref[subsec:ablation_rq5]{RQ5}).
+
+Equally importantly, the offline setup is not only cheaper and more reproducible, but also more amenable to analysis. Because the corpus, search backend, and browser actions are fixed, we can trace internal search events such as gold-document retrieval and opening in a way that is difficult to achieve in live-web settings~\citep{gao2025Asearcher, liu2025webexplorer, tang2025deepminer}. This controllability allows us to move beyond benchmark accuracy and conduct a series of targeted analyses of long-horizon deep research trajectory synthesis: what to prioritize during data construction, including trajectory filtering (\hyperref[subsec:ablation_rq1]{RQ1}) and offline corpus construction strategies (\hyperref[subsec:ablation_rq2]{RQ2}); which agent configurations are sufficient for deep research in practice, including turn budget (\hyperref[subsec:ablation_rq3]{RQ3}) and tool space design (\hyperref[subsec:ablation_rq4]{RQ4}); and how retrieval success ultimately relates to final answer accuracy (\hyperref[subsec:ablation_rq5]{RQ5}).
+
+
+% Our analysis also shows that corpus coverage is a first-order concern rather than a minor implementation detail: removing the one-time bootstrapped gold documents causes downstream BrowseComp-Plus accuracy to collapse from 54.81\% to 6.35\%, underscoring that effective offline synthesis depends critically on retrievable evidence.
+
+In short, our contributions are three-fold:
+(1) \textbf{Offline and reproducible synthesis.} We present a scalable deep research trajectory synthesis pipeline that moves the expensive search-and-browse loop offline after a one-time corpus bootstrapping stage. The model trained on our synthesized data outperforms larger-backbone deep research agents in both offline and live-web settings.  
+(2) \textbf{Explicit browser structure for deep research.} We introduce a minimal browser abstraction for deep research with \texttt{search}, \texttt{open}, and \texttt{find} operations, supporting systematic information seeking and multi-scale knowledge discovery.
+% (3) \textbf{Empirical insights for search-data design.} Through systematic analyses, we show that trajectory usefulness is not determined solely by final-answer correctness, and that opening gold evidence is typically necessary but not sufficient for answering correctly. 
+(3) \textbf{Empirical insights into search-data and agent design.} Through systematic analyses, we study key design choices across the deep research pipeline, including trajectory filtering and corpus construction during data synthesis, agent configuration such as turn budget and tool space, and how retrieval success relates to final answer accuracy.
+
+To the best of our knowledge, we present \textbf{the first fully open-source pipeline for deep research trajectory synthesis} that produces a model \textbf{rivaling proprietary systems on long-horizon search and reasoning tasks}.
+% Moreover, our synthesized data has been adopted in NVIDIA's latest Nemotron-3 Super foundation model.
+We hope the tools, trajectories, and analyses presented here will help the community study search supervision more systematically and guide future work on data construction, tool design, and failure analysis for deep research agents.
+% \todo{claim first and below insight box @Yu} 
+
+
+% insights about effective search supervision, summarized as follows. 
+
+% \begin{insightbox}[Key Experimental Insights \todo{update}]
+%   \begin{itemize}[leftmargin=1.2em, topsep=0pt, itemsep=3pt, parsep=0pt]
+%     \item \textbf{One-time online bootstrapping} is critical for effective offline synthesis.
+%     \item \textbf{Offline-synthesized trajectories} transfer well to live-web benchmarks.
+%     \item \textbf{Failed trajectories} are usually longer due to repeatedly failing \texttt{search} for gold docs.
+%     \item \textbf{Correct-only filtering} is not necessary: incorrect trajectories are also useful for SFT.
+%     \item \textbf{Opening gold evidence} is usually necessary for success, but not sufficient.
+%   \end{itemize}
+% \end{insightbox}
+

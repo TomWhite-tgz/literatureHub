@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PaperQA、WikiCrow、Aviary、LAB-Bench、Edison Literature 与 Kosmos 的组织脉络、仓库演化及技术架构导读。">
+  <title>PaperQA · 项目谱系与技术架构</title>
+  <style>
+    :root {
+      --ink: #202521;
+      --ink-soft: #38413b;
+      --muted: #626a64;
+      --paper: #f7f4ee;
+      --panel: #fffdf9;
+      --white: #ffffff;
+      --line: #e5ded2;
+      --line-strong: #d4c9b9;
+      --rust: #bd5b2c;
+      --rust-dark: #98451f;
+      --rust-pale: #f5e4d7;
+      --green: #315e48;
+      --green-pale: #e9f2ec;
+      --blue: #355f78;
+      --blue-pale: #eaf2f6;
+      --purple: #72506f;
+      --purple-pale: #f1eaf1;
+      --gold: #9a6b1d;
+      --gold-pale: #fff4dc;
+      --rose: #934958;
+      --rose-pale: #fae9ed;
+      --shadow: 0 5px 22px rgba(42, 37, 29, 0.07);
+      --shadow-soft: 0 2px 9px rgba(42, 37, 29, 0.055);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 7% 2%, rgba(189,91,44,.06), transparent 24rem),
+        var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+        Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.72;
+    }
+
+    a { color: var(--rust-dark); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 690; }
+    code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      color: var(--rust-dark);
+      background: var(--rust-pale);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .88em;
+      overflow-wrap: anywhere;
+    }
+    p { margin: 0 0 15px; }
+    ul, ol { margin: 9px 0 0; padding-left: 21px; }
+    li { margin: 5px 0; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      padding: 9px 14px 0;
+      background: linear-gradient(var(--paper) 74%, rgba(247,244,238,0));
+    }
+    .nav {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 9px 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      overflow-x: auto;
+      border: 1px solid rgba(229,222,210,.94);
+      border-radius: 16px;
+      background: rgba(255,253,249,.92);
+      box-shadow: 0 7px 24px rgba(42,37,29,.06);
+      backdrop-filter: blur(12px);
+      scrollbar-width: none;
+    }
+    .nav::-webkit-scrollbar { display: none; }
+    .brand {
+      flex: 0 0 auto;
+      margin: 0 9px 0 2px;
+      color: var(--rust-dark);
+      font-size: .84rem;
+      font-weight: 760;
+    }
+    .nav a {
+      flex: 0 0 auto;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 650;
+      text-decoration: none;
+    }
+    .nav a:hover, .nav a.active {
+      color: var(--rust-dark);
+      background: var(--rust-pale);
+    }
+
+    .wrap {
+      width: min(1080px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 38px 0 80px;
+    }
+    .hero {
+      position: relative;
+      padding: 46px 24px 44px;
+      overflow: hidden;
+      text-align: center;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      left: 50%;
+      top: -315px;
+      transform: translateX(-50%);
+      border: 1px solid rgba(189,91,44,.22);
+      border-radius: 50%;
+      box-shadow: 0 0 0 38px rgba(189,91,44,.025), 0 0 0 82px rgba(49,94,72,.018);
+      pointer-events: none;
+    }
+    .eyebrow {
+      position: relative;
+      color: var(--rust);
+      font-size: .76rem;
+      font-weight: 800;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    h1 {
+      position: relative;
+      max-width: 900px;
+      margin: 13px auto 16px;
+      font-size: clamp(2.45rem, 6.5vw, 4.25rem);
+      font-weight: 680;
+      letter-spacing: -.045em;
+      line-height: 1.07;
+    }
+    .hero-lead {
+      max-width: 830px;
+      margin: 0 auto;
+      color: var(--ink-soft);
+      font-size: clamp(1rem, 2vw, 1.14rem);
+      font-weight: 380;
+    }
+    .hero-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 24px;
+    }
+    .pill-link {
+      padding: 7px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--rust-dark);
+      background: var(--panel);
+      font-size: .82rem;
+      font-weight: 650;
+      box-shadow: var(--shadow-soft);
+    }
+    .pill-link.primary {
+      border-color: var(--rust);
+      color: var(--white);
+      background: var(--rust);
+    }
+    .pill-link:hover { transform: translateY(-1px); text-decoration: none; }
+    .meta {
+      margin-top: 13px;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    section { margin-top: 62px; }
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      gap: 13px;
+      margin-bottom: 22px;
+      padding-bottom: 11px;
+      border-bottom: 2px solid var(--rust);
+    }
+    .section-no {
+      color: var(--rust);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .09em;
+    }
+    h2 {
+      margin: 0;
+      font-size: clamp(1.55rem, 3vw, 2rem);
+      font-weight: 680;
+      letter-spacing: -.025em;
+      line-height: 1.25;
+    }
+    h3 {
+      margin: 0 0 8px;
+      font-size: 1.14rem;
+      font-weight: 690;
+      line-height: 1.4;
+    }
+    h4 {
+      margin: 0 0 7px;
+      color: var(--rust-dark);
+      font-size: .96rem;
+      font-weight: 700;
+    }
+    .section-intro {
+      max-width: 900px;
+      margin: -6px 0 25px;
+      color: var(--muted);
+    }
+
+    .grid-2, .grid-3, .grid-4 {
+      display: grid;
+      gap: 15px;
+    }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card {
+      padding: 21px 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+    .card p:last-child { margin-bottom: 0; }
+    .card .kicker {
+      margin-bottom: 7px;
+      color: var(--rust);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .card.blue .kicker, .card.blue h3 { color: var(--blue); }
+    .card.green .kicker, .card.green h3 { color: var(--green); }
+    .card.purple .kicker, .card.purple h3 { color: var(--purple); }
+    .card.gold .kicker, .card.gold h3 { color: var(--gold); }
+    .small { color: var(--muted); font-size: .87rem; }
+
+    .verdict {
+      margin: 25px 0;
+      padding: 23px 26px;
+      border-left: 5px solid var(--rust);
+      border-radius: 8px;
+      background: linear-gradient(120deg, #fff9f2, var(--panel));
+      box-shadow: var(--shadow);
+    }
+    .verdict h3 { color: var(--rust-dark); }
+    .verdict p:last-child { margin-bottom: 0; }
+    .note {
+      margin: 18px 0;
+      padding: 17px 20px;
+      border: 1px solid #ead6ac;
+      border-left: 4px solid var(--gold);
+      border-radius: 11px;
+      background: var(--gold-pale);
+      color: #55462e;
+    }
+    .note.blue {
+      border-color: #cbdde7;
+      border-left-color: var(--blue);
+      background: var(--blue-pale);
+      color: #344b59;
+    }
+    .note.green {
+      border-color: #c9dfd0;
+      border-left-color: var(--green);
+      background: var(--green-pale);
+      color: #314b3c;
+    }
+    .note.rose {
+      border-color: #eac8d0;
+      border-left-color: var(--rose);
+      background: var(--rose-pale);
+      color: #5a3740;
+    }
+    .note p:last-child { margin-bottom: 0; }
+
+    .org-split {
+      display: grid;
+      grid-template-columns: 1fr 96px 1fr;
+      align-items: stretch;
+      margin: 25px 0;
+    }
+    .org {
+      position: relative;
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .org.nonprofit { border-top: 5px solid var(--green); }
+    .org.company { border-top: 5px solid var(--blue); }
+    .org .type {
+      display: inline-block;
+      margin-bottom: 9px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 800;
+    }
+    .nonprofit .type { color: var(--green); background: var(--green-pale); }
+    .company .type { color: var(--blue); background: var(--blue-pale); }
+    .org-bridge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 700;
+      text-align: center;
+    }
+    .org-bridge .arrow {
+      width: 58px;
+      height: 2px;
+      margin: 8px 0;
+      background: var(--line-strong);
+      position: relative;
+    }
+    .org-bridge .arrow::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border-left: 8px solid var(--line-strong);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .layers {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 9px;
+      margin: 24px 0;
+    }
+    .layer {
+      min-height: 142px;
+      padding: 17px 16px;
+      border-radius: 14px;
+      color: var(--white);
+      position: relative;
+      overflow: hidden;
+    }
+    .layer:nth-child(1) { background: #596059; }
+    .layer:nth-child(2) { background: var(--blue); }
+    .layer:nth-child(3) { background: var(--rust); }
+    .layer:nth-child(4) { background: var(--green); }
+    .layer .n {
+      position: absolute;
+      right: 10px;
+      top: 3px;
+      color: rgba(255,255,255,.17);
+      font-size: 3.2rem;
+      font-weight: 850;
+      line-height: 1;
+    }
+    .layer b { display: block; margin-bottom: 5px; font-size: 1rem; }
+    .layer span { display: block; color: rgba(255,255,255,.82); font-size: .81rem; }
+
+    .timeline {
+      position: relative;
+      margin: 28px 0;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 20px;
+      top: 9px;
+      bottom: 10px;
+      width: 3px;
+      background: linear-gradient(var(--green), var(--rust), var(--blue));
+    }
+    .event {
+      position: relative;
+      padding-left: 64px;
+      margin-bottom: 16px;
+    }
+    .dot {
+      position: absolute;
+      left: 8px;
+      top: 23px;
+      width: 27px;
+      height: 27px;
+      border: 7px solid var(--rust);
+      border-radius: 50%;
+      background: var(--panel);
+      box-shadow: 0 0 0 5px var(--paper);
+    }
+    .event.foundation .dot { border-color: var(--green); }
+    .event.product .dot { border-color: var(--blue); }
+    .event-card {
+      padding: 20px 23px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+    .event-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+    .date {
+      color: var(--rust-dark);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+    .tag {
+      padding: 2px 8px;
+      border-radius: 999px;
+      color: var(--rust-dark);
+      background: var(--rust-pale);
+      font-size: .7rem;
+      font-weight: 760;
+    }
+    .tag.green { color: var(--green); background: var(--green-pale); }
+    .tag.blue { color: var(--blue); background: var(--blue-pale); }
+    .event-card p { margin: 7px 0 0; color: var(--ink-soft); }
+
+    .ecosystem {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr 1fr;
+      gap: 12px;
+      align-items: stretch;
+      margin: 25px 0;
+    }
+    .eco-col { display: grid; gap: 10px; }
+    .eco-node {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 92px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--panel);
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+    .eco-node b { color: var(--rust-dark); }
+    .eco-node span { margin-top: 3px; color: var(--muted); font-size: .78rem; }
+    .eco-node.core {
+      min-height: 100%;
+      border: 2px solid var(--rust);
+      background: linear-gradient(150deg, #fff9f3, var(--panel));
+    }
+    .eco-node.eval b { color: var(--green); }
+    .eco-node.product b { color: var(--blue); }
+    .eco-label {
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 760;
+      letter-spacing: .08em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .generation {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 24px 0;
+    }
+    .gen {
+      position: relative;
+      padding: 24px 21px;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+    .gen::after {
+      content: "→";
+      position: absolute;
+      right: -18px;
+      top: 50%;
+      z-index: 2;
+      color: var(--line-strong);
+      font-size: 1.35rem;
+      font-weight: 800;
+      transform: translateY(-50%);
+    }
+    .gen:last-child::after { display: none; }
+    .gen .version {
+      color: var(--rust);
+      font-size: .75rem;
+      font-weight: 800;
+      letter-spacing: .07em;
+    }
+    .gen h3 { margin-top: 5px; }
+    .gen ul { color: var(--ink-soft); font-size: .88rem; }
+    .gen .change {
+      margin-top: 14px;
+      padding-top: 11px;
+      border-top: 1px dashed var(--line-strong);
+      color: var(--rust-dark);
+      font-size: .82rem;
+      font-weight: 650;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 9px;
+      margin: 20px 0;
+    }
+    .flow-box {
+      position: relative;
+      padding: 16px 11px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      text-align: center;
+      font-size: .82rem;
+      box-shadow: var(--shadow-soft);
+    }
+    .flow-box::after {
+      content: "›";
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      z-index: 3;
+      width: 15px;
+      height: 25px;
+      color: var(--rust);
+      background: var(--paper);
+      font-size: 1.25rem;
+      line-height: 23px;
+      transform: translateY(-50%);
+    }
+    .flow-box:last-child::after { display: none; }
+    .flow-box b { display: block; margin-bottom: 3px; color: var(--rust-dark); font-size: .92rem; }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 15px;
+      margin: 24px 0;
+    }
+    .arch-panel {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+    .pipeline {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+    }
+    .pipe-row {
+      display: grid;
+      grid-template-columns: 122px 1fr;
+      gap: 11px;
+      align-items: stretch;
+    }
+    .pipe-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      border-radius: 10px;
+      color: var(--white);
+      background: var(--rust);
+      font-size: .78rem;
+      font-weight: 760;
+      text-align: center;
+    }
+    .pipe-row:nth-child(2) .pipe-label { background: var(--green); }
+    .pipe-row:nth-child(3) .pipe-label { background: var(--blue); }
+    .pipe-row:nth-child(4) .pipe-label { background: var(--purple); }
+    .pipe-content {
+      padding: 10px 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fbfaf7;
+      color: var(--ink-soft);
+      font-size: .83rem;
+    }
+
+    .state {
+      margin-top: 14px;
+      border: 1px solid var(--line-strong);
+      border-radius: 13px;
+      overflow: hidden;
+    }
+    .state-title {
+      padding: 10px 13px;
+      color: var(--white);
+      background: var(--ink-soft);
+      font-size: .8rem;
+      font-weight: 760;
+    }
+    .state-item {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 8px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: .8rem;
+    }
+    .state-item:last-child { border-bottom: 0; }
+    .state-item b { color: var(--rust-dark); }
+    .state-item span { color: var(--muted); }
+
+    .loop-shell {
+      display: grid;
+      grid-template-columns: 205px 1fr;
+      gap: 16px;
+      margin: 25px 0;
+    }
+    .agent-brain {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24px 19px;
+      border-radius: 18px;
+      color: var(--white);
+      background: linear-gradient(145deg, var(--rust), var(--rust-dark));
+      box-shadow: 0 8px 24px rgba(152,69,31,.18);
+      text-align: center;
+    }
+    .agent-brain .icon { margin-bottom: 5px; font-size: 2rem; }
+    .agent-brain b { font-size: 1.08rem; }
+    .agent-brain span { margin-top: 7px; color: rgba(255,255,255,.83); font-size: .78rem; }
+    .tool-stack { display: grid; gap: 8px; }
+    .tool {
+      display: grid;
+      grid-template-columns: 180px 1fr 94px;
+      gap: 11px;
+      align-items: center;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+      font-size: .82rem;
+    }
+    .tool b {
+      color: var(--rust-dark);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: .78rem;
+      overflow-wrap: anywhere;
+    }
+    .tool span { color: var(--ink-soft); }
+    .tool em {
+      justify-self: end;
+      color: var(--muted);
+      font-size: .72rem;
+      font-style: normal;
+    }
+
+    .stop-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 18px 0;
+    }
+    .stop {
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      font-size: .8rem;
+    }
+    .stop b { display: block; margin-bottom: 4px; color: var(--rose); }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+    table {
+      width: 100%;
+      min-width: 850px;
+      border-collapse: collapse;
+      font-size: .84rem;
+    }
+    th {
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--line-strong);
+      color: var(--ink-soft);
+      background: #f0ece5;
+      text-align: left;
+    }
+    td {
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink-soft);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: 0; }
+    td:first-child { color: var(--ink); font-weight: 680; }
+
+    .app-card {
+      position: relative;
+      min-height: 210px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+    .app-card .app-type {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      color: var(--purple);
+      background: var(--purple-pale);
+      font-size: .69rem;
+      font-weight: 800;
+    }
+    .app-card p { color: var(--ink-soft); font-size: .87rem; }
+    .app-card .formula {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--line-strong);
+      color: var(--muted);
+      font-size: .77rem;
+    }
+
+    details {
+      margin: 11px 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+    summary {
+      padding: 14px 17px;
+      cursor: pointer;
+      color: var(--ink);
+      font-weight: 680;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: "+";
+      float: right;
+      color: var(--rust);
+      font-size: 1.1rem;
+    }
+    details[open] summary::after { content: "−"; }
+    .detail-body {
+      padding: 0 17px 16px;
+      color: var(--ink-soft);
+      font-size: .88rem;
+    }
+
+    .file-map {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .file {
+      padding: 14px 15px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--panel);
+    }
+    .file a {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: .82rem;
+      font-weight: 700;
+    }
+    .file p { margin: 5px 0 0; color: var(--muted); font-size: .78rem; }
+
+    .reading {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      counter-reset: route;
+    }
+    .read-step {
+      min-height: 126px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+      counter-increment: route;
+    }
+    .read-step::before {
+      content: "0" counter(route);
+      display: block;
+      margin-bottom: 6px;
+      color: var(--rust);
+      font-size: .72rem;
+      font-weight: 850;
+    }
+    .read-step b { display: block; font-size: .88rem; }
+    .read-step span { display: block; margin-top: 4px; color: var(--muted); font-size: .75rem; }
+
+    footer {
+      margin-top: 62px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .81rem;
+    }
+    .source-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+    .source-list a {
+      padding: 5px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      font-size: .75rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid-4, .layers, .stop-grid { grid-template-columns: repeat(2, 1fr); }
+      .generation { grid-template-columns: 1fr; }
+      .gen::after { content: "↓"; right: 50%; top: auto; bottom: -22px; transform: translateX(50%); }
+      .architecture, .loop-shell { grid-template-columns: 1fr; }
+      .reading { grid-template-columns: repeat(3, 1fr); }
+      .flow { grid-template-columns: repeat(3, 1fr); }
+      .flow-box:nth-child(3)::after { display: none; }
+    }
+    @media (max-width: 700px) {
+      .wrap { width: min(100% - 26px, 1080px); padding-top: 23px; }
+      .hero { padding: 35px 8px 34px; }
+      .grid-2, .grid-3, .org-split, .ecosystem { grid-template-columns: 1fr; }
+      .org-bridge { min-height: 75px; }
+      .org-bridge .arrow { transform: rotate(90deg); }
+      .eco-node.core { min-height: 150px; }
+      .file-map { grid-template-columns: 1fr; }
+      .tool { grid-template-columns: 1fr; gap: 3px; }
+      .tool em { justify-self: start; }
+      .reading { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .grid-4, .layers, .stop-grid, .reading, .flow { grid-template-columns: 1fr; }
+      .flow-box::after { content: "⌄"; right: 50%; top: auto; bottom: -17px; transform: translateX(50%); }
+      .flow-box:nth-child(3)::after { display: block; }
+      .timeline::before { left: 13px; }
+      .event { padding-left: 46px; }
+      .dot { left: 1px; }
+      .pipe-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <nav class="nav" aria-label="页面导航">
+      <span class="brand">PaperQA 图谱</span>
+      <a href="#overview">先看结论</a>
+      <a href="#organization">机构</a>
+      <a href="#timeline">演化</a>
+      <a href="#ecosystem">项目关系</a>
+      <a href="#generations">三代架构</a>
+      <a href="#repository">仓库实现</a>
+      <a href="#applications">派生系统</a>
+      <a href="#boundaries">边界</a>
+      <a href="#reading">阅读路线</a>
+    </nav>
+  </div>
+
+  <main class="wrap">
+    <header class="hero">
+      <div class="eyebrow">Scientific Literature Agent · Repository &amp; Institution Map</div>
+      <h1>PaperQA：从文献 RAG 到 AI Scientist 的知识入口</h1>
+      <p class="hero-lead">
+        这不是一个孤立仓库，而是 FutureHouse / Edison Scientific 科研自动化路线中的文献基础设施：
+        <strong>用可靠检索与可追溯证据支撑综述、矛盾发现、科学 Agent 训练，以及 Kosmos 的世界模型构建。</strong>
+      </p>
+      <div class="hero-links">
+        <a class="pill-link primary" href="code/Future-House_paper-qa/README.html">官方代码 README</a>
+        <a class="pill-link" href="https://arxiv.org/abs/2312.07559">PaperQA 论文</a>
+        <a class="pill-link" href="https://arxiv.org/abs/2409.13740">PaperQA2 论文</a>
+        <a class="pill-link" href="blogs/2026_PaperQA3_Edison_Literature.html">PaperQA3 发布</a>
+        <a class="pill-link" href="README_先看这里.html">归档索引</a>
+      </div>
+      <div class="meta">基于本地完整仓库、论文、数据集与官方博客核对 · 更新于 2026-07-29</div>
+    </header>
+
+    <section id="overview">
+      <div class="section-head"><span class="section-no">01</span><h2>先建立全貌：PaperQA 到底位于哪里</h2></div>
+      <div class="grid-4">
+        <article class="card green">
+          <div class="kicker">机构目标</div>
+          <h3>自动化科学发现</h3>
+          <p class="small">FutureHouse 的目标不是只做搜索产品，而是让 AI 能读文献、形成假设、分析数据、设计与解释实验。</p>
+        </article>
+        <article class="card">
+          <div class="kicker">PaperQA 的位置</div>
+          <h3>文献研究 Agent</h3>
+          <p class="small">它负责把海量论文变成带出处的证据和答案，是 AI Science Assistant，而不是完整 AI Scientist。</p>
+        </article>
+        <article class="card purple">
+          <div class="kicker">向上生长</div>
+          <h3>WikiCrow / ContraCrow</h3>
+          <p class="small">同一套检索与证据机制，通过不同任务提示和配置，变成综述生成器与矛盾发现器。</p>
+        </article>
+        <article class="card blue">
+          <div class="kicker">进入系统</div>
+          <h3>Edison Literature / Kosmos</h3>
+          <p class="small">PaperQA3 支撑面向用户的 Edison Literature，同时是 Kosmos 科研过程中的文献检索层。</p>
+        </article>
+      </div>
+
+      <div class="verdict">
+        <h3>最重要的理解</h3>
+        <p>
+          <strong>PaperQA 解决的是“从科学文献得到可信、可追溯的证据”这一子问题。</strong>
+          当它被 WikiCrow 调用时，输出长篇主题综述；被 ContraCrow 调用时，寻找反例；被 Kosmos 调用时，
+          它提供构建与更新 world model 所需的外部知识。上层任务不同，底层文献能力相通。
+        </p>
+      </div>
+    </section>
+
+    <section id="organization">
+      <div class="section-head"><span class="section-no">02</span><h2>团队与机构：FutureHouse 和 Edison Scientific</h2></div>
+      <p class="section-intro">
+        2025 年发生了组织拆分：科研使命与商业部署分别由两个独立组织承担。理解这一点，才能解释为什么旧资料写 FutureHouse，
+        新产品却叫 Edison Literature。
+      </p>
+
+      <div class="org-split">
+        <article class="org nonprofit">
+          <span class="type">非营利研究机构 · 2023</span>
+          <h3>FutureHouse</h3>
+          <p>由 Sam Rodriques 与 Andrew White 创立，位于旧金山，目标是构建能加速基础科学、尤其是生物医学研究的 AI Scientist。</p>
+          <ul class="small">
+            <li>研究 Agent、训练方法与科学 benchmark</li>
+            <li>发布 PaperQA、Aviary、LAB-Bench 等开放成果</li>
+            <li>用 AI 与湿实验验证实际科学发现</li>
+            <li>运行 AI-for-Science 博士后项目与科研培训</li>
+          </ul>
+        </article>
+        <div class="org-bridge">
+          <span>2025 商业<br>spin-out</span>
+          <div class="arrow"></div>
+          <span>技术互通<br>治理独立</span>
+        </div>
+        <article class="org company">
+          <span class="type">商业公司 · 2025</span>
+          <h3>Edison Scientific</h3>
+          <p>把 FutureHouse 发展出的 AI Scientist 技术产品化，负责平台、API、企业部署、大规模文献索引和持续运行基础设施。</p>
+          <ul class="small">
+            <li>Edison Literature：专业文献深度研究</li>
+            <li>Kosmos：更完整的科研与数据分析 Agent</li>
+            <li>面向企业的安全沙箱、私有数据与长期运行</li>
+            <li>免费层、付费能力与商业合作</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="note green">
+        <strong>两者不是简单改名。</strong> FutureHouse 官方说明：它们是独立组织，使命、运营和治理分开；
+        FutureHouse 继续做公共利益导向的基础研究，Edison 负责商业化，且 FutureHouse 可以使用 Edison 的技术。
+        <a href="https://www.futurehouse.org/about">FutureHouse About</a> ·
+        <a href="https://edisonscientific.com/news/announcing-edison-scientific">Edison 成立公告</a>
+      </div>
+
+      <h3>他们怎样理解“AI Scientist”</h3>
+      <div class="layers" aria-label="FutureHouse 科学自动化四层模型">
+        <div class="layer"><span class="n">1</span><b>AI Tools</b><span>预测模型、数据库、实验设备、解析器与 API，例如结构预测或 PDF parser。</span></div>
+        <div class="layer"><span class="n">2</span><b>AI Science Assistant</b><span>完成一个多步骤科研工作流。PaperQA / Edison Literature 属于这一层。</span></div>
+        <div class="layer"><span class="n">3</span><b>AI Scientist</b><span>围绕 world model 循环提出假设、分析数据、规划验证并更新认识。Kosmos 位于这里。</span></div>
+        <div class="layer"><span class="n">4</span><b>Human</b><span>给出 broad quest、价值判断与现实验证，不必规定每一步工具调用。</span></div>
+      </div>
+      <p class="small">
+        因而 PaperQA 很重要，但它不是终点：它是“读懂已有知识”的能力模块；完整 AI Scientist 还要处理数据、假设、实验和持续更新。
+        参见 <a href="https://www.futurehouse.org/ai-scientist">FutureHouse 的四层定义</a>。
+      </p>
+    </section>
+
+    <section id="timeline">
+      <div class="section-head"><span class="section-no">03</span><h2>仓库与研究路线如何演化</h2></div>
+      <p class="section-intro">下面把论文、代码版本、评测集、派生应用和组织变化放到一条时间线上。</p>
+
+      <div class="timeline">
+        <div class="event foundation">
+          <span class="dot"></span>
+          <article class="event-card">
+            <div class="event-head"><span class="date">2023-02</span><span class="tag green">代码起点</span><h3>PaperQA 仓库初始提交</h3></div>
+            <p>从“给一批 PDF 做带引用问答”起步。核心对象是 <code>Docs</code>：解析文档、检索片段、汇总证据、生成答案。</p>
+          </article>
+        </div>
+        <div class="event foundation">
+          <span class="dot"></span>
+          <article class="event-card">
+            <div class="event-head"><span class="date">2023-11～12</span><span class="tag green">机构 + v1</span><h3>FutureHouse、PaperQA 论文与首版 WikiCrow</h3></div>
+            <p>FutureHouse 宣布构建 AI Scientist；PaperQA v1 将 RAG 拆成 Search、Gather Evidence、Answer 三类动作，并以 LitQA v0 的 50 道全文检索题评测。</p>
+          </article>
+        </div>
+        <div class="event">
+          <span class="dot"></span>
+          <article class="event-card">
+            <div class="event-head"><span class="date">2024-07</span><span class="tag">评测扩展</span><h3>LAB-Bench 与 LitQA2</h3></div>
+            <p>不再只问“会不会答题”，而是评估文献检索、图表理解、数据库访问、克隆与序列任务。公开 LitQA2 本地归档含 199 条记录。</p>
+          </article>
+        </div>
+        <div class="event">
+          <span class="dot"></span>
+          <article class="event-card">
+            <div class="event-head"><span class="date">2024-09</span><span class="tag">PaperQA2</span><h3>论文系统与代码 v5.0.0</h3></div>
+            <p>Agent 式查询扩展、LLM 重排与 contextual summarization（RCS）成为核心；研究系统还利用引用图补充论文。WikiCrow2 和 ContraCrow 展示同一文献底座的不同任务形态。</p>
+          </article>
+        </div>
+        <div class="event">
+          <span class="dot"></span>
+          <article class="event-card">
+            <div class="event-head"><span class="date">2024-12</span><span class="tag">训练框架</span><h3>Aviary</h3></div>
+            <p>把 LitQA2 等科学任务封装成 Agent environment，使 tool-use trajectory 可评测、训练和优化。当前 PaperQA 运行时也直接使用 Aviary 的 Environment / Tool 抽象。</p>
+          </article>
+        </div>
+        <div class="event product">
+          <span class="dot"></span>
+          <article class="event-card">
+            <div class="event-head"><span class="date">2025-01～08</span><span class="tag blue">能力扩展</span><h3>临床试验、控制工具与多模态起步</h3></div>
+            <p>仓库加入 clinical trials 搜索、更多元数据和 Agent 控制；2025-08 开始加入多模态 PDF 支持，使图表进入开源解析与证据流程。</p>
+          </article>
+        </div>
+        <div class="event product">
+          <span class="dot"></span>
+          <article class="event-card">
+            <div class="event-head"><span class="date">2025-11～12</span><span class="tag blue">组织与版本</span><h3>Edison 成立；PaperQA 改用 CalVer</h3></div>
+            <p>商业平台从 FutureHouse spin out；代码从 <code>v5.x</code> 改成 <code>v2025.12.17</code> 等日期版本，并加入 Docling、Nemotron Parse、Office、图表与公式处理。</p>
+          </article>
+        </div>
+        <div class="event product">
+          <span class="dot"></span>
+          <article class="event-card">
+            <div class="event-head"><span class="date">2026-02</span><span class="tag blue">PaperQA3</span><h3>Edison Literature 的多模态深度研究</h3></div>
+            <p>产品侧可在超过 1.5 亿论文与专利中按需读取图表，并让 reasoning LLM 自主检查文档、复查片段和决定结束时机；同时服务 Kosmos 的文献环节。</p>
+          </article>
+        </div>
+        <div class="event product">
+          <span class="dot"></span>
+          <article class="event-card">
+            <div class="event-head"><span class="date">2026-02～05</span><span class="tag blue">LABBench2</span><h3>用更贴近现实的任务继续驱动迭代</h3></div>
+            <p>LitQA3、FigQA2、PatentQA、TrialQA 等任务把文本检索、图表、专利和临床试验放进同一评测体系，成为 PaperQA3 的公开证据之一。</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>命名提醒：</strong>论文代际与 Python 包版本不是同一种编号。官方规定 <code>paper-qa &gt;= 5</code> 叫 PaperQA2；
+        2025-12 后包版本改成日期。PaperQA3 目前主要是产品/研究发布名称，仍链接同一个开源仓库，没有单独的 PQA3 arXiv 论文或独立 repo。
+      </div>
+    </section>
+
+    <section id="ecosystem">
+      <div class="section-head"><span class="section-no">04</span><h2>项目谱系：哪些是底座、应用、训练与评测</h2></div>
+      <div class="ecosystem">
+        <div class="eco-col">
+          <div class="eco-label">评测与反馈</div>
+          <div class="eco-node eval"><b>LitQA → LitQA2 → LitQA3</b><span>专门测跨全文文献检索与综合</span></div>
+          <div class="eco-node eval"><b>LAB-Bench → LABBench2</b><span>更广泛的真实科研能力 benchmark</span></div>
+          <div class="eco-node eval"><b>RAG-QA Arena</b><span>与其他 RAG 流程横向比较</span></div>
+        </div>
+        <div class="eco-col">
+          <div class="eco-label">文献能力核心</div>
+          <div class="eco-node core">
+            <b>PaperQA / PaperQA2 / PaperQA3</b>
+            <span>检索候选文献 → 片段级证据 → 重排与摘要 → 有出处的回答；由 benchmark 结果持续改进。</span>
+          </div>
+          <div class="eco-node"><b>Aviary</b><span>把 PaperQA 与 LitQA 包装成可训练、可评测的 Agent environment</span></div>
+        </div>
+        <div class="eco-col">
+          <div class="eco-label">应用与上层系统</div>
+          <div class="eco-node product"><b>WikiCrow</b><span>按主题/基因批量生成 Wikipedia 风格综述</span></div>
+          <div class="eco-node product"><b>ContraCrow</b><span>针对论文 claim 检索并分级潜在矛盾</span></div>
+          <div class="eco-node product"><b>Edison Literature</b><span>面向研究者的文献深度研究 Agent</span></div>
+          <div class="eco-node product"><b>Kosmos</b><span>把文献能力与数据分析、假设和 world model 结合</span></div>
+        </div>
+      </div>
+      <div class="note blue">
+        <strong>反馈闭环：</strong>LitQA/LAB-Bench 不是附带数据，而是研发方法的一部分。团队先用真实科研任务暴露检索失败，
+        再通过 query expansion、RCS、引用关系、多模态解析等改动提高表现；应用系统则检验这些能力是否能扩展到成千上万篇文章或复杂 claim。
+      </div>
+    </section>
+
+    <section id="generations">
+      <div class="section-head"><span class="section-no">05</span><h2>三代整体架构：每一代真正改了什么</h2></div>
+      <div class="generation">
+        <article class="gen">
+          <div class="version">PAPERQA v1 · 2023</div>
+          <h3>把 RAG 变成会循环的文献 Agent</h3>
+          <ul>
+            <li><strong>Search：</strong>LLM 生成关键词，在大语料中找论文。</li>
+            <li><strong>Gather：</strong>在全文片段中做语义检索并产生证据摘要。</li>
+            <li><strong>Answer：</strong>对证据再排序，生成带引用回答。</li>
+            <li>可根据新术语再次搜索，而非一次检索后直接回答。</li>
+          </ul>
+          <div class="change">核心突破：RAG 步骤成为可反复调用的动作。</div>
+        </article>
+        <article class="gen">
+          <div class="version">PAPERQA2 · 2024</div>
+          <h3>更强的检索决策与证据质量控制</h3>
+          <ul>
+            <li><strong>Agentic query expansion：</strong>逐轮改写、补充搜索。</li>
+            <li><strong>RCS：</strong>LLM 先按问题给片段打分并写 contextual summary。</li>
+            <li><strong>Citation traversal：</strong>研究/内部系统沿引用图补充候选。</li>
+            <li>用元数据、来源质量与跨文献证据改善事实性。</li>
+          </ul>
+          <div class="change">核心突破：不只“搜得像”，还要让证据真正支持问题。</div>
+        </article>
+        <article class="gen">
+          <div class="version">PAPERQA3 · 2026</div>
+          <h3>多模态、广语料与更自主的 reasoning Agent</h3>
+          <ul>
+            <li>读取论文/专利的图、表、公式与页面图像。</li>
+            <li>LLM 决定何时查看图片，避免把所有图塞进上下文。</li>
+            <li>覆盖论文、专利、临床试验与来源可信度元数据。</li>
+            <li>弱化固定 harness，让模型自主复查并决定完成。</li>
+          </ul>
+          <div class="change">核心突破：从“文本证据 RAG”变成文档级多模态深度研究。</div>
+        </article>
+      </div>
+
+      <h3>一次查询的共同骨架</h3>
+      <div class="flow">
+        <div class="flow-box"><b>1. 问题</b>科学问题或 claim</div>
+        <div class="flow-box"><b>2. 候选文献</b>关键词、索引、元数据</div>
+        <div class="flow-box"><b>3. 证据</b>片段/页面/图表打分与摘要</div>
+        <div class="flow-box"><b>4. 决策</b>继续搜、换问法、重置或回答</div>
+        <div class="flow-box"><b>5. 输出</b>结论、引文、页码与不确定性</div>
+      </div>
+      <p class="small">
+        代际变化主要发生在第 2～4 步：候选文献覆盖更广、证据表示从文本扩展到图表、Agent 的动作选择与停止判断更自由。
+      </p>
+    </section>
+
+    <section id="repository">
+      <div class="section-head"><span class="section-no">06</span><h2>当前开源仓库：真正的代码架构</h2></div>
+      <p class="section-intro">
+        当前 HEAD 为 <code>d7675d7</code>（2026-06-05）。仓库不是“一个 prompt 加向量库”，而是由文档摄取、
+        索引/元数据、Agent environment、工具和状态五部分组成。
+      </p>
+
+      <div class="architecture">
+        <article class="arch-panel">
+          <h3>A. 文档摄取与检索层</h3>
+          <div class="pipeline">
+            <div class="pipe-row"><div class="pipe-label">输入</div><div class="pipe-content">PDF、纯文本、HTML、Office、图片；产品侧还接入论文、专利与临床试验语料。</div></div>
+            <div class="pipe-row"><div class="pipe-label">Reader / Parser</div><div class="pipe-content">pypdf、PyMuPDF、Docling、Nemotron Parse 等，把页面转换为文本、表格和 <code>ParsedMedia</code>。</div></div>
+            <div class="pipe-row"><div class="pipe-label">元数据</div><div class="pipe-content">Semantic Scholar、Crossref、OpenAlex、Unpaywall、撤稿与期刊质量；多源查询减少单点错误。</div></div>
+            <div class="pipe-row"><div class="pipe-label">索引与 Docs</div><div class="pipe-content">Tantivy 本地全文索引定位文档；文档进入 <code>Docs</code> 后切块、嵌入，供问题相关的片段检索与摘要。</div></div>
+          </div>
+        </article>
+        <article class="arch-panel">
+          <h3>B. Agent 状态层</h3>
+          <p class="small">每轮 LLM 不是盲看全部论文，而是看到任务 prompt、工具描述、工具历史、最佳证据和一个紧凑状态摘要。</p>
+          <div class="state">
+            <div class="state-title">EnvironmentState</div>
+            <div class="state-item"><b>docs</b><span>当前已加入的文档、文本块与元数据</span></div>
+            <div class="state-item"><b>session</b><span>question、contexts、answer、tool_history、token/cost</span></div>
+            <div class="state-item"><b>status</b><span>Paper Count / Relevant Papers / Current Evidence</span></div>
+            <div class="state-item"><b>tools</b><span>按 Settings 构造的本轮可调用动作</span></div>
+          </div>
+          <div class="note green">
+            <strong>它确实是 Agent。</strong>默认 <code>ToolSelector</code> LLM 根据状态动态选工具；只有 <code>fast</code> 配置使用
+            <code>fake</code> 路径，固定执行 search → gather → answer。
+          </div>
+        </article>
+      </div>
+
+      <h3>运行时循环：LLM 选择动作，Python 保存状态并执行</h3>
+      <div class="loop-shell">
+        <div class="agent-brain">
+          <div class="icon">◎</div>
+          <b>ToolSelector LLM</b>
+          <span>读取问题、状态计数、工具结果和少量高分证据；输出一个或多个 tool call。</span>
+        </div>
+        <div class="tool-stack">
+          <div class="tool"><b>paper_search</b><span>用 LLM 给出的查询和年份过滤搜索本地文献索引，把新论文与文本加入 <code>Docs</code>。</span><em>可并发</em></div>
+          <div class="tool"><b>gather_evidence</b><span>针对一个更具体的问题检索片段；summary LLM 生成上下文化摘要与相关度分数。</span><em>更新 contexts</em></div>
+          <div class="tool"><b>gen_answer</b><span>使用当前高分证据和来源上限生成带引用答案；失败时 Agent 可以继续检索。</span><em>写入 answer</em></div>
+          <div class="tool"><b>reset</b><span>清空不合适的证据上下文，但保留原始任务，允许换方向重新搜集。</span><em>纠偏</em></div>
+          <div class="tool"><b>complete</b><span>明确报告最后答案是否成功，并终止 environment rollout。</span><em>正常结束</em></div>
+          <div class="tool"><b>clinical_trials_search</b><span>可选工具：按临床试验语法搜索并把结果接入同一证据流程。</span><em>非默认</em></div>
+        </div>
+      </div>
+
+      <div class="note blue">
+        <strong>循环不是固定四轮。</strong>每次 <code>Environment.step()</code> 记录工具调用、并发执行允许的工具、把结果交回 LLM；
+        Agent 可以反复 search / gather，也可以 answer 后发现不足再继续。仓库默认 <code>max_timesteps = None</code>，但仍受超时、
+        runner 的步数限制、最大回答失败次数和 <code>complete</code> 控制。
+      </div>
+
+      <div class="stop-grid">
+        <div class="stop"><b>正常完成</b>LLM 调用 <code>complete</code>，标记 certain 或 unsure。</div>
+        <div class="stop"><b>时间耗尽</b>默认 agent timeout 为 500 秒；超时后 Python 强制再执行一次 <code>gen_answer</code>。</div>
+        <div class="stop"><b>步数截断</b>runner 可设置 <code>max_timesteps</code>；截断同样走兜底回答。</div>
+        <div class="stop"><b>失败保护</b>达到最大 answer 尝试或 trajectory 异常，状态转为 unsure / fail，而不是无限循环。</div>
+      </div>
+
+      <h3>证据检索内部到底做什么</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>阶段</th><th>代码行为</th><th>LLM 的职责</th><th>Python / 数据结构的职责</th></tr></thead>
+          <tbody>
+            <tr><td>文档级搜索</td><td><code>SearchIndex.query()</code> 找 top-N 文档，默认一次 8 篇；重复同一查询会用 offset 取下一页。</td><td>提出搜索表达式、年份范围并决定是否继续。</td><td>索引查询、去重、加载文本和文档元数据。</td></tr>
+            <tr><td>片段级检索</td><td><code>Docs.aget_evidence()</code> 按具体子问题检索文本块。</td><td>可把总问题改写成更适合证据收集的子问题。</td><td>嵌入相似度、chunk 管理、并发和缓存。</td></tr>
+            <tr><td>RCS</td><td>summary LLM 对每个候选片段输出摘要、相关度分数；多模态时可附页面图片。</td><td>判断“这个片段对当前问题具体支持什么”。</td><td>保存 <code>Context</code>、排序并只展示少量最佳证据给 Agent。</td></tr>
+            <tr><td>回答</td><td><code>Docs.aquery()</code> 选择高分来源并生成有 citation key 的回答。</td><td>跨来源综合、处理冲突、保持答案紧扣证据。</td><td>来源上限、引用格式、answer/session 持久化。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:26px">多模态怎样进入开源实现</h3>
+      <div class="grid-3">
+        <article class="card">
+          <div class="kicker">Parse</div>
+          <h3>页面 → 文本 + Media</h3>
+          <p class="small">Reader 保存页面文本，并把图、表、公式作为 <code>ParsedMedia</code>，保留 page_num、类型、图片字节或表格文本。</p>
+        </article>
+        <article class="card green">
+          <div class="kicker">Enrich</div>
+          <h3>图片描述改善检索</h3>
+          <p class="small">enrichment LLM 描述图表中的标签、图例、趋势和科学含义，使纯文本 embedding 也能把相关图所在页面检索出来。</p>
+        </article>
+        <article class="card blue">
+          <div class="kicker">Reason</div>
+          <h3>按需交给多模态 LLM</h3>
+          <p class="small">生成 contextual summary 时可把候选页面图片一并发送，并记录 <code>used_images</code>；产品侧再由 Agent 决定何时深入查看。</p>
+        </article>
+      </div>
+
+      <h3 style="margin-top:28px">源码入口地图</h3>
+      <div class="file-map">
+        <div class="file"><a href="code/Future-House_paper-qa/src/paperqa/agents/main.py">agents/main.py</a><p><code>agent_query</code>、<code>run_agent</code>、timeout 兜底和不同 Agent runner。</p></div>
+        <div class="file"><a href="code/Future-House_paper-qa/src/paperqa/agents/env.py">agents/env.py</a><p><code>PaperQAEnvironment</code>、状态初始化、step、工具执行和结束判断。</p></div>
+        <div class="file"><a href="code/Future-House_paper-qa/src/paperqa/agents/tools.py">agents/tools.py</a><p>默认工具、<code>EnvironmentState</code> 与各动作的状态修改方式。</p></div>
+        <div class="file"><a href="code/Future-House_paper-qa/src/paperqa/agents/search.py">agents/search.py</a><p>Tantivy 搜索索引、manifest、目录文件摄取与缓存。</p></div>
+        <div class="file"><a href="code/Future-House_paper-qa/src/paperqa/docs.py">docs.py</a><p>文档、片段、证据检索和最终 query 的主要业务逻辑。</p></div>
+        <div class="file"><a href="code/Future-House_paper-qa/src/paperqa/core.py">core.py</a><p>contextual summary、相关度评分以及多模态消息处理。</p></div>
+        <div class="file"><a href="code/Future-House_paper-qa/src/paperqa/readers.py">readers.py</a><p>PDF、HTML、Office、图片解析与 media enrichment 接口。</p></div>
+        <div class="file"><a href="../../../_未包含的内容.html">clients/</a><p>Semantic Scholar、Crossref、OpenAlex、Unpaywall、撤稿和期刊质量元数据。</p></div>
+        <div class="file"><a href="code/Future-House_paper-qa/src/paperqa/settings.py">settings.py</a><p>模型、parser、索引、answer、Agent 类型、timeout 与 tool names。</p></div>
+        <div class="file"><a href="../../../_未包含的内容.html">configs/</a><p><code>fast</code>、<code>high_quality</code>、<code>wikicrow</code>、<code>contracrow</code>、clinical trials 等模式。</p></div>
+      </div>
+    </section>
+
+    <section id="applications">
+      <div class="section-head"><span class="section-no">07</span><h2>每个派生项目的整体架构</h2></div>
+      <div class="grid-3">
+        <article class="app-card">
+          <span class="app-type">生成式应用</span>
+          <h3>WikiCrow</h3>
+          <p>给定基因或主题，按预设章节拆成多个研究问题；每节调用 PaperQA 搜集证据并写 Wikipedia 风格段落，最后合并、去重引用。</p>
+          <div class="formula">主题 → 章节问题 → 多轮检索/RCS → 分节回答 → 文章与参考文献<br>本地已归档 19,249 篇 WikiCrow2 文本。</div>
+        </article>
+        <article class="app-card">
+          <span class="app-type">矛盾发现</span>
+          <h3>ContraCrow</h3>
+          <p>从目标论文抽取 claim，把 claim 当成检索问题寻找支持或反对证据，再用 11 档标签从 explicit contradiction 到 explicit agreement 分级。</p>
+          <div class="formula">Seed paper → Claims → 针对 claim 检索 → 证据综合 → 矛盾强度与出处</div>
+        </article>
+        <article class="app-card">
+          <span class="app-type">训练与环境</span>
+          <h3>Aviary</h3>
+          <p>不是新的文献搜索算法，而是 Environment + Tool + Reward/Task 的训练框架。它把 LitQA2 变成 trajectory，可训练 Agent 如何选择工具。</p>
+          <div class="formula">Task → Environment observation → Agent action → Tool response/reward → 下一步</div>
+        </article>
+        <article class="app-card">
+          <span class="app-type">评测体系</span>
+          <h3>LitQA / LAB-Bench</h3>
+          <p>LitQA 专测“答案藏在全文、摘要不够”的文献题；LAB-Bench 再加入图表、数据库、序列与实验设计，让优化不局限于问答分数。</p>
+          <div class="formula">真实研究任务 → 人类/模型基线 → 消融定位瓶颈 → 反向推动 Agent 改进</div>
+        </article>
+        <article class="app-card">
+          <span class="app-type">产品化文献 Agent</span>
+          <h3>Edison Literature</h3>
+          <p>PaperQA3 的用户界面与 API。生产端自带大规模全文/专利索引、来源可信度服务和多模态解析，而不是要求用户先准备一小批 PDF。</p>
+          <div class="formula">问题 → 全局语料检索 → 文档/图表核验 → 简洁带出处回答 → 页面级证据展示</div>
+        </article>
+        <article class="app-card">
+          <span class="app-type">AI Scientist</span>
+          <h3>Kosmos</h3>
+          <p>将 PaperQA3 文献能力与代码执行、数据分析和持续 world model 结合。文献证据只是它更新研究状态、提出与检验假设的一种输入。</p>
+          <div class="formula">Quest → 文献 + 数据 → World model → 假设/分析 → 新证据 → 持续更新</div>
+        </article>
+      </div>
+
+      <details open>
+        <summary>PaperQA 有“主题模式”和“Idea 模式”吗？</summary>
+        <div class="detail-body">
+          当前官方 PaperQA 仓库没有 AI Researcher 那种明确的 Topic / Idea 二分。它的变化主要通过
+          <strong>问题、工具集合、prompt 和 Settings preset</strong>完成：
+          <code>high_quality</code> 做高质量问答，<code>fast</code> 走固定低成本路径，
+          <code>wikicrow</code> 写综述，<code>contracrow</code> 判矛盾，clinical trials 配置搜索试验。
+          “生成 Idea”属于上层科研任务，可以调用 PaperQA 提供证据，但不是仓库内置的独立模式。
+        </div>
+      </details>
+      <details>
+        <summary>Semantic Scholar 在这里扮演什么角色？</summary>
+        <div class="detail-body">
+          它是元数据与引用关系来源之一，不是整个 Agent。PaperQA 还会用 Crossref、OpenAlex、Unpaywall、撤稿与期刊质量数据；
+          PDF 解析、切块、embedding、RCS、工具循环和最终回答都在 PaperQA 自己的流程中完成。
+          更重要的是：当前开源默认 <code>paper_search</code> 搜索用户构建的本地索引，不等于生产版直接拥有全量 Semantic Scholar 全文。
+        </div>
+      </details>
+    </section>
+
+    <section id="boundaries">
+      <div class="section-head"><span class="section-no">08</span><h2>必须分清的三层边界</h2></div>
+      <div class="grid-3">
+        <article class="card">
+          <div class="kicker">论文系统</div>
+          <h3>研究结论与消融</h3>
+          <p class="small">PaperQA2 论文描述了内部完整系统，包括全语料检索和 citation traversal，并在 LitQA2、WikiCrow、ContraCrow 上评测。</p>
+        </article>
+        <article class="card green">
+          <div class="kicker">开源仓库</div>
+          <h3>可运行的算法框架</h3>
+          <p class="small">公开 reader、索引、RCS、Agent environment 与默认工具；通常需要用户提供可访问的论文全文，默认工具中目前没有 citation traversal。</p>
+        </article>
+        <article class="card blue">
+          <div class="kicker">生产平台</div>
+          <h3>语料、授权与基础设施</h3>
+          <p class="small">Edison 拥有大规模论文/专利索引、授权全文、内部元数据服务、多模态计算和产品层 orchestration，不能由 GitHub 包自动得到。</p>
+        </article>
+      </div>
+      <div class="note rose">
+        <strong>因此不能直接说“clone 仓库就复现 PaperQA3”。</strong>
+        更准确的说法是：开源仓库提供核心算法与可配置 Agent；论文和生产指标还依赖内部工具、访问许可、索引质量、模型与计算预算。
+        官方 README 也明确说明内部工具和论文访问授权存在差异。
+        <a href="code/Future-House_paper-qa/README.html#how-come-i-get-different-results-than-your-papers">查看本地 README 原文</a>
+      </div>
+
+      <h3>公开程度速查</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>项目</th><th>代码</th><th>论文/博客</th><th>数据</th><th>需要注意</th></tr></thead>
+          <tbody>
+            <tr><td>PaperQA / PQA2</td><td>官方 repo 完整归档</td><td>两篇主论文均归档</td><td>LitQA v0、LitQA2 public</td><td>内部全语料与部分工具未公开</td></tr>
+            <tr><td>WikiCrow2</td><td>配置与说明公开</td><td>论文与博客归档</td><td>19,249 篇文章 + evaluator 表</td><td>生产生成流程并非独立完整 repo</td></tr>
+            <tr><td>Aviary</td><td>官方 repo 完整归档</td><td>论文归档</td><td>公开任务可用</td><td>held-out <code>aviary-paper-data</code> 需授权</td></tr>
+            <tr><td>LABBench2</td><td>评测 harness 归档</td><td>论文与发布页归档</td><td>完整题库为 HF gated</td><td>不能匿名绕过门控下载</td></tr>
+            <tr><td>PaperQA3</td><td>链接仍指向 PaperQA 主 repo</td><td>官方研究博客归档</td><td>生产索引未公开</td><td>没有独立 PQA3 arXiv 论文/repo</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="reading">
+      <div class="section-head"><span class="section-no">09</span><h2>建议阅读路线：从全貌走到源码</h2></div>
+      <div class="reading">
+        <a class="read-step" href="https://arxiv.org/abs/2312.07559"><b>PaperQA v1</b><span>先理解三动作 RAG Agent 和 LitQA 动机。</span></a>
+        <a class="read-step" href="blogs/2024_PaperQA2_Engineering_Journey.html"><b>工程演化博客</b><span>最直观地理解 query expansion 与 RCS。</span></a>
+        <a class="read-step" href="https://arxiv.org/abs/2409.13740"><b>PaperQA2</b><span>看完整评测、WikiCrow 和 ContraCrow。</span></a>
+        <a class="read-step" href="code/Future-House_paper-qa/src/paperqa/agents/"><b>Agent 源码</b><span>从 main → env → tools 看真实循环。</span></a>
+        <a class="read-step" href="blogs/2026_PaperQA3_Edison_Literature.html"><b>PaperQA3</b><span>理解多模态与生产系统的新边界。</span></a>
+      </div>
+
+      <div class="grid-2" style="margin-top:22px">
+        <article class="card">
+          <div class="kicker">想理解评测</div>
+          <h3>沿 LitQA → LAB-Bench → LABBench2</h3>
+          <p class="small">
+            <a href="datasets/LitQA_v0/litqa-v0.jsonl">LitQA v0 数据</a> ·
+            <a href="datasets/LAB-Bench_LitQA2/LitQA2/litqa-v2-public.jsonl">LitQA2 public</a> ·
+            <a href="https://arxiv.org/abs/2604.09554">LABBench2 论文</a>
+          </p>
+        </article>
+        <article class="card blue">
+          <div class="kicker">想理解大规模输出</div>
+          <h3>查看 WikiCrow2 的真实文章</h3>
+          <p class="small">
+            <a href="../../../_未包含的内容.html">19,249 篇本地文章目录</a> ·
+            <a href="datasets/PaperQA2_WikiCrow_LitQA_evaluator_responses.xlsx">人工评估响应表</a>
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      <strong>证据说明：</strong>组织关系来自 FutureHouse / Edison 官方页面；技术实现同时以论文、官方博客和本地
+      <code>Future-House/paper-qa</code> HEAD 源码为依据。涉及“最高性能”“超越人类”等表述均应理解为官方论文或官方 benchmark
+      在其指定设置下的报告，而不是对所有问题的普遍保证。
+      <div class="source-list">
+        <a href="https://www.futurehouse.org/about">FutureHouse About</a>
+        <a href="https://edisonscientific.com/news/announcing-edison-scientific">Edison 公告</a>
+        <a href="https://arxiv.org/abs/2312.07559">PaperQA arXiv</a>
+        <a href="https://arxiv.org/abs/2409.13740">PaperQA2 arXiv</a>
+        <a href="https://github.com/Future-House/paper-qa">官方 GitHub</a>
+        <a href="https://labs.edisonscientific.com/research/edison-literature-agent/">PaperQA3</a>
+        <a href="https://arxiv.org/abs/2604.09554">LABBench2</a>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const links = [...document.querySelectorAll(".nav a")];
+    const sections = links
+      .map(link => document.querySelector(link.getAttribute("href")))
+      .filter(Boolean);
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        links.forEach(link => {
+          link.classList.toggle(
+            "active",
+            link.getAttribute("href") === "#" + entry.target.id
+          );
+        });
+      });
+    }, { rootMargin: "-20% 0px -68% 0px", threshold: 0 });
+    sections.forEach(section => observer.observe(section));
+  </script>
+</body>
+</html>

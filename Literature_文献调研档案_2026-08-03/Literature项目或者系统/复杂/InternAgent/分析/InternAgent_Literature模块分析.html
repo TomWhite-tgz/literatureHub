@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InternAgent Literature 模块：源码演化与当前架构</title>
+  <style>
+    :root{
+      --ink:#1f2421;--muted:#606761;--paper:#f7f4ef;--panel:#fbf9f5;--white:#fff;
+      --line:#e7e1d7;--accent:#c4612f;--accent-dark:#9f4720;--accent-soft:#f2e3d6;
+      --green:#2f7554;--green-soft:#e8f2ec;--blue:#356b79;--blue-soft:#e8f1f3;
+      --amber:#93620d;--amber-soft:#fff5dd;--red:#aa4037;--red-soft:#f9eae7;
+      --shadow:0 8px 28px rgba(45,37,29,.06)
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;background:var(--paper);color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+      line-height:1.72
+    }
+    a{color:var(--accent-dark);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .page{max-width:1160px;margin:auto;padding:34px 32px 86px}
+    .topline{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:22px}
+    .back{font-size:.9rem;font-weight:650}
+    .stamp{color:var(--muted);font-size:.82rem}
+    header{
+      text-align:center;padding:38px 30px 40px;background:linear-gradient(145deg,#fff 0%,#fbf7f1 100%);
+      border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)
+    }
+    .eyebrow{color:var(--accent);font-size:.78rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+    h1{font-size:clamp(2.15rem,5vw,3.55rem);line-height:1.12;letter-spacing:-.045em;margin:10px auto 16px;max-width:920px}
+    .subtitle{font-size:1.12rem;color:var(--muted);font-weight:350;max-width:850px;margin:0 auto}
+    .meta{margin-top:16px;color:var(--muted);font-size:.88rem}
+    .actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:23px}
+    .btn{display:inline-block;padding:9px 16px;border-radius:999px;font-size:.86rem;font-weight:700;border:1px solid var(--line);background:#fff}
+    .btn.primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-dark))}
+    .toc{
+      position:sticky;top:0;z-index:10;margin:18px 0 0;padding:11px 14px;
+      display:flex;gap:7px;flex-wrap:wrap;justify-content:center;
+      background:rgba(247,244,239,.94);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:12px
+    }
+    .toc a{padding:5px 10px;border-radius:999px;font-size:.78rem;font-weight:650;color:var(--muted)}
+    .toc a:hover{background:var(--accent-soft);color:var(--accent-dark);text-decoration:none}
+    section{scroll-margin-top:78px}
+    h2{font-size:1.72rem;letter-spacing:-.025em;margin:58px 0 19px;padding-bottom:10px;border-bottom:2px solid var(--accent)}
+    h3{font-size:1.12rem;margin:0 0 8px}
+    h4{font-size:.98rem;margin:0 0 6px}
+    p{margin:0 0 13px;font-weight:350}
+    strong{font-weight:720}
+    code{font-family:"SFMono-Regular",Consolas,monospace;background:#f0ede7;color:#75401f;padding:2px 5px;border-radius:4px;font-size:.9em}
+    pre{margin:10px 0 0;padding:14px 16px;overflow:auto;white-space:pre-wrap;word-break:break-word;border:1px solid var(--line);border-radius:8px;background:#f6f3ee;color:#51341f;font:12px/1.65 "SFMono-Regular",Consolas,monospace}
+    ul,ol{margin:8px 0 10px;padding-left:22px}
+    li{margin:5px 0;font-weight:350}
+    .lead{
+      margin:24px 0 0;padding:20px 22px;border-radius:11px;border:1px solid #e5c6ac;
+      border-left:5px solid var(--accent);background:var(--accent-soft);color:#663118;font-weight:520
+    }
+    .grid{display:grid;gap:15px;margin:18px 0}
+    .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .card{
+      background:var(--white);border:1px solid var(--line);border-radius:11px;padding:20px 21px;
+      box-shadow:0 3px 12px rgba(41,34,28,.035)
+    }
+    .card p:last-child,.card ul:last-child{margin-bottom:0}
+    .kicker{color:var(--accent);font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+    .muted{color:var(--muted)}
+    .small{font-size:.84rem;color:var(--muted)}
+    .metric{font-size:1.72rem;line-height:1;color:var(--accent-dark);font-weight:760;margin:4px 0 8px}
+    .pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:.73rem;font-weight:750;margin:2px}
+    .p-accent{background:var(--accent-soft);color:var(--accent-dark)}
+    .p-green{background:var(--green-soft);color:var(--green)}
+    .p-blue{background:var(--blue-soft);color:var(--blue)}
+    .p-amber{background:var(--amber-soft);color:var(--amber)}
+    .p-red{background:var(--red-soft);color:var(--red)}
+    .note,.warning,.finding{
+      margin:18px 0;padding:17px 20px;border-radius:8px;background:var(--panel);border-left:4px solid var(--accent)
+    }
+    .warning{background:var(--amber-soft);border-left-color:#c58a20}
+    .finding{background:var(--blue-soft);border-left-color:var(--blue)}
+    .note p:last-child,.warning p:last-child,.finding p:last-child{margin-bottom:0}
+    .table-wrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:#fff}
+    table{width:100%;border-collapse:collapse;font-size:.85rem}
+    th{background:var(--accent);color:#fff;text-align:left;padding:11px 12px;white-space:nowrap}
+    td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;font-weight:350}
+    td:first-child{font-weight:650}
+    tr:last-child td{border-bottom:0}
+    .yes{color:var(--green);font-weight:700}
+    .partial{color:var(--amber);font-weight:700}
+    .no{color:var(--red);font-weight:700}
+
+    .timeline{position:relative;margin:23px 0 0;padding-left:26px}
+    .timeline:before{content:"";position:absolute;left:6px;top:5px;bottom:8px;width:2px;background:#ddcdbf}
+    .event{position:relative;margin:0 0 18px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:17px 19px}
+    .event:before{content:"";position:absolute;left:-26px;top:22px;width:13px;height:13px;border-radius:50%;background:var(--accent);border:3px solid var(--paper)}
+    .date{color:var(--accent);font-size:.75rem;font-weight:800;letter-spacing:.05em}
+    .event h3{margin-top:2px}
+
+    .lanes{display:grid;gap:12px;margin:20px 0}
+    .lane{display:grid;grid-template-columns:175px 1fr;gap:0;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff}
+    .lane-title{padding:18px;background:#f2ece4;border-right:1px solid var(--line)}
+    .lane-title strong{display:block;color:var(--accent-dark)}
+    .lane-title span{font-size:.77rem;color:var(--muted)}
+    .lane-body{padding:16px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .node{padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:7px;font-size:.79rem}
+    .arr{color:var(--accent);font-weight:800}
+
+    .arch{margin:20px 0;padding:20px;background:#fff;border:1px solid var(--line);border-radius:12px}
+    .arch-row{display:flex;gap:9px;align-items:stretch;justify-content:center;flex-wrap:wrap}
+    .arch-box{flex:1;min-width:150px;padding:13px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);text-align:center;font-size:.81rem}
+    .arch-box strong{display:block;color:var(--accent-dark);margin-bottom:3px}
+    .arch-box.blue{background:var(--blue-soft);border-color:#cbdee2}
+    .arch-box.green{background:var(--green-soft);border-color:#cfe1d5}
+    .arch-box.amber{background:var(--amber-soft);border-color:#ead9ae}
+    .arch-arrow{display:flex;align-items:center;color:var(--accent);font-size:1.25rem;font-weight:800}
+    .arch-down{text-align:center;color:var(--accent);font-size:1.35rem;font-weight:800;line-height:1.2;padding:5px}
+    .caption{text-align:center;color:var(--muted);font-size:.8rem;margin-top:12px}
+
+    .steps{counter-reset:step;display:grid;gap:10px;margin:18px 0}
+    .step{counter-increment:step;position:relative;padding:15px 18px 15px 57px;border:1px solid var(--line);border-radius:9px;background:#fff}
+    .step:before{content:counter(step);position:absolute;left:18px;top:16px;width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-size:.77rem;font-weight:800}
+    .step strong{color:var(--accent-dark)}
+    .code-map{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .file{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+    .file a{font-family:"SFMono-Regular",Consolas,monospace;font-size:.78rem;font-weight:650;overflow-wrap:anywhere}
+    .file p{font-size:.82rem;color:var(--muted);margin:5px 0 0}
+    .verdict{margin-top:22px;padding:23px 25px;background:#262b28;color:#f6f2eb;border-radius:12px}
+    .verdict h3{color:#f0b18e}
+    .verdict p{color:#ece7df}
+    .reading-path{
+      margin:22px 0 5px;padding:18px 20px 19px;background:#fff;border:1px solid var(--line);
+      border-radius:12px;box-shadow:var(--shadow)
+    }
+    .reading-path-head{display:flex;align-items:baseline;justify-content:space-between;gap:15px;margin-bottom:12px}
+    .reading-path-head h3{font-size:1.05rem;margin:0;color:var(--accent-dark)}
+    .reading-path-head span{font-size:.78rem;color:var(--muted)}
+    .reading-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .reading-link{
+      display:block;padding:13px 14px;border:1px solid var(--line);border-radius:9px;
+      background:var(--panel);color:var(--ink);transition:.18s ease
+    }
+    .reading-link:hover{transform:translateY(-2px);border-color:#d9b79e;background:var(--accent-soft);text-decoration:none}
+    .reading-link strong{display:block;color:var(--accent-dark);font-size:.88rem;margin-bottom:2px}
+    .reading-link span{display:block;color:var(--muted);font-size:.78rem;line-height:1.55}
+    .fold-section{margin-top:42px}
+    .fold{
+      background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);
+      overflow:hidden
+    }
+    .fold summary{
+      list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+      gap:18px;padding:19px 22px;background:linear-gradient(135deg,#fff 0%,#f7efe7 100%);
+      border-left:5px solid var(--accent);user-select:none
+    }
+    .fold summary::-webkit-details-marker{display:none}
+    .fold-title{font-size:1.3rem;line-height:1.3;font-weight:760;letter-spacing:-.018em;color:var(--ink)}
+    .fold-control{
+      flex:none;display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;
+      color:var(--accent-dark);background:var(--accent-soft);font-size:.76rem;font-weight:750
+    }
+    .fold-control:before{content:"＋";font-size:1rem;line-height:1}
+    .fold[open] .fold-control:before{content:"−"}
+    .fold .when-open{display:none}.fold[open] .when-open{display:inline}.fold[open] .when-closed{display:none}
+    .fold[open] summary{border-bottom:1px solid var(--line)}
+    .fold-body{padding:2px 22px 22px}
+    .focus-section>h2:before{
+      content:"重点";display:inline-block;vertical-align:.2em;margin-right:9px;padding:3px 8px;border-radius:999px;
+      background:var(--accent-soft);color:var(--accent-dark);font-size:.65rem;font-weight:800;letter-spacing:.08em
+    }
+    .focus-section>h2{border-bottom-color:var(--accent-dark)}
+    footer{margin-top:62px;padding-top:22px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:.83rem}
+
+    @media(max-width:850px){
+      .page{padding:24px 17px 58px}.g2,.g3,.g4,.code-map{grid-template-columns:1fr}
+      .reading-links{grid-template-columns:1fr}.reading-path-head{display:block}.reading-path-head span{display:block;margin-top:3px}
+      .lane{grid-template-columns:1fr}.lane-title{border-right:0;border-bottom:1px solid var(--line)}
+      .arch-arrow{width:100%;justify-content:center;transform:rotate(90deg)}
+      .fold summary{align-items:flex-start;padding:16px}.fold-title{font-size:1.08rem}.fold-body{padding:2px 15px 16px}
+      .topline{align-items:flex-start;flex-direction:column;gap:6px}.toc{position:static}
+    }
+    @media print{
+      body{background:#fff}.page{max-width:none;padding:12mm}.toc{display:none}
+      header,.card,.event,.arch,.table-wrap,.lane,.file,.step{box-shadow:none;break-inside:avoid}
+      h2,h3,h4{break-after:avoid}.actions{display:none}a{color:inherit}
+    }
+  </style>
+</head>
+<body>
+<main class="page">
+  <div class="topline">
+    <a class="back" href="../README.html">← 返回 InternAgent 材料索引</a>
+    <span class="stamp">源码核验：当前 main <code>b8a9e81</code> · Literature 主体最后变更 <code>e341f8f</code></span>
+  </div>
+
+  <header>
+    <div class="eyebrow">Source Evolution · Architecture Audit</div>
+    <h1>InternAgent 的 Literature 模块</h1>
+    <p class="subtitle">从 Dolphin 的论文池脚本，到 1.0 的 Survey / Scholar 双 Agent，再到 1.5 的 FlowSearch 图工作流；逐阶段还原架构，并深入拆解当前版本的真实调用链。</p>
+    <p class="meta">覆盖 2025-05-16 → 2026-06-10 · 论文、Git 提交与当前源码三方对照</p>
+    <div class="actions">
+      <a class="btn primary" href="#current">直接看当前架构</a>
+      <a class="btn" href="https://arxiv.org/abs/2505.16938">InternAgent 1.0 论文</a>
+      <a class="btn" href="https://arxiv.org/abs/2602.08990">InternAgent 1.5 报告</a>
+      <a class="btn" href="InternAgent_源码演化史.html">完整源码演化史</a>
+      <a class="btn" href="../源码/InternAgent/docs/deep_research.html">本地 Deep Research 文档</a>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#answer">核心结论</a><a href="#timeline">演化时间线</a><a href="#stages">各阶段架构</a>
+    <a href="#v1">1.0 Literature 深拆</a><a href="#current">当前三条路径</a><a href="#flowsearch">FlowSearch 深拆</a><a href="#legacy">当前 Survey / Scholar</a>
+    <a href="#evidence">证据与引用</a><a href="#kg">2.2.1 跨学科 KG</a><a href="#paper-code">论文 vs 代码</a><a href="#limits">实现边界</a><a href="#map">代码地图</a>
+  </nav>
+
+  <section id="answer">
+    <div class="lead">
+      <strong>一句话结论：</strong>当前 InternAgent 没有一个单一的“Literature 模块”，而是保留了三条用途不同、实现也不同的路径：
+      <strong>FlowSearch 生成任务背景 / 回答 QA，Survey 建立任务级论文池，Scholar 为每个候选假设寻找证据。</strong>
+      1.5 并没有用 FlowSearch 替换 1.0 的 Survey / Scholar；它是在旧体系旁边又接入了一套独立的图式 Deep Research。
+    </div>
+
+    <div class="grid g4">
+      <div class="card"><div class="kicker">Current topology</div><div class="metric">3</div><p>三条并存的文献路径，而非一个统一检索内核。</p></div>
+      <div class="card"><div class="kicker">Structural changes</div><div class="metric">3</div><p>Dolphin、InternAgent 1.0、v1.5.0 是真正改变架构的三个提交节点。</p></div>
+      <div class="card"><div class="kicker">FlowSearch core</div><div class="metric">33</div><p>排除 vendored CAMEL 后的 DR Python 文件，约 1.49 万行。</p></div>
+      <div class="card"><div class="kicker">Default full text</div><div class="metric">否</div><p>FlowSearch 默认先取摘要；Scholar 默认 <code>deep_read: false</code>。</p></div>
+    </div>
+
+    <div class="finding"><p><strong>理解当前代码最重要的分界：</strong>FlowSearch 维护的是“研究任务 DAG + URL 引用”；Survey / Scholar 维护的是“结构化论文元数据与假设证据”。两边没有共享论文对象、检索缓存、去重索引或统一证据库。</p></div>
+
+    <div class="reading-path">
+      <div class="reading-path-head">
+        <h3>推荐阅读路径</h3>
+        <span>不必从头顺序读；先按你的问题进入主线</span>
+      </div>
+      <div class="reading-links">
+        <a class="reading-link" href="#current"><strong>① 先看当前到底有几条路径</strong><span>FlowSearch、Survey、Scholar 分别何时触发、产出什么。</span></a>
+        <a class="reading-link" href="#flowsearch"><strong>② 再看 FlowSearch 如何运行</strong><span>Query → 全局 DAG → 节点内执行 → 报告合成。</span></a>
+        <a class="reading-link" href="#kg"><strong>③ 最后区分论文设计与代码</strong><span>2.2.1 跨学科 KG 的设想、证据链，以及目前未开源部分。</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section id="timeline" class="fold-section">
+    <details class="fold">
+      <summary>
+        <span class="fold-title">演化时间线：什么时候真正改了什么</span>
+        <span class="fold-control"><span class="when-closed">展开时间线</span><span class="when-open">收起时间线</span></span>
+      </summary>
+      <div class="fold-body">
+    <div class="timeline">
+      <article class="event">
+        <div class="date">2025-05-16 · <code>ecc3daf</code></div>
+        <h3>Dolphin：文献还是流水线里的可选 RAG 前处理</h3>
+        <p><code>launch_dolphin.py --rag</code> 先运行 <code>collect_papers()</code>，把 Semantic Scholar 论文池写成 JSON，再整体塞进 idea generation prompt。另有逐 idea 的 Semantic Scholar novelty search。</p>
+        <span class="pill p-accent">单脚本</span><span class="pill p-blue">论文池 JSON</span><span class="pill p-amber">摘要级评分</span>
+      </article>
+      <article class="event">
+        <div class="date">2025-10-13 · <code>25fa46c</code> · InternAgent 1.0</div>
+        <h3>从一个 RAG 步骤拆成 Survey Agent + Scholar Agent</h3>
+        <p>Survey 在 idea generation 前做任务级调研；Scholar 在 reflection 后为每个 hypothesis 生成查询、检索并评估支持证据。文献由“共享 prompt 背景”变成工作流中的两类结构化输入。</p>
+        <span class="pill p-green">角色分工</span><span class="pill p-blue">多库检索</span><span class="pill p-accent">可选 PDF 深读</span>
+      </article>
+      <article class="event">
+        <div class="date">2026-02-10 · <code>8a1ee4f</code> · 1.5 Technical Report</div>
+        <h3>论文先提出 KG + Dynamic Structured Knowledge Flow，代码尚未跟进</h3>
+        <p>1.5 报告描述跨学科 KG、graph + dense retrieval、Flow Graph 和 procedural memory；但这个提交只更新 README / 报告，仓库中还没有 <code>DRAgent</code> 或 <code>dr_agents/</code>，运行代码仍基本是 1.0。</p>
+        <span class="pill p-amber">设计先于源码</span><span class="pill p-red">不可用当时代码验证论文实现</span>
+      </article>
+      <article class="event">
+        <div class="date">2026-05-07 · <code>e341f8f</code> · tag <code>v1.5.0</code></div>
+        <h3>真正接入 FlowSearch，同时升级而不是删除旧 Survey / Scholar</h3>
+        <p>新增 <code>DRAgent → Workflow → DAG agents</code> 全套代码；默认创建 session 时先生成背景，也新增独立 QA。旧 Survey / Scholar 改成新的 <code>LiteratureSearch</code>，加入 CrossRef、CORE、KG、WebSearch 和并发检索。</p>
+        <span class="pill p-green">实际代码发布</span><span class="pill p-blue">三路并存</span><span class="pill p-accent">图式 Deep Research</span>
+      </article>
+      <article class="event">
+        <div class="date">2026-06-10 · <code>4baa993</code> → <code>b8a9e81</code> · current main</div>
+        <h3>主框架加入 OpenRouter，Literature 主体未再改变</h3>
+        <p>OpenRouter 只接入 InternAgent 主模型工厂；FlowSearch 内部仍有自己的模型工厂和 OpenAI / o4-mini 硬编码。因此当前 Literature 架构实质上仍是 2026-05-07 的版本。</p>
+        <span class="pill p-amber">主框架更新</span><span class="pill p-red">DR 模型栈未统一</span>
+      </article>
+    </div>
+      </div>
+    </details>
+  </section>
+
+  <section id="stages" class="fold-section">
+    <details class="fold">
+      <summary>
+        <span class="fold-title">各阶段架构：同样叫“文献”，实际做的事不同</span>
+        <span class="fold-control"><span class="when-closed">展开阶段对照</span><span class="when-open">收起阶段对照</span></span>
+      </summary>
+      <div class="fold-body">
+
+    <h3>阶段 A · Dolphin：扁平论文池 + idea novelty gate</h3>
+    <div class="arch">
+      <div class="arch-row">
+        <div class="arch-box"><strong>任务主题</strong><code>--topic</code></div><div class="arch-arrow">→</div>
+        <div class="arch-box blue"><strong>collect_papers</strong>LLM 生成搜索表达式</div><div class="arch-arrow">→</div>
+        <div class="arch-box"><strong>Semantic Scholar</strong>Keyword / Similar / References</div><div class="arch-arrow">→</div>
+        <div class="arch-box amber"><strong>Paper bank JSON</strong>摘要 + 1–10 分</div><div class="arch-arrow">→</div>
+        <div class="arch-box green"><strong>Idea prompt</strong>整池作为 RAG context</div>
+      </div>
+      <div class="arch-down">↓</div>
+      <div class="arch-row">
+        <div class="arch-box"><strong>逐 idea 新颖性检查</strong>最多 10 轮查询 → LLM 给出 novel / not novel → 通过者进入实验</div>
+      </div>
+      <p class="caption">控制流仍由 <code>launch_dolphin.py</code> 固定编排；文献不是独立 Agent，也不产出综述报告。</p>
+    </div>
+    <div class="grid g3">
+      <div class="card"><h3>检索</h3><p>核心依赖 Semantic Scholar。查询可表达为 <code>KeywordQuery</code>、<code>PaperQuery</code>、<code>GetReferences</code>。</p></div>
+      <div class="card"><h3>筛选</h3><p>LLM 根据任务相关性、I/O 匹配、经验性和启发性打 1–10 分；按 paperId / 规范化标题 / 摘要去重。</p></div>
+      <div class="card"><h3>消费方式</h3><p>论文池作为 idea prompt 的上下文；之后另跑摘要级 novelty loop。没有证据对象或 citation lifecycle。</p></div>
+    </div>
+
+    <h3 style="margin-top:30px">阶段 B · InternAgent 1.0：Survey 与 Scholar 分工</h3>
+    <div class="lanes">
+      <div class="lane">
+        <div class="lane-title"><strong>Survey Agent</strong><span>任务级 · 生成 idea 前</span></div>
+        <div class="lane-body"><span class="node">任务描述 / domain</span><span class="arr">→</span><span class="node">迭代扩展 paper bank</span><span class="arr">→</span><span class="node">摘要打分</span><span class="arr">→</span><span class="node">Top 3 PDF 深读</span><span class="arr">→</span><span class="node">paper_lst 给 Generation</span></div>
+      </div>
+      <div class="lane">
+        <div class="lane-title"><strong>Scholar Agent</strong><span>假设级 · reflection 后</span></div>
+        <div class="lane-body"><span class="node">goal + hypothesis</span><span class="arr">→</span><span class="node">2–4 个查询</span><span class="arr">→</span><span class="node">多库检索 / DOI+标题去重</span><span class="arr">→</span><span class="node">0–1 相关性评估</span><span class="arr">→</span><span class="node">evidence + references 给 Evolution</span></div>
+      </div>
+    </div>
+    <h3 style="margin-top:30px">阶段 C · InternAgent 1.5：新增通用 Deep Research 图工作流</h3>
+    <p>1.5 把“先检索论文、再给 idea”扩展为“把任意研究问题拆成依赖图，并在图上调用论文库与 Web 工具”。但旧两条路径仍在，因而形成当前的三路结构。</p>
+      </div>
+    </details>
+  </section>
+
+  <section id="v1">
+    <h2>InternAgent 1.0：Literature 模块完整架构</h2>
+
+    <div class="lead">
+      <strong>直接答案：1.0 会调用 SurveyAgent，也会调用 ScholarAgent，但调用时点不同。</strong>
+      <code>SurveyAgent</code> 是初始 idea 生成前的可选步骤，通常只运行一次；
+      <code>ScholarAgent</code> 是固定状态机中的证据检索步骤，会在每轮 idea 反思后运行，并在方法反思后再次运行。
+      论文把二者笼统描述为 Survey Agent 的 Literature Review / Deep Research 两种能力，但代码已经把职责拆成了两个类。
+    </div>
+
+    <h3>一、按源码执行顺序看完整流程</h3>
+
+    <h4>阶段 A · 初始 idea 生成：Survey 只在这里出现</h4>
+    <div class="arch">
+      <div class="arch-row">
+        <div class="arch-box"><strong>① Research Task</strong>任务描述、领域、约束、baseline code</div><div class="arch-arrow">→</div>
+        <div class="arch-box amber"><strong>② 检查 <code>do_survey</code></strong>由 GenerationAgent 的配置决定</div>
+      </div>
+      <div class="arch-down">↓ true 时调用；false 时整步跳过</div>
+      <div class="arch-row">
+        <div class="arch-box blue"><strong>③ SurveyAgent（可选）</strong>围绕整个任务建立共享 <code>paper_lst</code></div><div class="arch-arrow">→</div>
+        <div class="arch-box green"><strong>④ GenerationAgent</strong>task + baseline + paper abstracts → 初始 ideas</div>
+      </div>
+      <p class="caption">Survey 不负责验证某个具体 idea；它只给首次 Generation 提供整个任务领域的背景论文。后续演化轮次不会重新回到 GENERATING，因此通常也不会再次运行 Survey。</p>
+    </div>
+
+    <h4 style="margin-top:22px">阶段 B · Idea 演化循环：这里实际调用 Scholar</h4>
+    <div class="arch">
+      <div class="arch-row">
+        <div class="arch-box"><strong>⑤ ReflectionAgent</strong>逐个批评当前 ideas</div><div class="arch-arrow">→</div>
+        <div class="arch-box amber"><strong>⑥ ScholarAgent</strong>逐个检索支持 / 反驳证据</div><div class="arch-arrow">→</div>
+        <div class="arch-box green"><strong>⑦ EvolutionAgent</strong>idea + critique + evidence → 新 ideas</div><div class="arch-arrow">→</div>
+        <div class="arch-box"><strong>⑧ RankingAgent</strong>评分并选择 Top ideas</div>
+      </div>
+      <div class="arch-down">↺ 未达到最大轮数：等待 / 读取反馈 → 回到 Reflection（不是回到 Generation）</div>
+      <p class="caption">源码状态是 <code>REFLECTING → EXTERNAL_DATA → EVOLVING → RANKING</code>。其中 <code>EXTERNAL_DATA</code> 的日志写着 “Survey Agent”，但实际执行的是 <code>self._get_agent("scholar")</code>；这是最容易造成误读的地方。</p>
+    </div>
+
+    <h4 style="margin-top:22px">阶段 C · Top ideas 方法化：Scholar 再以“方法证据”身份出现</h4>
+    <div class="arch">
+      <div class="arch-row">
+        <div class="arch-box"><strong>⑨ 达到最大演化轮数</strong>保留 Top ideas</div><div class="arch-arrow">→</div>
+        <div class="arch-box amber"><strong>⑩ ScholarAgent（按需）</strong>idea 若没有 evidence，则先补证据</div><div class="arch-arrow">→</div>
+        <div class="arch-box blue"><strong>⑪ MethodDevelopmentAgent</strong>idea + 文献 → 具体方法</div>
+      </div>
+      <div class="arch-down">↓ 方法生成后，固定进入一次方法反思与文献检索</div>
+      <div class="arch-row">
+        <div class="arch-box"><strong>⑫ ReflectionAgent</strong>批评 method details</div><div class="arch-arrow">→</div>
+        <div class="arch-box amber"><strong>⑬ ScholarAgent（必经）</strong>围绕 method critiques 再检索，写入 <code>refine_evidence</code></div><div class="arch-arrow">→</div>
+        <div class="arch-box green"><strong>⑭ RefinementAgent</strong>方法 + 新证据 → 最终可执行方法</div>
+      </div>
+      <p class="caption">此时 <code>session.method_phase = true</code>。同一个 EXTERNAL_DATA 状态不再把结果写入 <code>Idea.evidence</code>，而是写入 <code>Idea.refine_evidence</code>，随后转到 REFINING，而不是 EVOLVING。</p>
+    </div>
+
+    <div class="table-wrap"><table>
+      <thead><tr><th>Agent</th><th>是否一定调用</th><th>调用次数</th><th>输入粒度</th><th>输出给谁</th></tr></thead>
+      <tbody>
+        <tr><td><code>SurveyAgent</code></td><td>否，受 <code>do_survey</code> 控制</td><td>通常 0 或 1 次</td><td>整个 research task</td><td><code>paper_lst → GenerationAgent</code></td></tr>
+        <tr><td><code>ScholarAgent</code>（idea 阶段）</td><td>是，EXTERNAL_DATA 必经</td><td>每轮一次；每个 idea 各执行一份检索</td><td>单个 hypothesis</td><td><code>evidence / references → EvolutionAgent</code></td></tr>
+        <tr><td><code>ScholarAgent</code>（方法初始化前）</td><td>按需，仅为没有 evidence 的 Top idea 补齐</td><td>0 或若干个 idea</td><td>Top hypothesis</td><td><code>paper_context → MethodDevelopmentAgent</code></td></tr>
+        <tr><td><code>ScholarAgent</code>（方法修订）</td><td>是，方法 Reflection 后的 EXTERNAL_DATA 必经</td><td>每个 Top method 一次</td><td>method details + critiques</td><td><code>refine_evidence → RefinementAgent</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="finding"><p><strong>把整条线压缩成一句话：</strong><code>Survey</code> 负责“生成想法前先了解这个领域”；<code>Scholar</code> 负责“想法生成后，为每个想法和方法查找能支持、反驳或改进它的论文”。流程由 OrchestrationAgent 的固定状态机控制，不是两个 Literature Agent 自己决定何时运行。</p></div>
+
+    <h3 style="margin-top:30px">二、论文的“两种模式”与代码如何对应</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>1.0 论文中的说法</th><th>论文描述</th><th>代码中的主要承载者</th><th>准确理解</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Literature Review mode</strong></td>
+          <td>把任务拆成关键词组合，跨学术库广泛搜索，根据摘要与任务的相关性筛选论文。</td>
+          <td><code>SurveyAgent</code></td>
+          <td>任务级广搜、扩展 paper bank、摘要评分，为 Generation 提供领域背景。</td>
+        </tr>
+        <tr>
+          <td><strong>Deep Research mode</strong></td>
+          <td>精读相关论文全文，并围绕生成 idea 中的技术术语继续搜索与收窄研究方向。</td>
+          <td><code>SurveyAgent</code> 的 Top-3 PDF 深读<br>＋ <code>ScholarAgent</code> 的 hypothesis / method 检索</td>
+          <td>代码没有一个明确的 <code>mode=deep_research</code> 开关；论文所说的第二模式被分散在两个类和两个工作流阶段中。</td>
+        </tr>
+      </tbody>
+    </table></div>
+    <div class="finding"><p><strong>所以答案不是“1.0 只有 SurveyAgent”：</strong>论文层面可以这样概括；实现层面则必须看到 Survey 与 Scholar 的双层结构。尤其是“围绕已生成 idea 查证据”这部分，真正执行的是 <code>ScholarAgent</code>，尽管日志和论文有时仍把整个阶段笼统称为 Survey。</p></div>
+
+    <h3 style="margin-top:30px">三、SurveyAgent：先为整个任务准备一份论文清单</h3>
+    <div class="finding"><p><strong>Survey 回答的问题是：</strong>“在生成任何 idea 之前，这个任务周围有哪些值得参考的方法论文？”它的输入是整个 research task，输出是一个 <code>paper_lst</code> 列表；它不针对某个具体 hypothesis，也不写综述报告。</p></div>
+
+    <div class="grid g3">
+      <div class="card"><div class="kicker">Input</div><h3>一个任务</h3><p><code>description</code>、<code>domain</code>、约束，以及任务的输入 / 输出形态。</p></div>
+      <div class="card"><div class="kicker">Work</div><h3>找一批候选论文</h3><p>多轮生成查询、跨三个论文库检索、按标题去重、基于摘要给相关性分数。</p></div>
+      <div class="card"><div class="kicker">Output</div><h3>一份共享阅读列表</h3><p>每篇包含标题、年份、摘要、来源、分数等字段，整体交给 GenerationAgent。</p></div>
+    </div>
+
+    <div class="steps">
+      <div class="step"><strong>先理解任务边界。</strong>LLM 从任务描述中提炼研究领域，以及任务的 input / output。这样可以避免只搜到“方法名字相似、实际任务不同”的论文。</div>
+      <div class="step"><strong>发起第一轮宽泛搜索。</strong>LLM 生成一个 <code>KeywordQuery("...")</code>；<code>PaperSurvey</code> 把它同时送到 PubMed、arXiv 和 Semantic Scholar，每个来源最多取一批结果。</div>
+      <div class="step"><strong>扩展 paper bank。</strong>只要论文数量不足且没有达到 10 轮上限，LLM 就参考已找到的论文与历史 query，再选择关键词搜索、相似论文搜索或沿参考文献扩展。</div>
+      <div class="step"><strong>合并与去重。</strong>三个来源的结果被拍平成一个列表；1.0 Survey 主要按完全相同的标题去重，然后继续加入 paper bank。</div>
+      <div class="step"><strong>收集结束后统一评分。</strong>LLM 每次阅读 10 篇论文的标题与摘要，为每篇打 1–10 分。判断依据是任务相关性、input / output 是否匹配、是否有实证实验，以及是否可能启发新 idea。</div>
+      <div class="step"><strong>尝试精读 Top 3。</strong>从高分论文中选择最多 3 篇具有可访问 PDF 的论文，下载全文并抽取 <code>background / contributions / methods / challenges</code>；没有可用 PDF 就无法深读。</div>
+      <div class="step"><strong>返回整个 paper list。</strong><code>execute()</code> 不返回摘要报告，而是直接返回论文对象列表；OrchestrationAgent 把它放进 <code>paper_lst</code>，再交给 GenerationAgent。</div>
+    </div>
+
+    <div class="card">
+      <h3>一个简化例子</h3>
+      <p>假设任务是“提高医学图像分割模型在小目标上的性能”，Survey 最终交出的不是一段结论，而是类似下面的列表：</p>
+      <pre>[
+  {
+    "title": "Small Lesion Segmentation with ...",
+    "year": 2024,
+    "abstract": "We propose ...",
+    "source": "arXiv",
+    "score": 9,
+    "is_deep_read": true,
+    "methods": "从 PDF 抽取的方法摘要"
+  },
+  ...
+]</pre>
+    </div>
+
+    <div class="warning"><p><strong>这些字段并没有被完整使用：</strong>GenerationAgent 最后只把每篇论文的 <code>title + year + abstract</code> 拼进生成 prompt。Survey 从 PDF 抽取出的 <code>methods / contributions / challenges</code> 虽然保存在对象中，却没有进入 1.0 的 Generation prompt。因此 Survey 的实际作用更接近“为生成 idea 提供一批摘要材料”。</p></div>
+
+    <h3 style="margin-top:30px">四、ScholarAgent：针对一个 idea 判断哪些论文与它有关</h3>
+    <div class="finding"><p><strong>Scholar 回答的问题是：</strong>“对于这个已经生成的 hypothesis，哪些论文可能支持、反驳或帮助改进它？”它每次只处理一个 idea。所谓“变成证据”，具体是让 LLM 根据论文摘要给出相关性分数和支持关系，并不是从全文中抽取经过验证的证据句。</p></div>
+
+    <div class="grid g3">
+      <div class="card"><div class="kicker">Input</div><h3>一个具体 hypothesis</h3><p>Research goal + 当前 idea；方法阶段还会加入 method details 与 method critiques。</p></div>
+      <div class="card"><div class="kicker">Work</div><h3>围绕这个 idea 查证</h3><p>生成多条针对性 query，检索论文，再让 LLM 比较每篇摘要与 hypothesis。</p></div>
+      <div class="card"><div class="kicker">Output</div><h3>带判断的论文记录</h3><p><code>evidence</code>、<code>references</code> 和 <code>relevance_summary</code>，供后续 idea / method 修改。</p></div>
+    </div>
+
+    <div class="steps">
+      <div class="step"><strong>围绕 hypothesis 生成 query。</strong>普通阶段根据 goal + hypothesis 生成查询；方法阶段则重点读取 method details 和严重的 method critiques，查找能够解决具体技术问题的论文。</div>
+      <div class="step"><strong>查询数量由 search depth 控制。</strong>shallow 最多 2 条，moderate 最多 4 条，deep 最多 6 条。LLM 可能返回更少；如果完全失败，就直接用 hypothesis 文本搜索。</div>
+      <div class="step"><strong>逐条 query 检索三个来源。</strong>每条 query 都交给 <code>LiteratureSearch</code>；PubMed、arXiv、Semantic Scholar 三个来源在该 query 内并发搜索，不同 query 之间则按顺序处理。</div>
+      <div class="step"><strong>先去重并截断，再判断相关性。</strong>结果按 DOI 或小写标题去重，然后直接保留前 <code>max_papers</code> 篇。也就是说，截断发生在 LLM 相关性排序之前。</div>
+      <div class="step"><strong>LLM 阅读标题和摘要进行判断。</strong>对每篇论文输出 <code>relevance_score ∈ [0,1]</code>、简短理由，以及 <code>supports / contradicts / neutral / unclear</code> 四种关系之一。</div>
+      <div class="step"><strong>超过阈值才成为 evidence。</strong>默认要求 <code>relevance_score ≥ 0.6</code>。合格论文被转换成结构化 evidence；所有完成评估的论文则生成 APA reference，所以 references 可能多于 evidence。</div>
+      <div class="step"><strong>把结果交给后续 Agent。</strong>idea 阶段写入 <code>Idea.evidence</code>，EvolutionAgent 用它修改 idea；方法阶段写入 <code>Idea.refine_evidence</code>，RefinementAgent 用它修改方法。</div>
+    </div>
+
+    <div class="card">
+      <h3>“论文变成 evidence”实际发生了什么</h3>
+      <p>假设当前 idea 是：“在分割模型中加入多尺度边界注意力，可以改善小病灶识别。”Scholar 找到一篇论文后，LLM 可能产生：</p>
+      <pre>{
+  "title": "Multi-scale Boundary Attention for Lesion Segmentation",
+  "content": "论文摘要原文 ...",
+  "relevance_score": 0.86,
+  "relevance": "论文使用相似的边界注意力，并报告小病灶性能提升。[Supports]",
+  "url": "...",
+  "doi": "..."
+}</pre>
+      <p style="margin-top:12px">这里的 <code>content</code> 通常就是摘要；<code>[Supports]</code> 是 LLM 的分类结果，而不是系统执行实验后得到的验证结论。</p>
+    </div>
+
+    <div class="table-wrap"><table>
+      <thead><tr><th>Scholar 返回什么</th><th>OrchestrationAgent 怎么处理</th><th>最终是否被使用</th></tr></thead>
+      <tbody>
+        <tr><td><code>evidence</code>：超过阈值的论文及相关性判断</td><td>普通阶段保存为 <code>Idea.evidence</code>；方法阶段保存为 <code>Idea.refine_evidence</code></td><td>是，分别进入 EvolutionAgent 或 RefinementAgent</td></tr>
+        <tr><td><code>references</code>：已评估论文的元数据与 APA citation</td><td>普通阶段保存为 <code>Idea.references</code></td><td>保存出处，但没有绑定到 idea 中的某一句 claim</td></tr>
+        <tr><td><code>relevance_summary</code>：证据整体支持、反驳或混合的简短总结</td><td>Scholar 返回了该字段，但 OrchestrationAgent 没有写入 Idea</td><td>主流程中基本丢失</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note"><p><strong>最简单的区分：</strong>Survey 输出“关于整个任务，建议先看哪些论文”；Scholar 输出“关于这个具体 idea，这篇论文与它有多相关，以及看起来是支持还是反驳”。两者使用独立检索结果，没有共享 paper bank 或统一证据库。</p></div>
+
+    <h3 style="margin-top:30px">五、配置、并发与实际运行语义</h3>
+    <div class="grid g2">
+      <div class="card">
+        <h3>论文实验设置</h3>
+        <p>论文称 Survey 搜索并审阅 <strong>50 篇</strong>论文，Generation 生成 15 个 ideas，每个 idea 演化出 3 个变体，最多演化 4 轮并保留 Top 5。仓库中的 <code>config/config.yaml</code> 与这些数字一致。</p>
+      </div>
+      <div class="card">
+        <h3>启动器默认设置</h3>
+        <p><code>launch_discovery.py</code> 默认加载 <code>config/default_config.yaml</code>，其中 <code>do_survey: false</code>；如果用户不换成完整配置，任务级 Survey 不会运行。不过 Scholar 所在的 <code>EXTERNAL_DATA</code> 阶段仍是状态机必经步骤。</p>
+      </div>
+      <div class="card">
+        <h3>并发层级</h3>
+        <p>不同 ideas 的 Reflection 与 Scholar 可并行，Scholar 受全局 semaphore 限制；单个 Scholar 内部按 query 顺序执行，而同一 query 的 PubMed / arXiv / Semantic Scholar 请求并发。</p>
+      </div>
+      <div class="card">
+        <h3>数据没有统一证据库</h3>
+        <p>Survey 的 paper bank 与 Scholar 的 evidence 分别创建、分别去重；没有共享缓存、统一 paper ID、跨阶段引用图或 claim-level provenance。</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:30px">六、1.0 Literature 模块的能力边界</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>已经实现</th><th>尚未实现</th></tr></thead>
+      <tbody>
+        <tr><td>任务级广搜与假设级查证据的角色分工</td><td>根据研究问题动态生成、调整任务 DAG</td></tr>
+        <tr><td>PubMed、arXiv、Semantic Scholar 多源检索</td><td>跨学科知识图谱、图搜索与 dense retrieval 融合</td></tr>
+        <tr><td>摘要相关性评分、支持 / 反驳判断、Top-3 PDF 抽取</td><td>句子或 claim 与原文证据片段的精确绑定和自动事实核验</td></tr>
+        <tr><td>文献证据进入 idea evolution 与 method refinement</td><td>独立 QA、长篇 Deep Research 报告和统一引用管理</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note"><p><strong>一句话评价：</strong>1.0 已经不是 Dolphin 那种“一次检索、整池塞进 prompt”的简单 RAG，而是一个嵌入科研状态机的双层 Literature 子系统；但它仍属于<strong>固定流程中的检索与证据增强</strong>，还不是 1.5 论文所描述的图式 Deep Research。</p></div>
+  </section>
+
+  <section id="current" class="focus-section">
+    <h2>当前版本：三套 Literature 机制怎样进入主流程</h2>
+    <div class="lead">
+      <strong>这不是从左到右依次执行的“三步”，也不存在三路共同汇合的节点。</strong>
+      当前源码同时保留 FlowSearch、SurveyAgent 和 ScholarAgent：
+      前两者在 idea 生成前提供两种不同的背景材料；ScholarAgent 则在 ideas 已经产生并完成 Reflection 后，为每个 idea 检索证据。
+    </div>
+
+    <h3>阶段一 · idea 生成前：FlowSearch 与 Survey 分别准备输入</h3>
+    <div class="lanes">
+      <div class="lane">
+        <div class="lane-title"><strong>FlowSearch 背景</strong><span>创建 session 时</span></div>
+        <div class="lane-body">
+          <span class="node">Research Task</span><span class="arr">→</span>
+          <span class="node"><code>create_session()</code><br>Deep Research enabled</span><span class="arr">→</span>
+          <span class="node"><code>DRAgent / FlowSearch</code></span><span class="arr">→</span>
+          <span class="node"><code>Task.background</code><br>Markdown 背景报告</span>
+        </div>
+      </div>
+      <div class="lane">
+        <div class="lane-title"><strong>Survey 论文清单</strong><span>进入 GENERATING 时</span></div>
+        <div class="lane-body">
+          <span class="node">Research Task</span><span class="arr">→</span>
+          <span class="node"><code>do_survey = true</code></span><span class="arr">→</span>
+          <span class="node"><code>SurveyAgent</code></span><span class="arr">→</span>
+          <span class="node"><code>context.paper_lst</code><br>结构化论文列表</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch">
+      <div class="arch-row">
+        <div class="arch-box blue"><strong><code>Task.background</code></strong>一份综合调研形成的非结构化背景文本</div>
+        <div class="arch-box green"><strong><code>context.paper_lst</code></strong>一批带元数据和分数的结构化论文</div>
+      </div>
+      <div class="arch-down">↓ 两种材料分别进入同一次 Generation</div>
+      <div class="arch-row">
+        <div class="arch-box amber"><strong>GenerationAgent</strong>task description + background + paper list + baseline code → 初始 ideas</div>
+      </div>
+      <p class="caption">FlowSearch 与 Survey 不是上下游关系：Survey 不读取 FlowSearch 报告，FlowSearch 也不读取 Survey paper bank。它们只是各自产生一种 Generation 上下文。</p>
+    </div>
+
+    <div class="note"><p><strong>独立 QA 是另一条入口：</strong><code>launch_qa.py → DRAgent / FlowSearch → 答案或报告</code>，它直接把结果返回给用户，不进入 Generation、Scholar 或实验闭环。</p></div>
+
+    <h3 style="margin-top:30px">阶段二 · ideas 生成后：Scholar 才开始工作</h3>
+    <div class="arch">
+      <div class="arch-row">
+        <div class="arch-box green"><strong>Initial / Evolved Ideas</strong>已经存在的候选假设</div><div class="arch-arrow">→</div>
+        <div class="arch-box"><strong>ReflectionAgent</strong>产生 idea critiques 或 method critiques</div><div class="arch-arrow">→</div>
+        <div class="arch-box amber"><strong>EXTERNAL_DATA</strong>为每个 idea 调用 ScholarAgent</div>
+      </div>
+      <div class="arch-down">↓ Scholar 根据当前阶段写入不同字段</div>
+      <div class="arch-row">
+        <div class="arch-box green"><strong>idea 阶段</strong><code>Idea.evidence + Idea.references</code><br>→ EvolutionAgent</div>
+        <div class="arch-box blue"><strong>方法阶段</strong><code>Idea.refine_evidence</code><br>→ RefinementAgent</div>
+      </div>
+      <p class="caption">Scholar 的输入是具体 hypothesis / method critique，而不是最初的整个任务；它发生在 Generation 之后，不能与 FlowSearch、Survey 画成三条同时抵达同一终点的平行线。</p>
+    </div>
+
+    <div class="table-wrap"><table>
+      <thead><tr><th>机制</th><th>准确触发点</th><th>输入粒度</th><th>输出保存在哪里</th><th>谁真正使用</th></tr></thead>
+      <tbody>
+        <tr><td>FlowSearch DR</td><td>Discovery 创建 session 时，且 DR enabled；或者从 <code>launch_qa.py</code> 独立调用</td><td>完整研究问题</td><td><code>Task.background</code>；QA 模式直接返回用户</td><td>GenerationAgent；或 QA 用户</td></tr>
+        <tr><td>SurveyAgent</td><td>进入初始 <code>GENERATING</code> 时，且 <code>do_survey = true</code></td><td>整个 task / domain</td><td>本次调用上下文的 <code>paper_lst</code></td><td>GenerationAgent</td></tr>
+        <tr><td>ScholarAgent</td><td>每次 Reflection 后进入 <code>EXTERNAL_DATA</code>；Method Development 还会为缺证据的 idea 按需补查</td><td>单个 hypothesis；方法阶段包含 method critiques</td><td><code>Idea.evidence / references</code> 或 <code>Idea.refine_evidence</code></td><td>EvolutionAgent、MethodDevelopmentAgent、RefinementAgent</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="warning"><p><strong>它们没有统一成一个 Literature 后端：</strong>FlowSearch 使用自己的 DAG、工具与 URL 引用管理；Survey / Scholar 使用主框架的 <code>LiteratureSearch</code>。即使 Survey 与 Scholar 使用同一个工具类，它们也没有共享 paper registry、检索缓存或统一 evidence store。当前配置中的 <code>web_search</code> 只有 Survey 做了专门适配；Scholar 传入的该 source 不会被 <code>multi_source_search()</code> 执行。</p></div>
+  </section>
+
+  <section id="flowsearch" class="focus-section">
+    <h2>当前 FlowSearch：深入到控制流与技术实现</h2>
+
+    <h3>一、分层结构</h3>
+    <div class="arch">
+      <div class="arch-row"><div class="arch-box blue"><strong>DRAgent</strong>InternAgent 适配层：选择 qa / simple / complex 配置</div></div>
+      <div class="arch-down">↓ 同步调用</div>
+      <div class="arch-row"><div class="arch-box"><strong>Workflow</strong>组装 Planner、Execution、Coordinator、Synthesizer</div></div>
+      <div class="arch-down">↓</div>
+      <div class="arch-row">
+        <div class="arch-box"><strong>GlobalPlannerAgent</strong>问题 → DAG</div><div class="arch-arrow">→</div>
+        <div class="arch-box green"><strong>DirectedGraph</strong>node / edge / status</div><div class="arch-arrow">→</div>
+        <div class="arch-box"><strong>GlobalExecutionAgent</strong>按拓扑层并行执行</div>
+      </div>
+      <div class="arch-down">↓ 每个 ready node 新建一个 TaskWorkflow</div>
+      <div class="arch-row">
+        <div class="arch-box amber"><strong>PlannerAgent</strong>节点 → 2 / 3 个 XML 子任务</div><div class="arch-arrow">→</div>
+        <div class="arch-box amber"><strong>ExecutionAgent</strong>子任务顺序执行；LLM 自选工具</div><div class="arch-arrow">→</div>
+        <div class="arch-box amber"><strong>Node Summarizer</strong>轨迹 → final_answer</div>
+      </div>
+      <div class="arch-down">↓ complex 可改图；answer 节点 ready 时结束</div>
+      <div class="arch-row">
+        <div class="arch-box blue"><strong>CoordinatorAgent</strong>add / remove / modify node &amp; edge</div><div class="arch-arrow">→</div>
+        <div class="arch-box green"><strong>SynthesizerAgent</strong>QA 或 outline → sections → polish → refs</div>
+      </div>
+      <p class="caption">这是“两层规划”：Global Planner 决定研究问题结构，Task Planner 决定每个节点内部如何检索。</p>
+    </div>
+
+    <h3>二、一次调用按什么顺序运行</h3>
+    <div class="steps">
+      <div class="step"><strong>适配与配置。</strong><code>DRAgent</code> 根据 <code>mode</code> 读取 <code>config_qa.yaml</code>、<code>config_simple.yaml</code> 或 <code>config_complex.yaml</code>，动态把 <code>dr_agents/</code> 插入 <code>sys.path</code>，再创建独立 <code>Workflow</code>。</div>
+      <div class="step"><strong>构造全局 DAG。</strong>从仅含 <code>task</code> answer node 的初始图开始，Global Planner 最多迭代 2 次，让 LLM 输出 nodes / edges。节点只有 <code>task</code>、<code>type ∈ {search, solve, answer}</code>；边有 <code>relationship</code>。代码拒绝有环图。</div>
+      <div class="step"><strong>执行一个拓扑层。</strong><code>get_ready_nodes()</code> 找到全部前驱已完成的节点；Global Execution 用最多 10 个线程并行执行这一层。层与层之间仍是串行的。</div>
+      <div class="step"><strong>节点内再规划。</strong>每个节点有独立 <code>TaskWorkflow</code>。Planner 读取节点任务、前置节点摘要、原始 query 和工具说明，生成 XML 子任务；simple / QA 最多 2 个，complex 最多 3 个。</div>
+      <div class="step"><strong>子任务内 tool-calling。</strong>子任务按顺序执行。每轮模型可一次发出多个 tool calls；结果作为 <code>tool</code> message 回填，再让模型决定是否继续。配置的 <code>max_tool_calls: 5</code> 实际限制的是“tool-calling 轮数”，不是精确的工具调用总数。</div>
+      <div class="step"><strong>三次压缩信息。</strong>原始工具结果先被子任务 summarizer 压缩；多个子任务再被 node summarizer 压缩；最终 Synthesizer 又按大纲重写。报告可读性提高，但原始证据定位信息会逐级损失。</div>
+      <div class="step"><strong>可选动态改图。</strong>complex 模式在每层执行后让 Coordinator 读整张图，通过 JSON 操作新增、删除或修改节点 / 边。它是 LLM 自评的缺口修补，不使用 gold paper set、recall 或 evidence coverage 阈值。</div>
+      <div class="step"><strong>合成答案。</strong>当 <code>answer</code> 节点变为 ready 时，不再把它当普通检索节点执行，而是交给 Synthesizer。QA 单 prompt 输出；report 先生成 outline，再用 10 线程并行写 section，complex 还逐节顺序润色。</div>
+    </div>
+
+    <h3>三、状态、并发与数据传播</h3>
+    <div class="grid g3">
+      <div class="card"><div class="kicker">Graph state</div><h3>内存中的 DirectedGraph</h3><p>节点保存 attributes、<code>PENDING / EXECUTED</code>、入边和出边；执行结果另存在 <code>execution_results</code>。不是持久化知识图谱。</p></div>
+      <div class="card"><div class="kicker">Parallelism</div><h3>节点并行，节点内串行</h3><p>同一拓扑层最多 10 线程；一个节点的多个子任务依次运行；一轮内模型可并行“提出”多个工具调用，但代码逐个执行。</p></div>
+      <div class="card"><div class="kicker">Context flow</div><h3>只传前驱摘要</h3><p>后继节点通过 <code>knowledge_info</code> 获得直接前驱的 task、final_answer、success、reasoning 和边关系，不直接获得完整原始 trace。</p></div>
+      <div class="card"><div class="kicker">Persistence</div><h3>日志 / 可选 synthesizer input</h3><p>可保存 execution trace 和最终合成输入；核心图默认仍是一次调用内状态，不会自动进入 InternAgent long memory。</p></div>
+      <div class="card"><div class="kicker">Async boundary</div><h3>外异步，内同步</h3><p><code>DRAgent.execute()</code> 是 <code>async</code>，但直接调用同步 <code>workflow.execute()</code>，因此会阻塞所在 event loop，直到整次 DR 完成。</p></div>
+      <div class="card"><div class="kicker">Failure policy</div><h3>失败转成普通字符串</h3><p>初始化或执行失败被包装成“Please provide background context manually”，不向上抛错。调用方可能把降级文本当成成功的背景。</p></div>
+    </div>
+
+    <h3>四、三种模式真正差在哪</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>模式</th><th>全局最大节点</th><th>每节点子任务</th><th>执行层上限</th><th>Coordinator</th><th>合成</th></tr></thead>
+      <tbody>
+        <tr><td>QA</td><td>7</td><td>2</td><td>5</td><td class="no">关闭</td><td>单次 prompt 直接回答；不追加 References</td></tr>
+        <tr><td>simple</td><td>5</td><td>2</td><td>5</td><td class="no">关闭</td><td>大纲 + 分节并行；不润色。当前 session background 默认模式</td></tr>
+        <tr><td>complex</td><td>10</td><td>3</td><td>10</td><td class="yes">开启</td><td>大纲 + 分节并行 + 顺序润色</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>五、默认检索工具和“读到什么”</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>配置类别</th><th>实际函数</th><th>主要返回</th><th>默认条件</th><th>边界</th></tr></thead>
+      <tbody>
+        <tr><td><code>arxiv_search</code></td><td><code>search_arxiv</code></td><td>标题、作者、摘要、发布日期、abs / PDF URL</td><td class="yes">无需 key</td><td>返回 PDF URL 不等于下载或阅读 PDF。</td></tr>
+        <tr><td><code>openalex_search</code></td><td><code>search_openalex</code></td><td>标题、作者、重建摘要、引用数、OA URL</td><td class="yes">无需 key</td><td>默认 email 是占位值；无跨源分数标定。</td></tr>
+        <tr><td><code>crossref_search</code></td><td><code>search_crossref</code></td><td>DOI 元数据、可选摘要、URL</td><td class="yes">无需 key</td><td>大量记录没有摘要；CrossRef 不是全文库。</td></tr>
+        <tr><td><code>volc_search</code></td><td><code>search_volc</code></td><td>Web 结果摘要 / 内容</td><td class="no">需 Volc key</td><td>无 key 时工具返回 error 数据，工作流仍可能继续。</td></tr>
+        <tr><td><code>url_processor</code></td><td><code>extract_and_answer_query_from_url</code></td><td>针对某个 URL 和问题的 LLM 答案</td><td class="partial">需可用提取后端</td><td>截到 64k 字符，再由写死的 <code>gpt-4o-mini</code> 回答；不是 passage index。</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note"><p><strong>默认不是固定的多库 ensemble。</strong>这五个工具同时暴露给 ExecutionAgent，由 LLM 自己决定选哪个、调用几次、是否继续读 URL。系统不会强制每个 query 都查 arXiv + OpenAlex + CrossRef，也没有统一 reranker。</p></div>
+
+    <h3>六、为什么目录很大，但不要把它等同于运行架构</h3>
+    <div class="grid g2">
+      <div class="card"><h3>项目自己的 DR 核心</h3><p>排除 <code>camel/</code> 后约 33 个 Python 文件、1.49 万行，包含 agents、workflow、graph、prompts、models、tools 和引用管理。</p></div>
+      <div class="card"><h3>内嵌的 CAMEL</h3><p>约 372 个 Python 文件、7.25 万行，主要给 <code>FunctionTool</code>、模型和多媒体 toolkit 提供依赖。其 BM25 / vector / hybrid retriever 等文件存在于仓库，<strong>不表示默认 FlowSearch 主链实际调用了它们</strong>。</p></div>
+    </div>
+  </section>
+
+  <section id="legacy">
+    <h2>当前 Survey / Scholar：旧架构仍在，而且也被升级了</h2>
+
+    <h3>SurveyAgent：任务级论文池</h3>
+    <div class="arch">
+      <div class="arch-row">
+        <div class="arch-box"><strong>Task / Domain</strong>输入输出属性抽取</div><div class="arch-arrow">→</div>
+        <div class="arch-box blue"><strong>首个查询</strong>LLM 输出 KeywordQuery</div><div class="arch-arrow">→</div>
+        <div class="arch-box"><strong>arXiv + CrossRef</strong>首批元数据</div><div class="arch-arrow">→</div>
+        <div class="arch-box amber"><strong>再生成至多 10 个查询</strong>生成串行，执行并行</div>
+      </div>
+      <div class="arch-down">↓</div>
+      <div class="arch-row">
+        <div class="arch-box"><strong>按标题去重</strong>合并 paper bank</div><div class="arch-arrow">→</div>
+        <div class="arch-box blue"><strong>10 篇一批并发打分</strong>1–10 分</div><div class="arch-arrow">→</div>
+        <div class="arch-box green"><strong>Top 3 deep read</strong>已有 content 或下载 PDF</div><div class="arch-arrow">→</div>
+        <div class="arch-box"><strong>papers</strong>给 GenerationAgent</div>
+      </div>
+    </div>
+    <div class="grid g3">
+      <div class="card"><h3>相对 1.0 的升级</h3><ul><li><code>PaperSurvey</code> 换成统一 <code>LiteratureSearch</code></li><li>搜索与评分批次并发</li><li>区分 academic papers 与 Web results</li><li>支持 KG 返回的全文 content</li></ul></div>
+      <div class="card"><h3>默认行为</h3><ul><li><code>do_survey: true</code></li><li><code>max_papers: 50</code></li><li>academic：arXiv + CrossRef</li><li>Web：Serper，第一次执行时运行</li><li>真正深读仍硬编码为 3 篇</li></ul></div>
+      <div class="card"><h3>输出语义</h3><p>每篇可含 title、authors、abstract/content、DOI、URL、score、background、contributions、methods、challenges、<code>is_deep_read</code>。它是 idea context，不是带引用的综述正文。</p></div>
+    </div>
+
+    <h3 style="margin-top:30px">ScholarAgent：假设级证据</h3>
+    <div class="arch">
+      <div class="arch-row">
+        <div class="arch-box"><strong>Goal + Hypothesis</strong>method 阶段还带 critiques</div><div class="arch-arrow">→</div>
+        <div class="arch-box blue"><strong>Query generator</strong>moderate 默认 2–4 个</div><div class="arch-arrow">→</div>
+        <div class="arch-box"><strong>并发多查询</strong>每查询内并行多源</div><div class="arch-arrow">→</div>
+        <div class="arch-box amber"><strong>DOI / 标题去重</strong>先截 max_papers</div>
+      </div>
+      <div class="arch-down">↓</div>
+      <div class="arch-row">
+        <div class="arch-box blue"><strong>LLM relevance</strong>0–1 + support / contradict</div><div class="arch-arrow">→</div>
+        <div class="arch-box green"><strong>threshold ≥ 0.6</strong>形成 evidence</div><div class="arch-arrow">→</div>
+        <div class="arch-box"><strong>evidence + references</strong>写入 Idea</div><div class="arch-arrow">→</div>
+        <div class="arch-box"><strong>Evolution / Method</strong>作为后续上下文</div>
+      </div>
+    </div>
+    <div class="note"><p><strong>Scholar 比 FlowSearch 更接近“论文证据模块”：</strong>它明确保存 DOI、APA citation、relevance score 和 supports / contradicts 判断；但这些判断仍来自 LLM 阅读摘要。当前默认 <code>deep_read: false</code>，因此其 PDF 方法抽取代码通常不会触发。</p></div>
+
+    <h3 style="margin-top:30px">两套检索栈为什么值得特别注意</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>维度</th><th>FlowSearch 栈</th><th>Survey / Scholar 栈</th></tr></thead>
+      <tbody>
+        <tr><td>入口</td><td><code>dr_agents/tools/tool_integration.py</code></td><td><code>mas/tools/literature_search.py</code> + <code>web_search.py</code></td></tr>
+        <tr><td>论文源</td><td>arXiv、OpenAlex、CrossRef</td><td>arXiv、Semantic Scholar、CrossRef、CORE、可选 KG</td></tr>
+        <tr><td>选择机制</td><td>ExecutionAgent 让 LLM 自选工具</td><td>代码按配置强制 fan-out 到各 source</td></tr>
+        <tr><td>论文对象</td><td>工具返回 dict，进入消息 trace</td><td><code>PaperMetadata</code>，带 DOI、authors、abstract/content、citation</td></tr>
+        <tr><td>去重</td><td>引用层只按 URL</td><td>Survey 按标题；Scholar 按 DOI 或小写标题</td></tr>
+        <tr><td>最终用途</td><td>非结构化报告 / QA</td><td>paper bank / hypothesis evidence</td></tr>
+        <tr><td>共享状态</td><td colspan="2" class="no">没有统一 paper registry、统一 cache、统一 evidence store 或互相回写</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="evidence">
+    <h2>文献如何变成“证据”与“引用”</h2>
+
+    <h3>FlowSearch 的 citation lifecycle</h3>
+    <div class="steps">
+      <div class="step"><strong>搜索结果返回。</strong>ExecutionAgent 只对指定搜索函数提取 URL；arXiv / OpenAlex / CrossRef 标为 paper，Web 标为 webpage。</div>
+      <div class="step"><strong>立即分配数字 tag。</strong><code>ReferenceManager</code> 按 URL 首次出现顺序生成 <code>1, 2, 3…</code>，并把 tag 写回工具结果。去重键只有 URL。</div>
+      <div class="step"><strong>LLM 决定是否引用。</strong>summary prompts 要求把工具结果中的 tag 写成 <code>[[n]]</code>。代码没有自动把 claim 对齐到 source，是否保留 tag 取决于多轮 LLM 重写。</div>
+      <div class="step"><strong>报告只保留被写出的 tag。</strong>Synthesizer 从最终正文提取 <code>[[n]]</code>，匹配 ReferenceManager，按正文首次出现顺序重新编号，再追加 References。</div>
+    </div>
+    <div class="grid g3">
+      <div class="card"><h3>做到了</h3><p>线程安全收集 URL；区分 paper / webpage；报告模式可生成可点击 References；引用编号可重新整理。</p></div>
+      <div class="card"><h3>没有做到</h3><p>没有 DOI / arXiv ID 归一；没有 claim–quote span；没有 entailment / citation correctness verifier；没有检索覆盖率。</p></div>
+      <div class="card"><h3>信息损失点</h3><p>工具结果 → subtask summary → node summary → section writing → polish，多次生成都会丢失出处细节。最终只剩 URL，不保留原文段落位置。</p></div>
+    </div>
+
+    <div class="warning"><p><strong>引用标签的含义只是“这个 URL 曾出现在搜索结果里”，不是“这个 URL 已被证明支持旁边的 claim”。</strong>此外 QA 模式绕过 <code>_append_references_to_report()</code>，即使检索过程中收集了 URL，最终直接答案也可能没有 References。</p></div>
+
+    <h3>Survey / Scholar 的 evidence lifecycle</h3>
+    <p>Survey 的论文信息主要用于生成 idea，不形成 claim-level citation；Scholar 会把通过阈值的论文转换为 evidence item，并把所有评估过的论文转换为 reference。这里的 evidence 比 FlowSearch 更结构化，但仍是“摘要 + LLM 相关性判断”，不是已核验的证据片段。</p>
+  </section>
+
+  <section id="kg" class="focus-section">
+    <h2>1.5 §2.2.1：跨学科知识图谱到底在做什么</h2>
+
+    <div class="lead">
+      <strong>核心含义：</strong>论文试图把来自不同领域的论文、综述、技术报告和领域笔记，加工成一个
+      <strong>“文献—概念—方法—数据集—科学问题—实验设置”异构图</strong>；查询时同时做图搜索与向量搜索，
+      再把命中的材料组织成带关系和出处的证据链。它不是 Figure 5 的 Flow Graph：KG 回答“有哪些知识可用”，
+      Flow Graph 回答“这一次研究应该怎样执行”。
+    </div>
+
+    <div class="arch">
+      <div class="arch-row">
+        <div class="arch-box"><strong>跨领域语料</strong>papers / surveys / reports / notes</div><div class="arch-arrow">→</div>
+        <div class="arch-box amber"><strong>Schema-guided extraction</strong>候选实体与关系</div><div class="arch-arrow">→</div>
+        <div class="arch-box blue"><strong>Consolidation</strong>消歧、归并、类型与边语义规范化</div><div class="arch-arrow">→</div>
+        <div class="arch-box green"><strong>Cross-disciplinary KG</strong>结构化节点、关系与来源证据</div>
+      </div>
+      <div class="arch-down">↓ query</div>
+      <div class="arch-row">
+        <div class="arch-box blue"><strong>Graph search</strong>找明确节点、关系与跨领域路径</div><div class="arch-arrow">＋</div>
+        <div class="arch-box amber"><strong>Dense retrieval</strong>找图上尚未连接的语义近邻</div><div class="arch-arrow">→</div>
+        <div class="arch-box green"><strong>Ranking / fusion</strong>合并、去重与排序</div><div class="arch-arrow">→</div>
+        <div class="arch-box"><strong>Evidence chains</strong>交给 Deep Research 分析</div>
+      </div>
+      <div class="caption">论文描述可以还原为“离线建图 + 在线双路检索 + 路径化证据输出”；具体模型、数据库与融合公式未披露。</div>
+    </div>
+
+    <h3>第一步：Schema-guided extraction 不是自由抽取</h3>
+    <p><code>schema-guided</code> 意味着先规定允许出现的科学对象和关系，再按照这套 schema 从文本中抽取，而不是让 LLM 临时创造任意节点类型。根据论文原文，至少可以还原出下表：</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>类别</th><th>可能的图元素</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td>文档节点</td><td>论文、综述、技术报告、领域笔记</td><td>保存标题、作者、时间、DOI / URL、正文或解析结果，是证据来源。</td></tr>
+        <tr><td>科学实体节点</td><td>concept、method、dataset、empirical setting、problem statement</td><td>把“论文相似”提升为“哪些方法解决哪些问题、在哪些数据和条件下验证”。</td></tr>
+        <tr><td>文本关系</td><td>proposes、uses、evaluates-on、supports、contradicts、related-to 等</td><td>由正文陈述抽取；论文只举出 <code>cites</code> 和 <code>by product</code>，完整关系 schema 未公开。</td></tr>
+        <tr><td>文献计量关系</td><td>citation、co-citation、co-usage</td><td>用共同引用或共同使用的方法、数据集、概念，为尚不明确的实体建立初始联系。</td></tr>
+        <tr><td>证据锚点</td><td>原文片段、来源论文、引用记录</td><td>把图中的边对齐到文本证据和引用证据，使关系理论上可以回溯。</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>第二步：从“脏候选”整理成紧凑图谱</h3>
+    <div class="steps">
+      <div class="step"><strong>解析跨领域文本。</strong>输入可能来自论文、综述和报告；格式、命名习惯及学科术语并不统一，因此原文称其为 noisy, cross-domain text。</div>
+      <div class="step"><strong>发现候选实体。</strong>先用领域无关 NER 和 noun-phrase mining 找人名、方法名、数据集、科学概念及问题短语；这一步只产生候选项，不代表已经完成正确分类。</div>
+      <div class="step"><strong>建立初始链接。</strong>正文中的共同出现提供文本线索；document-level co-citation 表示两项工作经常被一起引用；co-usage 很可能指共同使用方法、数据集、指标或概念，但论文没有给出严格定义。</div>
+      <div class="step"><strong>实体归并与消歧。</strong>例如 <code>AMOC</code>、<code>Atlantic Meridional Overturning Circulation</code> 应合成一个概念节点；同名但不同义的实体则应拆开。</div>
+      <div class="step"><strong>规范节点和边。</strong>把模糊的“相关”细化为有方向、有类型的关系，并统一 concept / method / dataset 等节点类型，压缩重复和噪声。</div>
+      <div class="step"><strong>对齐证据。</strong>将抽取自正文的关系与引用网络提供的关系一起保存，理想输出不只是一个 edge，还应包含支持它的原文和文献出处。</div>
+    </div>
+
+    <div class="note"><p><strong>“跨学科”的关键不是把多个学科的论文堆在一起，</strong>而是让一个领域的问题能够沿图路径连到另一个领域的方法。例如“AMOC 临界点预测”可经由“critical slowing down”连接到生态系统或复杂系统中的早期预警方法。</p></div>
+
+    <h3>第三步：Graph search 与 dense retrieval 为什么要同时使用</h3>
+    <div class="grid g2">
+      <div class="card">
+        <div class="kicker">Explicit structure</div>
+        <h3>Graph search</h3>
+        <p>沿已有边查找节点和路径，适合回答“它们通过什么科学关系连接”。结果可呈现为 <code>问题 → 方法 → 数据集 → 论文证据</code>，结构清晰且原则上可解释；但图中没有建边的相关内容可能被漏掉。</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Semantic neighborhood</div>
+        <h3>Dense vector retrieval</h3>
+        <p>把 query 和文档或图节点编码成向量，找语义相近内容。它能召回尚未被图谱显式连接的工作，例如把 AMOC tipping point 与其他领域的 early-warning signal 方法联系起来；但相似不等于存在可靠科学关系。</p>
+      </div>
+    </div>
+    <p>最后的 ranking step 将两路候选合并，输出 <strong>path-structured evidence chains</strong>。论文没有说明排序特征、权重或训练方法，因此不能确定它究竟使用向量分数、图距离、引用信息、文献质量还是 LLM reranking。</p>
+
+    <h3>以 Figure 5 的 AMOC Query 为例</h3>
+    <p>普通检索可能只返回一批“AMOC collapse”相似论文；论文设想的 KG 检索则应输出带逻辑和来源的路径：</p>
+    <pre>AMOC 崩溃时间预测为何分歧？
+├─ 古气候 proxy data
+│  └─ statistical early-warning indicators
+│     └─ 支持较早跨越临界点 → 论文 A / B + 原文证据
+├─ complex climate models
+│  └─ 多数模拟为渐进减弱 → 论文 C / D + 模型设置
+└─ 分歧来源
+   └─ freshwater forcing feedback 的表示差异
+      └─ 改变稳定性与崩溃时间估计 → 论文 E + 关系证据</pre>
+    <p>这些证据链随后才交给 FlowSearch 的任务图：不同 solve 节点分别分析模型证据、proxy 证据和淡水反馈偏差，最终由 Answer / Synthesizer 汇总。</p>
+
+    <div class="warning">
+      <p><strong>必须区分论文描述与当前可核验实现：</strong>以上流程是对 1.5 §2.2.1 原文的结构化解释。开源仓库能够确认一个可选的 <code>search_kg_papers()</code> 客户端，它请求私网 <code>/search_kg_papers</code> 服务；但未提供 KG 服务端、语料、schema、NER / noun-phrase pipeline、实体消歧、图存储、graph + dense 融合与 ranking 实现。vendored CAMEL 中存在通用 KnowledgeGraphAgent / retriever 类，也没有证据表明它们接入当前 FlowSearch 默认主链。</p>
+    </div>
+  </section>
+
+  <section id="paper-code" class="focus-section">
+    <h2>1.5 论文架构 vs 当前开源代码：哪些对应上了</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>1.5 报告中的设计</th><th>开源代码对应</th><th>判定</th><th>准确解释</th></tr></thead>
+      <tbody>
+        <tr><td>Dynamic Structured Knowledge Flow：DAG 表示任务、状态与依赖</td><td><code>DirectedGraph</code>、Global Planner、按层执行、Coordinator 改图</td><td class="yes">明确实现</td><td>这是当前 FlowSearch 最完整、最可核验的核心贡献。</td></tr>
+        <tr><td>节点类型 search / solve / answer，边传播依赖关系</td><td>节点 <code>type</code> + edge <code>relationship</code>；前驱摘要进入 <code>knowledge_info</code></td><td class="yes">明确实现</td><td>传播的是总结文本，不是结构化科学实体或原始证据。</td></tr>
+        <tr><td>跨学科 KG：documents / concepts / methods / datasets / settings / problems</td><td>主 <code>LiteratureSearch</code> 有可选 <code>kg_papers</code> HTTP 接口；默认地址是私网 IP</td><td class="partial">接口痕迹</td><td>FlowSearch 默认五工具不包含 KG；仓库也未提供论文所述 KG 构建流水线与数据。</td></tr>
+        <tr><td>graph search + dense vector retrieval + ranking 合并 evidence chains</td><td>vendored CAMEL 目录有 retriever 类，但 FlowSearch 默认主链未实例化；默认搜索依赖各 API 自身排序</td><td class="no">默认路径不可确认</td><td>不能因仓库里存在 vector / hybrid retriever 文件，就认定报告中的融合检索已接通。</td></tr>
+        <tr><td>Strategy-Procedural Memory 为 DR planner 提供历史策略先验</td><td>InternAgent 主框架有 task / long memory；<code>DRAgent</code> 创建 Workflow 时未注入这些 memory</td><td class="no">当前调用链未接通</td><td>FlowSearch 图是单次调用内状态；没有在规划前检索历史 DR trajectory 的代码路径。</td></tr>
+        <tr><td>direct / search-augmented / self-driven 三路答案聚合</td><td>当前默认 Workflow 是 plan → tools → summaries → synthesis</td><td class="no">未见对应默认实现</td><td>代码没有清晰的三分支并行生成与聚合器。</td></tr>
+        <tr><td>coherent, systematic, verifiable reasoning</td><td>图约束与日志存在；引用正确性和 claim 支持性 verifier 不存在</td><td class="partial">结构化但未验证</td><td>“可回看 execution trace”与“证据被自动验证”是两件事。</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="finding"><p><strong>最稳妥的阅读方式：</strong>把 1.5 报告中的 KG、融合检索、SPM 看成系统层设计；把当前开源 FlowSearch 看成其中“动态任务图 + 工具检索 + 图引导写作”的可运行子集。两者有明确交集，但不是一一完整落地。</p></div>
+  </section>
+
+  <section id="limits">
+    <h2>当前实现中最影响理解与复现的技术边界</h2>
+    <div class="grid g2">
+      <div class="card">
+        <div class="kicker">FlowSearch</div><h3><code>--file</code> 默认路径未接通</h3>
+        <p>Planner 直接调用工具名 <code>extract_document_content</code>；但配置启用的是类别名，三个默认配置都未包含 <code>file_processor</code>。异常被捕获后退回默认子任务，容易形成“看似运行、实际没读文件”的静默降级。</p>
+      </div>
+      <div class="card">
+        <div class="kicker">FlowSearch</div><h3>OpenRouter 只接入了主框架</h3>
+        <p>DR 有独立 <code>models/get_model()</code>，不识别 OpenRouter provider；工具模块导入时还会创建 GPT-4o / GPT-4o-mini / o3-mini / o4-mini 对象。修改主 <code>default_provider</code> 不会统一替换 DR 模型。</p>
+      </div>
+      <div class="card">
+        <div class="kicker">FlowSearch</div><h3>引用管理有残留标签 bug</h3>
+        <p>真实 tag 是纯数字；<code>update_reference()</code> 却按带前缀标签切 <code>tag[1:]</code>，ExecutionAgent 中一个未使用的辅助函数也按 <code>[R1]</code> 解析。主报告路径走另一套 <code>[[1]]</code> 逻辑，因此不是所有运行都会触发，但显示实现曾迁移过标签协议。</p>
+      </div>
+      <div class="card">
+        <div class="kicker">FlowSearch</div><h3>“有 PDF URL”不等于“做了全文检索”</h3>
+        <p>默认学术工具返回摘要和链接；只有模型继续选择 <code>url_processor</code> 才会读页面，而且读后只保存一次针对问题的答案。没有论文级 chunk、embedding index、passage rerank 或页码定位。</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Survey</div><h3>Web source 会被永久移出实例配置</h3>
+        <p><code>execute()</code> 首次调用 Web 后直接修改 <code>self.sources</code> 删除 <code>web_search</code>。AgentFactory 会缓存实例，因此后续 discovery round 复用同一个 SurveyAgent 时，不再做 Web 搜索。</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Survey</div><h3>查询语法与后端不一致</h3>
+        <p>prompt 要求输出 <code>KeywordQuery(...)</code> / <code>PaperQuery(...)</code> / <code>GetReferences(...)</code>，但新版代码不再通过旧 <code>PaperSurvey.query_route()</code> 解析，而把整段字符串直接交给 arXiv / CrossRef 搜索。</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Survey</div><h3>第二批之后的评分 ID 写回可能失效</h3>
+        <p>prompt 给论文的 ID 是全局编号；写回代码却把 LLM key 当作批内 <code>0…9</code>。若第二批返回 <code>10…19</code>，这些分数会被忽略，论文保留默认分 1。</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Scholar</div><h3>先截断，再做相关性评估</h3>
+        <p>多 query / 多 source 结果按收集顺序合并，DOI / 标题去重后先取前 <code>max_papers</code>，然后才让 LLM 评估相关性。它不是对完整候选集做全局 reranking。</p>
+      </div>
+    </div>
+
+    <div class="table-wrap"><table>
+      <thead><tr><th>如果你的目标是……</th><th>最合适的现有路径</th><th>还需要补什么</th></tr></thead>
+      <tbody>
+        <tr><td>快速给 idea generation 补背景</td><td class="yes">Survey + FlowSearch simple</td><td>合并重复检索、统一 paper registry，避免背景文本与 paper list 两套上下文冲突。</td></tr>
+        <tr><td>针对 hypothesis 找支持 / 反对论文</td><td class="yes">Scholar</td><td>默认开启受控全文读取；保留 quote span；在截断前做统一 rerank。</td></tr>
+        <tr><td>生成可读的多节研究报告</td><td class="yes">FlowSearch report</td><td>citation support verifier、论文归一、来源覆盖约束、失败显式化。</td></tr>
+        <tr><td>严格系统综述 / PRISMA</td><td class="no">当前三条都不够</td><td>可复现 query log、纳排标准、全量候选表、去重协议、双人 / 自动筛选审计、recall 估计。</td></tr>
+        <tr><td>可审计的 claim–evidence 科研记忆</td><td class="partial">可复用 Scholar 对象，不能直接依赖现成结果</td><td>统一 claim、paper、passage、experiment 的 ID 与关系；把证据写入持久存储而非只进入 prompt。</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>跨版本对照：架构究竟如何变化</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>维度</th><th>Dolphin</th><th>InternAgent 1.0</th><th>当前 InternAgent 1.5</th></tr></thead>
+      <tbody>
+        <tr><td>控制骨架</td><td>固定 Python 脚本</td><td>Orchestration 状态机 + 专职 Agent</td><td>主状态机 + 内嵌 FlowSearch DAG</td></tr>
+        <tr><td>文献角色</td><td>idea prompt 的可选 RAG</td><td>任务背景 + 假设证据</td><td>背景报告 + 任务论文池 + 假设证据</td></tr>
+        <tr><td>搜索组织</td><td>单一论文池迭代扩展</td><td>Survey 与 Scholar 各自生成 query</td><td>FlowSearch 两层规划；Survey / Scholar 继续独立检索</td></tr>
+        <tr><td>主要源</td><td>Semantic Scholar</td><td>PubMed、arXiv、Semantic Scholar</td><td>Flow：arXiv/OpenAlex/CrossRef/Web；旧栈：arXiv/CrossRef 等</td></tr>
+        <tr><td>全文</td><td>主 RAG 是摘要</td><td>Survey Top 3；Scholar method 阶段可选</td><td>Survey Top 3；Scholar 默认关闭；Flow 仅按需 URL processor</td></tr>
+        <tr><td>数据结构</td><td>paper bank JSON</td><td>paper list、evidence、references</td><td>上述结构 + execution DAG + URL tags</td></tr>
+        <tr><td>输出</td><td>ideas + novelty boolean</td><td>ideas 的文献上下文</td><td>另可直接生成 QA / Markdown report</td></tr>
+        <tr><td>客观验证</td><td>无</td><td>无</td><td>有图状态与 trace；仍无 citation entailment / recall verifier</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="map">
+    <h2>源码地图：按阅读顺序看这些文件</h2>
+    <div class="code-map">
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/workflow/orchestration_agent.py">orchestration_agent.py</a><p>先看三条 Literature 路径分别在哪里触发：create_session、generation、external_data。</p></div>
+      <div class="file"><a href="../../../../_未包含的内容.html">config/default_config.yaml</a><p>确认当前默认开关、Survey / Scholar sources 与 DR simple 模式。</p></div>
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/agents/dr_agent.py">agents/dr_agent.py</a><p>InternAgent 与 FlowSearch 之间的薄适配层、配置选择与失败降级。</p></div>
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/agents/dr_agents/workflow/main.py">dr_agents/workflow/main.py</a><p>FlowSearch 总控制循环：plan、逐层 execute、coordinator、answer synthesis。</p></div>
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/agents/dr_agents/agents/global_planner_agent.py">global_planner_agent.py</a><p>问题如何变成带依赖关系的 DAG。</p></div>
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/agents/dr_agents/agents/global_execution_agent.py">global_execution_agent.py</a><p>拓扑层并行、前驱结果传播与全局引用收集。</p></div>
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/agents/dr_agents/workflow/task.py">workflow/task.py</a><p>单节点内部的 Planner → sequential subtasks → summarizer。</p></div>
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/agents/dr_agents/agents/task/execution_agent.py">task/execution_agent.py</a><p>真正的 tool-calling loop、工具结果消息与 URL tag 注入。</p></div>
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/agents/dr_agents/agents/synthesizer_agent.py">synthesizer_agent.py</a><p>QA 与 report 两种合成路径，以及引用重新编号。</p></div>
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/agents/dr_agents/tools/tool_integration.py">tools/tool_integration.py</a><p>默认学术 / Web / URL 工具、模型硬编码与工具类别映射。</p></div>
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/agents/survey_agent.py">agents/survey_agent.py</a><p>当前任务级 paper bank：查询扩展、并发检索、评分和 Top 3 深读。</p></div>
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/agents/scholar_agent.py">agents/scholar_agent.py</a><p>当前 hypothesis evidence：query、dedup、0–1 relevance 与可选 method extraction。</p></div>
+      <div class="file"><a href="../源码/InternAgent/internagent/mas/tools/literature_search.py">tools/literature_search.py</a><p>旧栈的结构化论文源：arXiv、S2、CrossRef、CORE 和私有 KG 接口。</p></div>
+      <div class="file"><a href="../论文/TeX源码/InternAgent-1.5_arXiv-2602.08990/sections/method.tex">1.5 TeX · method.tex</a><p>对照论文中的 KG、Flow Graph、Graph-Guided Synthesis 与 memory 声称。</p></div>
+    </div>
+
+    <div class="verdict">
+      <h3>最终判断</h3>
+      <p><strong>InternAgent 的文献能力确实经历了实质升级：</strong>从扁平 paper bank，发展为任务级调研、假设级证据和图式 Deep Research 三层能力。当前最成熟的工程部分是“DAG 拆解 + 工具调用 + 分层并行 + 报告合成”；最薄弱的部分是“三条检索路径没有统一、论文级归一不足、全文与 passage 证据不稳定、引用没有支持性验证”。</p>
+      <p>因此，它更适合被理解为<strong>科研 Agent 的知识获取与上下文生成层</strong>，而不是已经完成的系统综述引擎或审计级 Literature evidence system。</p>
+    </div>
+  </section>
+
+  <footer>
+    InternAgent Literature 模块 · Git 历史 × 1.0 / 1.5 论文 × 当前源码核验<br>
+    核验基准：<code>e341f8f</code>（v1.5.0 Literature 实现）与 <code>b8a9e81</code>（当前 main）
+  </footer>
+</main>
+<script>
+  (() => {
+    const revealFoldFromHash = () => {
+      if (!location.hash) return;
+      const target = document.querySelector(location.hash);
+      if (!target) return;
+      const fold = target.matches("details.fold") ? target : target.querySelector(":scope > details.fold");
+      if (fold) fold.open = true;
+    };
+    revealFoldFromHash();
+    window.addEventListener("hashchange", revealFoldFromHash);
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>README</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../../../index.html">← 返回总览</a><h1>InternAgent-1.5: A Unified Agentic Framework for Long-Horizon Autonomous Scientific Discovery</h1>
+<blockquote>
+<p><em>Autonomous Discovery Across All Sciences</em><br />
+- <strong>Papers</strong>: <a href="https://arxiv.org/abs/2505.16938">InternAgent 1.0</a> | <a href="https://huggingface.co/papers/2602.08990">InternAgent 1.5</a><br />
+- <strong>Links</strong>: <a href="https://discovery.intern-ai.org.cn">Website</a> | <a href="https://huggingface.co/collections/InternScience/internagent">HuggingFace</a></p>
+</blockquote>
+<h2>🔥 News</h2>
+<ul>
+<li>
+<p><strong>2026.5.07</strong>: 🔥🔥 We have open-sourced InternAgent-1.5 with advanced features, including  enhanced algorithm discovery tasks, autonomous scientific paper reproduction, memory module, and deep research for tackling complex research challenges.</p>
+</li>
+<li>
+<p><strong>2026.3.17</strong>: 🚀🚀 We provide public <a href="https://scphub.intern-ai.org.cn/detail/28">access</a> to InternAgent's Deep Research capabilities, enabling developers and researchers to seamlessly integrate its advanced deep research functionality into their own workflows.</p>
+</li>
+<li>
+<p><strong>2026.2.14</strong>: ❤️‍🔥❤️‍🔥 We open-source <strong><a href="https://github.com/InternScience/MLEvolve">MLEvolve</a></strong>, the core implementation of InternAgent's solution optimization subsystem for algorithm design tasks. As the <strong>open-source method</strong> to achieve <strong>#1 on MLEBench</strong>, MLEvolve demonstrates powerful capabilities in solution optimization within bounded hypothesis spaces.</p>
+</li>
+<li>
+<p><strong>2026.2.10</strong>: 🔥 Official release of the <a href="https://huggingface.co/papers/2602.08990">InternAgent 1.5 Technical Report</a>. InternAgent 1.5 achieves leading performance on scientific reasoning benchmarks including <strong>GAIA, HLE, GPQA, and FrontierScience</strong>, and supports end-to-end autonomous scientific discovery tasks across <strong>Physical, Biology, Earth, and Life Science domains</strong>, enabling both algorithm discovery and empirical discovery (dry/wet-lab experiments).</p>
+</li>
+<li>
+<p><strong>2025.10.13</strong>: InternAgent-1.0 code has been fully open-sourced, supporting end-to-end automation and autonomous evolution across 12 scientific research tasks.</p>
+</li>
+</ul>
+<details>
+<summary>more...</summary>
+
+- **2025.07.17**: The source code of InternAgent has been partially open-sourced. The complete version of InternAgent (covering 12 types of tasks for autonomous scientific research) will be open-sourced soon. This code repository can be used for full-cycle autonomous scientific research, ranging from hypothesis generation to automated experimental execution.
+
+- **2025.07.10**: *NovelSeek* has been renamed to **InternAgent**. This change embodies our hopeful vision for autonomous scientific research framework, and we hope it will empower all researchers to achieve great scientific discoveries.
+
+</details>
+
+<hr />
+<h2>🚀 Getting Started</h2>
+<h3>Installation</h3>
+<pre><code class="language-bash">conda create -n InternAgent python=3.11
+conda activate InternAgent
+pip install -r requirements.txt
+</code></pre>
+<h3>Configure API Keys</h3>
+<p>Rename <code>.env.example</code> to <code>.env</code> and fill in your API keys:</p>
+<pre><code class="language-bash">mv .env.example .env
+</code></pre>
+<p>Key fields in <code>.env</code>:</p>
+<pre><code>OPENAI_API_KEY=        # OpenAI or compatible API key (used for embeddings and memory)
+OPENAI_API_BASE_URL=   # Base URL for OpenAI-compatible endpoints
+OPENROUTER_API_KEY=    # OpenRouter API key (when using the openrouter provider)
+ANTHROPIC_API_KEY=     # Anthropic API key (for Claude-based experiment backends)
+</code></pre>
+<p>To use OpenRouter as the model gateway, set <code>OPENROUTER_API_KEY</code> and run with<br />
+<code>config/openrouter_config.yaml</code>. See <a href="../../../../../_未包含的内容.html">docs/openrouter.md</a><br />
+for setup details.</p>
+<h3>Run a Discovery Experiment</h3>
+<p><code>AutoDebug</code> is a self-contained toy task (no dataset or model downloads required) and is the recommended first run to verify your setup.</p>
+<pre><code class="language-bash">python launch_discovery.py \
+    --config ./config/default_config.yaml \
+    --task AutoDebug \
+    --exp_backend claudecode
+</code></pre>
+<h3>Run a QA Query</h3>
+<p>QA mode uses InternAgent's deep research pipeline to answer a research question directly — no experiment loop, just a synthesized answer grounded in literature.</p>
+<pre><code class="language-bash">python launch_qa.py --question &quot;What are recent advances in memory-augmented LLMs?&quot;
+
+# Optionally save the answer to a file
+python launch_qa.py -q &quot;What are recent advances in memory-augmented LLMs?&quot; -o answer.md
+</code></pre>
+<h3>Master Launcher</h3>
+<p><code>launch.py</code> is a unified entry point for both modes:</p>
+<pre><code class="language-bash">python launch.py --mode discovery --task AutoDebug --exp_backend claudecode
+python launch.py --mode qa --question &quot;What are recent advances in memory-augmented LLMs?&quot;
+</code></pre>
+<p><strong>Configuration tips:</strong><br />
+- Configuration lives in <code>config/</code> — <code>default_config.yaml</code> is the main starting point.<br />
+- Results are saved under <code>results/</code>, logs under <code>logs/</code>.<br />
+- To skip idea generation and run experiments from existing ideas: add <code>--skip_idea_generation --idea_path &lt;path/to/ideas.json&gt;</code>.<br />
+- See <code>scripts/</code> for ready-to-use example scripts.</p>
+<h3>Research Tasks</h3>
+<p><strong>Algorithm discovery tasks</strong> live under <code>tasks/</code>. Each contains a <code>prompt.json</code> (task description), baseline <code>code/</code>, and a <code>launcher.sh</code>. Datasets and environment-specific setup vary per task — refer to the code in each task folder.</p>
+<p><strong>Scientific paper reproduction tasks</strong> (<code>sci_tasks</code>) are a distinct mode where InternAgent is given a published paper and its data, and asked to reproduce the key findings autonomously. These tasks live under <code>sci_tasks/tasks/</code> (from the <a href="https://github.com/InternScience/ResearchClawBench">ResearchClawBench</a> benchmark). See <a href="docs/sci_tasks.html">docs/sci_tasks.md</a> for a full guide.</p>
+<h3>Quick-Start Scripts</h3>
+<p>Ready-to-use example scripts are provided under <code>scripts/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>run_discovery.sh</code></td>
+<td>Run a full discovery experiment (idea generation → experiments)</td>
+</tr>
+<tr>
+<td><code>run_skip-idea.sh</code></td>
+<td>Run experiments from an existing idea file, skipping generation</td>
+</tr>
+<tr>
+<td><code>run_sci.sh</code></td>
+<td>Run a scientific paper reproduction task (defaults to <code>Astronomy_000</code>)</td>
+</tr>
+<tr>
+<td><code>run_qa.sh</code></td>
+<td>Answer a research question via deep research</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>🔧 Advanced Features</h2>
+<h3>Memory Module</h3>
+<p>InternAgent 1.5 includes a persistent memory module that records experiment outcomes across sessions, helping the agent avoid previously failed directions and build on successful ones. See <a href="../../../../../_未包含的内容.html">docs/memory_module.md</a> for configuration and setup.</p>
+<h3>Deep Research</h3>
+<p>The Deep Research (DR) module decomposes a research question into subtasks, gathers information from academic databases and the web in parallel, and synthesizes findings into a direct answer or structured report. See <a href="docs/deep_research.html">docs/deep_research.md</a> for configuration and setup.</p>
+<hr />
+<h2>📝 Citation</h2>
+<pre><code class="language-bibtex">@article{feng2026internagent,
+  title={InternAgent-1.5: A Unified Agentic Framework for Long-Horizon Autonomous Scientific Discovery},
+  author={Shiyang Feng and Runmin Ma and Xiangchao Yan and Yue Fan and Yusong Hu and Songtao Huang and Shuaiyu Zhang and Zongsheng Cao and Tianshuo Peng and Jiakang Yuan and Zijie Guo and Zhijie Zhong and Shangheng Du and Weida Wang and Jinxin Shi and Yuhao Zhou and Xiaohan He and Zhiyin Yu and Fangchen Yu and Bihao Zhan and Qihao Zheng and Jiamin Wu and Mianxin Liu and Chi Zhang and Shaowei Hou and Shuya Li and Yankai Jiang and Wenjie Lou and Lilong Wang and Zifu Wang and Jiong Wang and Wanghan Xu and Yue Deng and Dongrui Liu and Yiheng Wang and Wenlong Zhang and Fenghua Ling and Shufei Zhang and Xiaosong Wang and Shuangjia Zheng and Xun Huang and Siqi Sun and Shuyue Hu and Peng Ye and Chunfeng Song and Bin Wang and Conghui He and Yihao Liu and Xin Li and Qibin Hou and Tao Chen and Xiangyu Yue and Bin Wang and Liang He and Dahua Lin and Bowen Zhou and Bo Zhang and Lei Bai},
+  journal={arXiv preprint arXiv:2602.08990},
+  year={2026}
+}
+</code></pre>
+<pre><code class="language-bibtex">@article{team2025internagent,
+  title={InternAgent: When Agent Becomes the Scientist--Building Closed-Loop System from Hypothesis to Verification},
+  author={Team, InternAgent and Zhang, Bo and Feng, Shiyang and Yan, Xiangchao and Yuan, Jiakang and Ma, Runmin and Hu, Yusong and Yu, Zhiyin and He, Xiaohan and Huang, Songtao and others},
+  journal={arXiv e-prints},
+  pages={arXiv--2505},
+  year={2025}
+}
+</code></pre>
+<pre><code class="language-bibtex">@article{hu2025flowsearch,
+  title={FlowSearch: Advancing deep research with dynamic structured knowledge flow},
+  author={Yusong Hu and Runmin Ma and Yue Fan and Jinxin Shi and Zongsheng Cao and Yuhao Zhou and Jiakang Yuan and Xiangchao Yan and Wenlong Zhang and Lei Bai and Bo Zhang},
+  journal={arXiv preprint arXiv:2510.08521},
+  year={2025}
+}
+</code></pre>
+<pre><code class="language-bibtex">@article{du2025automlgen,
+  title={AutoMLGen: Navigating Fine-Grained Optimization for Coding Agents},
+  author={Shangheng Du and Xiangchao Yan and Dengyang Jiang and Jiakang Yuan and Yusong Hu and Xin Li and Liang He and Bo Zhang and Lei Bai},
+  journal={arXiv preprint arXiv:2510.08521},
+  year={2025}
+}
+</code></pre><footer>由 <code>Literature项目或者系统/复杂/InternAgent/源码/InternAgent/README.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>关于LABBench2</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../index.html">← 返回总览</a><p>几个LabBench2的问题：<br />
+- 评价最终答案，不评价过程<br />
+- 不是完整的“Ai Scientist”测试，而是一组科研Agent的原子能力测试<br />
+- 全量运行成本较高：1912次被测系统执行、1498次Judge调用<br />
+- 数据源漂移问题</p>
+<h1>从v1到v2</h1>
+<h2>LAB-Bench包含的类别</h2>
+<p>LitQA2<br />
+SuppQA<br />
+FigQA<br />
+TableQA<br />
+DbQA<br />
+ProtocolQA<br />
+SeqQA<br />
+Cloning Scenarios</p>
+<h2>LABBench2包含</h2>
+<p>LitQA3<br />
+FigQA2<br />
+TableQA2<br />
+SuppQA2<br />
+PatentQA<br />
+TrialQA<br />
+SourceQualQA<br />
+DbQA2<br />
+ProtocolQA2<br />
+SeqQA2<br />
+CloningQA</p>
+<h3>第一类是 LAB-Bench 子基准的升级</h3>
+<table>
+<thead>
+<tr>
+<th>LAB-Bench</th>
+<th>LABBench2</th>
+<th>关系</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LitQA2</td>
+<td>LitQA3</td>
+<td>部分旧题改写为开放回答，大部分为新题</td>
+</tr>
+<tr>
+<td>FigQA</td>
+<td>FigQA2</td>
+<td>全部新题，增加 image、PDF、retrieval 三种模式</td>
+</tr>
+<tr>
+<td>TableQA</td>
+<td>TableQA2</td>
+<td>同样增加三种输入模式</td>
+</tr>
+<tr>
+<td>SuppQA</td>
+<td>SuppQA2</td>
+<td>扩展到更多补充材料格式</td>
+</tr>
+<tr>
+<td>DbQA</td>
+<td>DbQA2</td>
+<td>扩展到 43 种数据源</td>
+</tr>
+<tr>
+<td>ProtocolQA</td>
+<td>ProtocolQA2</td>
+<td>使用更长、更真实的实验协议</td>
+</tr>
+<tr>
+<td>SeqQA</td>
+<td>SeqQA2</td>
+<td>增至 20 类任务并支持文件、检索输入</td>
+</tr>
+<tr>
+<td>Cloning Scenarios</td>
+<td>CloningQA</td>
+<td>从局部选择题变成端到端实验方案设计</td>
+</tr>
+</tbody>
+</table>
+<h3>第二类是LABBench2 新加入的类别</h3>
+<p>PatentQA；<br />
+TrialQA；<br />
+SourceQualQA。</p>
+<h1>大概的介绍</h1>
+<ul>
+<li>LitQA3、PatentQA、TrialQA、SuppQA2：论文、专利、临床试验和补充材料检索。</li>
+<li>FigQA2、TableQA2：视觉或文档 QA</li>
+<li>SourceQuality：系统综述中的研究适用性与排除理由判断。</li>
+<li>ProtocolQA2：实验故障诊断 QA</li>
+<li>DbQA2：数据库查询结果生成</li>
+<li>SeqQA2：要求计算并输出序列、引物或数值</li>
+<li>Cloning：要求生成满足约束的克隆方案，并由程序验证</li>
+</ul>
+<h2>关于 LabBench2</h2>
+<h3>LitQA3:只给模型一个具体的生物医学问题，让它自己找到对应论文、阅读全文并返回简短答案。</h3>
+<ul>
+<li>168道开放问答题</li>
+<li>166 道对应一个来源，2 道对应两个来源</li>
+<li>每道都有人工保存的关键证据段落。</li>
+<li>标准答案非常短，中位数只有一个英文单词；最长的答案也只有8个单词</li>
+<li>两个环境：Base / Tool-augmented, high-effort</li>
+<li>（me）：没有统一工具？OpenAI Responses 用web_search、code_interpreter；Anthropic API用web_search、web_fetch、code_execution</li>
+<li>是一个“开放式文献检索 QA”，不是给定论文后的阅读理解。</li>
+<li>数据集内部有来源DOI、关键证据段落，但是实际评测的时候，被测模型实际只收到上面的英文问题</li>
+<li>例子：</li>
+<li>某种细菌经过实验室进化后，对哪种抗生素产生抗性？（A：ciprofloxacin）</li>
+<li>小鼠嗅觉神经元中，活跃嗅觉受体基因与 Greek Island 区域的接触增加了多少倍？(A: 2.7 fold)</li>
+</ul>
+<h3>PatentQA：检索目标从论文变成了完整专利（只给 Agent 一个问题，让它自己搜索、识别并阅读对应专利，然后回答其中的具体技术信息）</h3>
+<ul>
+<li>121道题目</li>
+<li>每个题目对应一个Google Patents来源，有人工保存的关键证据段落，来源均为 patents.google.com</li>
+<li>答案中位数1个英文单词、平均3.3个，最长29个</li>
+<li>用语义LLM Jduge评分</li>
+<li>例子</li>
+<li>在专利 CA2825940C 描述的稳定生物油项目中，什么成分阈值被用来定义可直接作为燃料的热稳定生物油？</li>
+</ul>
+<h3>TrialQA：只给 Agent 一段关于某项临床试验的问题，让它自行识别对应试验、找到 ClinicalTrials.gov 页面，并提取特定事实。</h3>
+<ul>
+<li>和 LitQA3、PatentQA 属于同一类开放检索任务:</li>
+<li>LitQA3: 检索论文</li>
+<li>PatentQA: 检索专利</li>
+<li>TrialQA: 检索临床试验注册记录</li>
+<li>120道开放式问题，覆盖102个不同的临床试验</li>
+<li>全部来源于 ClinicalTrials.gov</li>
+<li>例子</li>
+<li>In the MK-2118-001 trial, what is the minimum number of weeks participants must have HIV RNA below 50 copies/mL, and the minimum number of weeks they must be on a stable drug/dose regimen before study entry?(Ans:12,4)</li>
+</ul>
+<h3>FigQA2 &amp; TableQA2</h3>
+<ul>
+<li>都有三种变体：只有问题/问题+裁剪后的图或图片/问题＋完整论文</li>
+<li>每个图或表周围构造三个变体任务，而不是把一个问题机械复制三遍</li>
+</ul>
+<p>类型            Image    PDF    合计<br />
+━━━━━━━━━━  ━━━━━━━━━━━  ━━━━━━━  ━━━━━  ━━━━━━<br />
+FigQA2            101      101    101     303<br />
+──────────  ───────────  ───────  ─────  ──────<br />
+TableQA2          100      100    100     300</p>
+<ul>
+<li>FigQA2 : 在一项评估单细胞基础模型性能的研究中，使用 scGPT 时，哪个数据集的平均 BIO 分数最高？(PBMC(12k))</li>
+<li>TableQA2 : 在研究酵母线粒体蛋白导入的工作中，重组 DNA 质粒 pFL39-mdm10 是由哪个来源提供的？(Becker Lab)</li>
+</ul>
+<h3>ProtocolQA2 (给 Agent 一份被人为篡改过的实验 Protocol PDF，并描述执行后出现的失败现象，要求找出其中唯一重要的错误。)</h3>
+<ul>
+<li>125道开放式问题，115来自公开的Protocol、10题来自专家提交的未公开Protocol</li>
+<li>Agent收到 问题+被修改过的Protocal PDF+固定的回答要求</li>
+<li>题目构造的方式：</li>
+<li>领域专家先取得一份正常实验方案，然后故意引入一个会导致明确失败的错误（把37°C改成100°C...）</li>
+<li>随后根据这个错误构造一个实验失败场景，让模型反向诊断</li>
+<li>例子：第3天结束时加入 GlycoBlue 后没有出现蓝色 RNA 沉淀，可能是什么原因？（第3天第29步应该取水相，但实验中取了有机相。）</li>
+<li>每份 Protocol 已知只注入了一个明确错误。</li>
+</ul>
+<h3>DbQA2 : 给 Agent 一个需要查询专业生物数据库的问题，让它找到正确记录、下载或解析数据，并返回精确结果。</h3>
+<ul>
+<li>包含 86 道开放式问题，覆盖43个生命科学数据库，每个数据库2道题目</li>
+<li>这些数据库是通过分析约1000篇近期 bioRxiv 论文中的数据来源，再结合生物学专家意见选出来的。</li>
+<li>例子：</li>
+<li>收到问题：What is the human genome reference sequence from region chr14:89000000-89000100 in hg38?</li>
+<li>标准答案："reference_sequence": "ATCTTGTCACTATGGTGGGGGAGCTTGGAGCAGCTGGGACCACTGTGGGAAGCATGAGGGTGAAGCCAACATGGTGGAAAGCAGATCTAAATCTGGAGAGA"</li>
+</ul>
+<h3>SeqQA2： 给模型生物序列或实验数据，要求进行精确计算、序列操作或分子设计，再用程序验证答案。</h3>
+<ul>
+<li>400道题目，20种子任务，442个附件</li>
+</ul>
+<h3>CloningQA：要求模型设计并输出一套能被计算机执行的完整DNA组装方案</h3>
+<ul>
+<li>14个场景</li>
+<li>例子：</li>
+<li>Gibson：替换载体中的基因。 使用 pLVX-EGFP-IRES-puro 作为载体，以小鼠 Sorcs2 为插入片段，用 Sorcs2 替换 EGFP，设计 Gibson Assembly。</li>
+</ul>
+<h3>SuppQA2 : 从论文补充材料里找一个精确事实</h3>
+<ul>
+<li>125道开放式问题、对应119篇不同论文</li>
+</ul>
+<h3>SourceQuality：给 Agent 一篇已知被系统综述排除的论文，以及系统综述的具体研究问题，要求解释为什么这篇论文不能提供合适证据。</h3>
+<ul>
+<li>150道题、每题提供paper.pdf，对应25个不同的综述</li>
+<li>Agent收到一个具体的证据医学研究问题+paper.pdf+明确告知这篇研究被专家排除了， 要求说明排除原因</li>
+<li>例子：专家认为 paper.pdf 不能用于回答：对于急性细菌性结膜炎患者，抗生素治疗与安慰剂相比是否改善临床和微生物学治愈率？为什么排除该研究？(该研究没有安慰剂对照，只比较了不同的主动治疗。)</li>
+<li></li>
+</ul><footer>由 <code>我的思考/论文梳理/详细/关于LABBench2.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

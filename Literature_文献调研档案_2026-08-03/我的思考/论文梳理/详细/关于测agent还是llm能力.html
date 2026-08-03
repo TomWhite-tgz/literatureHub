@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>关于测agent还是llm能力</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../index.html">← 返回总览</a><h2>最好做成三个独立赛道。</h2>
+<p>赛道                被测对象                          用途<br />
+  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━<br />
+   Closed-book         裸 LLM                            测模型自身知识与推理<br />
+  ──────────────────  ────────────────────────────────  ───────────────────────────<br />
+   Controlled Agent    LLM + 你的统一 Loop + 统一工具    公平比较模型的 Agent 能力<br />
+  ──────────────────  ────────────────────────────────  ───────────────────────────<br />
+   Native Agent        LLM + 厂商原生搜索/代码工具       比较厂商完整产品能力</p>
+<h2>Controlled Agent可以写一个简单的、模型无关的循环</h2>
+<pre><code>messages = [task]
+
+  for step in range(max_steps):
+      response = model.generate(
+          messages=messages,
+          tools=COMMON_TOOL_SCHEMAS,
+      )
+
+      if response.has_final_answer:
+          return response.final_answer
+
+      for call in response.tool_calls:
+          result = execute_tool(call.name, call.arguments)
+
+          messages.append(response.tool_call_message)
+          messages.append(tool_result_message(call.id, result))
+
+  return timeout_answer
+</code></pre><footer>由 <code>我的思考/论文梳理/详细/关于测agent还是llm能力.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

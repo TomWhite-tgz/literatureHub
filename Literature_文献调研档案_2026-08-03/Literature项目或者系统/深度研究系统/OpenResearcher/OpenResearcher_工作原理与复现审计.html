@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="OpenResearcher 中文深度导读：论文定位、Introduction 与相关工作、离线轨迹合成、模型训练、运行时架构、实验结果与本地复现审计。">
+  <title>OpenResearcher｜从离线轨迹合成到长程深度研究智能体</title>
+  <style>
+    :root {
+      --ink:#202521;
+      --ink-soft:#39413b;
+      --muted:#646c66;
+      --paper:#f7f4ee;
+      --panel:#fffdf9;
+      --white:#fff;
+      --line:#e5ded2;
+      --line-strong:#d5c9b8;
+      --rust:#bc5c2e;
+      --rust-dark:#984720;
+      --rust-pale:#f5e4d7;
+      --green:#315e48;
+      --green-pale:#e9f2ec;
+      --blue:#355f78;
+      --blue-pale:#eaf2f6;
+      --purple:#70526f;
+      --purple-pale:#f2eaf1;
+      --gold:#8c641a;
+      --gold-pale:#fff5dd;
+      --rose:#934958;
+      --rose-pale:#fae9ed;
+      --shadow:0 5px 22px rgba(42,37,29,.07);
+      --shadow-soft:0 2px 9px rgba(42,37,29,.055);
+      --radius:16px;
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; scroll-padding-top:82px; }
+    body {
+      margin:0;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 8% 1%, rgba(188,92,46,.065), transparent 25rem),
+        radial-gradient(circle at 96% 16%, rgba(49,94,72,.045), transparent 28rem),
+        var(--paper);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,
+        "PingFang SC","Microsoft YaHei",sans-serif;
+      font-size:16px;
+      line-height:1.72;
+      overflow-x:hidden;
+    }
+    a { color:var(--rust-dark); text-decoration-thickness:1px; text-underline-offset:3px; }
+    a:hover { color:var(--rust); }
+    code {
+      padding:2px 6px;
+      border-radius:5px;
+      color:#70401f;
+      background:#f0ece5;
+      font-family:"SFMono-Regular",Consolas,monospace;
+      font-size:.89em;
+    }
+    .nav {
+      position:sticky;
+      z-index:20;
+      top:0;
+      display:flex;
+      gap:5px;
+      align-items:center;
+      overflow-x:auto;
+      padding:10px max(18px,calc((100vw - 1100px)/2));
+      border-bottom:1px solid rgba(213,201,184,.82);
+      background:rgba(247,244,238,.92);
+      backdrop-filter:blur(12px);
+      scrollbar-width:none;
+    }
+    .nav::-webkit-scrollbar { display:none; }
+    .nav a {
+      flex:0 0 auto;
+      padding:6px 10px;
+      border-radius:999px;
+      color:var(--muted);
+      font-size:.79rem;
+      font-weight:650;
+      text-decoration:none;
+    }
+    .nav a:hover,.nav a.active { color:var(--rust-dark); background:var(--rust-pale); }
+    .nav .brand { margin-right:auto; color:var(--ink); font-weight:760; letter-spacing:-.01em; }
+    .reading-progress {
+      position:fixed;
+      z-index:30;
+      top:0;
+      left:0;
+      width:0;
+      height:3px;
+      background:linear-gradient(90deg,var(--rust),#d59b52);
+    }
+    main { width:min(1060px,calc(100% - 38px)); margin:0 auto; padding:54px 0 78px; }
+    .hero {
+      position:relative;
+      overflow:hidden;
+      margin-bottom:42px;
+      padding:58px 54px 44px;
+      border:1px solid var(--line);
+      border-radius:24px;
+      background:rgba(255,253,249,.78);
+      box-shadow:var(--shadow);
+    }
+    .hero::after {
+      content:"";
+      position:absolute;
+      right:-110px;
+      bottom:-150px;
+      width:360px;
+      height:360px;
+      border:65px solid rgba(188,92,46,.055);
+      border-radius:50%;
+      pointer-events:none;
+    }
+    .kicker {
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      margin-bottom:18px;
+      padding:5px 11px;
+      border-radius:999px;
+      color:var(--green);
+      background:var(--green-pale);
+      font-size:.77rem;
+      font-weight:730;
+      letter-spacing:.055em;
+      text-transform:uppercase;
+      max-width:100%;
+      white-space:normal;
+    }
+    h1 {
+      max-width:850px;
+      margin:0 0 17px;
+      font-size:clamp(2.35rem,6.8vw,4.25rem);
+      font-weight:720;
+      letter-spacing:-.055em;
+      line-height:1.04;
+    }
+    .hero-lead { max-width:810px; margin:0; color:var(--ink-soft); font-size:1.13rem; font-weight:370; }
+    .hero-meta { margin-top:16px; color:var(--muted); font-size:.9rem; }
+    .hero-links { display:flex; flex-wrap:wrap; gap:9px; margin-top:24px; }
+    .button {
+      display:inline-flex;
+      align-items:center;
+      padding:8px 14px;
+      border:1px solid var(--line-strong);
+      border-radius:999px;
+      color:var(--ink-soft);
+      background:var(--panel);
+      font-size:.84rem;
+      font-weight:680;
+      text-decoration:none;
+      box-shadow:var(--shadow-soft);
+    }
+    .button.primary { border-color:var(--rust); color:#fff; background:var(--rust); }
+    .button:hover { transform:translateY(-1px); color:var(--rust-dark); }
+    .button.primary:hover { color:#fff; background:var(--rust-dark); }
+    .section { margin:58px 0 0; }
+    .section-head {
+      display:grid;
+      grid-template-columns:74px 1fr;
+      gap:20px;
+      align-items:start;
+      margin-bottom:24px;
+      padding-bottom:15px;
+      border-bottom:2px solid var(--rust);
+    }
+    .section-no { color:var(--rust); font-size:.77rem; font-weight:800; letter-spacing:.09em; }
+    h2 { margin:0; font-size:clamp(1.7rem,4vw,2.2rem); font-weight:690; letter-spacing:-.025em; line-height:1.25; }
+    h3 { margin:31px 0 14px; color:var(--rust-dark); font-size:1.28rem; font-weight:690; }
+    h4 { margin:0 0 8px; font-size:1.02rem; font-weight:700; line-height:1.35; }
+    p { margin:0 0 16px; font-weight:380; }
+    strong { font-weight:700; }
+    .lead { color:var(--ink-soft); font-size:1.04rem; }
+    .grid { display:grid; gap:15px; }
+    .g2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .g3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .g4 { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .card {
+      padding:21px 22px;
+      border:1px solid var(--line);
+      border-top:3px solid var(--rust);
+      border-radius:var(--radius);
+      background:rgba(255,253,249,.88);
+      box-shadow:var(--shadow-soft);
+    }
+    .card.green { border-top-color:var(--green); }
+    .card.blue { border-top-color:var(--blue); }
+    .card.purple { border-top-color:var(--purple); }
+    .card.gold { border-top-color:var(--gold); }
+    .card p:last-child { margin-bottom:0; }
+    .eyebrow {
+      display:block;
+      margin-bottom:8px;
+      color:var(--muted);
+      font-size:.72rem;
+      font-weight:780;
+      letter-spacing:.085em;
+      text-transform:uppercase;
+    }
+    .metric { margin:2px 0 5px; color:var(--rust-dark); font-size:2rem; font-weight:760; letter-spacing:-.045em; line-height:1; }
+    .metric.green { color:var(--green); }
+    .metric.blue { color:var(--blue); }
+    .definition {
+      margin:21px 0;
+      padding:20px 22px;
+      border-left:4px solid var(--green);
+      border-radius:0 var(--radius) var(--radius) 0;
+      background:var(--green-pale);
+    }
+    .definition p:last-child,.note p:last-child,.warning p:last-child,.verdict p:last-child { margin-bottom:0; }
+    .note,.warning,.danger {
+      margin:20px 0;
+      padding:18px 20px;
+      border:1px solid;
+      border-radius:var(--radius);
+    }
+    .note { border-color:#c9dae2; background:var(--blue-pale); }
+    .warning { border-color:#ead39b; background:var(--gold-pale); }
+    .danger { border-color:#e5bcc5; background:var(--rose-pale); }
+    .flow {
+      display:grid;
+      grid-template-columns:repeat(7,minmax(0,1fr));
+      gap:22px;
+      align-items:stretch;
+      margin:24px 0;
+    }
+    .flow-box {
+      position:relative;
+      min-height:128px;
+      padding:17px 14px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:var(--panel);
+      box-shadow:var(--shadow-soft);
+      font-size:.88rem;
+    }
+    .flow-box:not(:last-child)::after {
+      content:"→";
+      position:absolute;
+      top:50%;
+      right:-18px;
+      width:14px;
+      color:var(--rust);
+      font-size:1.2rem;
+      font-weight:800;
+      transform:translateY(-50%);
+    }
+    .flow-box b { display:block; margin-bottom:7px; color:var(--rust-dark); font-size:.93rem; }
+    .runtime {
+      display:grid;
+      grid-template-columns:1fr 78px 1fr;
+      gap:18px;
+      align-items:center;
+      margin:24px 0;
+    }
+    .runtime-col { display:grid; gap:12px; }
+    .runtime-node {
+      padding:17px 18px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:var(--panel);
+      box-shadow:var(--shadow-soft);
+    }
+    .runtime-node.model { border-color:#deb99e; background:var(--rust-pale); }
+    .runtime-node.search { border-color:#b8d0c1; background:var(--green-pale); }
+    .loop {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:68px;
+      height:68px;
+      border:2px dashed var(--rust);
+      border-radius:50%;
+      color:var(--rust-dark);
+      background:var(--panel);
+      font-size:.75rem;
+      font-weight:760;
+      text-align:center;
+      line-height:1.2;
+    }
+    figure {
+      margin:24px 0;
+      padding:13px;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      background:#fff;
+      box-shadow:var(--shadow);
+    }
+    figure img { display:block; width:100%; height:auto; border-radius:10px; }
+    figcaption { padding:11px 7px 2px; color:var(--muted); font-size:.82rem; }
+    .figure-grid { display:grid; grid-template-columns:1.15fr .85fr; gap:15px; }
+    .table-wrap {
+      overflow-x:auto;
+      margin:19px 0 24px;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      background:var(--panel);
+      box-shadow:var(--shadow-soft);
+    }
+    table { width:100%; border-collapse:collapse; min-width:670px; font-size:.89rem; }
+    th,td { padding:12px 14px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--ink-soft); background:#f1ece4; font-size:.78rem; font-weight:760; letter-spacing:.025em; }
+    tr:last-child td { border-bottom:0; }
+    td.best { color:var(--green); font-weight:760; background:rgba(233,242,236,.7); }
+    td.warn { color:var(--rose); font-weight:700; }
+    .tool-row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; margin:20px 0; }
+    .tool {
+      position:relative;
+      overflow:hidden;
+      padding:23px;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      background:var(--panel);
+      box-shadow:var(--shadow-soft);
+    }
+    .tool .icon { color:var(--rust); font-size:1.8rem; font-weight:800; line-height:1; }
+    .tool h4 { margin-top:13px; }
+    .tool small { color:var(--muted); }
+    .bar-row { display:grid; grid-template-columns:175px 1fr 56px; gap:12px; align-items:center; margin:12px 0; font-size:.86rem; }
+    .bar-track { overflow:hidden; height:9px; border-radius:999px; background:#ebe4da; }
+    .bar { height:100%; border-radius:inherit; background:var(--blue); }
+    .bar.ours { background:var(--rust); }
+    .bar.base { background:#9aa39d; }
+    .bar-row strong { text-align:right; }
+    .audit { display:grid; gap:12px; }
+    .audit-item {
+      display:grid;
+      grid-template-columns:220px 1fr;
+      gap:20px;
+      padding:17px 19px;
+      border:1px solid var(--line);
+      border-radius:13px;
+      background:var(--panel);
+    }
+    .audit-item h4 { color:var(--ink-soft); }
+    .audit-item p { margin:0; color:var(--muted); font-size:.91rem; }
+    .status {
+      display:inline-flex;
+      align-items:center;
+      margin-top:7px;
+      padding:3px 8px;
+      border-radius:999px;
+      color:var(--green);
+      background:var(--green-pale);
+      font-size:.69rem;
+      font-weight:760;
+    }
+    .status.bad { color:var(--rose); background:var(--rose-pale); }
+    .status.partial { color:var(--gold); background:var(--gold-pale); }
+    .file-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .file {
+      padding:17px 18px;
+      border:1px solid var(--line);
+      border-radius:13px;
+      background:var(--panel);
+    }
+    .file a { font-weight:720; }
+    .file p { margin:6px 0 0; color:var(--muted); font-size:.86rem; }
+    .verdict {
+      margin-top:24px;
+      padding:25px 27px;
+      border:1px solid #d8b499;
+      border-radius:18px;
+      background:linear-gradient(145deg,#fff9f3,var(--rust-pale));
+      box-shadow:var(--shadow);
+    }
+    .verdict h3 { margin-top:0; }
+    .checklist { margin:10px 0 0; padding:0; list-style:none; }
+    .checklist li { position:relative; margin:8px 0; padding-left:25px; }
+    .checklist li::before { content:"✓"; position:absolute; left:0; color:var(--green); font-weight:800; }
+    .checklist li.no::before { content:"×"; color:var(--rose); }
+    footer { margin-top:60px; padding-top:23px; border-top:1px solid var(--line); color:var(--muted); font-size:.8rem; text-align:center; }
+    @media (max-width:900px) {
+      .g4 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .flow { grid-template-columns:1fr; gap:10px; }
+      .flow-box { min-height:auto; }
+      .flow-box:not(:last-child)::after { content:"↓"; top:auto; right:50%; bottom:-18px; transform:translateX(50%); }
+      .audit-item { grid-template-columns:1fr; gap:7px; }
+    }
+    @media (max-width:700px) {
+      main { width:calc(100% - 24px); padding-top:28px; }
+      .hero { padding:39px 25px 31px; }
+      .nav .brand { display:none; }
+      .section-head { grid-template-columns:1fr; gap:4px; }
+      .g2,.g3,.g4,.tool-row,.figure-grid,.file-list { grid-template-columns:1fr; }
+      .runtime { grid-template-columns:1fr; }
+      .loop { margin:0 auto; transform:rotate(90deg); }
+      .bar-row { grid-template-columns:120px 1fr 48px; }
+      .card,.tool { padding:18px; }
+    }
+    @media print {
+      .nav,.reading-progress { display:none; }
+      body { background:#fff; }
+      main { width:100%; padding:0; }
+      .hero,.card,figure,.table-wrap,.verdict { box-shadow:none; break-inside:avoid; }
+      .section { break-before:auto; }
+      a { color:inherit; }
+    }
+  </style>
+  <style id="paper-reading-template-overrides">
+    /* Visual language aligned with the local paper-reading template. */
+    :root {
+      --ink:#1f2421;
+      --muted:#5c635d;
+      --paper:#f7f4ef;
+      --panel:#fbf9f5;
+      --white:#fff;
+      --line:#e7e1d7;
+      --line-strong:#d9d0c4;
+      --rust:#c4612f;
+      --rust-dark:#a94e22;
+      --rust-pale:#f2e3d6;
+      --green:#315b45;
+      --green-pale:#edf2ee;
+      --blue:#355f78;
+      --blue-pale:#edf4f7;
+      --purple:#70526f;
+      --purple-pale:#f2eaf1;
+      --gold:#8a641c;
+      --gold-pale:#fff7e6;
+      --rose:#934958;
+      --rose-pale:#fff0f2;
+      --shadow:0 2px 8px rgba(31,36,33,.06);
+      --shadow-soft:0 2px 8px rgba(31,36,33,.06);
+      --figure-shadow:0 4px 14px rgba(31,36,33,.11);
+      --radius:8px;
+    }
+    body {
+      background:var(--paper);
+      font-size:16px;
+      line-height:1.72;
+    }
+    main.container {
+      width:min(920px,calc(100% - 44px));
+      margin:0 auto;
+      padding:52px 18px 76px;
+    }
+    header.paper-header {
+      position:static;
+      overflow:visible;
+      margin:0 0 34px;
+      padding:0 0 34px;
+      border:0;
+      border-bottom:1px solid var(--line);
+      border-radius:0;
+      background:transparent;
+      box-shadow:none;
+      text-align:center;
+    }
+    header.paper-header::after { display:none; }
+    .status-row,.resource-row {
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:8px;
+    }
+    .status-row { margin-bottom:18px; }
+    .resource-row { margin-top:22px; }
+    .badge {
+      display:inline-flex;
+      align-items:center;
+      width:fit-content;
+      padding:4px 11px;
+      border-radius:999px;
+      color:var(--rust-dark);
+      background:var(--rust-pale);
+      font-size:.79rem;
+      font-weight:650;
+      white-space:nowrap;
+    }
+    .badge.green { color:var(--green); background:var(--green-pale); }
+    header.paper-header h1 {
+      max-width:none;
+      margin:0 0 12px;
+      font-size:clamp(2.35rem,7vw,3.25rem);
+      font-weight:670;
+      letter-spacing:-.035em;
+      line-height:1.08;
+    }
+    .subtitle {
+      max-width:720px;
+      margin:0 auto;
+      color:var(--muted);
+      font-size:1.08rem;
+      font-weight:360;
+    }
+    .paper-header .hero-meta {
+      margin-top:12px;
+      color:var(--muted);
+      font-size:.91rem;
+      font-weight:360;
+    }
+    .paper-header .author-block {
+      max-width:800px;
+      margin:20px auto 0;
+      padding-top:16px;
+      border-top:1px dashed var(--line-strong);
+      font-size:.9rem;
+      line-height:1.85;
+    }
+    .paper-header .author-block .authors { margin:0 0 6px; color:var(--ink-soft); font-weight:480; }
+    .paper-header .author-block .affils { margin:0 0 4px; color:var(--muted); }
+    .paper-header .author-block .roles,
+    .paper-header .author-block .pub-meta { margin:0; color:var(--muted); font-size:.81rem; }
+    .paper-header .author-block .pub-meta { margin-top:6px; }
+    .paper-header .author-block sup { color:var(--rust); font-weight:620; }
+    .resource-link {
+      display:inline-block;
+      padding:7px 13px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      color:var(--rust-dark);
+      background:var(--panel);
+      font-size:.84rem;
+      font-weight:620;
+      text-decoration:none;
+      transition:box-shadow .2s ease,transform .2s ease;
+    }
+    .resource-link.primary {
+      border-color:var(--rust);
+      color:var(--white);
+      background:var(--rust);
+    }
+    .resource-link:hover { box-shadow:var(--shadow); transform:translateY(-1px); }
+    .highlight-box {
+      margin:26px 0;
+      padding:21px 25px;
+      border-left:4px solid var(--rust);
+      border-radius:5px;
+      background:var(--panel);
+      box-shadow:var(--shadow);
+    }
+    .highlight-box p:last-child { margin-bottom:0; }
+    .toc {
+      position:sticky;
+      top:10px;
+      z-index:20;
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:7px;
+      margin:24px 0 34px;
+      padding:10px;
+      border:1px solid rgba(231,225,215,.9);
+      border-radius:16px;
+      background:rgba(247,244,239,.93);
+      box-shadow:0 8px 24px rgba(31,36,33,.06);
+      backdrop-filter:blur(10px);
+    }
+    .toc a {
+      padding:6px 10px;
+      border-radius:999px;
+      color:var(--muted);
+      font-size:.8rem;
+      font-weight:620;
+      text-decoration:none;
+    }
+    .toc a:hover { color:var(--rust-dark); background:var(--rust-pale); }
+    .section { margin:0; }
+    .section-head {
+      display:block;
+      margin:0;
+      padding:0;
+      border:0;
+    }
+    .section-no { display:none; }
+    .section-head h2 {
+      margin:56px 0 24px;
+      padding-bottom:11px;
+      border-bottom:2px solid var(--rust);
+      font-size:1.78rem;
+      font-weight:630;
+      letter-spacing:0;
+      line-height:1.3;
+    }
+    h3 {
+      margin:30px 0 14px;
+      color:var(--rust);
+      font-size:1.25rem;
+      font-weight:630;
+    }
+    h4 { color:var(--rust-dark); font-size:1.01rem; font-weight:650; }
+    p { margin-bottom:17px; font-weight:360; }
+    strong { font-weight:660; }
+    .lead { color:#343b37; font-size:1.02rem; }
+    .grid,.card-grid { gap:15px; margin:24px 0; }
+    .card {
+      padding:21px 23px;
+      border:1px solid var(--line);
+      border-top:1px solid var(--line);
+      border-radius:8px;
+      background:var(--panel);
+      box-shadow:var(--shadow);
+    }
+    .card.green,.card.blue,.card.purple,.card.gold { border-top-color:var(--line); }
+    .metric { font-size:1.8rem; }
+    .definition,.note,.warning,.danger {
+      margin:26px 0;
+      padding:21px 25px;
+      border:0;
+      border-left:4px solid var(--green);
+      border-radius:5px;
+      background:var(--green-pale);
+      box-shadow:var(--shadow);
+    }
+    .note { border-left-color:var(--blue); background:var(--blue-pale); }
+    .warning { border-left-color:var(--gold); background:var(--gold-pale); }
+    .danger { border-left-color:var(--rose); background:var(--rose-pale); }
+    .flow {
+      display:block;
+      margin:29px 0;
+      padding:27px 31px;
+      border-radius:8px;
+      background:var(--panel);
+      box-shadow:var(--shadow);
+    }
+    .flow-box {
+      position:relative;
+      min-height:auto;
+      margin:16px 0;
+      padding:18px 22px;
+      border:0;
+      border-left:4px solid var(--rust);
+      border-radius:4px;
+      background:var(--white);
+      box-shadow:none;
+      font-size:.94rem;
+    }
+    .flow-box:not(:last-child)::after {
+      content:"▼";
+      position:absolute;
+      top:auto;
+      right:auto;
+      bottom:-28px;
+      left:50%;
+      width:auto;
+      color:var(--rust);
+      font-size:18px;
+      transform:translateX(-50%);
+    }
+    figure {
+      margin:30px 0;
+      padding:0;
+      border:0;
+      border-radius:0;
+      background:transparent;
+      box-shadow:none;
+      text-align:center;
+    }
+    figure img {
+      overflow:hidden;
+      border:1px solid var(--line);
+      border-radius:8px;
+      background:var(--white);
+      box-shadow:var(--figure-shadow);
+    }
+    figcaption {
+      max-width:760px;
+      margin:11px auto 0;
+      padding:0;
+      color:var(--muted);
+      font-size:.86rem;
+      font-style:italic;
+      line-height:1.55;
+    }
+    .figure-grid { margin:30px 0; gap:16px; }
+    .table-wrap {
+      width:100%;
+      margin:26px 0;
+      border:0;
+      border-radius:8px;
+      overflow-x:auto;
+      background:transparent;
+      box-shadow:none;
+    }
+    table {
+      min-width:680px;
+      border-collapse:collapse;
+      border-radius:8px;
+      overflow:hidden;
+      background:var(--panel);
+      box-shadow:var(--shadow);
+    }
+    th {
+      padding:13px 15px;
+      color:var(--white);
+      background:var(--rust);
+      font-size:.88rem;
+      font-weight:620;
+      text-align:left;
+    }
+    td {
+      padding:13px 15px;
+      border-bottom:1px solid var(--line);
+      font-size:.89rem;
+      font-weight:360;
+    }
+    td.best { color:inherit; font-weight:590; background:#f8ede4; }
+    .tool-row { gap:15px; margin:24px 0; }
+    .tool {
+      padding:21px 23px;
+      border:1px solid var(--line);
+      border-radius:8px;
+      background:var(--panel);
+      box-shadow:var(--shadow);
+    }
+    .runtime { margin:29px 0; }
+    .runtime-node {
+      border-radius:8px;
+      background:var(--panel);
+      box-shadow:var(--shadow);
+    }
+    .runtime-node.model { border-color:var(--line); background:var(--rust-pale); }
+    .runtime-node.search { border-color:var(--line); background:var(--green-pale); }
+    .audit-item,.file {
+      border-radius:8px;
+      background:var(--panel);
+      box-shadow:var(--shadow);
+    }
+    .verdict {
+      margin:32px 0;
+      padding:28px 31px;
+      border:0;
+      border-radius:8px;
+      color:var(--white);
+      background:linear-gradient(135deg,var(--rust),var(--rust-dark));
+      box-shadow:0 4px 12px rgba(196,97,47,.22);
+    }
+    .verdict h3,.verdict p,.verdict li { color:var(--white); }
+    .verdict h3 { margin-top:0; }
+    .verdict .checklist li::before { color:var(--white); }
+    footer {
+      margin-top:72px;
+      padding-top:28px;
+      border-top:1px solid var(--line);
+      color:var(--muted);
+      font-size:.86rem;
+      font-weight:360;
+      text-align:center;
+    }
+    @media (max-width:760px) {
+      main.container {
+        width:min(100% - 28px,920px);
+        padding:34px 8px 56px;
+      }
+      .toc { position:static; }
+      .section-head h2 { margin-top:46px; font-size:1.55rem; }
+      .flow { padding:20px 16px; }
+      .highlight-box,.verdict { padding:22px; }
+      .subtitle,.paper-header .hero-meta { overflow-wrap:anywhere; }
+    }
+    @media print {
+      .toc { display:none; }
+      body { background:white; }
+      main.container { width:100%; max-width:none; padding:24px; }
+    }
+  </style>
+</head>
+<body>
+<main id="top" class="container">
+  <header class="paper-header">
+    <div class="status-row">
+      <span class="badge">arXiv:2603.20278</span>
+      <span class="badge">2026-03-24</span>
+      <span class="badge">预印本 · COLM 2026 模板</span>
+      <span class="badge green">论文 / 数据 / 模型 / 代码</span>
+    </div>
+    <h1>OpenResearcher</h1>
+    <p class="subtitle">
+      它不是一款文献管理软件，而是一套把<strong>长程搜索行为</strong>蒸馏进开放权重模型的方法：
+      先在可控的离线网络环境中合成 9.76 万条研究轨迹，再让一个 30B-A3B 模型学习如何搜索、打开网页、定位证据与收敛到答案。
+    </p>
+    <p class="hero-meta">TIGER-AI-Lab（滑铁卢大学）联合 Texas A&amp;M、UCSD 等 · arXiv:2603.20278 · 本地材料核查：2026-07-30</p>
+    <div class="author-block">
+      <p class="authors">
+        Zhuofeng Li<sup>1*†</sup> · Dongfu Jiang<sup>2*†</sup> · Xueguang Ma<sup>2†</sup> · Haoxiang Zhang<sup>3†</sup> · Ping Nie<sup>2†</sup> ·
+        Yuyu Zhang<sup>4</sup> · Kai Zou<sup>5</sup> · Jianwen Xie<sup>6</sup> · Yu Zhang<sup>1✉</sup> · Wenhu Chen<sup>2✉</sup>
+      </p>
+      <p class="affils">
+        <sup>1</sup>Texas A&amp;M University · <sup>2</sup>University of Waterloo（TIGER-AI-Lab，Wenhu Chen 组） ·
+        <sup>3</sup>UC San Diego · <sup>4</sup>Verdent AI · <sup>5</sup>NetMind AI · <sup>6</sup>Lambda
+      </p>
+      <p class="roles">* 项目负责人 · † 核心贡献者 · ✉ 通讯作者（Yu Zhang / Wenhu Chen）；学术界（TAMU × Waterloo × UCSD）+ 工业界（Verdent AI / NetMind AI / Lambda）合作</p>
+      <p class="pub-meta">
+        发表状态：arXiv 预印本 v1（cs.IR，交叉 cs.AI / cs.CL），2026-03-17 提交、03-24 公开；排版用 COLM 2026 模板，截至 2026-08-02 未见正式接收记录。
+        影响：Hugging Face Daily Papers 当日 #2；数据被 NVIDIA <a href="https://research.nvidia.com/labs/nemotron/Nemotron-3-Ultra/">Nemotron 3 Ultra</a> 采用（2026-06）。
+      </p>
+    </div>
+    <div class="resource-row">
+      <a class="resource-link primary" href="https://arxiv.org/abs/2603.20278">论文 PDF</a>
+      <a class="resource-link" href="https://arxiv.org/abs/2603.20278">TeX source</a>
+      <a class="resource-link" href="code/README.html">本地代码</a>
+      <a class="resource-link" href="dataset/OpenResearcher-Dataset/README.html">数据卡</a>
+      <a class="resource-link" href="model/OpenResearcher-30B-A3B/README.html">模型卡</a>
+    </div>
+  </header>
+
+  <div class="highlight-box">
+    <p><strong>最短理解：</strong>OpenResearcher 的主贡献不是“又发布了一个 30B 模型”，而是把一次性在线证据补全与大规模离线研究轨迹合成解耦，让长程搜索行为第一次能够低成本、固定环境地生成、训练和分析。</p>
+  </div>
+
+  <nav class="toc" aria-label="页面导航">
+    <a href="#position">工作定位</a>
+    <a href="#related-work">引言与相关工作</a>
+    <a href="#synthesis">轨迹合成</a>
+    <a href="#data">数据集</a>
+    <a href="#model">学生模型</a>
+    <a href="#runtime">代码执行链</a>
+    <a href="#results">实验结果</a>
+    <a href="#insights">机制洞见</a>
+    <a href="#audit">复现审计</a>
+    <a href="#verdict">最终判断</a>
+  </nav>
+
+  <section class="section" id="position">
+    <div class="section-head"><span class="section-no">01 / POSITION</span><h2>先建立正确定位：它研究的是“如何训练研究智能体”</h2></div>
+    <p class="lead">OpenResearcher 的核心问题不是怎样写一份漂亮报告，而是：怎样低成本、可复现地获得大量包含搜索、证据检查和多步推理的完整示范。</p>
+
+    <div class="definition">
+      <p><strong>最准确的一句话：</strong>OpenResearcher 是一个“离线深度研究轨迹合成管线”，以及由这些轨迹监督微调得到的开放权重浏览智能体。</p>
+    </div>
+
+    <div class="grid g4">
+      <article class="card green"><span class="evidence code">本地数据确认</span><div class="metric green">97,630</div><h4>研究轨迹</h4><p>16 个随机种子覆盖约 6.1K 个困难问题，保存模型与浏览器的完整多轮交互。</p></article>
+      <article class="card"><span class="evidence paper">论文与配置</span><div class="metric">30B-A3B</div><h4>智能体模型</h4><p>总参数约 30B，每个 token 激活约 3B；继承 Nemotron 的长上下文混合架构。</p></article>
+      <article class="card blue"><span class="evidence code">代码确认</span><div class="metric blue">3 tools</div><h4>浏览抽象</h4><p><code>search</code>、<code>open</code>、<code>find</code> 对应从全局检索到页面内证据定位。</p></article>
+      <article class="card purple"><span class="evidence paper">论文声称</span><div class="metric">4 suites</div><h4>评测框架</h4><p>覆盖 BrowseComp-Plus、BrowseComp、GAIA 和中文 xbench-DeepSearch。</p></article>
+    </div>
+
+    <h3>它不是什么</h3>
+    <div class="grid g3">
+      <article class="card"><h4>不是文献管理器</h4><p>没有 Zotero 式条目库、PDF 标注、引用格式化或知识图谱界面。</p></article>
+      <article class="card green"><h4>不是完整科研自动化系统</h4><p>目标集中在开放网络问答与证据检索，不包含选题、实验、代码执行和论文写作闭环。</p></article>
+      <article class="card blue"><h4>不是即装即用的消费产品</h4><p>仓库主要是研究代码，需要多 GPU、搜索索引和 API 配置；本地没有前端应用。</p></article>
+    </div>
+
+    <figure>
+      <img src="../../../_未包含的内容.html" alt="OpenResearcher 官方总体效果图">
+      <figcaption>官方总览图。项目强调的是“开放的数据—模型—方法—评测”链路，而不是单一模型权重。</figcaption>
+    </figure>
+  </section>
+
+  <section class="section" id="related-work">
+    <div class="section-head"><span class="section-no">02 / CONTEXT</span><h2>Introduction 与相关工作：它争夺的不是“文献问答”，而是长程研究轨迹的生产方法</h2></div>
+    <p class="lead">论文没有把 OpenResearcher 写成一种全新的 Agent 架构，而是先接受“用强模型轨迹监督较小模型”的技术路线，再指出：到了 Deep Research 场景，真正稀缺的是便宜、稳定、足够长、能够分析的浏览轨迹。</p>
+
+    <h3>Introduction 的论证链条</h3>
+    <div class="flow" aria-label="Introduction 的问题推导">
+      <div class="flow-box"><b>① 已验证的训练范式</b>DeepSeek-R1-Distill、OpenThoughts、OpenMathReasoning、OpenCodeReasoning 表明：强教师生成长推理轨迹，再用 SFT 训练学生模型是有效路线。</div>
+      <div class="flow-box"><b>② 新场景更困难</b>Deep Research 不只是 2–5 轮 multi-hop QA；它要持续搜索、检查异构来源、聚合证据，并判断何时可以停止。</div>
+      <div class="flow-box"><b>③ 瓶颈转向数据</b>模型能力固然重要，但缺少反映真实浏览行为的高质量长轨迹，成为训练研究智能体的核心障碍。</div>
+      <div class="flow-box"><b>④ 现有生成方式有缺口</b>Search-R1 轨迹偏短；WebExplorer、MiroThinker 等长程方案依赖变化中的在线搜索 API，成本、复现与可控分析都受限。</div>
+      <div class="flow-box"><b>⑤ OpenResearcher 的回答</b>先一次性在线补齐支持答案的文档，再固定 15M 文档语料和搜索引擎，把反复执行的多轮轨迹合成完全搬到离线环境。</div>
+    </div>
+
+    <div class="definition">
+      <p><strong>论文真正提出的中心问题：</strong>如何以可扩展、低成本、可复现并且适合机制分析的方式，合成高质量、长程的 Deep Research 轨迹？因此它首先是<strong>数据生成管线与实验环境</strong>，其次才是由这些数据训练出来的 30B-A3B Agent。</p>
+    </div>
+
+    <h3>相关工作被组织成三条谱系</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>研究谱系</th><th>论文提到的代表工作</th><th>OpenResearcher 如何承接或区分</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>长推理轨迹与蒸馏</strong></td>
+            <td>DeepSeek-R1-Distill、OpenThoughts、OpenMathReasoning、OpenCodeReasoning</td>
+            <td>继承“教师轨迹 + SFT 学生”的基本范式，但把轨迹从数学、代码推理扩展为包含大量浏览器交互的开放网络研究。</td>
+          </tr>
+          <tr>
+            <td><strong>Deep Research Agents</strong></td>
+            <td>OpenAI Deep Research、Claude Research、Kimi-Researcher、Grok DeepSearch；Tongyi DeepResearch、MiroThinker、Verl-Tool、AgentFlow、Cognitive Kernel-Pro、DeepMiner</td>
+            <td>承认这些系统推动了长程工具使用、训练算法、交互扩展和动态记忆；它选择补足多数系统仍依赖实时、专有搜索 API 的数据基础设施问题。</td>
+          </tr>
+          <tr>
+            <td><strong>离线环境与合成轨迹</strong></td>
+            <td>WebArena、Mind2Web、OSWorld；AgentTuning、APIGen-MT</td>
+            <td>继承固定环境带来的低成本和可复现性，但认为这些环境主要面向短程工具使用、UI 导航或简化 API，缺少大规模非结构化知识语料与几十轮检索条件。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>它具体怎样评价相邻工作</h3>
+    <div class="grid g3">
+      <article class="card"><span class="evidence paper">轨迹长度</span><h4>Search-R1</h4><p>能够训练搜索型推理，但论文认为其典型的 2–5 轮交互距离真实 Deep Research 的几十至上百次工具调用仍然很远。</p></article>
+      <article class="card green"><span class="evidence paper">在线依赖</span><h4>WebExplorer / MiroThinker</h4><p>可以产生更长交互，却通常依赖 Google 等实时搜索服务；错误探索也要付费，网页变化还使数据难以复现和逐事件分析。</p></article>
+      <article class="card blue"><span class="evidence paper">训练重点</span><h4>Tongyi / Verl-Tool / AgentFlow 等</h4><p>这些工作更强调端到端训练、强化学习、交互扩展或记忆机制；OpenResearcher 把创新轴移到轨迹生产环境、语料覆盖和浏览监督。</p></article>
+      <article class="card purple"><span class="evidence paper">环境形态</span><h4>WebArena / Mind2Web / OSWorld</h4><p>静态环境适合复现实验，但主要模拟网页或操作系统中的动作任务，不等于在 15M 篇非结构化文档上持续寻找事实证据。</p></article>
+      <article class="card"><span class="evidence paper">数据合成</span><h4>AgentTuning / APIGen-MT</h4><p>同样用模拟交互监督开放模型，但论文认为它们更偏短程工具/API 使用，不能直接覆盖长程研究所需的反复检索和证据收敛。</p></article>
+      <article class="card gold"><span class="evidence inference">竞争坐标</span><h4>OpenResearcher</h4><p>不主张发明 Deep Research，也不主张发明 ReAct；它主张首次把“大语料、长轨迹、低成本、固定环境、全链路开放”组合成一套合成管线。</p></article>
+    </div>
+
+    <h3>与 PaperQA / 科研文献检索的边界</h3>
+    <div class="grid g2">
+      <article class="card green"><h4>PaperQA 的问题空间</h4><p>面向论文、PDF、文献元数据和可引用证据，目标是基于学术文献回答研究问题或辅助综述，核心对象是<strong>科研文献本身</strong>。</p></article>
+      <article class="card blue"><h4>OpenResearcher 的问题空间</h4><p>面向一般 Web 文档和搜索行为，目标是制造训练 Deep Research Agent 的完整示范，核心对象是<strong>搜索—打开—定位—推理轨迹</strong>。</p></article>
+    </div>
+    <div class="note">
+      <p><strong>从论文文本得到的直接判断：</strong>Introduction 和 Related Work 没有讨论 PaperQA，也没有围绕 scholarly literature、scientific literature、PDF 解析或引用管理建立对比。这不是说二者“毫无关系”——它们都涉及检索、证据和回答——而是二者不处于同一个直接竞争层级：PaperQA 更像领域应用系统，OpenResearcher 更像训练通用浏览 Agent 的数据工厂。</p>
+    </div>
+
+    <h3>如何看待作者的创新声明</h3>
+    <div class="grid g3">
+      <article class="card green"><h4>离线、可复现的合成</h4><p>一次在线建库后，昂贵的搜索与浏览循环在固定环境中运行，能够反复生成和比较轨迹。</p></article>
+      <article class="card blue"><h4>显式浏览结构</h4><p><code>search</code>、<code>open</code>、<code>find</code> 把候选发现、全文检查和页面内定位拆开，使浏览行为可训练也可诊断。</p></article>
+      <article class="card purple"><h4>数据与 Agent 机制分析</h4><p>固定语料让作者能够研究轨迹过滤、证据覆盖、轮数预算、工具组合，以及“已经找到证据却仍答错”的失败。</p></article>
+    </div>
+    <div class="warning">
+      <p><strong>阅读时保留一个限定：</strong>“第一个完全开源、且可与专有系统竞争的长程 Deep Research 轨迹合成管线”是论文作者的优先权声明。更稳妥的理解是：这项工作的独特组合在于<strong>离线大语料 + 100+ 工具调用轨迹 + 完整开放 + 可控诊断</strong>，而不是其中任何单个组件此前从未出现。</p>
+    </div>
+  </section>
+
+  <section class="section" id="synthesis">
+    <div class="section-head"><span class="section-no">03 / SYNTHESIS</span><h2>核心贡献：把昂贵的在线研究循环搬进离线环境</h2></div>
+    <p class="lead">持续调用商业搜索 API 会带来成本、速率限制、网页变化和不可复现性。作者把在线网络只用于一次性补齐证据，之后的大规模轨迹生成全部面对固定语料和固定索引。</p>
+
+    <div class="flow" aria-label="轨迹合成流程">
+      <div class="flow-box"><b>① 困难问题</b>从 MiroVerse 随机抽取约 10%，得到约 6,102 个长程、多跳问题。</div>
+      <div class="flow-box"><b>② 答案清洗</b>把原始答案规范成简洁、可验证的目标答案；不沿用原数据中的轨迹。</div>
+      <div class="flow-box"><b>③ 一次在线引导</b>用“问题 + 答案”向 Serper 检索，收集约 10K 个支持答案的 gold 文档。</div>
+      <div class="flow-box"><b>④ 离线语料</b>将 gold 文档与 15M FineWeb 文档合并；前者保证证据存在，后者制造真实干扰。</div>
+      <div class="flow-box"><b>⑤ 建立索引</b>Qwen3-Embedding-8B 编码文档，FAISS 提供固定、可重复的稠密检索。</div>
+      <div class="flow-box"><b>⑥ 教师研究</b>GPT-OSS-120B 不看参考答案，只通过三个浏览工具自己找回答案。</div>
+      <div class="flow-box"><b>⑦ 过滤与 SFT</b>剔除超长、坏工具调用和未收敛轨迹；约 55K 条正确轨迹进入学生模型训练。</div>
+    </div>
+
+    <figure>
+      <img src="paper/tex_source/img/Openresearcher-synthesis-v5.png" alt="OpenResearcher 离线研究轨迹合成管线">
+      <figcaption>论文原图：问题策展 → 证据覆盖引导 → 离线语料与索引 → 教师模型多轮浏览 → 轨迹数据。</figcaption>
+    </figure>
+
+    <div class="grid g2">
+      <article class="card green"><span class="evidence paper">论文设计</span><h4>“离线”不等于从未接触网络</h4><p>作者先用答案引导的在线检索把相关证据放入语料库。真正离线的是之后 9.7 万次长轨迹生成过程。</p></article>
+      <article class="card blue"><span class="evidence paper">论文设计</span><h4>教师生成时不能看到答案</h4><p>答案只用于建库和事后判分，不进入教师的研究上下文。否则生成的只是答案条件化的伪搜索轨迹。</p></article>
+      <article class="card"><span class="evidence inference">方法解释</span><h4>固定环境分离“搜索失败”与“语料缺失”</h4><p>先保证证据可检索，再观察模型能否找到它，才能把检索器、搜索策略和推理错误分开分析。</p></article>
+      <article class="card purple"><span class="evidence inference">方法解释</span><h4>不是只保存最终答案</h4><p>训练信号来自每次查询改写、页面选择、证据定位和停止决策，最终答案只是轨迹的最后一个节点。</p></article>
+    </div>
+
+    <div class="warning">
+      <p><strong>材料中的数量口径有冲突：</strong>代码 README 把专用语料写为约 <strong>11B tokens</strong>，论文正文却写成约 <strong>10 trillion tokens</strong>。15M 文档若有 10T token，平均每篇约 66.7 万 token，明显可疑。页面将“15M 文档”视为稳定口径，不把 token 总量当作已核实事实。</p>
+    </div>
+  </section>
+
+  <section class="section" id="data">
+    <div class="section-head"><span class="section-no">04 / DATA</span><h2>数据集不是 9.7 万个独立问题，而是 6.1K 问题的 16 条搜索路径</h2></div>
+    <p class="lead">本地 48 个 Parquet 分片完整可读。它们按 <code>seed_42</code> 至 <code>seed_57</code> 分为 16 组，每组几乎都包含相同的 6,102 个问题，区别在于教师采样出的研究路径。</p>
+
+    <div class="grid g4">
+      <article class="card"><span class="evidence code">本地实测</span><div class="metric">97,630</div><p>Parquet 总记录数</p></article>
+      <article class="card green"><span class="evidence code">本地实测</span><div class="metric green">149</div><p>每条轨迹消息数中位数</p></article>
+      <article class="card blue"><span class="evidence code">本地实测</span><div class="metric blue">172.3</div><p>每条轨迹平均消息数</p></article>
+      <article class="card purple"><span class="evidence code">本地实测</span><div class="metric">1,180</div><p>最长轨迹消息数</p></article>
+    </div>
+
+    <h3>一条记录里有什么</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>字段</th><th>意义</th><th>应怎样理解</th></tr></thead>
+        <tbody>
+          <tr><td><code>qid</code></td><td>原始问题编号</td><td>不同 seed 下相同 qid 是同一问题的不同尝试。</td></tr>
+          <tr><td><code>question</code> / <code>answer</code></td><td>问题与标准答案</td><td>答案用于事后验证，不代表教师生成时可见。</td></tr>
+          <tr><td><code>messages</code></td><td>完整对话与工具轨迹</td><td>包括 system、developer、user、assistant、tool 消息，以及思考和工具元数据。</td></tr>
+          <tr><td><code>latency_s</code></td><td>生成耗时</td><td>本地中位数约 3,669 秒，说明这些确实是高成本长轨迹。</td></tr>
+          <tr><td><code>status</code></td><td>生成流程状态</td><td><code>success</code> 表示流程完成，<strong>不是答案正确</strong>；正确性还要由 grader 判断。</td></tr>
+          <tr><td><code>chunk_idx</code> / <code>num_chunks</code></td><td>数据分片信息</td><td>用于大规模生成、保存和发布，不是对话轮次。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <p><strong>为什么一题要生成 16 次？</strong>深度研究的成功取决于早期搜到什么、选择打开什么、何时改写查询。论文报告 Pass@1 为 0.567，Pass@16 为 0.792；同一道题存在大量失败路径，也可能有少数关键成功路径。多采样既增加成功数据，也暴露策略差异。</p>
+    </div>
+  </section>
+
+  <section class="section" id="model">
+    <div class="section-head"><span class="section-no">05 / MODEL</span><h2>学生模型：用监督学习吸收“如何研究”，不是现场调用教师</h2></div>
+    <p class="lead">最终模型从 NVIDIA Nemotron-3-Nano-30B-A3B-Base-BF16 初始化，在完整、未经截断的工具轨迹上做一次长上下文 SFT。</p>
+
+    <div class="grid g3">
+      <article class="card"><span class="eyebrow">Architecture</span><h4>混合 Mamba–Attention–MoE</h4><p>52 层、隐藏维度 2,688、128 个路由专家，每个 token 选择 6 个专家；模型类型为 <code>nemotron_h</code>。</p></article>
+      <article class="card green"><span class="eyebrow">Context</span><h4>262,144 token 配置</h4><p>训练以 256K 最大长度预打包完整轨迹，避免把研究过程截成不连贯的局部片段。</p></article>
+      <article class="card blue"><span class="eyebrow">Efficiency</span><h4>30B 总量，约 3B 激活</h4><p>MoE 让模型保留较大知识容量，同时每步只激活部分参数；A3B 是激活参数规模，不是总参数。</p></article>
+    </div>
+
+    <h3>论文报告的训练配置</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>项目</th><th>配置</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td>训练数据</td><td>约 55K 条答案正确轨迹</td><td>由 97K+ 合成轨迹经过 rejection sampling 得到。</td></tr>
+          <tr><td>训练框架</td><td>Megatron-LM</td><td>训练实现放在外部 <code>openresearcher</code> 分支，不在当前 code 仓库内。</td></tr>
+          <tr><td>硬件 / 时间</td><td>8 × H100，约 8 小时</td><td>这是论文训练配置；代码 README 的运行环境另写为 8 × A100 80GB。</td></tr>
+          <tr><td>优化</td><td>347 steps，global batch 64</td><td>学习率 <code>5e-5</code>，不做学习率衰减。</td></tr>
+          <tr><td>精度</td><td>BF16</td><td>模型配置和权重均采用大模型常用的半精度表示。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="definition">
+      <p><strong>训练真正学到的对象：</strong>在当前证据不足时继续搜；怎样把模糊问题改写成检索词；从摘要判断哪个链接值得打开；在长页面里定位实体；证据冲突时继续验证；达到足够信心后停止。</p>
+    </div>
+  </section>
+
+  <section class="section" id="runtime">
+    <div class="section-head"><span class="section-no">06 / RUNTIME</span><h2>运行时架构：一个最多 200 轮的“模型—浏览器”闭环</h2></div>
+    <p class="lead">推理代码的核心不复杂：每轮把历史消息和工具定义套入 chat template，调用 vLLM 生成；若生成工具调用就执行并回填结果，否则检查是否出现最终答案标记。</p>
+
+    <div class="runtime" aria-label="OpenResearcher 运行时闭环">
+      <div class="runtime-col">
+        <div class="runtime-node model"><h4>OpenResearcher 模型</h4><p>读取问题、历史思考与证据，决定查询、页面操作或最终回答。</p></div>
+        <div class="runtime-node"><h4><code>deploy_agent.py</code></h4><p>解析 JSON/XML 工具调用、维护会话、重试生成、并发处理题目并写入 JSONL。</p></div>
+      </div>
+      <div class="loop">最多<br>200 轮</div>
+      <div class="runtime-col">
+        <div class="runtime-node search"><h4>BrowserPool</h4><p>每个 qid 独立保存浏览状态，将模型函数调用映射到 search/open/find。</p></div>
+        <div class="runtime-node"><h4>搜索后端</h4><p>本地 BM25 / Dense 服务，或 Serper 的 Google 搜索与网页抓取。</p></div>
+      </div>
+    </div>
+
+    <div class="tool-row">
+      <article class="tool"><div class="icon">⌕</div><h4>search · 从语料到候选页</h4><p>返回标题、URL 和摘要。负责扩大覆盖、检验假设、发现可追踪的实体与关系。</p><small>失败风险：搜索漂移、重复改写、只看 snippet。</small></article>
+      <article class="tool"><div class="icon">↗</div><h4>open · 从候选页到全文</h4><p>打开 URL，提取页面正文并以带行号的浏览视图返回。它把“可能相关”变成“可读证据”。</p><small>实验中加入 open 带来最大的性能跃升。</small></article>
+      <article class="tool"><div class="icon">⌁</div><h4>find · 从全文到证据点</h4><p>在当前页面中定位精确字符串，适合人名、年份、机构、数字和术语的快速验证。</p><small>减少盲目滚动，也降低上下文和工具调用成本。</small></article>
+    </div>
+
+    <figure>
+      <img src="paper/tex_source/img/tools.png" alt="search、open 和 find 三个浏览工具的逐层工作方式">
+      <figcaption>论文原图：三个工具对应“全局检索 → 文档检查 → 页面内证据定位”的逐层收缩。</figcaption>
+    </figure>
+
+    <h3>两种搜索后端的边界</h3>
+    <div class="grid g2">
+      <article class="card green"><span class="eyebrow">Fixed corpus</span><h4>本地 BM25 / Dense</h4><p>BrowseComp-Plus 使用固定语料。BM25 可在 CPU 上运行；Dense 使用 Qwen3-Embedding-8B，文档称额外需要约 15GB GPU 显存。</p></article>
+      <article class="card blue"><span class="eyebrow">Live web</span><h4>Serper 搜索与抓取</h4><p>BrowseComp、GAIA、xbench 等使用真实网络，需要 <code>SERPER_API_KEY</code>。结果会随时间变化，因此不具备严格的固定环境可复现性。</p></article>
+    </div>
+  </section>
+
+  <section class="section" id="results">
+    <div class="section-head"><span class="section-no">07 / RESULTS</span><h2>结果：训练后提升很大，但不同 benchmark 的比较环境并不相同</h2></div>
+    <p class="lead">最重要的结果是 BrowseComp-Plus 从基础模型的 20.8% 提高到 54.8%。这是固定语料条件下较干净的模型能力提升证据；其余三个评测依赖 live web，更容易受搜索服务和日期影响。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Benchmark</th><th>OpenResearcher</th><th>代表性对照</th><th>环境与解读</th></tr></thead>
+        <tbody>
+          <tr><td>BrowseComp-Plus</td><td class="best">54.8%</td><td>Base Nemotron 20.8%；Tongyi DR 44.5%</td><td>固定语料 + 本地搜索，最能隔离模型与搜索策略差异。</td></tr>
+          <tr><td>BrowseComp</td><td class="best">26.3%</td><td>o4-mini 28.3%；DeepMiner 21.2%</td><td>Live web；OpenResearcher 接近强闭源模型，优于表中其他开放研究智能体。</td></tr>
+          <tr><td>GAIA text-only</td><td class="best">64.1%</td><td>Kimi-K2 57.7%；Claude-4-Sonnet 57.6%</td><td>仅 103 个 text-only dev 样本，不是完整 GAIA 能力结论。</td></tr>
+          <tr><td>xbench-DeepSearch</td><td>65.0%</td><td>o4-mini 67.0%；Claude-4-Sonnet 64.0%</td><td>100 个中文加密测试题；结果接近闭源工具模型。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>BrowseComp-Plus 的核心增益</h3>
+    <div class="bar-row"><span>Nemotron base</span><div class="bar-track"><div class="bar base" style="width:20.8%"></div></div><strong>20.8</strong></div>
+    <div class="bar-row"><span>GPT-4.1</span><div class="bar-track"><div class="bar" style="width:36.4%"></div></div><strong>36.4</strong></div>
+    <div class="bar-row"><span>Tongyi DR</span><div class="bar-track"><div class="bar" style="width:44.5%"></div></div><strong>44.5</strong></div>
+    <div class="bar-row"><span>OpenResearcher</span><div class="bar-track"><div class="bar ours" style="width:54.8%"></div></div><strong>54.8</strong></div>
+
+    <div class="note">
+      <p><strong>应当怎样表述“超过 GPT-4.1 等模型”：</strong>准确说法是“在论文给定的 BrowseComp-Plus 工具和评测设置下得分更高”。它不意味着 OpenResearcher 在通用智能、知识、写作或所有深度研究任务上整体强于这些模型。</p>
+    </div>
+  </section>
+
+  <section class="section" id="insights">
+    <div class="section-head"><span class="section-no">08 / INSIGHTS</span><h2>比排行榜更值得保留的五个机制性洞见</h2></div>
+
+    <div class="grid g2">
+      <article class="card">
+        <span class="eyebrow">Insight 1 · Search efficiency</span>
+        <h4>失败轨迹搜得更多，而不是更少</h4>
+        <p>正确轨迹平均 38.4 次工具调用，错误轨迹达到 71.7 次；差异主要来自 search（22.1 vs. 48.8）。瓶颈是查询质量和搜索漂移，不是简单增加预算。</p>
+      </article>
+      <article class="card green">
+        <span class="eyebrow">Insight 2 · Evidence access</span>
+        <h4>搜到 gold 文档不等于真正使用证据</h4>
+        <p>已在结果里命中 gold 时，答对概率为 61.84%；明确打开 gold 文档后升至 86.72%。检索 recall 与证据消费必须分开测量。</p>
+      </article>
+      <article class="card blue">
+        <span class="eyebrow">Insight 3 · Tool structure</span>
+        <h4>open 是最大跃升，find 继续提高效率</h4>
+        <p>search-only 准确率 43.86%；加入 open 后 56.39%；三工具齐全达到 62.17%，同时平均调用和 token 使用都下降。</p>
+      </article>
+      <article class="card purple">
+        <span class="eyebrow">Insight 4 · Trajectory value</span>
+        <h4>错误轨迹也携带强监督信号</h4>
+        <p>正确轨迹、错误轨迹、全部轨迹分别训练得到 54.81%、55.06%、54.46%，差距不到 0.6 点。工具顺序和证据交互本身可能比最终标签更重要。</p>
+      </article>
+      <article class="card gold">
+        <span class="eyebrow">Insight 5 · Corpus coverage</span>
+        <h4>没有证据覆盖，再强的教师也教不出搜索能力</h4>
+        <p>移除一次性 gold 文档引导后，gold hit 从 29.54% 降到 1.73%，下游 BrowseComp-Plus 从 54.81% 崩到 6.35%。环境质量是训练数据质量的前置条件。</p>
+      </article>
+      <article class="card">
+        <span class="eyebrow">Insight 6 · Horizon</span>
+        <h4>长程有用，但约 100 轮后收益递减</h4>
+        <p>准确率和 gold hit 随最大轮次持续提升，但超过约 100 轮后趋于平台。系统需要足够探索空间，也需要更好的停止与重规划机制。</p>
+      </article>
+    </div>
+
+    <div class="figure-grid">
+      <figure>
+        <img src="paper/tex_source/img/turn_distribution.png" alt="成功与失败轨迹的工具调用轮数分布">
+        <figcaption>成功轨迹集中在较短区间；失败轨迹具有长尾和高轮次峰值。</figcaption>
+      </figure>
+      <figure>
+        <img src="paper/tex_source/img/tool_usage.png" alt="成功与失败轨迹中的 search open find 使用对比">
+        <figcaption>错误轨迹的额外开销主要来自重复 search，而不是 find。</figcaption>
+      </figure>
+    </div>
+
+    <div class="definition">
+      <p><strong>对其他科研智能体最直接的启示：</strong>不要只记录“最终答对没有”。至少应同时记录候选证据是否被召回、是否被打开、首次命中时间、查询重写次数、页面内定位、证据冲突和停止原因。否则无法知道系统究竟坏在检索、浏览还是推理。</p>
+    </div>
+  </section>
+
+  <section class="section" id="audit">
+    <div class="section-head"><span class="section-no">09 / AUDIT</span><h2>本地复现审计：数据完整，模型和运行环境尚未就绪</h2></div>
+    <p class="lead">当前归档约 36GB。论文和数据可以直接研究；模型目录看似有 29GB，但其中约 26GB 是未完成下载的临时文件，不能被 Transformers 或 vLLM 正常加载。</p>
+
+    <div class="audit">
+      <article class="audit-item">
+        <div><h4>论文材料</h4><span class="status">完整可读</span></div>
+        <p>PDF、arXiv 源码、表格、提示词、案例和图片均在本地；足够进行论文阅读、公式核查和图表复用。</p>
+      </article>
+      <article class="audit-item">
+        <div><h4>轨迹数据集</h4><span class="status">完整可读</span></div>
+        <p>16 个 seed、48 个 Parquet 分片、97,630 条记录，总计约 7GB；本地 PyArrow 已验证 schema、行数和样本消息。</p>
+      </article>
+      <article class="audit-item">
+        <div><h4>模型权重</h4><span class="status bad">下载未完成</span></div>
+        <p>索引要求 13 个 safetensors 分片，只有第 13 个完成；其余 12 个位于 Hugging Face 缓存中并带 <code>.incomplete</code> 后缀。</p>
+      </article>
+      <article class="audit-item">
+        <div><h4>Python 环境</h4><span class="status bad">尚未安装</span></div>
+        <p><code>code/.venv</code> 不存在，系统 Python 也没有项目所需的 DuckDB 等完整依赖；需 Python 3.12、vLLM 0.13.0、Java 21 和 Tevatron。</p>
+      </article>
+      <article class="audit-item">
+        <div><h4>评测搜索资产</h4><span class="status bad">尚未下载</span></div>
+        <p>当前没有 <code>Tevatron/browsecomp-plus</code>、评测 corpus、BM25 索引或 Qwen3 稠密索引；<code>setup.sh</code> 会另行下载。</p>
+      </article>
+      <article class="audit-item">
+        <div><h4>论文训练语料</h4><span class="status partial">不在归档内</span></div>
+        <p>论文使用的 15M 文档离线语料及其训练索引没有包含在当前目录；代码中本地搜索启动脚本面向 BrowseComp-Plus 评测资产。</p>
+      </article>
+      <article class="audit-item">
+        <div><h4>训练代码</h4><span class="status partial">外部仓库</span></div>
+        <p>当前代码仓库以推理和评测为主。SFT 需另外克隆作者的 Megatron-LM <code>openresearcher</code> 分支。</p>
+      </article>
+      <article class="audit-item">
+        <div><h4>外部服务</h4><span class="status partial">按模式需要</span></div>
+        <p>Live-web 搜索需要 Serper Key；自动答案判分需要 OpenAI Key。固定 BrowseComp-Plus 模式可避免 Serper，但仍需本地 corpus 和索引。</p>
+      </article>
+    </div>
+
+    <h3>如果目标不同，最合理的使用路径也不同</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>你的目标</th><th>现在就能做</th><th>还需要什么</th></tr></thead>
+        <tbody>
+          <tr><td>理解论文与方法</td><td class="best">可以</td><td>当前 PDF、TeX 和本页面已经覆盖主链路。</td></tr>
+          <tr><td>分析长轨迹数据</td><td class="best">可以</td><td>用 PyArrow / Hugging Face Datasets 读取 7GB Parquet；注意工具思考中可能包含长文本。</td></tr>
+          <tr><td>运行官方模型做单题研究</td><td class="warn">暂时不行</td><td>续传完整 13 个权重分片，建立 Python 环境，并准备多张大显存 GPU 或调整量化部署。</td></tr>
+          <tr><td>复现 BrowseComp-Plus</td><td class="warn">暂时不行</td><td>除模型外，还需下载 benchmark、corpus、BM25/Dense 索引并启动搜索服务。</td></tr>
+          <tr><td>复现论文全部训练</td><td class="warn">当前归档不足</td><td>15M 训练语料与索引、外部 Megatron 分支、8×H100 级资源和完整训练配置。</td></tr>
+          <tr><td>借用其 Agent 循环接入其他模型</td><td class="best">可改造</td><td>替换 OpenAI-compatible vLLM endpoint；保留 BrowserPool 和 tool schema 即可。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="danger">
+      <p><strong>不要被目录大小误导：</strong>29GB 并不代表模型已下载完成。继续运行前应先检查 13 个分片是否全部存在，而不是直接执行启动脚本；启动脚本默认模型名仍指向 Hugging Face 远程仓库，若要使用本地权重必须显式传入本地路径。</p>
+    </div>
+  </section>
+
+  <section class="section" id="verdict">
+    <div class="section-head"><span class="section-no">10 / VERDICT</span><h2>最终理解：它最重要的是“数据生成方法”，其次才是 30B 模型</h2></div>
+
+    <div class="grid g3">
+      <article class="card green"><span class="eyebrow">研究价值</span><div class="metric green">高</div><p>把大规模 Agent 轨迹合成变成固定环境实验，能够对搜索策略、证据暴露和失败机制做真正可控的分析。</p></article>
+      <article class="card blue"><span class="eyebrow">工程成熟度</span><div class="metric blue">中</div><p>推理与评测代码清晰，脚本齐全；但环境重、资产分散、训练代码外置，仍是研究仓库而非稳健产品。</p></article>
+      <article class="card gold"><span class="eyebrow">当前本地可用度</span><div class="metric">中低</div><p>论文与数据可立即使用；模型、依赖、索引和评测环境都需继续准备。</p></article>
+    </div>
+
+    <div class="verdict">
+      <h3>把整项工作压缩成四句话</h3>
+      <ul class="checklist">
+        <li>深度研究模型需要学习完整的搜索过程，而不只是问题和答案。</li>
+        <li>用一次在线引导保证证据覆盖，再在固定离线语料中反复采样，可以低成本生成可复现长轨迹。</li>
+        <li><code>search → open → find</code> 的显式浏览层级，以及真正打开 gold 证据，是性能提升的关键。</li>
+        <li>这批轨迹让 30B-A3B 基础模型在 BrowseComp-Plus 从 20.8% 提升到 54.8%，但完整复现仍需要较重硬件与未包含在本地的资产。</li>
+      </ul>
+    </div>
+
+    <h3>建议怎样利用这份归档</h3>
+    <div class="grid g2">
+      <article class="card"><h4>第一优先：把数据作为研究对象</h4><p>统计成功/失败路径、查询改写、证据打开顺序、首次命中时间与停止行为。这 7GB 数据比单纯运行模型更适合当前 Literature 系统横向研究。</p></article>
+      <article class="card green"><h4>第二优先：抽取通用 Agent 设计</h4><p>复用三层浏览工具、独立会话、固定 corpus 评测和 evidence exposure 指标，把它们迁移到你的 Literature Agent 基准框架。</p></article>
+      <article class="card blue"><h4>第三优先：再决定是否补齐模型</h4><p>如果只是理解方法或做数据分析，没有必要立刻承担数十 GB 下载和多 GPU 部署成本；需要端到端对比时再续传。</p></article>
+      <article class="card purple"><h4>不要直接当作完整科研 Agent</h4><p>它擅长开放网络事实查找，不等同于领域文献综述、PDF 图表解析、实验设计或可引用的学术写作系统。</p></article>
+    </div>
+  </section>
+
+  <section class="section" id="files">
+    <div class="section-head"><span class="section-no">11 / SOURCES</span><h2>本地证据与继续阅读入口</h2></div>
+    <div class="file-list">
+      <div class="file"><a href="https://arxiv.org/abs/2603.20278">论文 PDF</a><p>正式叙事、方法、实验与附录的完整版本。</p></div>
+      <div class="file"><a href="paper/tex_source/sections/1_intro.tex">Introduction 原文</a><p>长推理轨迹背景、Deep Research 数据瓶颈、中心问题、自我定位与三项贡献。</p></div>
+      <div class="file"><a href="paper/tex_source/sections/2_related_works.tex">Related Work 原文</a><p>Deep Research Agents、离线合成环境，以及作者与相邻路线的差异化论证。</p></div>
+      <div class="file"><a href="paper/tex_source/sections/4_offline_trajectory_synthesis.tex">轨迹合成章节</a><p>问题策展、gold 文档引导、离线语料、工具定义和过滤逻辑。</p></div>
+      <div class="file"><a href="paper/tex_source/sections/5_experiments.tex">实验章节</a><p>训练配置、轨迹统计、成本、五组消融和机制分析。</p></div>
+      <div class="file"><a href="code/deploy_agent.py">Agent 主循环</a><p>消息模板、工具解析、最大轮次、并发 worker 和结果落盘。</p></div>
+      <div class="file"><a href="code/browser.py">浏览器后端</a><p>本地服务和 Serper 两类后端，以及 search/open/find 的执行适配。</p></div>
+      <div class="file"><a href="code/backend.py">本地检索服务</a><p>BM25、Qwen3-Embedding-8B、FAISS 与 corpus 内容映射。</p></div>
+      <div class="file"><a href="code/eval.py">评测器</a><p>答案 Judge、置信度解析、轨迹轮数和工具使用统计。</p></div>
+      <div class="file"><a href="../../../_未包含的内容.html">模型配置</a><p>Nemotron-H 层数、专家数、激活专家与上下文长度等精确参数。</p></div>
+    </div>
+  </section>
+
+  <footer>
+    OpenResearcher 中文深度导读 · 基于本地论文、TeX、代码、模型配置与 97,630 条 Parquet 元数据核查<br>
+    页面样式参考科研目录下既有 PaperQA / NanoResearch 单文件导读模板 · 生成日期：2026-07-30
+  </footer>
+</main>
+
+</body>
+</html>

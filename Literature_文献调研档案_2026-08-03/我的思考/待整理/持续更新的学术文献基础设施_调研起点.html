@@ -1,0 +1,1168 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>持续更新的学术文献基础设施_调研起点</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../index.html">← 返回总览</a><h1>持续更新的学术文献基础设施：调研起点</h1>
+<h2>1. 暂定研究对象</h2>
+<p>面向持续增长的科学文献，构建包含全文、元数据、版本、引用图和检索索引的动态文献基础设施，并在其上运行：</p>
+<ul>
+<li>文献搜索与推荐；</li>
+<li>全文问答；</li>
+<li>文献综述；</li>
+<li>研究趋势跟踪；</li>
+<li>科研 Agent；</li>
+<li>研究想法生成与验证。</li>
+</ul>
+<p>可用于检索和描述该方向的暂定名称：</p>
+<blockquote>
+<p>Continually Updated Scholarly Knowledge Infrastructure for Literature Agents</p>
+</blockquote>
+<p>相关但不完全等价的名称：</p>
+<ul>
+<li>Scientific Digital Library</li>
+<li>Scholarly Data Infrastructure</li>
+<li>Academic Literature Infrastructure</li>
+<li>Scholarly Knowledge Graph</li>
+<li>Scientific Literature Retrieval</li>
+<li>Agentic Literature Search</li>
+<li>Living Literature Review</li>
+<li>Continuous Evidence Synthesis</li>
+</ul>
+<h3>研究定位</h3>
+<p>本方向有两个层次，二者都需要调研，但作用不同：</p>
+<pre><code class="language-text">主研究问题
+    └── 动态知识环境中的 Literature Agent
+        Agent如何发现、选择、更新、检索和使用持续到达的论文
+
+必要支撑
+    └── 文献管理与数据基础设施
+        全文、元数据、版本、引用图、索引、血缘和增量更新
+</code></pre>
+<p>面向 ICLR、NeurIPS、ICML、KDD、VLDB 等会议时，不应仅将工作定义为“构建论文库”。需要将文献管理能力转化为可研究的问题，例如：</p>
+<ul>
+<li>有限预算下，Agent 应选择保存和索引哪些新论文？</li>
+<li>Retriever 是否应优化最终科研任务效用，而不是局部文本相似度？</li>
+<li>如何在论文持续到达、修订和撤稿时保持 Agent 知识新鲜？</li>
+<li>如何联合全文、引用图、时间和用户研究轨迹进行检索？</li>
+<li>如何评价动态文献环境中的新鲜度、覆盖率、引用正确性和任务表现？</li>
+<li>如何为持续变化的 Agent 知识库提供可追溯、可复现的查询结果？</li>
+</ul>
+<h2>2. 问题的组成</h2>
+<pre><code class="language-text">数字图书馆
+    └── 论文、元数据、版本、开放获取和长期保存
+
+数据库系统
+    └── 增量更新、混合索引、向量管理、数据血缘和一致性
+
+信息检索
+    └── 召回、排序、推荐、引用图搜索和检索评测
+
+科学文本处理
+    └── PDF解析、章节识别、引用解析、图表抽取和信息抽取
+
+科研知识图谱
+    └── Paper、Method、Dataset、Task、Metric、Result、Claim之间的关系
+
+研究 Agent
+    └── 查询规划、多步搜索、阅读、证据整合、引用和综述
+
+持续证据更新
+    └── 发现新论文、判断是否改变已有结论、更新综述
+</code></pre>
+<p>研究主线与支撑层的关系：</p>
+<table>
+<thead>
+<tr>
+<th>层次</th>
+<th>主要作用</th>
+<th>潜在投稿方向</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Agent、学习与评测</td>
+<td>定义任务、策略、奖励、记忆和端到端能力</td>
+<td>ICLR、NeurIPS、ICML</td>
+</tr>
+<tr>
+<td>检索、推荐与图挖掘</td>
+<td>文献召回、排序、新论文发现、动态图建模</td>
+<td>KDD、SIGIR、WWW、WSDM</td>
+</tr>
+<tr>
+<td>数据系统</td>
+<td>动态混合索引、版本、血缘、查询执行和一致性</td>
+<td>VLDB、SIGMOD、ICDE</td>
+</tr>
+<tr>
+<td>文献管理基础</td>
+<td>元数据、PDF、解析、去重、开放获取、数字保存</td>
+<td>JCDL、TPDL；同时支撑上述三层</td>
+</tr>
+</tbody>
+</table>
+<h2>3. 不应将文献库等同于 Embedding 库</h2>
+<p>完整文献库至少包含：</p>
+<ol>
+<li>原始论文；</li>
+<li>规范化元数据；</li>
+<li>论文版本关系；</li>
+<li>结构化全文与文本块；</li>
+<li>图、表及补充材料；</li>
+<li>关键词索引；</li>
+<li>Embedding 索引；</li>
+<li>引用关系；</li>
+<li>数据来源和处理血缘；</li>
+<li>可重建索引所需的配置。</li>
+</ol>
+<p>Embedding 是派生索引，不是不可替代的源数据。</p>
+<pre><code class="language-text">原始 PDF / HTML
+        ↓
+规范化元数据与版本
+        ↓
+结构化全文、章节、段落、图表
+        ↓
+BM25 / Embedding / Citation Graph
+        ↓
+Search / QA / Recommendation / Agent
+</code></pre>
+<h2>4. 需要分别调研的研究分支</h2>
+<h3>调研优先级</h3>
+<table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>分支</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>核心</td>
+<td>Agent与科学文献、科学文献检索、评测</td>
+<td>形成AI研究问题、算法和Benchmark</td>
+</tr>
+<tr>
+<td>核心</td>
+<td>动态图挖掘、推荐、冷启动、新兴主题发现</td>
+<td>形成KDD/WWW方向问题</td>
+</tr>
+<tr>
+<td>核心</td>
+<td>增量混合索引、Embedding版本和数据血缘</td>
+<td>形成VLDB/SIGMOD方向问题</td>
+</tr>
+<tr>
+<td>必要支撑</td>
+<td>数据基础设施、PDF解析、去重和版本管理</td>
+<td>保证系统真实可运行、实验可复现</td>
+</tr>
+<tr>
+<td>扩展</td>
+<td>科研知识图谱、持续证据综述</td>
+<td>提供结构化知识和跨领域方法</td>
+</tr>
+</tbody>
+</table>
+<h3>4.1 学术文献数据基础设施</h3>
+<p>研究问题：</p>
+<ul>
+<li>如何从多个来源聚合论文？</li>
+<li>如何解析 PDF 和 LaTeX？</li>
+<li>如何统一 DOI、arXiv、OpenReview 和出版商记录？</li>
+<li>如何维护论文、作者、机构和引用关系？</li>
+<li>如何提供持续更新的数据快照或增量数据？</li>
+</ul>
+<p>检索词：</p>
+<pre><code class="language-text">scholarly literature corpus
+scientific document corpus
+scholarly data infrastructure
+academic literature infrastructure
+scientific digital library
+scholarly document processing
+academic graph
+open scholarly metadata
+</code></pre>
+<h3>4.2 科学文献检索与推荐</h3>
+<p>研究问题：</p>
+<ul>
+<li>如何在大规模文献中保持高召回率？</li>
+<li>如何融合 BM25、Embedding、元数据与引用图？</li>
+<li>如何处理复杂研究问题，而不只是关键词查询？</li>
+<li>如何向研究者持续推荐新论文？</li>
+<li>如何评测搜索结果是否完整？</li>
+</ul>
+<p>检索词：</p>
+<pre><code class="language-text">scientific literature retrieval
+scholarly information retrieval
+academic paper search
+neural scientific document retrieval
+hybrid scholarly retrieval
+citation-aware retrieval
+citation recommendation
+academic paper recommendation
+exploratory scholarly search
+literature discovery system
+</code></pre>
+<h3>4.3 Agent 与科学文献</h3>
+<p>研究问题：</p>
+<ul>
+<li>Agent 如何把复杂问题分解为多次学术搜索？</li>
+<li>Agent 如何判断是否还缺少文献？</li>
+<li>Agent 如何沿引用关系扩展搜索？</li>
+<li>Agent 如何读全文、提取证据并生成可验证引用？</li>
+<li>Agent 如何生成综述，而不是简单拼接摘要？</li>
+</ul>
+<p>检索词：</p>
+<pre><code class="language-text">scientific literature agent
+paper search agent
+literature review agent
+academic research agent
+scholarly search agent
+agentic literature search
+agentic scientific retrieval
+citation-aware RAG
+scientific research assistant
+automated literature review LLM
+</code></pre>
+<h3>4.4 科研知识图谱</h3>
+<p>研究问题：</p>
+<ul>
+<li>是否只保存 Paper–Cites–Paper，还是进一步抽取研究贡献？</li>
+<li>如何表示 Method、Dataset、Task、Metric、Result 和 Claim？</li>
+<li>如何从论文中自动抽取实体和关系？</li>
+<li>如何统一同一数据集、模型和 Benchmark 的不同名称？</li>
+</ul>
+<p>检索词：</p>
+<pre><code class="language-text">scholarly knowledge graph
+scientific knowledge graph
+research knowledge graph
+academic knowledge graph
+research contribution graph
+citation context graph
+scholarly entity linking
+scientific information extraction
+paper method dataset task extraction
+</code></pre>
+<p>目标数据模型示意：</p>
+<pre><code class="language-text">Paper A
+  ├── proposes ───────&gt; Method X
+  ├── evaluates_on ───&gt; Benchmark Y
+  ├── uses_dataset ───&gt; Dataset Z
+  ├── reports ────────&gt; Result R
+  ├── compares_with ──&gt; Method B
+  └── cites ──────────&gt; Paper C
+</code></pre>
+<h3>4.5 数据库、索引与持续更新</h3>
+<p>研究问题：</p>
+<ul>
+<li>如何增量加入新论文，而不重建整个索引？</li>
+<li>如何只重算发生变化的文本块？</li>
+<li>如何管理多个 Embedding 模型和版本？</li>
+<li>如何同时支持关键词、向量、图和元数据查询？</li>
+<li>如何处理删除、撤稿、版本升级和解析失败？</li>
+<li>如何保证原始文件、数据库与索引一致？</li>
+<li>如何记录一个答案使用了哪个版本、哪个 Chunk 和哪个模型？</li>
+</ul>
+<p>检索词：</p>
+<pre><code class="language-text">incremental vector indexing
+dynamic vector database
+streaming vector search
+continual document indexing
+incremental hybrid search
+embedding version management
+data provenance for RAG
+document versioning for RAG
+change data capture for document stores
+incremental knowledge graph maintenance
+multi-version document store
+</code></pre>
+<h3>4.6 实体消歧、去重与版本匹配</h3>
+<p>研究问题：</p>
+<ul>
+<li>arXiv、OpenReview、会议正式版是否属于同一篇论文？</li>
+<li>作者同名、改名和机构变化如何处理？</li>
+<li>DOI、标题、作者和内容哈希如何共同用于去重？</li>
+<li>哪个版本应当作为 canonical version？</li>
+</ul>
+<p>检索词：</p>
+<pre><code class="language-text">scholarly entity resolution
+bibliographic entity resolution
+academic record linkage
+paper deduplication
+citation matching
+author name disambiguation
+preprint publication matching
+arXiv journal version matching
+bibliographic metadata reconciliation
+</code></pre>
+<h3>4.7 持续文献综述与证据更新</h3>
+<p>该方向在医学和循证研究中通常不叫“动态论文库”。</p>
+<p>研究问题：</p>
+<ul>
+<li>如何持续发现可能改变已有结论的新论文？</li>
+<li>如何自动完成标题、摘要和全文筛选？</li>
+<li>如何记录纳入与排除理由？</li>
+<li>如何更新综述，而不是每次从头生成？</li>
+<li>如何判断新证据的质量和影响？</li>
+</ul>
+<p>检索词：</p>
+<pre><code class="language-text">living systematic review
+continuous evidence surveillance
+continuous evidence synthesis
+automated systematic review
+literature screening automation
+evidence monitoring
+continual literature review
+</code></pre>
+<h3>4.8 评测</h3>
+<p>研究问题：</p>
+<ul>
+<li>文献检索的 Recall 如何构造可信 Ground Truth？</li>
+<li>如何评价搜索结果的完整性，而不只是 Top-k 相关性？</li>
+<li>如何评价综述的覆盖、组织、洞察和引用正确性？</li>
+<li>如何区分 Retriever、Agent、LLM 和数据底座造成的错误？</li>
+</ul>
+<p>检索词：</p>
+<pre><code class="language-text">scientific literature retrieval benchmark
+scholarly search benchmark
+literature review benchmark
+citation recommendation benchmark
+scientific QA benchmark
+paper search agent benchmark
+literature review agent evaluation
+</code></pre>
+<h3>4.9 面向目标会议的四条主线</h3>
+<h4>A. Budgeted Self-Updating Literature Agent</h4>
+<p>任务：</p>
+<pre><code class="language-text">输入：
+    持续到达的新论文流
+    当前Agent文献库
+    用户研究兴趣和历史任务
+    有限存储、Embedding、LLM和时间预算
+
+动作：
+    忽略论文
+    只保存元数据
+    下载并解析全文
+    更新已有论文版本
+    替换或归档旧论文
+    重新组织索引
+
+目标：
+    最大化未来搜索、QA、综述和科研任务表现
+    同时控制存储、计算和API成本
+</code></pre>
+<p>核心研究点：</p>
+<ul>
+<li>Knowledge acquisition policy；</li>
+<li>Budgeted memory management；</li>
+<li>Continual learning；</li>
+<li>Temporal generalization；</li>
+<li>新旧知识冲突；</li>
+<li>摄取决策对未来任务的长期价值；</li>
+<li>Agent策略与Retriever联合优化。</li>
+</ul>
+<p>主要目标：ICLR、NeurIPS、ICML。</p>
+<h4>B. Agent-Centric Literature Retrieval</h4>
+<p>传统 Retriever 优化查询与文档的局部相关性；Agent-centric Retriever 应优化文献对最终任务的效用。</p>
+<p>文献效用可以包括：</p>
+<ul>
+<li>是否提高最终答案正确率；</li>
+<li>是否增加新的证据维度；</li>
+<li>是否消除或暴露证据冲突；</li>
+<li>是否帮助 Agent 生成下一步检索词；</li>
+<li>是否提高文献综述覆盖率；</li>
+<li>是否支持最终主张并提供可验证引用。</li>
+</ul>
+<p>主要目标：ICLR、NeurIPS、SIGIR、ACL、EMNLP。</p>
+<h4>C. Evolving Scholarly Graph Mining</h4>
+<p>数据：</p>
+<pre><code class="language-text">论文全文
++ 引用图
++ 作者和机构图
++ Method/Dataset/Benchmark实体
++ 发表与更新时序
++ 用户阅读、收藏和查询轨迹
+</code></pre>
+<p>任务：</p>
+<ul>
+<li>新论文冷启动推荐；</li>
+<li>Emerging topic detection；</li>
+<li>研究方向演化建模；</li>
+<li>方法、数据集和Benchmark关系抽取；</li>
+<li>个性化研究兴趣更新；</li>
+<li>在缺少引用信号时评价新论文价值；</li>
+<li>从文献流中发现潜在研究空白。</li>
+</ul>
+<p>主要目标：KDD、WWW、WSDM、SIGIR。</p>
+<h4>D. Dynamic Multimodal Literature Data System</h4>
+<p>需要统一管理：</p>
+<pre><code class="language-text">PDF与结构化全文
++ Chunk
++ 图片与表格
++ 多版本Embedding
++ 引用图
++ 元数据
++ Agent查询和证据轨迹
+</code></pre>
+<p>系统研究点：</p>
+<ul>
+<li>增量解析与Chunk级更新；</li>
+<li>关键词、向量、图和元数据的混合查询；</li>
+<li>Embedding模型在线迁移；</li>
+<li>多版本论文与time-travel query；</li>
+<li>RAG数据血缘和结果可复现；</li>
+<li>Agent工作负载驱动的索引和查询优化；</li>
+<li>持续更新时的一致性、吞吐、延迟和成本。</li>
+</ul>
+<p>主要目标：VLDB、SIGMOD、ICDE、CIDR。</p>
+<h3>4.10 文献管理仍然必须研究</h3>
+<p>文献管理不是主贡献时，也决定系统能否工作和实验是否可信。必须回答：</p>
+<ul>
+<li>文献从哪里持续获得，使用许可是什么？</li>
+<li>DOI、arXiv、OpenReview和正式出版版如何归并？</li>
+<li>原始文件、解析结果、Chunk和Embedding如何建立稳定ID？</li>
+<li>论文更新时，哪些数据需要重算？</li>
+<li>撤稿、错误版本和失效引用如何传播到Agent？</li>
+<li>每个答案使用了哪个论文版本、解析器和Embedding模型？</li>
+<li>索引能否由原始文件和配置完全重建？</li>
+</ul>
+<p>因此，JCDL、S2ORC、OpenAlex、S2AG、ORKG等工作保留在调研范围内，但作为数据与系统基础，而不是默认的研究主线。</p>
+<h2>5. 重点会议</h2>
+<h3>第一优先级：AI顶会</h3>
+<table>
+<thead>
+<tr>
+<th>会议</th>
+<th>重点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ICLR</td>
+<td>Agent、RAG、Memory、Continual Learning、Deep Research、评测</td>
+</tr>
+<tr>
+<td>NeurIPS</td>
+<td>检索学习、Agent、科研自动化、Benchmark、时序泛化</td>
+</tr>
+<tr>
+<td>ICML</td>
+<td>Agent策略、工具调用、持续学习、知识获取和联合优化</td>
+</tr>
+<tr>
+<td>AAAI / IJCAI</td>
+<td>搜索、知识表示、Agent和科学AI</td>
+</tr>
+</tbody>
+</table>
+<p>需要的贡献形式：</p>
+<pre><code class="language-text">新任务定义
++ 新算法或学习机制
++ Benchmark
++ 强基线、消融和错误分析
+</code></pre>
+<p>仅实现爬虫、向量库和问答界面不足以形成主要贡献。</p>
+<h3>第二优先级：KDD、搜索与推荐</h3>
+<table>
+<thead>
+<tr>
+<th>会议</th>
+<th>重点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KDD</td>
+<td>动态学术图谱、新论文推荐、知识发现、趋势和冷启动</td>
+</tr>
+<tr>
+<td>SIGIR</td>
+<td>Agentic Search、召回、排序、检索评测和神经检索</td>
+</tr>
+<tr>
+<td>WSDM</td>
+<td>搜索、数据挖掘、推荐、图</td>
+</tr>
+<tr>
+<td>CIKM</td>
+<td>信息检索、知识管理、数据库交叉</td>
+</tr>
+<tr>
+<td>The Web Conference</td>
+<td>搜索、推荐、知识图谱、学术网络</td>
+</tr>
+<tr>
+<td>RecSys / ECIR</td>
+<td>个性化文献推荐与检索评测</td>
+</tr>
+</tbody>
+</table>
+<h3>第三优先级：数据库顶会</h3>
+<table>
+<thead>
+<tr>
+<th>会议</th>
+<th>重点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VLDB</td>
+<td>动态混合索引、向量检索、流处理、持续查询、数据血缘</td>
+</tr>
+<tr>
+<td>SIGMOD</td>
+<td>数据系统、向量数据库、多模态查询、查询优化</td>
+</tr>
+<tr>
+<td>ICDE</td>
+<td>数据工程、实体解析、知识图谱、增量向量检索</td>
+</tr>
+<tr>
+<td>CIDR</td>
+<td>面向AI与Agent的新型数据系统架构</td>
+</tr>
+</tbody>
+</table>
+<p>需要的贡献形式：</p>
+<pre><code class="language-text">清晰的数据系统抽象
++ 新索引、存储或查询机制
++ 正确性、一致性或数据血缘定义
++ 大规模系统实现
++ 吞吐、延迟、成本和质量实验
+</code></pre>
+<p>仅使用现有向量数据库保存论文Embedding不足以形成主要贡献。</p>
+<h3>第四优先级：科学文本与文献 Agent</h3>
+<table>
+<thead>
+<tr>
+<th>会议</th>
+<th>重点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ACL</td>
+<td>科学文档、文献检索、引用、Agent、RAG</td>
+</tr>
+<tr>
+<td>EMNLP</td>
+<td>科学文本、检索、生成与系统 Demo</td>
+</tr>
+<tr>
+<td>NAACL</td>
+<td>科学 NLP、研究 Agent</td>
+</tr>
+<tr>
+<td>EACL</td>
+<td>科学 RAG、文献综合</td>
+</tr>
+<tr>
+<td>COLING</td>
+<td>科学文档处理与信息抽取</td>
+</tr>
+</tbody>
+</table>
+<p>该社区包含大量最直接的相关工作，适合构建核心 Related Work 和任务基线。</p>
+<h3>支撑层：数字图书馆与知识图谱</h3>
+<table>
+<thead>
+<tr>
+<th>会议</th>
+<th>重点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JCDL</td>
+<td>文献基础设施、元数据、数字馆藏、学术知识图谱和检索</td>
+</tr>
+<tr>
+<td>TPDL / ICADL</td>
+<td>文献组织、数字保存、知识发现</td>
+</tr>
+<tr>
+<td>ISWC</td>
+<td>知识图谱、语义 Web、实体链接</td>
+</tr>
+<tr>
+<td>ESWC</td>
+<td>语义数据、知识图谱应用</td>
+</tr>
+<tr>
+<td>K-CAP</td>
+<td>知识获取、知识建模</td>
+</tr>
+</tbody>
+</table>
+<p>这些会议用于理解文献管理、元数据、去重、知识组织和已有基础设施；除非研究贡献本身位于该层，否则不作为首要投稿目标。</p>
+<h3>相关期刊与会议补充</h3>
+<ul>
+<li>International Journal on Digital Libraries</li>
+<li>JASIST</li>
+<li>Information Processing &amp; Management</li>
+<li>ACM TOIS</li>
+<li>Scientometrics</li>
+<li>Quantitative Science Studies</li>
+<li>VLDB Journal</li>
+<li>IEEE TKDE</li>
+</ul>
+<h2>6. 可直接使用的组合检索式</h2>
+<h3>动态文献基础设施</h3>
+<pre><code class="language-text">(&quot;scholarly literature&quot; OR &quot;scientific literature&quot;)
+AND
+(&quot;digital library&quot; OR corpus OR infrastructure)
+AND
+(incremental OR dynamic OR continuous OR updating)
+</code></pre>
+<h3>学术知识图谱</h3>
+<pre><code class="language-text">(&quot;scholarly knowledge graph&quot; OR &quot;academic knowledge graph&quot;)
+AND
+(paper OR publication)
+AND
+(method OR dataset OR benchmark OR contribution)
+</code></pre>
+<h3>文献搜索 Agent</h3>
+<pre><code class="language-text">(&quot;paper search agent&quot; OR &quot;literature search agent&quot;
+ OR &quot;scientific literature agent&quot;)
+AND
+(retrieval OR citation OR synthesis)
+</code></pre>
+<h3>文献综述 Agent</h3>
+<pre><code class="language-text">(&quot;literature review agent&quot; OR &quot;automated literature review&quot;)
+AND
+(LLM OR agent OR &quot;retrieval augmented generation&quot;)
+</code></pre>
+<h3>持续证据更新</h3>
+<pre><code class="language-text">(&quot;living systematic review&quot; OR &quot;continuous evidence synthesis&quot;
+ OR &quot;continual literature review&quot;)
+AND
+(automation OR retrieval OR &quot;machine learning&quot;)
+</code></pre>
+<h3>增量向量与混合索引</h3>
+<pre><code class="language-text">(&quot;vector database&quot; OR &quot;hybrid search&quot;)
+AND
+(incremental OR streaming OR dynamic)
+AND
+(index OR update OR versioning)
+</code></pre>
+<h3>文献去重与版本匹配</h3>
+<pre><code class="language-text">(&quot;academic record linkage&quot; OR &quot;bibliographic entity resolution&quot;
+ OR &quot;paper deduplication&quot; OR &quot;preprint publication matching&quot;)
+</code></pre>
+<h3>文献库的数据血缘</h3>
+<pre><code class="language-text">(&quot;scientific documents&quot; OR &quot;scholarly corpus&quot;)
+AND
+(&quot;data provenance&quot; OR lineage OR reproducibility)
+AND
+(parsing OR indexing OR retrieval)
+</code></pre>
+<h3>引用图与向量融合</h3>
+<pre><code class="language-text">(&quot;scientific literature retrieval&quot; OR &quot;academic search&quot;)
+AND
+(&quot;citation graph&quot; OR &quot;citation-aware&quot;)
+AND
+(embedding OR &quot;neural retrieval&quot; OR hybrid)
+</code></pre>
+<h2>7. 起始种子工作与系统</h2>
+<h3>核心：Agent、检索与评测</h3>
+<table>
+<thead>
+<tr>
+<th>工作/系统</th>
+<th>重点</th>
+<th>链接</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PaperQA / PaperQA2</td>
+<td>本地全文库上的 Agentic RAG</td>
+<td>https://github.com/future-house/paper-qa</td>
+</tr>
+<tr>
+<td>LitSearch</td>
+<td>科学文献检索 Benchmark</td>
+<td>https://aclanthology.org/2024.emnlp-main.840/</td>
+</tr>
+<tr>
+<td>SCILIT</td>
+<td>科学文献发现系统</td>
+<td>https://aclanthology.org/2023.acl-demo.22/</td>
+</tr>
+<tr>
+<td>OpenResearcher</td>
+<td>搜索、过滤、回答和自我修正</td>
+<td>https://aclanthology.org/2024.emnlp-demo.22/</td>
+</tr>
+<tr>
+<td>PaSa</td>
+<td>多步学术论文搜索 Agent</td>
+<td>https://aclanthology.org/2025.acl-long.572/</td>
+</tr>
+<tr>
+<td>ResearchAgent</td>
+<td>学术图谱、概念库、研究想法生成</td>
+<td>https://aclanthology.org/2025.naacl-long.342/</td>
+</tr>
+<tr>
+<td>SciRAG</td>
+<td>引用感知、自适应检索、结构化综合</td>
+<td>https://aclanthology.org/2026.eacl-long.303/</td>
+</tr>
+</tbody>
+</table>
+<p>继续补充的主题：</p>
+<ul>
+<li>OpenScholar；</li>
+<li>STORM；</li>
+<li>Agentic Retrieval；</li>
+<li>Continual RAG / Dynamic RAG；</li>
+<li>Long-term Agent Memory；</li>
+<li>Adaptive Retrieval；</li>
+<li>Temporal Knowledge Update；</li>
+<li>Literature Review Agent Evaluation。</li>
+</ul>
+<h3>必要支撑：数据与文献管理</h3>
+<table>
+<thead>
+<tr>
+<th>工作/系统</th>
+<th>重点</th>
+<th>链接</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S2ORC</td>
+<td>大规模学术语料、结构化全文、引用、图表</td>
+<td>https://aclanthology.org/2020.acl-main.447/</td>
+</tr>
+<tr>
+<td>Semantic Scholar Academic Graph</td>
+<td>论文、作者、引用、推荐、Embedding、API</td>
+<td>https://www.semanticscholar.org/product/api</td>
+</tr>
+<tr>
+<td>OpenAlex</td>
+<td>开放学术知识图谱、实体和关系</td>
+<td>https://developers.openalex.org/</td>
+</tr>
+<tr>
+<td>Open Research Knowledge Graph</td>
+<td>研究贡献结构化、论文比较、FAIR Survey</td>
+<td>https://www.orkg.org/</td>
+</tr>
+<tr>
+<td>Semantic Scholar Recommendations</td>
+<td>基于正负种子论文的推荐</td>
+<td>https://api.semanticscholar.org/api-docs/recommendations</td>
+</tr>
+</tbody>
+</table>
+<h2>8. 可对比的产品和非论文系统</h2>
+<p>这些系统用于理解功能空间，不等于它们公开了底层架构：</p>
+<ul>
+<li>Zotero：文献和附件管理；</li>
+<li>Mendeley：文献管理与推荐；</li>
+<li>Semantic Scholar：学术搜索、引用图、推荐；</li>
+<li>Connected Papers：引用图和相似论文探索；</li>
+<li>ResearchRabbit：文献图谱和持续推荐；</li>
+<li>Litmaps：引用追踪和新论文提醒；</li>
+<li>Elicit：文献筛选与结构化信息抽取；</li>
+<li>scite：引用语境和支持/反驳关系；</li>
+<li>Consensus：面向研究问题的证据搜索；</li>
+<li>SciSpace：论文阅读和问答。</li>
+</ul>
+<p>调研时区分：</p>
+<pre><code class="language-text">Reference Manager
+Academic Search Engine
+Literature Discovery System
+Scholarly Knowledge Graph
+Scientific QA System
+Literature Review Agent
+Research Agent
+</code></pre>
+<h2>9. 初始调研流程</h2>
+<h3>Step 1：建立种子集合</h3>
+<p>先阅读 Agent、检索和评测工作：</p>
+<ol>
+<li>PaperQA2；</li>
+<li>PaSa；</li>
+<li>LitSearch；</li>
+<li>OpenResearcher；</li>
+<li>ResearchAgent；</li>
+<li>SciRAG。</li>
+</ol>
+<p>再阅读支撑它们的数据基础：</p>
+<ol start="7">
+<li>S2ORC；</li>
+<li>Semantic Scholar Academic Graph；</li>
+<li>OpenAlex；</li>
+<li>ORKG。</li>
+</ol>
+<h3>Step 2：对每篇种子论文做三种扩展</h3>
+<pre><code class="language-text">Backward Search
+    阅读 References，寻找基础工作
+
+Forward Search
+    查看 Citations，寻找后续扩展
+
+Semantic Search
+    查看 Related Papers，发现未直接引用的相似工作
+</code></pre>
+<h3>Step 3：按会议扫描 2023—2026</h3>
+<p>优先扫描：</p>
+<pre><code class="language-text">ICLR
+NeurIPS
+ICML
+KDD
+SIGIR
+WSDM
+The Web Conference
+VLDB
+SIGMOD
+ICDE
+ACL
+EMNLP
+NAACL
+EACL
+CIKM
+JCDL
+ISWC
+</code></pre>
+<p>在会议论文列表中搜索：</p>
+<pre><code class="language-text">scholarly
+scientific literature
+academic search
+citation
+digital library
+research agent
+literature review
+knowledge graph
+vector search
+</code></pre>
+<h3>Step 4：设置持续提醒</h3>
+<p>对核心检索式设置：</p>
+<ul>
+<li>Google Scholar Alert；</li>
+<li>Semantic Scholar Research Feed；</li>
+<li>arXiv 分类与关键词订阅；</li>
+<li>DBLP 会议更新；</li>
+<li>OpenReview venue 和关键词跟踪。</li>
+</ul>
+<h3>Step 5：每周整理</h3>
+<pre><code class="language-text">候选论文
+    ↓
+去重
+    ↓
+按研究分支分类
+    ↓
+记录系统数据源、架构、评测和限制
+    ↓
+更新引用图与研究问题列表
+</code></pre>
+<h2>10. 每篇论文的记录模板</h2>
+<pre><code class="language-markdown"># Paper Title
+
+## 基本信息
+- Authors:
+- Venue / Year:
+- URL:
+- Code:
+- Dataset:
+
+## 研究问题
+
+## 贡献类型与目标社区
+- Contribution: Task / Algorithm / Benchmark / System / Infrastructure
+- Target Community: AI / KDD-IR / Database / NLP / Digital Library
+
+## 系统属于哪一层
+- [ ] 文献数据基础设施
+- [ ] PDF/文档解析
+- [ ] 元数据与版本管理
+- [ ] 关键词/向量检索
+- [ ] 引用图/知识图谱
+- [ ] 推荐系统
+- [ ] 文献QA
+- [ ] 文献综述Agent
+- [ ] 科研Agent
+- [ ] Benchmark
+
+## 数据来源与规模
+
+## 数据模型
+
+## 存储与索引
+
+## 更新机制
+
+## 检索流程
+
+## Agent工具与执行循环
+
+## 输出形式
+
+## 评测任务与指标
+
+## 主要结果
+
+## 开源情况
+
+## 局限
+
+## 与目标系统的关系
+
+## 可复用的设计
+
+## 待验证问题
+</code></pre>
+<h2>11. 横向对比表字段</h2>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>要记录的问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>系统目标</td>
+<td>存储、搜索、推荐、问答、综述还是研究生成？</td>
+</tr>
+<tr>
+<td>贡献类型</td>
+<td>新任务、算法、Benchmark、数据系统还是基础设施？</td>
+</tr>
+<tr>
+<td>目标社区</td>
+<td>AI、KDD/IR、数据库、NLP还是数字图书馆？</td>
+</tr>
+<tr>
+<td>数据来源</td>
+<td>arXiv、S2ORC、OpenAlex、Semantic Scholar、Publisher？</td>
+</tr>
+<tr>
+<td>数据规模</td>
+<td>元数据、摘要和全文分别有多少？</td>
+</tr>
+<tr>
+<td>全文格式</td>
+<td>PDF、LaTeX、XML、Markdown、JSON？</td>
+</tr>
+<tr>
+<td>数据模型</td>
+<td>文档、关系表、图谱还是混合模型？</td>
+</tr>
+<tr>
+<td>文本处理</td>
+<td>使用什么解析器、Chunk和图表处理？</td>
+</tr>
+<tr>
+<td>关键词检索</td>
+<td>BM25、Tantivy、Lucene、Elasticsearch？</td>
+</tr>
+<tr>
+<td>向量检索</td>
+<td>模型、向量库、ANN算法？</td>
+</tr>
+<tr>
+<td>图检索</td>
+<td>是否使用引用图、作者图或知识图谱？</td>
+</tr>
+<tr>
+<td>混合检索</td>
+<td>如何融合关键词、向量、图和元数据？</td>
+</tr>
+<tr>
+<td>去重</td>
+<td>DOI、arXiv ID、标题、作者、内容哈希？</td>
+</tr>
+<tr>
+<td>版本</td>
+<td>是否区分预印本、修订版和正式出版版？</td>
+</tr>
+<tr>
+<td>增量更新</td>
+<td>更新频率、重算粒度、失败恢复？</td>
+</tr>
+<tr>
+<td>Agent</td>
+<td>是否多步搜索、读全文、反思和继续搜索？</td>
+</tr>
+<tr>
+<td>引用</td>
+<td>是否提供页码、段落、版本和可验证来源？</td>
+</tr>
+<tr>
+<td>评测</td>
+<td>Recall、NDCG、QA、引用正确性还是人工综述质量？</td>
+</tr>
+<tr>
+<td>开源</td>
+<td>代码、数据、模型、索引是否开放？</td>
+</tr>
+<tr>
+<td>限制</td>
+<td>覆盖、时效、许可证、成本、噪声和不可复现性？</td>
+</tr>
+</tbody>
+</table>
+<h2>12. 需要回答的核心研究问题</h2>
+<h3>任务与研究贡献层</h3>
+<ul>
+<li>能否将持续到达的论文流定义为一个可复现的动态科研环境？</li>
+<li>文献摄取能否建模为带有存储、计算和时间预算的序列决策问题？</li>
+<li>能否使用未来搜索、QA或综述表现作为知识摄取策略的长期奖励？</li>
+<li>Retriever能否直接优化Agent的最终任务效用，而不是query-document相似度？</li>
+<li>能否构造具有严格时间切分、论文版本和到达顺序的Benchmark？</li>
+<li>如何分别衡量knowledge freshness、coverage、task utility、citation correctness和cost？</li>
+<li>相比“保存全部论文”“按相似度保存”和“固定时间窗口”，学习型策略是否稳定提升？</li>
+<li>贡献主要属于新任务、新算法、新系统，还是三者的组合？</li>
+</ul>
+<h3>数据层</h3>
+<ol>
+<li>是否已有适合个人或实验室部署的持续更新学术文献基础设施？</li>
+<li>S2ORC、S2AG、OpenAlex分别能提供哪些数据，更新延迟如何？</li>
+<li>如何合法、稳定地获得开放全文？</li>
+<li>如何表示同一工作的多个版本？</li>
+<li>如何保存解析结果，使索引可以重建？</li>
+</ol>
+<h3>检索层</h3>
+<ol start="6">
+<li>论文级召回应使用标题摘要、全文、引用图还是混合检索？</li>
+<li>Chunk级检索应在全库进行，还是先检索论文再检索Chunk？</li>
+<li>如何评价研究问题对应的论文集合是否完整？</li>
+<li>新论文没有引用数据时，如何避免被排序系统忽略？</li>
+<li>如何利用正负种子论文建立个性化研究兴趣模型？</li>
+</ol>
+<h3>Agent层</h3>
+<ol start="11">
+<li>Agent的工具应是搜索API、全文阅读、引用遍历还是数据库查询？</li>
+<li>Agent何时应改写查询、沿引用图扩展或停止搜索？</li>
+<li>Agent如何区分“没有找到证据”和“结论为否”？</li>
+<li>如何保证长篇综述中的每个主张均有正确引用？</li>
+<li>如何评价 Agent 相比固定检索流程的真实增益？</li>
+</ol>
+<h3>更新层</h3>
+<ol start="16">
+<li>每日新增论文如何进入候选层、Watchlist和核心全文层？</li>
+<li>哪些事件触发重新解析和重新Embedding？</li>
+<li>更换解析器、Chunk策略或Embedding模型时如何迁移？</li>
+<li>如何处理撤稿、失效结论和错误引用？</li>
+<li>如何记录每个答案依赖的数据与模型版本？</li>
+</ol>
+<h2>13. 初步目标系统轮廓</h2>
+<pre><code class="language-text">arXiv / OpenAlex / Semantic Scholar / OpenReview
+                       │
+                       ▼
+              增量元数据摄取
+                       │
+                       ▼
+          去重、版本匹配、实体消歧
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+     大规模候选目录          全文下载队列
+   标题/摘要/引用/推荐             │
+             │                   ▼
+             │           解析/Chunk/图表
+             │                   │
+             └─────────┬─────────┘
+                       ▼
+        BM25 + Embedding + Citation Graph
+                       │
+                       ▼
+          Search / QA / Review Agent
+                       │
+                       ▼
+       答案、引用、综述、研究趋势与提醒
+</code></pre>
+<p>建议的规模分层：</p>
+<table>
+<thead>
+<tr>
+<th>层次</th>
+<th align="right">数据规模</th>
+<th>保存内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Candidate Catalog</td>
+<td align="right">10万～50万篇</td>
+<td>标题、摘要、元数据、引用、摘要向量</td>
+</tr>
+<tr>
+<td>Watchlist</td>
+<td align="right">1万～3万篇</td>
+<td>高相关元数据、推荐状态、可能的全文链接</td>
+</tr>
+<tr>
+<td>Core Full-text</td>
+<td align="right">3,000～5,000篇</td>
+<td>PDF、解析全文、Chunk、向量、图表</td>
+</tr>
+</tbody>
+</table>
+<p>每日流程：</p>
+<pre><code class="language-text">数百篇新候选
+    ↓ 分类和关键词过滤
+约200篇
+    ↓ 摘要向量排序
+约50篇
+    ↓ LLM或规则精排
+约10篇
+    ↓ 下载与质量检查
+约5篇进入核心全文库
+</code></pre>
+<h2>14. 调研时避免的混淆</h2>
+<ul>
+<li>不要把参考文献管理器等同于科学文献数据基础设施。</li>
+<li>不要把向量数据库等同于完整文献库。</li>
+<li>不要把学术搜索引擎等同于全文问答系统。</li>
+<li>不要把单轮 RAG 等同于文献搜索 Agent。</li>
+<li>不要把生成引用格式等同于引用事实正确。</li>
+<li>不要把引用次数等同于新论文质量。</li>
+<li>不要把 arXiv、OpenReview和正式出版版本计为不同工作。</li>
+<li>不要让数字图书馆和传统文献管理工作主导问题定义。</li>
+<li>不要忽略文献管理；数据错误、版本错误和索引不可追溯会直接破坏上层实验。</li>
+<li>AI、KDD和VLDB相关工作是核心阅读；数字图书馆、IR、知识图谱和循证研究用于补全必要基础。</li>
+<li>不要只搜索 <code>paper management</code>；该词主要召回个人文献管理工具。</li>
+</ul>
+<h2>15. 下一次调研的最小执行清单</h2>
+<ul>
+<li>[ ] 比较 PaperQA2、PaSa、OpenResearcher、ResearchAgent、SciRAG 的工具和检索循环。</li>
+<li>[ ] 阅读 LitSearch，明确科学文献检索的任务定义和指标。</li>
+<li>[ ] 检索 Continual RAG、Agent Memory、Adaptive Retrieval、Temporal Knowledge Update。</li>
+<li>[ ] 检索是否已有 Self-Updating Literature Agent 或 Budgeted Knowledge Acquisition。</li>
+<li>[ ] 扫描 ICLR、NeurIPS、ICML 中 continual knowledge、agent memory、agentic retrieval。</li>
+<li>[ ] 扫描 KDD、SIGIR、WWW、WSDM 中 dynamic scholarly graph、cold-start paper recommendation和agentic search。</li>
+<li>[ ] 扫描 SIGMOD、VLDB、ICDE 中 incremental vector indexing、hybrid search 和 provenance。</li>
+<li>[ ] 将潜在研究问题分别按 AI、KDD、VLDB 的贡献要求进行归类。</li>
+<li>[ ] 阅读并记录 S2ORC 的数据模型、构建流程和更新方式。</li>
+<li>[ ] 比较 S2AG 与 OpenAlex 的实体、API、数据许可和增量更新。</li>
+<li>[ ] 阅读 ORKG 的 Research Contribution Model。</li>
+<li>[ ] 扫描 JCDL 中 metadata、versioning、scholarly knowledge graph 和 literature infrastructure。</li>
+<li>[ ] 搜索 living systematic review，记录其持续更新机制。</li>
+<li>[ ] 建立横向对比表，形成目标系统的需求列表和现有工作的空白。</li>
+</ul><footer>由 <code>我的思考/待整理/持续更新的学术文献基础设施_调研起点.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NanoResearch 整体架构与 Literature / Ideation 模块代码精读。">
+    <title>NanoResearch：架构与 Literature 模块精读</title>
+    <style>
+        :root {
+            --ink: #202522;
+            --muted: #616862;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e5ded3;
+            --accent: #c4612f;
+            --accent-dark: #9e4720;
+            --accent-pale: #f3e3d6;
+            --green: #315b45;
+            --green-pale: #edf3ef;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #89621a;
+            --warning-pale: #fff7e5;
+            --danger: #8f4051;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 9px rgba(31, 36, 33, .065);
+            --figure-shadow: 0 5px 18px rgba(31, 36, 33, .12);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+        .container {
+            width: min(980px, calc(100% - 44px));
+            margin: 0 auto;
+            padding: 50px 18px 76px;
+        }
+        header {
+            margin-bottom: 32px;
+            padding-bottom: 34px;
+            border-bottom: 1px solid var(--line);
+            text-align: center;
+        }
+        .status-row, .resource-row, .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+        .status-row { margin-bottom: 18px; }
+        .resource-row { margin-top: 22px; }
+        .badge, .tag, .evidence {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+        .badge {
+            padding: 4px 11px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: .79rem;
+            font-weight: 680;
+        }
+        .resource-link {
+            display: inline-block;
+            padding: 7px 13px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent-dark);
+            background: var(--panel);
+            font-size: .84rem;
+            font-weight: 630;
+            text-decoration: none;
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+        .resource-link.primary {
+            color: var(--white);
+            border-color: var(--accent);
+            background: var(--accent);
+        }
+        .resource-link:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+        h1 {
+            margin-bottom: 12px;
+            font-size: clamp(2.25rem, 7vw, 3.25rem);
+            font-weight: 690;
+            letter-spacing: -.035em;
+            line-height: 1.08;
+        }
+        .subtitle {
+            max-width: 780px;
+            margin: 0 auto;
+            color: var(--muted);
+            font-size: 1.08rem;
+            font-weight: 370;
+        }
+        .meta { margin-top: 12px; color: var(--muted); font-size: .9rem; }
+        h2 {
+            margin: 58px 0 24px;
+            padding-bottom: 11px;
+            border-bottom: 2px solid var(--accent);
+            font-size: 1.78rem;
+            font-weight: 650;
+            line-height: 1.3;
+        }
+        h3 {
+            margin: 30px 0 13px;
+            color: var(--accent);
+            font-size: 1.24rem;
+            font-weight: 650;
+        }
+        h4 { margin-bottom: 7px; color: var(--accent-dark); font-size: 1rem; }
+        p { margin-bottom: 17px; font-weight: 370; }
+        strong { font-weight: 680; }
+        a { color: var(--accent-dark); }
+        code {
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: .87em;
+        }
+        pre {
+            margin: 22px 0;
+            padding: 20px 22px;
+            border-radius: 8px;
+            color: #edf2ee;
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: .83rem;
+            line-height: 1.65;
+            overflow-x: auto;
+        }
+        pre code { padding: 0; color: inherit; background: transparent; }
+        .lead { color: #353c38; font-size: 1.03rem; }
+        .eyebrow {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: .73rem;
+            font-weight: 730;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+        .toc {
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 7px;
+            margin: 24px 0 34px;
+            padding: 10px;
+            border: 1px solid rgba(229, 222, 211, .92);
+            border-radius: 16px;
+            background: rgba(247, 244, 239, .94);
+            box-shadow: 0 8px 24px rgba(31, 36, 33, .06);
+            backdrop-filter: blur(10px);
+        }
+        .toc a {
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: .79rem;
+            font-weight: 640;
+            text-decoration: none;
+        }
+        .toc a:hover { color: var(--accent-dark); background: var(--accent-pale); }
+        .highlight-box, .source-note, .code-note, .warning-note, .critical-note {
+            margin: 26px 0;
+            padding: 21px 25px;
+            border-left: 4px solid var(--accent);
+            border-radius: 6px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+        .source-note { border-left-color: var(--green); background: var(--green-pale); }
+        .code-note { border-left-color: var(--blue); background: var(--blue-pale); }
+        .warning-note { border-left-color: var(--warning); background: var(--warning-pale); }
+        .critical-note { border-left-color: var(--danger); background: var(--danger-pale); }
+        .highlight-box p:last-child, .source-note p:last-child, .code-note p:last-child,
+        .warning-note p:last-child, .critical-note p:last-child { margin-bottom: 0; }
+        .key-insight {
+            margin: 32px 0;
+            padding: 28px 31px;
+            border-radius: 8px;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 4px 12px rgba(196, 97, 47, .22);
+        }
+        .key-insight h3, .key-insight p { color: var(--white); }
+        .key-insight h3 { margin-top: 0; }
+        .key-insight p:last-child { margin-bottom: 0; }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            margin: 24px 0;
+        }
+        .card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .card {
+            padding: 21px 23px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+        .card h3 { margin-top: 0; font-size: 1.08rem; }
+        .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+        .evidence {
+            margin-bottom: 10px;
+            padding: 3px 9px;
+            font-size: .71rem;
+            font-weight: 720;
+        }
+        .evidence.paper { color: var(--accent-dark); background: var(--accent-pale); }
+        .evidence.code { color: var(--blue); background: var(--blue-pale); }
+        .evidence.inference { color: var(--warning); background: var(--warning-pale); }
+        .evidence.audit { color: var(--danger); background: var(--danger-pale); }
+        .figure { margin: 31px 0; text-align: center; }
+        .figure a {
+            display: block;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: var(--figure-shadow);
+        }
+        .figure img { display: block; width: 100%; height: auto; }
+        .figure figcaption {
+            max-width: 800px;
+            margin: 11px auto 0;
+            color: var(--muted);
+            font-size: .86rem;
+            font-style: italic;
+            line-height: 1.55;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .comparison-table th {
+            padding: 13px 15px;
+            color: var(--white);
+            background: var(--accent);
+            font-size: .87rem;
+            font-weight: 650;
+            text-align: left;
+        }
+        .comparison-table td {
+            padding: 13px 15px;
+            border-bottom: 1px solid var(--line);
+            font-size: .88rem;
+            vertical-align: top;
+        }
+        .comparison-table tr:last-child td { border-bottom: 0; }
+        .comparison-table .focus-row td { background: #f8ece3; font-weight: 600; }
+        .table-scroll {
+            width: 100%;
+            margin: 26px 0;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .table-scroll .comparison-table { min-width: 720px; }
+        .flow-diagram {
+            margin: 28px 0;
+            padding: 27px 31px;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+        .flow-step {
+            position: relative;
+            margin: 16px 0;
+            padding: 18px 22px;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            background: var(--white);
+        }
+        .flow-step::before {
+            content: "▼";
+            position: absolute;
+            bottom: -28px;
+            left: 50%;
+            color: var(--accent);
+            font-size: 18px;
+            transform: translateX(-50%);
+        }
+        .flow-step:last-child::before { content: ""; }
+        .flow-step p { margin-bottom: 0; }
+        .stage-strip {
+            display: grid;
+            grid-template-columns: repeat(9, minmax(90px, 1fr));
+            gap: 8px;
+            margin: 26px 0;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        .stage {
+            min-width: 90px;
+            padding: 14px 10px;
+            border-top: 4px solid var(--accent);
+            border-radius: 7px;
+            background: var(--white);
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        .stage small { display: block; color: var(--muted); font-size: .7rem; }
+        .stage strong { display: block; margin-top: 3px; font-size: .84rem; }
+        .mechanism-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin: 24px 0;
+        }
+        .mechanism {
+            padding: 18px 19px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+        }
+        .mechanism .num {
+            display: inline-grid;
+            width: 28px;
+            height: 28px;
+            margin-bottom: 9px;
+            place-items: center;
+            border-radius: 50%;
+            color: var(--white);
+            background: var(--accent);
+            font-size: .78rem;
+            font-weight: 740;
+        }
+        .mechanism h4 { margin-bottom: 7px; }
+        .mechanism p { margin: 0; color: var(--muted); font-size: .86rem; }
+        ul { margin: 15px 0 19px 2px; list-style: none; }
+        li { position: relative; margin-bottom: 9px; padding-left: 22px; }
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 2px;
+            color: var(--accent);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        details {
+            margin: 16px 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 17px 20px;
+            cursor: pointer;
+            font-weight: 650;
+            list-style: none;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: "＋"; margin-left: auto; color: var(--accent); }
+        details[open] summary::after { content: "−"; }
+        .details-body { padding: 18px 22px 22px; border-top: 1px solid var(--line); }
+        .code-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 22px 0;
+        }
+        .code-item {
+            padding: 16px 18px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: var(--white);
+        }
+        .code-item code {
+            display: inline-block;
+            margin-bottom: 7px;
+            color: var(--blue);
+            background: var(--blue-pale);
+            font-weight: 670;
+        }
+        .code-item p { margin-bottom: 0; color: var(--muted); font-size: .84rem; }
+        .task-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 13px;
+            margin-top: 5px;
+        }
+        .task-card {
+            padding: 18px 19px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+        }
+        .task-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 9px;
+        }
+        .task-no {
+            display: inline-grid;
+            width: 27px;
+            height: 27px;
+            flex: 0 0 27px;
+            place-items: center;
+            border-radius: 50%;
+            color: var(--white);
+            background: var(--accent);
+            font-size: .73rem;
+            font-weight: 740;
+        }
+        .task-domain {
+            padding: 2px 8px;
+            border-radius: 999px;
+            color: var(--blue);
+            background: var(--blue-pale);
+            font-size: .7rem;
+            font-weight: 700;
+        }
+        .task-card h4 { margin: 0; color: var(--ink); font-size: 1rem; }
+        .task-card p {
+            margin-bottom: 8px;
+            color: var(--muted);
+            font-size: .84rem;
+            line-height: 1.58;
+        }
+        .task-card p:last-child { margin-bottom: 0; }
+        .task-card strong { color: var(--ink); }
+        footer {
+            margin-top: 72px;
+            padding-top: 28px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: .85rem;
+            text-align: center;
+        }
+        @media (max-width: 780px) {
+            .container { width: min(100% - 28px, 980px); padding: 34px 8px 56px; }
+            .card-grid, .card-grid.three, .mechanism-grid, .code-list, .task-grid { grid-template-columns: 1fr; }
+            .toc { position: static; }
+            .flow-diagram { padding: 20px 16px; }
+            h2 { margin-top: 46px; font-size: 1.54rem; }
+            .highlight-box, .key-insight { padding: 22px; }
+        }
+        @media print {
+            .toc { display: none; }
+            body { background: white; }
+            .container { width: 100%; max-width: none; padding: 24px; }
+            .figure a, .card, details { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+<main class="container">
+    <header>
+        <div class="status-row">
+            <span class="badge">arXiv:2605.10813</span>
+            <span class="badge">系统论文 · 2026</span>
+            <span class="badge">论文 / 代码 / 数据已归档</span>
+            <span class="badge">代码审计：7144364</span>
+        </div>
+        <h1>NanoResearch</h1>
+        <p class="subtitle">不是一个像 Claude Code 那样自由行动的“科研大脑”，而是一条固定九阶段流水线；论文的新叙事，是在流水线上叠加用户画像、Memory、Skill 与可选 Policy Router。</p>
+        <p class="meta">NanoResearch: Co-Evolving Skills, Memory, and Policy for Personalized Research Automation</p>
+        <div class="resource-row">
+            <a class="resource-link primary" href="https://arxiv.org/abs/2605.10813">论文 PDF</a>
+            <a class="resource-link" href="paper/tex_source/paper.tex">TeX 主文件</a>
+            <a class="resource-link" href="code/README.html">本地代码</a>
+            <a class="resource-link" href="../../../_未包含的内容.html">20 Topics 数据</a>
+            <a class="resource-link" href="https://github.com/OpenRaiser/NanoResearch">GitHub</a>
+        </div>
+    </header>
+
+    <div class="highlight-box">
+        <p><strong>一句话定位：</strong>NanoResearch 是“Python 决定阶段顺序、不同 LLM 在固定工位完成任务”的自动科研工作流。它有局部 ReAct、调试和审稿循环，但顶层不是通用自主 Agent。</p>
+    </div>
+
+    <nav class="toc" aria-label="页面导航">
+        <a href="#position">先看本质</a>
+        <a href="#architecture">总体架构</a>
+        <a href="#orchestrator">Orchestrator</a>
+        <a href="#literature">Literature</a>
+        <a href="#literature-flow">检索细节</a>
+        <a href="#outputs">输出与下游</a>
+        <a href="#benchmark-tasks">20 个任务</a>
+        <a href="#audit">代码审计</a>
+        <a href="#evidence">论文证据</a>
+    </nav>
+
+    <section id="position">
+        <h2>先看本质：论文讲“共同进化”，代码更像“带长期上下文的流水线”</h2>
+        <div class="card-grid">
+            <article class="card">
+                <span class="evidence paper">论文声称</span>
+                <h3>三层共同进化</h3>
+                <p>Memory 保存用户与项目经历，Skill 抽象可复用程序知识，SDPO 将自然语言反馈写进 Planner 参数。</p>
+            </article>
+            <article class="card">
+                <span class="evidence code">代码确认</span>
+                <h3>固定工作流 + 上下文增强</h3>
+                <p>九个阶段顺序写死；每个阶段检索画像、Memory 和 Skill，拼入 Prompt，再调用配置好的模型。</p>
+            </article>
+            <article class="card">
+                <span class="evidence audit">审计发现</span>
+                <h3>权重进化没有完整训练链</h3>
+                <p>公开仓库能收集 SDPO 数据、调用外部 Router；未配置时只取前三条候选并使用通用 fallback。</p>
+            </article>
+            <article class="card">
+                <span class="evidence inference">合理定位</span>
+                <h3>Agentic workflow</h3>
+                <p>它是具有局部工具循环的确定性 LLM 工作流，不是 OpenClaw 或 Claude Code 式通用 Agent Runtime。</p>
+            </article>
+        </div>
+
+        <figure class="figure">
+            <a href="html_assets/fig1_personalization.png">
+                <img src="html_assets/fig1_personalization.png" alt="论文关于统一流水线与个性化共同进化的对比图">
+            </a>
+            <figcaption>论文 Fig. 1：上半部分批评“一套流程服务所有人”，下半部分把 Skill、Memory、Policy 组织成个性化共同进化。图表达的是论文主张，不等于这些能力都由当前公开代码完整实现。</figcaption>
+        </figure>
+    </section>
+
+    <section id="architecture">
+        <h2>总体架构：三阶段是论文叙事，九阶段才是代码执行链</h2>
+        <p class="lead">论文把流程压缩成 Ideation、Experiment、Writing 三个宏观阶段；代码中的 Deep/Evo pipeline 展开为九个按顺序执行的 Agent 类。</p>
+
+        <figure class="figure">
+            <a href="html_assets/fig2_framework.png">
+                <img src="html_assets/fig2_framework.png" alt="NanoResearch论文总体框架图">
+            </a>
+            <figcaption>论文主架构图：Orchestrator 执行 Retrieve → Plan → Coordinate → Distill；右侧 Memory、Skill、Policy 是三类长期状态。</figcaption>
+        </figure>
+
+        <div class="stage-strip" aria-label="九阶段流水线">
+            <div class="stage"><small>01</small><strong>IDEATION</strong></div>
+            <div class="stage"><small>02</small><strong>PLANNING</strong></div>
+            <div class="stage"><small>03</small><strong>SETUP</strong></div>
+            <div class="stage"><small>04</small><strong>CODING</strong></div>
+            <div class="stage"><small>05</small><strong>EXECUTION</strong></div>
+            <div class="stage"><small>06</small><strong>ANALYSIS</strong></div>
+            <div class="stage"><small>07</small><strong>FIGURE</strong></div>
+            <div class="stage"><small>08</small><strong>WRITING</strong></div>
+            <div class="stage"><small>09</small><strong>REVIEW</strong></div>
+        </div>
+
+        <div class="card-grid three">
+            <article class="card">
+                <span class="eyebrow">Control plane</span>
+                <h3>Python Orchestrator</h3>
+                <p>状态机、输入接线、重试、断点、产物注册、成本统计和最终导出。它不负责科学内容生成。</p>
+            </article>
+            <article class="card">
+                <span class="eyebrow">LLM workers</span>
+                <h3>九个阶段模块</h3>
+                <p>每个 Agent 类读取结构化输入、组 Prompt、调用阶段模型、校验 JSON，并写入工作空间。</p>
+            </article>
+            <article class="card">
+                <span class="eyebrow">State & tools</span>
+                <h3>文件状态与外部工具</h3>
+                <p>Manifest/JSON 保存过程；OpenAlex、arXiv、GitHub、PDF reader、shell/SLURM 等完成外部动作。</p>
+            </article>
+        </div>
+
+        <pre><code>nanoresearch run --topic "..."
+  └─ cli.py 选择 deep / evo / standard
+      └─ DeepPipelineOrchestrator.run()
+          ├─ prepare_inputs(stage, accumulated_results)
+          ├─ agents[stage].run(...)
+          ├─ 保存 JSON + 更新 manifest
+          └─ 失败时按固定预算重试
+
+每个 Agent 内部：
+  profile + memory + skill + optional router plan
+      → system/user prompt
+      → OpenAI-compatible chat.completions
+      → Pydantic / JSON 校验
+      → workspace artifact</code></pre>
+
+        <div class="code-list">
+            <div class="code-item"><code>nanoresearch/cli.py</code><p>命令入口与 pipeline 模式选择。</p></div>
+            <div class="code-item"><code>pipeline/base_orchestrator.py</code><p>固定阶段循环、重试、resume、成本与状态。</p></div>
+            <div class="code-item"><code>pipeline/deep_orchestrator.py</code><p>创建九个 Agent，并明确上游结果如何传给下游。</p></div>
+            <div class="code-item"><code>pipeline/multi_model.py</code><p>通过 OpenAI-compatible API 调度阶段模型。</p></div>
+        </div>
+    </section>
+
+    <section id="orchestrator">
+        <h2>Orchestrator 到底做什么：接线和治理多于“自主思考”</h2>
+        <div class="table-scroll">
+            <table class="comparison-table">
+                <thead>
+                    <tr><th>论文中的动作</th><th>代码里的实际实现</th><th>是否由 LLM 决定</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Retrieve</td><td>按关键词、标签、项目、时间、置信度检索 Memory/Skill 候选</td><td>候选生成主要是启发式</td></tr>
+                    <tr><td>Plan</td><td>可选 Router 从候选中选 ID，返回一段 <code>prompt_plan</code></td><td>配置外部 Router 时是；否则 deterministic fallback</td></tr>
+                    <tr><td>Coordinate</td><td>Python 按固定九阶段顺序执行，各阶段输入已经写死</td><td>不是</td></tr>
+                    <tr><td>Distill</td><td>将运行反馈保存为 Memory，部分轨迹总结成自然语言 Skill</td><td>部分总结可调用 LLM</td></tr>
+                    <tr class="focus-row"><td>Policy evolution</td><td>收集训练三元组并可接入外部 SDPO Router</td><td>公开仓库没有完整训练器</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="warning-note">
+            <p><strong>最关键的边界：</strong>真正决定“下一阶段是什么”的是 Python 状态机；Router 只在阶段 Prompt 里增加指导。它不会像 Claude Code 一样动态浏览整个环境、自由选择工具并重写任务路线。</p>
+        </div>
+    </section>
+
+    <section id="literature">
+        <h2>Literature 模块的真实位置：它其实就是 IDEATION 的前半段</h2>
+        <p class="lead">仓库没有一个独立的 <code>LiteratureAgent</code>。文献检索、覆盖评估、证据抽取、Gap 分析、Hypothesis 生成和新颖性复查，都集中在 <code>IdeationAgent</code> 中。</p>
+
+        <div class="code-list">
+            <div class="code-item"><code>agents/ideation.py</code><p>总入口：把检索、分析、证据和 GitHub 搜索串起来。</p></div>
+            <div class="code-item"><code>agents/ideation_search.py</code><p>批量检索、排序过滤、引用扩展、PDF 和覆盖补检。</p></div>
+            <div class="code-item"><code>agents/ideation_hypothesis.py</code><p>ReAct 工具、新颖性复查、Gap/Hypothesis 和指标抽取。</p></div>
+            <div class="code-item"><code>mcp_server/tools/</code><p>OpenAlex、arXiv、Semantic Scholar、PDF、GitHub 等具体 API。</p></div>
+        </div>
+
+        <div class="key-insight">
+            <h3>它不是 AI-Researcher 那种“每轮自由选择 Keyword / Similar / References”</h3>
+            <p>NanoResearch 先批量生成最多 5 条 Query，按固定程序检索和过滤；之后最多进行两轮覆盖补检，并在 Hypothesis 阶段给 LLM 最多两轮工具调用。整体仍是预定流程。</p>
+        </div>
+
+        <div class="card-grid">
+            <article class="card">
+                <span class="evidence code">默认配置</span>
+                <h3>OpenAlex</h3>
+                <p><code>literature_sources=["openalex"]</code>。不配置其他来源时，Semantic Scholar 根本不会进入工具列表。</p>
+            </article>
+            <article class="card">
+                <span class="evidence code">可选来源</span>
+                <h3>arXiv / S2 / Web / PwC</h3>
+                <p>通过配置显式启用；Semantic Scholar 主要提供检索与 paper details，不是系统默认核心。</p>
+            </article>
+        </div>
+    </section>
+
+    <section id="literature-flow">
+        <h2>一次 Literature / Ideation 会怎样执行</h2>
+        <div class="mechanism-grid">
+            <article class="mechanism"><span class="num">1</span><h4>构造自适应上下文</h4><p>把主题、用户画像、Memory、Skill 和可选 Router plan 放进 Query 生成 Prompt。</p></article>
+            <article class="mechanism"><span class="num">2</span><h4>一次生成检索词</h4><p>LLM 最多生成 5 条多样 Query；失败时退化为 topic、survey、benchmark 三条。</p></article>
+            <article class="mechanism"><span class="num">3</span><h4>批量主检索</h4><p>每条 Query 每个主来源最多取 10 篇；按 paper ID / arXiv ID / 标题去重。</p></article>
+            <article class="mechanism"><span class="num">4</span><h4>额外搜综述</h4><p>固定追加 survey、review、comprehensive overview 三类 Query，每条最多 5 篇。</p></article>
+            <article class="mechanism"><span class="num">5</span><h4>过滤与排序</h4><p>主题词重合度至少 0.30；目标保留约 30 篇，兼顾高引论文与最近两年论文。</p></article>
+            <article class="mechanism"><span class="num">6</span><h4>引用图扩展</h4><p>选引用数最高的 5 篇，通过 OpenAlex 追回其参考文献；新增最多 15 篇且引用数至少 20。</p></article>
+            <article class="mechanism"><span class="num">7</span><h4>读少量全文</h4><p>从有 PDF 的论文中按引用数选前 4 篇，最多读 20 页，抽取 Method 和 Experiment 文本。</p></article>
+            <article class="mechanism"><span class="num">8</span><h4>覆盖自评与补检</h4><p>LLM 给 coverage 1–10 分；低于 8 时根据缺失方向补检，最多两轮。</p></article>
+            <article class="mechanism"><span class="num">9</span><h4>Must-cite 候选</h4><p>只根据最多 5 篇综述的摘要，请 LLM 提出 10–15 个必引标题，再与实际论文模糊匹配。</p></article>
+            <article class="mechanism"><span class="num">10</span><h4>Gap + Hypothesis</h4><p>Top 30 论文摘要及少量全文片段进入 LLM，输出领域概述、Gap、候选假设和可行性。</p></article>
+            <article class="mechanism"><span class="num">11</span><h4>新颖性工具循环</h4><p>LLM 可再调用配置好的学术搜索工具，最多 2 个工具轮次，寻找每个假设的相似工作。</p></article>
+            <article class="mechanism"><span class="num">12</span><h4>证据与代码资源</h4><p>从摘要抽显式数字指标，并搜索最多 5 个 GitHub 参考仓库，形成最终 IdeationOutput。</p></article>
+        </div>
+
+        <div class="table-scroll">
+            <table class="comparison-table">
+                <thead><tr><th>环节</th><th>固定上限 / 阈值</th><th>代码含义</th></tr></thead>
+                <tbody>
+                    <tr><td>初始 Query</td><td>5</td><td>一次性生成，不是无限循环</td></tr>
+                    <tr><td>每 Query 结果</td><td>10</td><td>OpenAlex/arXiv 分别执行</td></tr>
+                    <tr><td>目标论文池</td><td>30</td><td>排序阶段的目标，不是严格最终上限</td></tr>
+                    <tr><td>高引标准</td><td>≥100；希望至少 8 篇</td><td>不足只告警，不会终止</td></tr>
+                    <tr><td>最近论文</td><td>约 1/5 槽位</td><td>最近两年且引用少于 100</td></tr>
+                    <tr><td>引用扩展</td><td>Top 5 → 最多新增 15</td><td>只追参考文献，不同时追 citing papers</td></tr>
+                    <tr><td>全文</td><td>Top 4；每篇 20 页</td><td>按引用数选，不按主题相关性选</td></tr>
+                    <tr><td>覆盖补检</td><td>最多 2 轮；合格线 8/10</td><td>LLM 自评检索覆盖</td></tr>
+                    <tr><td>Hypothesis 工具调用</td><td>最多 2 轮</td><td>真正接近 ReAct 的局部循环</td></tr>
+                    <tr><td>指标抽取</td><td>Top 30；摘要各 500 字符</td><td>只抽摘要中明确写出的数字</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <details open>
+            <summary>检索源具体如何分工</summary>
+            <div class="details-body">
+                <ul>
+                    <li><strong>OpenAlex：</strong>默认主检索、引用数补全、综述检索、引用图 snowball sampling。</li>
+                    <li><strong>arXiv：</strong>可选的主题检索与 PDF URL 来源，类别限制覆盖 CS、部分生物/物理/材料与统计。</li>
+                    <li><strong>Semantic Scholar：</strong>只有配置 <code>semantic_scholar</code> 或 <code>s2</code> 才注册搜索和 paper-details 工具。</li>
+                    <li><strong>Web / Papers with Code：</strong>补充学术链接、任务和实现线索，不是默认路径。</li>
+                    <li><strong>GitHub：</strong>Idea 完成后额外找 Python 参考仓库，按 stars 排序，最多保留 5 个。</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>新颖性检查到底强不强</summary>
+            <div class="details-body">
+                <p>系统 Prompt 要求“对每个 Hypothesis 搜索相似论文”，但实际工具预算只有两轮。一个轮次可以并行发出多个 Tool Call，所以不等于只搜两次；不过它仍无法构成系统性 novelty review。</p>
+                <p>最终的 <code>novelty_justification</code> 仍由 LLM 根据有限元数据和片段写出，没有独立的相似度模型、人工核验或完整领域数据库覆盖证明。</p>
+            </div>
+        </details>
+
+        <details>
+            <summary>全文阅读与“量化证据”是两条不同路径</summary>
+            <div class="details-body">
+                <p>Top 4 PDF 的 Method/Experiment 片段用于 Gap/Hypothesis 分析和后续写作；但 <code>_extract_evidence()</code> 单独只读取 Top 30 论文的摘要片段。因此论文所说的“从论文中解析 performance score”，在当前实现里主要是“从截断摘要中让 LLM 抽显式数字”。</p>
+            </div>
+        </details>
+    </section>
+
+    <section id="outputs">
+        <h2>Literature 最终产出什么，又流向哪里</h2>
+        <pre><code>{
+  "topic": "...",
+  "search_queries": ["..."],
+  "papers": [
+    {
+      "paper_id": "...",
+      "title": "...",
+      "abstract": "...",
+      "citation_count": 123,
+      "method_text": "...",
+      "experiment_text": "..."
+    }
+  ],
+  "survey_summary": "...",
+  "gaps": [...],
+  "hypotheses": [...],
+  "selected_hypothesis": "HYP-001",
+  "evidence": {"extracted_metrics": [...]},
+  "reference_repos": [...],
+  "must_cites": [...]
+}</code></pre>
+
+        <div class="flow-diagram">
+            <div class="flow-step"><h4>Planning 消费</h4><p>读取选中的 Hypothesis、Gap、前 15 篇论文标题和摘要指标，生成数据集、基线、方法、指标和消融蓝图。</p></div>
+            <div class="flow-step"><h4>Experiment 消费</h4><p>蓝图驱动 Setup、Coding、Execution；文献证据主要约束 baseline 和 performance provenance。</p></div>
+            <div class="flow-step"><h4>Writing 消费</h4><p>最多使用 50 篇论文生成 cite key，加入综述、Gap、少量全文片段；Introduction/Related Work 等章节还可再搜文献，默认最多 2 个工具轮次。</p></div>
+        </div>
+
+        <div class="code-note">
+            <p><strong>这意味着 Literature 不只出现一次：</strong>主文献库在 IDEATION 建立；写作阶段还存在一个较小的按需检索入口，用于补充或核验引用。</p>
+        </div>
+    </section>
+
+    <section id="benchmark-tasks">
+        <h2>Benchmark 到底让系统研究什么</h2>
+        <p class="lead">Hugging Face 数据集不是训练语料，而是 20 条标准化的“科研委托书”：问题、推荐基线、外部数据集、用户偏好和算力限制都提前写好。18 条属于增量创新，只有两个多模态任务标为较复杂的组件重组。</p>
+
+        <div class="source-note">
+            <p><strong>共同模板：</strong>成熟公开数据集 → 标准基线 → 提出一个轻量改进 → 单 GPU 运行 → 做公平对比与消融 → 输出实现方案或论文。它主要测试工程闭环，不等于开放式科学发现。</p>
+        </div>
+
+        <details>
+            <summary>展开查看全部 20 个任务（左右两列）</summary>
+            <div class="details-body">
+                <div class="task-grid">
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">01</span><span class="task-domain">NLP</span><h4>生物医学问答</h4></div>
+                        <p><strong>目标：</strong>有限算力下改进 PubMedQA，保持方法轻量、可消融、可复现。</p>
+                        <p><strong>数据 / 基线：</strong>PubMedQA；BioBERT、PubMedBERT、指令微调医学 QA。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">02</span><span class="task-domain">NLP</span><h4>短文本分类</h4></div>
+                        <p><strong>目标：</strong>提高新闻或情感短文本分类质量，不引入重型训练流水线。</p>
+                        <p><strong>数据 / 基线：</strong>AG News、SST-2；DistilBERT、BERT-base、词袋线性分类器。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">03</span><span class="task-domain">NLP</span><h4>句子对分类</h4></div>
+                        <p><strong>目标：</strong>改进同义、匹配或蕴含判断，强调紧凑模块和短训练周期。</p>
+                        <p><strong>数据 / 基线：</strong>MRPC、RTE；DistilBERT、BERT-base、Siamese 双编码器。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">04</span><span class="task-domain">CV</span><h4>小图像分类</h4></div>
+                        <p><strong>目标：</strong>不依赖大型 backbone 或昂贵预训练，改进小图像分类。</p>
+                        <p><strong>数据 / 基线：</strong>CIFAR-10、FashionMNIST；ResNet-18、MobileNetV3-small、ViT-tiny。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">05</span><span class="task-domain">多模态</span><h4>高效率多模态系统</h4></div>
+                        <p><strong>目标：</strong>在质量、延迟和系统复杂度之间取得更好平衡，避免脆弱多阶段设计。</p>
+                        <p><strong>数据 / 基线：</strong>MMMU、ScienceQA；紧凑 VLM、后期融合模型。标记为 nontrivial recomposition。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">06</span><span class="task-domain">表格</span><h4>有限预算表格分类</h4></div>
+                        <p><strong>目标：</strong>不用大型集成和昂贵特征工程，快速改进标准表格分类。</p>
+                        <p><strong>数据 / 基线：</strong>Adult、CoverType；XGBoost、TabTransformer、MLP。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">07</span><span class="task-domain">表格</span><h4>表格回归</h4></div>
+                        <p><strong>目标：</strong>以 sklearn 预处理或小型 PyTorch 模型改进连续值预测。</p>
+                        <p><strong>数据 / 基线：</strong>California Housing、Energy Efficiency；XGBoost、CatBoost、MLP 回归。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">08</span><span class="task-domain">时序</span><h4>传感器行为识别</h4></div>
+                        <p><strong>目标：</strong>用紧凑、可解释的时序模块改进人体活动识别。</p>
+                        <p><strong>数据 / 基线：</strong>UCI HAR；1D CNN、GRU、InceptionTime-small。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">09</span><span class="task-domain">图学习</span><h4>图节点分类</h4></div>
+                        <p><strong>目标：</strong>对消息传递做简单改进，不使用大型图预训练或多阶段系统。</p>
+                        <p><strong>数据 / 基线：</strong>Cora、Citeseer；GCN、GraphSAGE、GAT。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">10</span><span class="task-domain">音频</span><h4>关键词唤醒</h4></div>
+                        <p><strong>目标：</strong>识别短音频命令，保持标准预处理、小模型和适中预算。</p>
+                        <p><strong>数据 / 基线：</strong>SpeechCommands；CNN、CRNN、Tiny Conformer。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">11</span><span class="task-domain">NLP</span><h4>Token 分类 / NER</h4></div>
+                        <p><strong>目标：</strong>改进命名实体识别，不增加外部检索或大型处理系统。</p>
+                        <p><strong>数据 / 基线：</strong>CoNLL-2003、WNUT17；DistilBERT、BERT-base、BiLSTM-CRF。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">12</span><span class="task-domain">NLP</span><h4>抽取式问答</h4></div>
+                        <p><strong>目标：</strong>改进答案区间选择或校准，不依赖检索密集型多阶段 QA。</p>
+                        <p><strong>数据 / 基线：</strong>SQuAD v1.1、NewsQA；DistilBERT、BERT-base、RoBERTa-base。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">13</span><span class="task-domain">CV</span><h4>细粒度图像分类</h4></div>
+                        <p><strong>目标：</strong>区分相似宠物或花卉类别，不依赖大型预训练视觉 backbone。</p>
+                        <p><strong>数据 / 基线：</strong>Oxford-IIIT Pets、Flowers102；ResNet-18、EfficientNet-B0、ViT-tiny。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">14</span><span class="task-domain">CV</span><h4>多标签图像分类</h4></div>
+                        <p><strong>目标：</strong>改进标签校准或特征共享，不引入检测、分割重型系统。</p>
+                        <p><strong>数据 / 基线：</strong>Pascal VOC 2007；ResNet-18、MobileNetV3、ViT-tiny 多标签版本。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">15</span><span class="task-domain">表格</span><h4>不平衡分类</h4></div>
+                        <p><strong>目标：</strong>在正负样本不均衡时改进预测，不使用昂贵重采样或大型 AutoML。</p>
+                        <p><strong>数据 / 基线：</strong>Credit Card Fraud、Telco Churn；XGBoost、LightGBM、MLP。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">16</span><span class="task-domain">表格</span><h4>缺失值鲁棒分类</h4></div>
+                        <p><strong>目标：</strong>用简单 masking 或特征门控应对缺失模式，避免大型插补集成。</p>
+                        <p><strong>数据 / 基线：</strong>Adult、Higgs Small；XGBoost、TabTransformer、插补 MLP。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">17</span><span class="task-domain">时序</span><h4>ECG / UCR 序列分类</h4></div>
+                        <p><strong>目标：</strong>用小型时序模块改进序列分类，不使用大型 Transformer。</p>
+                        <p><strong>数据 / 基线：</strong>ECG200、FordA；1D CNN、GRU、InceptionTime-small。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">18</span><span class="task-domain">图学习</span><h4>图链接预测</h4></div>
+                        <p><strong>目标：</strong>改进邻域编码或边评分，保持 PyTorch Geometric 单卡可复现。</p>
+                        <p><strong>数据 / 基线：</strong>Cora、Citeseer；GCN+点积、GraphSAGE+MLP、GAT。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">19</span><span class="task-domain">音频</span><h4>语音情绪识别</h4></div>
+                        <p><strong>目标：</strong>学习紧凑时频特征，不依赖大型语音基础模型。</p>
+                        <p><strong>数据 / 基线：</strong>RAVDESS、CREMA-D；频谱 CNN、CRNN、Tiny Conformer。</p>
+                    </article>
+                    <article class="task-card">
+                        <div class="task-head"><span class="task-no">20</span><span class="task-domain">多模态</span><h4>Hateful Memes 分类</h4></div>
+                        <p><strong>目标：</strong>用可解释、紧凑的图文融合识别仇恨 Meme，避免大型服务栈。</p>
+                        <p><strong>数据 / 基线：</strong>Hateful Memes；后期融合、CLIP 线性探测、紧凑 VLM。标记为 nontrivial recomposition。</p>
+                    </article>
+                </div>
+            </div>
+        </details>
+
+        <div class="warning-note">
+            <p><strong>如何理解这些任务：</strong>它们覆盖了七种数据模态，但研究形态高度同质——绝大多数都是“小型分类/回归 Benchmark 上增加一个可拆卸模块”。因此领域覆盖广，不等于科研难度和研究范式也同样广。</p>
+        </div>
+    </section>
+
+    <section id="audit">
+        <h2>代码审计：会直接影响 Literature 可信度的实现问题</h2>
+
+        <div class="critical-note">
+            <p><strong>硬编码污染：</strong><code>compact_final_instruction</code> 无论用户研究什么主题，都要求“Prefer a feasible single-GPU ESM2 LoRA/adapter plan for fluorescence prediction”。这显然是某个蛋白荧光任务遗留的 Prompt，会在工具循环结束或 fallback 时把其他主题拉向 ESM2/荧光预测。</p>
+        </div>
+
+        <div class="card-grid">
+            <article class="card">
+                <span class="evidence audit">中文主题风险</span>
+                <h3>相关性过滤只认 ASCII</h3>
+                <p>主题 token 使用正则 <code>[a-z0-9]+</code>。若直接输入纯中文主题，token 集为空，所有论文的相关性得分都会是 0，并可能全部被过滤。</p>
+            </article>
+            <article class="card">
+                <span class="evidence audit">失败即满分</span>
+                <h3>Coverage fail-open</h3>
+                <p>覆盖评估报错或返回异常结构时，代码默认 <code>coverage_score=10</code>，因此系统会把无法评估误当成“覆盖充分”。</p>
+            </article>
+            <article class="card">
+                <span class="evidence audit">来源配置不一致</span>
+                <h3>综述检索强制 OpenAlex</h3>
+                <p>主检索遵守 <code>literature_sources</code>；但 <code>_search_surveys()</code> 直接调用 OpenAlex，即使用户没有选择它。</p>
+            </article>
+            <article class="card">
+                <span class="evidence audit">Must-cite 较脆弱</span>
+                <h3>从摘要猜“必引论文”</h3>
+                <p>LLM 只看最多 5 篇综述的截断摘要，就提出 10–15 个必引标题；随后虽有模糊匹配，但候选生成本身容易幻觉。</p>
+            </article>
+            <article class="card">
+                <span class="evidence audit">证据范围有限</span>
+                <h3>指标来自摘要，不是表格</h3>
+                <p>量化证据没有解析论文表格，也没有系统读取正文结果段；摘要没写数字就无法进入 evidence bundle。</p>
+            </article>
+            <article class="card">
+                <span class="evidence audit">Survey 模式接线疑点</span>
+                <h3>Schema 有字段，生成路径未填充</h3>
+                <p><code>IdeationOutput</code> 定义了 theme/challenges/future 字段，但当前 Ideation 路径没有赋值；Writing 又期待 <code>paper_mode</code>，该字段也不在此输出 Schema 中。</p>
+            </article>
+        </div>
+
+        <div class="warning-note">
+            <p><strong>审计结论：</strong>这个 Literature 模块比简单关键词搜索丰富，确实包含引用扩展、少量全文、覆盖补检和工具式 novelty check；但它仍是启发式与 LLM Prompt 组合，不应被理解为严格、可证明完备的系统综述或新颖性审查器。</p>
+        </div>
+    </section>
+
+    <section id="evidence">
+        <h2>论文用什么证据支持“共同进化”</h2>
+        <p>论文构造了 20 个机器学习主题，覆盖 NLP、CV、表格、时序、图、音频与多模态；Claude 同时生成任务并扮演模拟研究者提供反馈。</p>
+
+        <figure class="figure">
+            <a href="html_assets/fig3_benchmark.png">
+                <img src="html_assets/fig3_benchmark.png" alt="NanoResearch二十个评测主题分布">
+            </a>
+            <figcaption>论文 Benchmark 构成：20 个任务覆盖七个领域，但都属于可用代码与公开数据集闭环验证的机器学习问题。</figcaption>
+        </figure>
+
+        <figure class="figure">
+            <a href="html_assets/fig4_rounds.png">
+                <img src="html_assets/fig4_rounds.png" alt="NanoResearch三轮自进化的任务性能变化">
+            </a>
+            <figcaption>论文的三轮性能轨迹。它说明重复运行后项目指标上升，但“记忆/技能学习”与“同一任务获得更多尝试、代码和反馈”没有被完全隔离。</figcaption>
+        </figure>
+
+        <figure class="figure">
+            <a href="html_assets/fig5_personas.png">
+                <img src="html_assets/fig5_personas.png" alt="同一UCI HAR主题下三种用户画像产生的不同科研方案">
+            </a>
+            <figcaption>论文用户案例：同一 UCI HAR 主题在 Evidence-first、Ablation-focused、Dataset-driven 三种画像下得到不同蓝图、代码模块和论文主张。这是个性化最直观的证据。</figcaption>
+        </figure>
+
+        <div class="card-grid">
+            <article class="card">
+                <span class="evidence paper">论文结果</span>
+                <h3>R1 → R3</h3>
+                <p>Alignment 8.163→8.963，Novelty 4.960→5.645，Performance 0.6844→0.7548；E2E 保持 100%。</p>
+            </article>
+            <article class="card">
+                <span class="evidence paper">论文结果</span>
+                <h3>成本下降</h3>
+                <p>作者报告每个主题总成本从 R1 的 \$4.157 降至 R3 的 \$1.430，解释为经验减少无效调用与 GPU 时间。</p>
+            </article>
+            <article class="card">
+                <span class="evidence audit">评价边界</span>
+                <h3>大量 LLM Judge</h3>
+                <p>Alignment、Novelty 和 Writing 依赖 LLM 主观评分；Novelty 主要相对于提供的基线，而不是完整学术世界。</p>
+            </article>
+            <article class="card">
+                <span class="evidence audit">真人样本</span>
+                <h3>仅三位博士</h3>
+                <p>真人实验只有三位研究者和三个任务，没有盲评、置信区间或显著性检验，属于初步案例而非强验证。</p>
+            </article>
+        </div>
+
+        <div class="key-insight">
+            <h3>最终判断</h3>
+            <p>NanoResearch 最可信的贡献是一个较完整、可审计、可运行真实实验的科研工程流水线；最需要保留意见的是“SDPO 驱动三层共同进化”和“可靠验证新颖性”的强叙事。Literature 模块能帮忙建立候选文献池、生成研究蓝图，但不能替代真正的系统综述与专家 novelty review。</p>
+        </div>
+    </section>
+
+    <section id="code-map">
+        <h2>继续看代码时，从这些文件进入</h2>
+        <div class="code-list">
+            <div class="code-item"><code><a href="code/nanoresearch/agents/ideation.py">agents/ideation.py</a></code><p>Literature/Idea 总执行顺序与固定参数。</p></div>
+            <div class="code-item"><code><a href="code/nanoresearch/agents/ideation_search.py">agents/ideation_search.py</a></code><p>过滤、排序、引用扩展、全文和 coverage。</p></div>
+            <div class="code-item"><code><a href="code/nanoresearch/agents/ideation_hypothesis.py">agents/ideation_hypothesis.py</a></code><p>搜索工具、Gap/Hypothesis Prompt 与硬编码问题。</p></div>
+            <div class="code-item"><code><a href="code/mcp_server/tools/openalex.py">mcp_server/tools/openalex.py</a></code><p>默认学术搜索与参考文献图扩展。</p></div>
+            <div class="code-item"><code><a href="code/mcp_server/tools/pdf_reader.py">mcp_server/tools/pdf_reader.py</a></code><p>PDF 下载、文本与章节切分。</p></div>
+            <div class="code-item"><code><a href="code/nanoresearch/agents/planning.py">agents/planning.py</a></code><p>文献结果如何转成实验 Blueprint。</p></div>
+            <div class="code-item"><code><a href="code/nanoresearch/agents/writing/context_builder.py">writing/context_builder.py</a></code><p>论文库、全文片段和实验结果如何进入写作。</p></div>
+            <div class="code-item"><code><a href="code/nanoresearch/router_policy.py">router_policy.py</a></code><p>可选 Router 与 deterministic fallback。</p></div>
+        </div>
+    </section>
+
+    <footer>
+        <p>NanoResearch 架构与 Literature 模块中文精读</p>
+        <p>整理日期：2026-07-28 · 代码 commit：7144364564cc2a9fe22e49fbff94eca058b5a75b</p>
+    </footer>
+</main>
+</body>
+</html>

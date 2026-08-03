@@ -1,0 +1,113 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>README.zh-CN</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../../../../index.html">← 返回总览</a><div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/axisagentic-logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/axisagentic-logo-light.svg">
+    <img alt="AxisAgentic - 运行时与轨迹采集框架" src="docs/assets/axisagentic-logo-light.svg" width="680">
+  </picture>
+
+  <p>
+    <a href="README.html">English</a> ·
+    <strong>简体中文</strong>
+  </p>
+
+  <p>
+    <a href="https://github.com/XYZ-AI-Lab/AxisAgentic/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/XYZ-AI-Lab/AxisAgentic/actions/workflows/ci.yml/badge.svg"></a>
+    <img alt="Python 3.12+" src="https://img.shields.io/badge/Python-3.12%2B-blue.svg">
+    <a href="https://github.com/astral-sh/ruff"><img alt="Ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json"></a>
+    <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg"></a>
+    <a href="CONTRIBUTING.html"><img alt="PRs Welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"></a>
+  </p>
+
+  <p>
+    <a href="https://xyz-lab.ai">XYZ AI Lab</a> ·
+    <a href="https://xyz-lab.ai/blogs/ai4ai-at-scale/">技术报告</a>
+  </p>
+</div>
+
+<p>AxisAgentic 是面向长时程 AI 智能体的可扩展运行时，也负责采集执行过程中产生的轨迹。它支持兼容 OpenAI 的端点和可插拔本地模型客户端，并提供多轮执行、工具编排、上下文管理、恢复和基准评估等能力。每条轨迹都保留模型实际可见的状态，因此同一份记录既可用于恢复、回放和基准评估，也可以经筛选后导出为 SFT 数据。</p>
+<p>仓库目前提供 Web Search 和 WideSearch 两个参考 recipe。相同的扩展接口也能用于领域 Agent、通用 Agent 和编程 Agent。本仓库不包含模型权重。</p>
+<h2>✨ 核心能力</h2>
+<ul>
+<li>只追加轨迹保留运行时事件，并能重建模型在任意阶段实际可见的上下文。</li>
+<li>模型客户端、工具、编排器、数据集、评估器、奖励函数和 recipe 策略均可替换。</li>
+<li>上下文预算、压缩、回滚、重试与恢复、自我验证和工具限制用于支撑长时程运行。</li>
+<li>每个任务都会记录轨迹、token 与耗时指标、评估产物，以及轨迹筛选所需的来源信息。</li>
+<li>SFT exporter 按运行时可见性规则重放轨迹，rollout 接口则负责连接外部训练系统。</li>
+<li>严格的 YAML schema 和可移植路径方案让运行记录可以跨环境复现。</li>
+</ul>
+<h2>🔁 从执行到学习</h2>
+<p>每个任务都会写入一条只追加轨迹。这份记录是回放、评估和轨迹采集的共同输入。筛选后的轨迹可以继续导出给外部训练流程。</p>
+<p><picture><br />
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/axisagentic-execution-learning-loop-zh-CN-dark.svg"><br />
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/axisagentic-execution-learning-loop-zh-CN-light.svg"><br />
+  <img alt="AxisAgentic 从执行到学习的数据闭环：运行轨迹支持回放、评估、轨迹采集、状态忠实的 SFT 导出和外部训练" src="docs/assets/axisagentic-execution-learning-loop-zh-CN-light.svg"><br />
+</picture></p>
+<p>运行时通过 marker 记录 rollback、context compaction 和 discard-all。重放这些 marker 可以还原模型在具体阶段看到的上下文。轨迹检查和 SFT 导出遵循同一套规则，因此不会把不可见历史或已回滚的动作写入监督样本。</p>
+<p>内置 exporter 可以生成 Swift Agent 等训练格式，并保留 source trace、任务状态和可选元数据。外部训练流程负责最终的正确性筛选、loss mask 和优化。AxisAgentic 提供回放与导出边界，让推理和训练使用同一份交互历史。</p>
+<h2>🦅 旗舰参考系统：XYZ-Aquila</h2>
+<p>XYZ-Aquila 是基于 AxisAgentic 构建的搜索系统。它的 recipe 将搜索和抓取与上下文管理、恢复、评估、状态忠实的 SFT 导出组合在一起。底层接口也适用于其他模型客户端、工具和任务领域。</p>
+<h3>📊 评测结果</h3>
+<p><a href="https://xyz-lab.ai/blogs/ai4ai-at-scale/">Aquila 技术报告</a>给出了 XYZ-Aquila-mini 和 XYZ-Aquila-pro 在七项智能体基准上的评测结果。下图复现了其中六项基准的对比。</p>
+<p><img alt="XYZ-Aquila 在六项智能体搜索基准上的评测结果" src="../../../../../../_未包含的内容.html" /></p>
+<p><em>图中指标：BrowseComp、BrowseComp-ZH、LiveBrowseComp 和 Humanity's Last Exam 使用 LLM-judge accuracy；DeepSearchQA 使用 macro F1；WideSearch 使用 item-level F1 Max@4。详情请参阅<a href="../../../../../../_未包含的内容.html">评估与可复现性</a>。</em></p>
+<p>部分基线数值来自公开报告，所用评测框架、工具、裁判模型和日期并不相同。这张图适合做基准层面的对照，不能视为同一受控实验下的通用排名。</p>
+<h2>🚀 快速开始</h2>
+<p>AxisAgentic 需要 Python 3.12 或更高版本，以及一个 OpenAI 兼容模型端点。<a href="../../../../../../_未包含的内容.html">快速开始</a>介绍安装、服务变量、recipe 配置、dry run、回放和 SFT 导出；完整配置项见<a href="../../../../../../_未包含的内容.html">配置</a>。</p>
+<pre><code class="language-bash">git clone https://github.com/XYZ-AI-Lab/AxisAgentic.git
+cd AxisAgentic
+python3.12 -m venv .venv
+source .venv/bin/activate
+./setup_env.sh
+source .envs/axis_agentic_env.sh
+cp .env.example .envs/.env
+</code></pre>
+<p>配置好模型服务和数据集后，可以在不启动任务的情况下校验 Web Search recipe：</p>
+<pre><code class="language-bash">cp recipe/web_search/configs/default.yaml my-search-run.yaml
+python -m recipe.web_search.runners.run_eval_config \
+  --config my-search-run.yaml \
+  --dry-run
+</code></pre>
+<h2>📚 文档</h2>
+<ul>
+<li><a href="../../../../../../_未包含的内容.html">文档索引</a></li>
+<li><a href="../../../../../../_未包含的内容.html">快速开始</a></li>
+<li><a href="../../../../../../_未包含的内容.html">配置</a></li>
+<li><a href="../../../../../../_未包含的内容.html">架构</a></li>
+<li><a href="../../../../../../_未包含的内容.html">项目结构</a></li>
+<li><a href="../../../../../../_未包含的内容.html">评估与可复现性</a></li>
+<li><a href="../../../../../../_未包含的内容.html">Recipes</a></li>
+</ul>
+<h2>🤝 参与贡献</h2>
+<p><a href="CONTRIBUTING.html">贡献指南</a>介绍开发环境和提交前检查。参与者需要遵守<a href="../../../../../../_未包含的内容.html">行为准则</a>。安全漏洞请按<a href="../../../../../../_未包含的内容.html">安全策略</a>上报。</p>
+<h2>📜 许可证</h2>
+<p>除非另有说明，AxisAgentic 采用 <a href="LICENSE">Apache License 2.0</a> 许可。第三方归属和许可说明请参阅 <a href="../../../../../../_未包含的内容.html">NOTICE</a>。</p>
+<h2>📝 引用</h2>
+<p>如果你使用了本代码库，请引用以下软件条目：</p>
+<pre><code class="language-bibtex">@software{wang2026axisagentic,
+  author       = {Wang, Jinyu and Zhang, Yifei and {{XYZ Agentic Team}}},
+  title        = {AxisAgentic: An Extensible Runtime and Trajectory-Collection Framework for Long-Horizon Agents},
+  organization = {XYZ AI Lab},
+  year         = {2026},
+  url          = {https://github.com/XYZ-AI-Lab/AxisAgentic}
+}
+</code></pre><footer>由 <code>Literature项目或者系统/待归档/XYZ_AI_Lab_Aquila_研究档案_2026-07-31/sources/repos/AxisAgentic/README.zh-CN.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

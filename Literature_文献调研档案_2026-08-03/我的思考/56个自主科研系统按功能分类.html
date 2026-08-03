@@ -1,0 +1,470 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>56个自主科研系统按功能分类</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../index.html">← 返回总览</a><h1>56 个自主科研系统：按功能类型重新分类</h1>
+<p>这 56 个系统来自论文 Table 2。原表按时间排列，这里按照功能类型重新归类，以便观察自主科研系统的整体结构。</p>
+<p>每个系统记录三项信息：</p>
+<ul>
+<li><strong>日期：</strong> 首次公开时间，格式为“年.月”。</li>
+<li><strong>核心机制：</strong> 系统最有代表性的设计或证据特点。</li>
+<li><strong>R-grade：</strong> 论文给出的公共证据可靠性等级，而非系统能力或性能排名。</li>
+</ul>
+<h2>一、论文生成流水线：Idea → 实验 → 成稿</h2>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th align="center">日期</th>
+<th>核心机制</th>
+<th align="center">R-grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AI Scientist v1</td>
+<td align="center">24.08</td>
+<td>最早的范式确立者：一条“生成 → 执行 → 评审”的流水线；评审是软性的，不能拦截发布</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>CycleResearcher</td>
+<td align="center">24.11</td>
+<td>论文形状的审稿—写作循环，但作者自己披露了实验结果造假</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>Agent Laboratory</td>
+<td align="center">25.01</td>
+<td>三阶段流程，加上人工检查点</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>AgentRxiv</td>
+<td align="center">25.03</td>
+<td>协作式自主研究，带可检索的预印本基底</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>AI Scientist v2</td>
+<td align="center">25.04</td>
+<td>加入树搜索和视觉模型（VLM）审图，形成两层审稿循环，但发布仍非门控式</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>AI-Researcher</td>
+<td align="center">25.05</td>
+<td>覆盖文献、数学转代码和论文写作全流程</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>NovelSeek</td>
+<td align="center">25.05</td>
+<td>Idea 分支演化，加上假设验证工具</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>EvoScientist</td>
+<td align="center">26.03</td>
+<td>Idea 生成、代码执行，并据称可以产出完整论文</td>
+<td align="center">R2</td>
+</tr>
+</tbody>
+</table>
+<h2>二、发现导向系统：搜索、实验与优化</h2>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th align="center">日期</th>
+<th>核心机制</th>
+<th align="center">R-grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Co-Scientist（Google）</td>
+<td align="center">25.02</td>
+<td>假设生成、反思、排名和演化循环，使用 Elo 分数排列候选</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>AlphaEvolve（Google DeepMind）</td>
+<td align="center">25.06</td>
+<td>协议化程序数据库，加上目标打分驱动的代码 gate</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>Robin</td>
+<td align="center">25.05</td>
+<td>候选发现具有 RNA-seq 和湿实验数据支撑</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>Kosmos</td>
+<td align="center">25.11</td>
+<td>使用结构化世界模型协调 200 多条数据分析和文献 rollout，并提供句子级证据链接</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>AutoScientists</td>
+<td align="center">26.05</td>
+<td>多团队协作，共享 champion、日志、论坛和 dead-end 记录</td>
+<td align="center">R4</td>
+</tr>
+</tbody>
+</table>
+<h2>三、ML 与代码优化 Agent：在外部打分器下搜索</h2>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th align="center">日期</th>
+<th>核心机制</th>
+<th align="center">R-grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AIDE</td>
+<td align="center">25.02</td>
+<td>面向 ML 竞赛的 Agent，由外部打分器驱动搜索</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>MLGym</td>
+<td align="center">25.02</td>
+<td>Research Agent 框架及其配套 Benchmark</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>R&amp;D-Agent</td>
+<td align="center">25.05</td>
+<td>工业级数据科学循环，结合探索图和 MLE-Bench 式评分</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>AIRA-dojo</td>
+<td align="center">25.07</td>
+<td>迭代式 ML 循环：起草、改进、调试、执行 notebook、评估并撰写提交</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>ML-Master 2.0</td>
+<td align="center">26.01</td>
+<td>MLE-Bench 奖牌循环，加上分层认知缓存</td>
+<td align="center">R2</td>
+</tr>
+<tr>
+<td>InternAgent-1.5</td>
+<td align="center">26.02</td>
+<td>使用“生成—验证—演化”循环处理长程科学任务</td>
+<td align="center">R2</td>
+</tr>
+<tr>
+<td>Bilevel Autoresearch</td>
+<td align="center">26.03</td>
+<td>序列化 trace 介导的内循环，加上外层机制搜索</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>Multi-Agent Collab</td>
+<td align="center">26.03</td>
+<td>Worktree 补丁、全局记忆和验证损失接受机制</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>CORAL</td>
+<td align="center">26.04</td>
+<td>使用隐藏打分器和 worktree，在 11 项任务中的 8 项刷新记录</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>AutoSOTA</td>
+<td align="center">26.04</td>
+<td>仓库级优化，以可执行分数提升为反馈</td>
+<td align="center">R4</td>
+</tr>
+</tbody>
+</table>
+<h2>四、文献与检索基础设施</h2>
+<p>这些系统主要充当自主科研流程的支持模块。</p>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th align="center">日期</th>
+<th>核心机制</th>
+<th align="center">R-grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PaperQA2</td>
+<td align="center">24.09</td>
+<td>文献问答与引用溯源模块</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>OpenScholar</td>
+<td align="center">24.11</td>
+<td>构建在 4,500 万篇开放获取论文之上的引用溯源检索基础设施</td>
+<td align="center">R5</td>
+</tr>
+<tr>
+<td>Tree-of-Debate</td>
+<td align="center">25.02</td>
+<td>检索支撑的辩论式论文比较</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>OpenResearcher</td>
+<td align="center">26.03</td>
+<td>使用开放的 search/open/find 轨迹进行证据检索</td>
+<td align="center">R5</td>
+</tr>
+</tbody>
+</table>
+<h2>五、验证器与审计基础设施</h2>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th align="center">日期</th>
+<th>核心机制</th>
+<th align="center">R-grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE-Debate</td>
+<td align="center">25.07</td>
+<td>围绕代码补丁进行辩论和蒙特卡洛树搜索</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>EviBound</td>
+<td align="center">25.11</td>
+<td>MLflow 式运行证据合约，包括 run ID、状态和指标范围</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>SEVerA</td>
+<td align="center">26.03</td>
+<td>Dafny 形式化 guard 与拒绝采样</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>ASG-SI</td>
+<td align="center">25.12</td>
+<td>审计过的技能图谱提案，支持哈希化证据回放</td>
+<td align="center">R2</td>
+</tr>
+<tr>
+<td>AEGIS</td>
+<td align="center">26.03</td>
+<td>面向安全代码的辩证式 verifier 与 meta-audit</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>AgentV-RL</td>
+<td align="center">26.04</td>
+<td>前向/反向 LLM 验证循环，对分解式答案进行校验</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>Debate as Reward</td>
+<td align="center">26.04</td>
+<td>将辩论作为研究 Idea 生成的奖励信号</td>
+<td align="center">R4</td>
+</tr>
+</tbody>
+</table>
+<h2>六、Agent-native 制品与可复用资源</h2>
+<p>这类系统把论文、实验和证据转化为后续 Agent 可以读取、查询、回放或审计的持久研究基底。</p>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th align="center">日期</th>
+<th>核心机制</th>
+<th align="center">R-grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Knows</td>
+<td align="center">26.04</td>
+<td>使用 YAML sidecar 序列化 artifact、statement、evidence、relation 和 action</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>ARA</td>
+<td align="center">26.04</td>
+<td>由认知、物理、探索图和证据四层构成的 Agent-native 论文包</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>ARIS</td>
+<td align="center">26.05</td>
+<td>使用持久 Wiki 覆盖 Idea、实验和 Claim，并执行级联审计</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>NORA</td>
+<td align="center">26.05</td>
+<td>覆盖目标场地、写作、审稿/修订和投稿检查，但最终权限仍由人掌握</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>AutoResearchClaw</td>
+<td align="center">26.05</td>
+<td>在执行期建立数值 registry，严格章节拒绝无法匹配的数字</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>ScientistOne</td>
+<td align="center">26.05</td>
+<td>使用 Chain-of-Evidence 审计引用、数值、方法和结论四类 Claim</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>PARNESS</td>
+<td align="center">26.05</td>
+<td>声明式 DAG 加上跨运行知识积累</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>SciCrafter</td>
+<td align="center">26.04</td>
+<td>MCP 轨迹与结构化知识书，用于 Minecraft 红石发现任务</td>
+<td align="center">R4</td>
+</tr>
+</tbody>
+</table>
+<h2>七、领域专用系统</h2>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th align="center">日期</th>
+<th>核心机制</th>
+<th align="center">R-grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CFD-copilot</td>
+<td align="center">25.12</td>
+<td>使用领域适配 LLM 和 MCP 驱动流体仿真自动化</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>PhysMaster</td>
+<td align="center">25.12</td>
+<td>文献检索与 MCTS 轨迹，配合模拟器检查</td>
+<td align="center">R2</td>
+</tr>
+<tr>
+<td>TianJi</td>
+<td align="center">26.03</td>
+<td>生成气象学假设并使用数值模式检验</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>Medical AI Scientist</td>
+<td align="center">26.03</td>
+<td>多阶段医学 AI 手稿工作流，包含 Idea gate 和结构化实验记录</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>A-Lab</td>
+<td align="center">26.04</td>
+<td>机器人合成与表征，报告 352 个样本</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>Qumus</td>
+<td align="center">26.05</td>
+<td>序列化机器人合成和器件级证据，应用于石墨烯器件</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>HANA</td>
+<td align="center">26.05</td>
+<td>分层网络提案，但缺少证据支持的独立审稿循环</td>
+<td align="center">R2</td>
+</tr>
+</tbody>
+</table>
+<h2>八、自我演化型控制器与技能库</h2>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th align="center">日期</th>
+<th>核心机制</th>
+<th align="center">R-grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MetaAgent</td>
+<td align="center">25.08</td>
+<td>将工具交互历史写入持久向量记忆</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>CMA（Concurrent Modular Agent）</td>
+<td align="center">25.08</td>
+<td>异步模块与共享记忆，但没有合格的独立审稿循环</td>
+<td align="center">R2</td>
+</tr>
+<tr>
+<td>AgentEvolver</td>
+<td align="center">25.11</td>
+<td>在保留的工具使用任务上演化 Agent 控制器</td>
+<td align="center">R3</td>
+</tr>
+<tr>
+<td>AInstein</td>
+<td align="center">25.10</td>
+<td>使用 generalizer 与 solver 的批评循环，为实验前问题求解提供证据</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>ClawdLab</td>
+<td align="center">26.02</td>
+<td>治理和工具架构提案，在 PI 监督下运行</td>
+<td align="center">R2</td>
+</tr>
+<tr>
+<td>SkillFlow</td>
+<td align="center">26.05</td>
+<td>基于可验证任务奖励训练的技能库控制器</td>
+<td align="center">R4</td>
+</tr>
+<tr>
+<td>OmniScientist</td>
+<td align="center">25.11</td>
+<td>以 AI/CS 案例支撑更广泛的“构想—实验—写作—评审”工作流</td>
+<td align="center">R2</td>
+</tr>
+</tbody>
+</table><footer>由 <code>我的思考/56个自主科研系统按功能分类.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>
