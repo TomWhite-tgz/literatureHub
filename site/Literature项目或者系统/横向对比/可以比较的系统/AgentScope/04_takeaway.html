@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentScope 2.0 · ④ 一句话结论</title>
+<style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a;--accent2:#0d9488;--purple:#7c4ddb;--blue:#0891b2;--warn:#d6435a}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.75;margin:0}
+.wrap{max-width:960px;margin:0 auto;padding:36px 26px 80px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:14px}
+.back:hover{background:var(--accent);color:#fff}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}
+.nav a{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#fffdf8;border:1px solid #e0c49c;border-radius:6px;padding:8px 16px}
+.nav a:hover{background:var(--accent);color:#fff}
+.nav a.cur{background:var(--accent);color:#fff;font-weight:700}
+h2{font-size:21px;border-left:5px solid var(--accent);padding-left:12px;margin:36px 0 12px}
+p,li{font-size:14.7px}
+code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,Consolas,monospace}
+a{color:var(--accent)}
+.lead{font-size:15.5px;color:var(--ink)}
+.key{background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:16px 22px;margin:18px 0;font-size:14px;line-height:1.8}
+.key b.hl{color:#b4530a;font-weight:700}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--line);padding-bottom:8px;margin:34px 0 14px}
+.sec-head h2{border:none;padding:0;margin:0}
+.num{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../../../index.html">← 返回总览</a>
+
+<div class="nav">
+  <a href="index.html">总览</a>
+  <a href="01_loop.html">① ReAct loop</a>
+  <a href="02_modules.html">② 模块解剖</a>
+  <a href="03_compare.html">③ 与 InternAgent 对照</a>
+  <a class="cur" href="04_takeaway.html">④ 结论</a>
+</div>
+
+<section id="takeaway">
+  <div class="sec-head"><h2><span class="num">§</span>一句话结论</h2></div>
+  <div class="key">
+    <b class="hl">AgentScope 2.0 是一个"内核极薄、能力域极厚"的通用 agent 应用框架。</b>
+    <ul>
+      <li>它的内核只有 <code>Agent</code>(深 ReAct loop) + <code>Middleware</code>(七钩子) + <code>Permission</code>(五模式) + <code>Toolkit</code>(工具注册) 四件套，加起来不到 8000 行。</li>
+      <li>它的"厚"全在能力域实现：FastAPI 服务层(2.8 万行)、沙箱后端(6 种)、工具系统(仿 Claude Code)、RAG、模型适配(8 家)。</li>
+      <li>和科研 agent 谱系里的 InternAgent 对照，它的重量在<b>单 agent 深度</b>，InternAgent 的重量在<b>多 agent 编排</b>。两者抽象层相近，但哲学相反：AgentScope 让模型自己当 agent，InternAgent 让框架替模型编排。</li>
+      <li>对科研用户的意义：如果你要搭一个"<b>单 agent 跑很多轮、自己调工具、在沙箱里做实验</b>"的系统，AgentScope 是比 InternAgent 更顺手的底座；反过来如果你要"<b>多 agent 分工编排 + benchmark 跑分</b>"，InternAgent 更对路。</li>
+    </ul>
+  </div>
+</section>
+
+<p style="margin-top:30px"><a href="index.html">← 回到总览</a></p>
+
+<footer>
+  <b>AgentScope 2.0 架构精读</b> · ④ 一句话结论 · 源码版本 2.0.4.post1
+</footer>
+
+</div>
+</body>
+</html>

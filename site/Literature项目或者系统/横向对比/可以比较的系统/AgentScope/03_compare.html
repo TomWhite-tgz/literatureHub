@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentScope 2.0 · ③ 与 InternAgent 对照</title>
+<style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a;--accent2:#0d9488;--purple:#7c4ddb;--blue:#0891b2;--warn:#d6435a}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.75;margin:0}
+.wrap{max-width:960px;margin:0 auto;padding:36px 26px 80px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:14px}
+.back:hover{background:var(--accent);color:#fff}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}
+.nav a{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#fffdf8;border:1px solid #e0c49c;border-radius:6px;padding:8px 16px}
+.nav a:hover{background:var(--accent);color:#fff}
+.nav a.cur{background:var(--accent);color:#fff;font-weight:700}
+h2{font-size:21px;border-left:5px solid var(--accent);padding-left:12px;margin:36px 0 12px}
+h3{font-size:16.5px;color:var(--accent);margin:24px 0 8px}
+h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.7px}
+code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,Consolas,monospace}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}
+tr:nth-child(even) td{background:#fbf7ee}
+a{color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+strong{color:#8f4208}
+.lead{font-size:15.5px;color:var(--ink)}
+.key{background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:16px 22px;margin:18px 0;font-size:14px;line-height:1.8}
+.key b.hl{color:#b4530a;font-weight:700}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--line);padding-bottom:8px;margin:34px 0 14px}
+.sec-head h2{border:none;padding:0;margin:0}
+.num{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../../../index.html">← 返回总览</a>
+
+<div class="nav">
+  <a href="index.html">总览</a>
+  <a href="01_loop.html">① ReAct loop</a>
+  <a href="02_modules.html">② 模块解剖</a>
+  <a class="cur" href="03_compare.html">③ 与 InternAgent 对照</a>
+  <a href="04_takeaway.html">④ 结论</a>
+</div>
+
+<section id="compare">
+  <div class="sec-head"><h2><span class="num">§</span>与 InternAgent 的重量对照</h2></div>
+  <p>用 InternAgent 精读里那张"6 层套娃"表，把 AgentScope 放进去对照，能看出两者的设计哲学分野：</p>
+  <table>
+    <tr><th>层</th><th>InternAgent</th><th>AgentScope</th></tr>
+    <tr><td><b>① 一步 execute</b></td><td><code>_call_model</code> 一次性结构化 JSON</td><td><code>_reasoning_impl</code> 调模型，产出四类 Block</td></tr>
+    <tr><td><b>② 一次 react</b></td><td>薄(仅 generation 用)</td><td><b>厚(核心循环单元)</b></td></tr>
+    <tr><td><b>③ agent_loop</b></td><td>薄(11 个 agent 仅 generation 用)</td><td><b>厚(while cur_iter &lt; max_iters 的深 loop)</b></td></tr>
+    <tr><td><b>④ 编排</b></td><td><b>厚(重心)</b>：状态机 + 11 个 agent 串行</td><td>薄：Agent Team 只提供"建团队/发消息"原子操作</td></tr>
+    <tr><td><b>④.5 实验循环</b></td><td><b>厚·外包</b>：subprocess 调 claude CLI</td><td>薄：不假定外包，由用户在 workspace 后端上自写</td></tr>
+    <tr><td><b>⑤ 演化</b></td><td><b>厚(招牌)</b>：loop_rounds + PromptEvolver</td><td>无：不提供跨轮自演化原语</td></tr>
+  </table>
+
+  <div class="key">
+    <b class="hl">一句话总结两者的分野：</b>
+    <ul>
+      <li><b>InternAgent</b> 把"想"和"做"物理分离——想是浅 agent 串行编排，做是外包给 Claude Code。它同时是<b>多 agent 科研编排框架</b>和<b>benchmark 跑分平台</b>。</li>
+      <li><b>AgentScope</b> 把重量全压在单 agent 的深 ReAct loop 上，编排只给"建团队/发消息"的薄原语。它是一个<b>通用 agent 应用框架</b>，目标是让模型自己当好 agent，而不是让框架替模型编排。</li>
+    </ul>
+  </div>
+
+  <h3>对照表：功能维度</h3>
+  <table>
+    <tr><th>维度</th><th>InternAgent</th><th>AgentScope</th></tr>
+    <tr><td>定位</td><td>科研 agent 编排 + benchmark 平台</td><td>通用多智能体应用框架</td></tr>
+    <tr><td>单 agent 自治性</td><td>低(10/11 是一次性专员)</td><td><b>高(深 ReAct loop，max_iters 可配)</b></td></tr>
+    <tr><td>编排</td><td>厚(状态机 + 工厂注册表)</td><td>薄(Agent Team 原子操作)</td></tr>
+    <tr><td>实验执行</td><td>外包 claude CLI + AutoDebug</td><td>提供 6 种沙箱后端，执行逻辑由用户写</td></tr>
+    <tr><td>记忆</td><td>4 层记忆(task/long/online/retriever)</td><td>中间件化(AgenticMemory / Mem0 / ReMe 三选一)</td></tr>
+    <tr><td>权限</td><td>无(信任外包后端)</td><td><b>五模式状态机 + 细粒度规则</b></td></tr>
+    <tr><td>工具</td><td>literature_search 等 domain-specific</td><td>builtin(仿 Claude Code) + MCP 适配</td></tr>
+    <tr><td>服务化</td><td>无(脚本体)</td><td><b>FastAPI 多租户 + Web UI</b></td></tr>
+    <tr><td>RAG</td><td>内嵌 FlowSearch(CAMEL)</td><td>独立 RAG 模块(parser/chunker/vdb) + 中间件</td></tr>
+    <tr><td>演化</td><td>厚(loop_rounds + PromptEvolver)</td><td>无</td></tr>
+    <tr><td>代码规模</td><td>~58M / 1288 .py(含 sci_tasks)</td><td>333 .py / ~7.6 万行</td></tr>
+    <tr><td>开源协议</td><td>MIT</td><td>Apache-2.0</td></tr>
+  </table>
+</section>
+
+<p style="margin-top:30px"><a href="04_takeaway.html">→ 下一篇：一句话结论</a></p>
+
+<footer>
+  <b>AgentScope 2.0 架构精读</b> · ③ 与 InternAgent 对照 · 源码版本 2.0.4.post1
+</footer>
+
+</div>
+</body>
+</html>

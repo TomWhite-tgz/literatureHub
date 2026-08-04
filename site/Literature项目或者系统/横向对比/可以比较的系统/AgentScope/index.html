@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentScope 2.0 · 架构精读 · 总览</title>
+<style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a;--accent2:#0d9488;--purple:#7c4ddb;--blue:#0891b2;--warn:#d6435a}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.75;margin:0}
+.wrap{max-width:960px;margin:0 auto;padding:36px 26px 80px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:14px}
+.back:hover{background:var(--accent);color:#fff}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}
+.nav a{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#fffdf8;border:1px solid #e0c49c;border-radius:6px;padding:8px 16px}
+.nav a:hover{background:var(--accent);color:#fff}
+.nav a.cur{background:var(--accent);color:#fff;font-weight:700}
+header h1{font-size:27px;margin:0 0 6px}
+header .sub{color:var(--ink-soft);font-size:14px;margin:0 0 4px}
+header .meta{color:var(--ink-soft);font-size:12.5px;margin-top:8px}
+header .meta b{color:var(--accent)}
+h2{font-size:21px;border-left:5px solid var(--accent);padding-left:12px;margin:36px 0 12px}
+h3{font-size:16.5px;color:var(--accent);margin:24px 0 8px}
+h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.7px}
+code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,Consolas,monospace}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}
+tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+strong{color:#8f4208}
+.lead{font-size:15.5px;color:var(--ink)}
+.key{background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:16px 22px;margin:18px 0;font-size:14px;line-height:1.8}
+.key b.hl{color:#b4530a;font-weight:700}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--line);padding-bottom:8px;margin:34px 0 14px}
+.sec-head h2{border:none;padding:0;margin:0}
+.sec-head .count{font-size:12px;color:var(--ink-soft)}
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;font-size:13.8px;line-height:1.7}
+.note .t{display:inline-block;font-weight:700;margin-bottom:4px}
+.note.clever{background:#f3eefe;border:1px solid #cbb8f7}
+.note.clever .t{color:var(--purple)}
+.note.warn{background:#fdeef0;border:1px solid #f5b9c3}
+.note.warn .t{color:var(--warn)}
+.note.plain{background:#f3f8f6;border:1px solid #b8e0d2}
+.note.plain .t{color:var(--accent2)}
+.num{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+.hub{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin:24px 0}
+.hub a{display:block;text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:16px 18px}
+.hub a:hover{border-color:var(--accent);background:#fff9ee}
+.hub h3{margin:0 0 4px;color:var(--accent);font-size:15.5px}
+.hub p{margin:0;font-size:12.8px;color:var(--ink-soft)}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../../../index.html">← 返回总览</a>
+
+<div class="nav">
+  <a class="cur" href="index.html">总览</a>
+  <a href="01_loop.html">① ReAct loop</a>
+  <a href="02_modules.html">② 模块解剖</a>
+  <a href="03_compare.html">③ 与 InternAgent 对照</a>
+  <a href="04_takeaway.html">④ 结论</a>
+</div>
+
+<header>
+  <h1>AgentScope 2.0 <span style="color:var(--ink-soft);font-weight:400">·</span> 架构精读</h1>
+  <p class="sub">阿里通义出的通用多智能体框架。本篇按源码解剖它的「重量分布」，并与 InternAgent 做同层对照。</p>
+  <div class="meta">
+    <b>版本</b> 2.0.4.post1（2026-07）<b>·</b>
+    <b>规模</b> 333 个 .py / ~7.6 万行<b>·</b>
+    <b>定位</b> 横向对比 / 可以比较的系统
+  </div>
+</header>
+
+<!-- ==================== 位置 ==================== -->
+<section id="position">
+  <div class="sec-head"><h2><span class="num">§</span>在科研 agent 谱系里的位置</h2></div>
+  <p class="lead">本系列讲过三种「科研 agent 怎么搭」的路线，AgentScope 是第二种——<b>把重量全压在单 agent 的深 ReAct loop 上</b>，编排层(④)和演化层(⑤)几乎没有。</p>
+  <table>
+    <tr><th>项目</th><th>底座选择</th><th>解耦哲学</th><th>"做实验"怎么落地</th></tr>
+    <tr><td><b>EvoScientist</b></td><td>建在 <code>deepagents</code> / LangChain 上</td><td>一切皆中间件 + YAML 子 agent</td><td>子 agent 写代码,靠 langgraph 异步底座</td></tr>
+    <tr><td><b>AgentScope</b> 👈</td><td><b>自造内核(强单体 ReAct)</b></td><td><b>组件注入 + hook</b></td><td>由用户在内核上自写</td></tr>
+    <tr><td><b>InternAgent</b></td><td>完全自造(MAS + 流水线,零 LangChain)</td><td>状态机 + 工厂注册表:agent / model / tool / 后端各有注册点</td><td>外包给独立后端:shell 调 <code>claude</code> CLI / iflow / openhands,带自动调试循环</td></tr>
+  </table>
+  <div class="note clever"><span class="t">★ 关键对照：同样 6 层，重量分布相反</span>
+    InternAgent 故意把"单个 agent"做成<b>一次性专员</b>(11 个 agent 仅 <code>generation</code> 用 ReAct 工具循环),把多步思考<b>上移到 ④ 编排层</b>。<br>
+    <b>AgentScope 正相反</b>——它把重量全压在 ②③(单 agent 深 ReAct loop)，④⑤ 几乎没有。具体说：AgentScope 的 <code>Agent</code> 类内部就是一个 <code>while cur_iter &lt; max_iters</code> 的 reasoning→acting 循环，每轮都能调工具、看结果、再推理；它<b>不提供</b> InternAgent 那种"11 个专职 agent 按状态机串起来"的编排原语。
+  </div>
+</section>
+
+<hr>
+
+<h2>本精读分四部分，点击进入</h2>
+<p>① ReAct loop（循环骨架、四类 Block、顺序/并发工具批）</p>
+<p>② 模块解剖（地图 / 中间件 / 权限 / 工具 / 工作区 / 服务层）</p>
+<p>③ 与 InternAgent 的重量对照（6 层套娃表 + 功能维度对照表）</p>
+<p>④ 一句话结论（内核极薄、能力域极厚）</p>
+
+<footer>
+  <b>AgentScope 2.0 架构精读</b> · 源码版本 2.0.4.post1 · 生成于 2026-08-04<br>
+  对照参考：<code>InternAgent-1.5_源码架构导读.html</code>（横向对比 / 复杂）<br>
+  归档位置：横向对比 / 可以比较的系统 / AgentScope
+</footer>
+
+</div>
+</body>
+</html>

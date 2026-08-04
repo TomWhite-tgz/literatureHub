@@ -1,0 +1,2767 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentScope 2.0 · ① ReAct loop 逐函数精读（附源码）</title>
+<style>:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a;--accent2:#0d9488;--purple:#7c4ddb;--blue:#0891b2;--warn:#d6435a}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.75;margin:0}
+.wrap{max-width:980px;margin:0 auto;padding:36px 26px 80px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:14px}
+.back:hover{background:var(--accent);color:#fff}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}
+.nav a{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#fffdf8;border:1px solid #e0c49c;border-radius:6px;padding:8px 16px}
+.nav a:hover{background:var(--accent);color:#fff}
+.nav a.cur{background:var(--accent);color:#fff;font-weight:700}
+.fnlist{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 20px;margin:20px 0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.8px}
+.fnlist a{color:var(--accent);text-decoration:none}
+.fnlist a:hover{text-decoration:underline}
+h2{font-size:21px;border-left:5px solid var(--accent);padding-left:12px;margin:36px 0 12px}
+h3{font-size:16.5px;color:var(--accent);margin:24px 0 8px}
+h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.7px}
+code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,Consolas,monospace}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55;max-height:520px}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}
+tr:nth-child(even) td{background:#fbf7ee}
+a{color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+strong{color:#8f4208}
+.lead{font-size:15.5px;color:var(--ink)}
+.key{background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:16px 22px;margin:18px 0;font-size:14px;line-height:1.8}
+.key b.hl{color:#b4530a;font-weight:700}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--line);padding-bottom:8px;margin:34px 0 14px}
+.sec-head h2{border:none;padding:0;margin:0}
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;font-size:13.8px;line-height:1.7}
+.note .t{display:inline-block;font-weight:700;margin-bottom:4px}
+.note.clever{background:#f3eefe;border:1px solid #cbb8f7}
+.note.clever .t{color:var(--purple)}
+.note.warn{background:#fdeef0;border:1px solid #f5b9c3}
+.note.warn .t{color:var(--warn)}
+.note.plain{background:#f3f8f6;border:1px solid #b8e0d2}
+.note.plain .t{color:var(--accent2)}
+.num{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+.fn{scroll-margin-top:20px;border:1px solid var(--line);border-left:4px solid var(--accent2);border-radius:8px;padding:14px 18px;margin:16px 0;background:var(--card)}
+.fn h4{margin:0 0 4px;color:var(--accent2);font-size:15px}
+.fn .sig{font-size:12px;color:var(--ink-soft);margin:0 0 8px;font-family:"SF Mono",Menlo,Consolas,monospace;word-break:break-all}
+.fn .loc{font-size:11.5px;color:var(--ink-soft);margin:0 0 10px}
+.fn p{font-size:13.6px;margin:6px 0}
+.fn ul{font-size:13.6px;margin:6px 0;padding-left:22px}
+.fn ol{font-size:13.6px;margin:6px 0;padding-left:22px}
+.fn table{font-size:12.8px}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../../../index.html">← 返回总览</a>
+
+<div class="nav">
+  <a href="index.html">总览</a>
+  <a class="cur" href="01_loop.html">① ReAct loop</a>
+  <a href="02_modules.html">② 模块解剖</a>
+  <a href="03_compare.html">③ 与 InternAgent 对照</a>
+  <a href="04_takeaway.html">④ 结论</a>
+</div>
+
+<header>
+  <h1>① 核心：单 agent 深 ReAct loop</h1>
+  <p class="sub">逐函数精读 <code>src/agentscope/agent/_agent.py</code>（3229 行，37 个关键函数）。<b>每个函数均附源码代码块</b>。</p>
+  <div class="meta" style="color:var(--ink-soft);font-size:12.5px;margin-top:8px">
+    <b style="color:var(--accent)">源码版本</b> 2.0.4.post1 <b style="color:var(--accent)">·</b>
+    <b style="color:var(--accent)">核心类</b> <code>Agent</code> <b style="color:var(--accent)">·</b>
+    <b style="color:var(--accent)">主循环</b> <code>_reply_impl</code> → <code>_reasoning_impl</code> → <code>_execute_tool_call</code>
+  </div>
+</header>
+
+<div class="key">
+  <b class="hl">阅读路线</b>
+  <p>这 37 个函数不是平的，它们围着一个三段式循环转：<b>reply（入口）→ reasoning（调模型）→ acting（调工具）</b>。下面按这个结构组织，每个函数给出签名、行号、<b>源码代码块</b>、行为注解、设计要点。</p>
+</div>
+
+<div class="fnlist">
+<a href="#f-init">__init__</a> <a href="#f-validate">_validate_configs</a> <a href="#f-reply-stream">reply_stream</a> <a href="#f-reply">reply</a> <a href="#f-observe">observe</a> <a href="#f-compress">compress_context</a> <a href="#f-compress-impl">_compress_context_impl</a> <a href="#f-reply-entry">_reply</a> <a href="#f-close-unfinished">_close_unfinished_tool_calls</a> <a href="#f-reply-impl">_reply_impl</a> <a href="#f-inject">_inject_runtime_state</a> <a href="#f-reasoning">_reasoning</a> <a href="#f-reasoning-impl">_reasoning_impl</a> <a href="#f-check-incoming">_check_incoming_event</a> <a href="#f-handle-incoming">_handle_incoming_event</a> <a href="#f-handle-msgs">_handle_incoming_messages</a> <a href="#f-batch">_batch_tool_calls</a> <a href="#f-seq-exec">_execute_sequential_tool_calls</a> <a href="#f-conc-exec">_execute_concurrent_tool_calls</a> <a href="#f-into-queue">_into_queue</a> <a href="#f-exec-tool">_execute_tool_call</a> <a href="#f-acting">_acting</a> <a href="#f-acting-impl">_acting_impl</a> <a href="#f-handle-err">_handle_error_tool_call</a> <a href="#f-split-ctx">_split_context_for_compression</a> <a href="#f-clear-cache">_clear_unreserved_read_cache</a> <a href="#f-split-tool-result">_split_tool_result_for_compression</a> <a href="#f-sys-prompt">_get_system_prompt</a> <a href="#f-prepare-input">_prepare_model_input</a> <a href="#f-call-model">_call_model</a> <a href="#f-update-state">_update_tool_call_state</a> <a href="#f-save">_save_to_context</a> <a href="#f-last-msg">_get_last_msg</a> <a href="#f-next-action">_check_next_action</a> <a href="#f-exec-calls">_get_executable_tool_calls</a> <a href="#f-convert">_convert_chat_response_to_event</a> <a href="#f-convert-chunk">_convert_tool_chunk_to_event</a>
+</div>
+
+<h2>第一层：初始化与入口</h2>
+<p class="lead">外部调用方接触到的只有 reply() 和 reply_stream()。它们都委托给 _reply()，后者再走中间件链到 _reply_impl()——真正的循环。</p>
+<div class="fn" id="f-init">
+<h4><span class="num">1</span>__init__（L125-220）</h4>
+<p class="sig">def __init__(self, name, system_prompt, model, toolkit=None, middlewares=None, state=None, offloader=None, model_config=None, context_config=None, react_config=None, injection_config=None)</p>
+<p class="loc">agent/_agent.py L125-220</p>
+<p>构造时把<b>所有可变部件</b>都收进来：模型、工具容器、中间件列表、状态、offloader、四套配置（model/context/react/injection）。然后：</p><ul><li>用 <code>_validate_configs()</code> 校验三组比例关系（reserve &lt; trigger、context_buffer &lt; trigger）。</li><li>从 <code>state.permission_context</code> 构造 <code>PermissionEngine</code>——权限引擎<b>绑定到 state</b>，所以一个 Agent 实例只对应一套权限规则。</li><li>把 middlewares 按<b>实现的钩子名</b>拆到六个桶：<code>_reply_middlewares / _reasoning_middlewares / _acting_middlewares / _model_call_middlewares / _system_prompt_middlewares / _compress_context_middlewares</code>。注意拆分用的是 <code>MiddlewareBase.is_implemented('on_xxx')</code>——所以一个中间件如果只实现了 <code>on_reasoning</code>，它就只会出现在 reasoning 链里，不会污染其他链。这是<b>按钩子注册</b>而非按中间件注册。</li></ul><div class='note plain'><span class='t'>设计要点</span>构造函数本身不做任何 I/O 或模型调用，只做装配和校验。真正跑起来在 <code>reply()</code>。</div>
+<p><b>源码：</b></p>
+<pre><code>    def __init__(
+        self,
+        name: str,
+        system_prompt: str,
+        model: ChatModelBase,
+        toolkit: Toolkit | None = None,
+        middlewares: list[MiddlewareBase] | None = None,
+        state: AgentState | None = None,
+        offloader: Offloader | None = None,
+
+        model_config: ModelConfig | None = None,
+        context_config: ContextConfig | None = None,
+        react_config: ReActConfig | None = None,
+        injection_config: InjectionConfig | None = None,
+    ) -&gt; None:
+        
+        self.name = name
+        self._system_prompt = system_prompt
+        self.model = model
+        self.state = state or AgentState()
+
+        self.model_config = model_config or ModelConfig()
+        self.context_config = context_config or ContextConfig()
+        self.react_config = react_config or ReActConfig()
+        self.injection_config = injection_config or InjectionConfig()
+        self._validate_configs()
+
+        self._engine = PermissionEngine(self.state.permission_context)
+
+        self.offloader = offloader
+
+        self.toolkit = toolkit or Toolkit()
+
+        middlewares = middlewares or []
+        self._reply_middlewares = [
+            _ for _ in middlewares if _.is_implemented(&quot;on_reply&quot;)
+        ]
+        self._reasoning_middlewares = [
+            _ for _ in middlewares if _.is_implemented(&quot;on_reasoning&quot;)
+        ]
+        self._acting_middlewares = [
+            _ for _ in middlewares if _.is_implemented(&quot;on_acting&quot;)
+        ]
+        self._model_call_middlewares = [
+            _ for _ in middlewares if _.is_implemented(&quot;on_model_call&quot;)
+        ]
+        self._system_prompt_middlewares = [
+            _ for _ in middlewares if _.is_implemented(&quot;on_system_prompt&quot;)
+        ]
+        self._compress_context_middlewares = [
+            _ for _ in middlewares if _.is_implemented(&quot;on_compress_context&quot;)
+        ]</code></pre>
+</div>
+<div class="fn" id="f-validate">
+<h4><span class="num">2</span>_validate_configs（L222-253）</h4>
+<p class="sig">def _validate_configs(self) -> None</p>
+<p class="loc">agent/_agent.py L222-253</p>
+<p>两条跨配置的约束：</p><ul><li><code>context_config.reserve_ratio &lt; context_config.trigger_ratio</code>：压缩触发比例必须大于保留比例，否则压缩永远跑不起来。</li><li><code>injection_config.context_buffer_ratio &lt; context_config.trigger_ratio</code>：上下文长度注入缓冲比例必须小于压缩触发比例，确保<b>在压缩之前</b>就注入'快压缩了'的提醒。</li></ul><p>这两条都 raise <code>ValueError</code>，在 <code>__init__</code> 里被调用，所以配置写错会<b>构造时就炸</b>。</p>
+<p><b>源码：</b></p>
+<pre><code>    def _validate_configs(self) -&gt; None:
+        
+        if (
+            self.context_config.reserve_ratio
+            &gt;= self.context_config.trigger_ratio
+        ):
+            raise ValueError(
+                &quot;The &#x27;reserve_ratio&#x27; of the context config must be smaller &quot;
+                &quot;than its &#x27;trigger_ratio&#x27;, got &quot;
+                f&quot;{self.context_config.reserve_ratio} and &quot;
+                f&quot;{self.context_config.trigger_ratio}.&quot;,
+            )
+
+        if (
+            self.injection_config.inject_runtime_state
+            and self.injection_config.context_buffer_ratio
+            &gt;= self.context_config.trigger_ratio
+        ):
+            raise ValueError(
+                &quot;The &#x27;context_buffer_ratio&#x27; of the injection config must be &quot;
+                &quot;smaller than the &#x27;trigger_ratio&#x27; of the context config, so &quot;
+                &quot;that the context length is injected before the compression, &quot;
+                f&quot;got {self.injection_config.context_buffer_ratio} and &quot;
+                f&quot;{self.context_config.trigger_ratio}.&quot;,
+            )</code></pre>
+</div>
+<div class="fn" id="f-reply-stream">
+<h4><span class="num">3</span>reply_stream（L259-288）</h4>
+<p class="sig">async def reply_stream(self, inputs=None) -> AsyncGenerator[AgentEvent, None]</p>
+<p class="loc">agent/_agent.py L259-288</p>
+<p>对外流式入口。直接 <code>async for chunk in self._reply(inputs=inputs): yield chunk</code>——所以它就是 <code>_reply()</code> 的透传。<code>reply_stream</code> 和 <code>reply</code> 的区别：<b>前者把每个 event 都吐出来，后者只留最后一个 Msg</b>。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def reply_stream(
+        self,
+        inputs: Msg
+        | list[Msg]
+        | UserConfirmResultEvent
+        | UserInterruptEvent
+        | ExternalExecutionResultEvent
+        | None = None,
+    ) -&gt; AsyncGenerator[AgentEvent, None]:
+        
+        async for chunk in self._reply(inputs=inputs):
+            if not isinstance(chunk, Msg):
+                yield chunk</code></pre>
+</div>
+<div class="fn" id="f-reply">
+<h4><span class="num">4</span>reply（L290-329）</h4>
+<p class="sig">async def reply(self, inputs=None) -> Msg</p>
+<p class="loc">agent/_agent.py L290-329</p>
+<p>对外非流式入口。遍历 <code>_reply()</code> 产出的所有 event/Msg，只保留最后一个 Msg 返回。如果没产出 Msg，raise <code>RuntimeError('Agent did not produce a final message.')</code>。</p><p><code>inputs</code> 的六种形态（见 docstring）：单 Msg、Msg 列表、UserConfirmResultEvent（HITL 确认）、ExternalExecutionResultEvent（外部执行结果）、UserInterruptEvent（中断）、None（空输入续跑）。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def reply(
+        self,
+        inputs: Msg
+        | list[Msg]
+        | UserConfirmResultEvent
+        | UserInterruptEvent
+        | ExternalExecutionResultEvent
+        | None = None,
+    ) -&gt; Msg:
+        
+        final_msg: Msg | None = None
+        async for evt_or_msg in self._reply(inputs=inputs):
+            if isinstance(evt_or_msg, Msg):
+                final_msg = evt_or_msg
+        if final_msg is None:
+            raise RuntimeError(&quot;Agent did not produce a final message.&quot;)
+        return final_msg</code></pre>
+</div>
+<div class="fn" id="f-observe">
+<h4><span class="num">5</span>observe（L331-334）</h4>
+<p class="sig">async def observe(self, msgs=None) -> None</p>
+<p class="loc">agent/_agent.py L331-334</p>
+<p>把消息写进上下文但<b>不触发推理</b>。用于'agent 看到/听到了一些上下文信息但暂时不需要回应'。实现就是调 <code>_reply(inputs=msgs)</code> 然后丢弃所有输出——它复用了 _reply 的入消息处理逻辑，只是不走 reasoning-acting loop。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def observe(self, msgs: Msg | list[Msg] | None = None) -&gt; None:
+        
+        await self._handle_incoming_messages(msgs)</code></pre>
+</div>
+
+<h2>第二层：上下文压缩</h2>
+<p class="lead">AgentScope 的 context 不是无限增长的。当 token 数超过 trigger_ratio × context_size 时，旧消息被压成一个 summary。这是它能在长任务里稳定跑的关键。</p>
+<div class="fn" id="f-compress">
+<h4><span class="num">6</span>compress_context（L336-390）</h4>
+<p class="sig">async def compress_context(self, context_config=None, instructions=None) -> None</p>
+<p class="loc">agent/_agent.py L336-390</p>
+<p>对外压缩入口，委托给 <code>_compress_context_impl</code>。但它在中间插了一层 <code>_compress_context_middlewares</code> 链——所以第三方可以通过 <code>on_compress_context</code> 钩子改压缩策略。</p><p>这里有个<b>防中断保护</b>（L609-614）：实际压缩在 <code>asyncio.create_task(_apply_change())</code> 里跑，外面用 <code>asyncio.shield(apply_task)</code> 包住。如果被 cancel，先 <code>await apply_task</code> 让它写完，再 raise——避免压缩写到一半被中断，context 处于半坏状态。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def compress_context(
+        self,
+        context_config: ContextConfig | None = None,
+        instructions: HintBlock | None = None,
+    ) -&gt; None:
+        
+        if not self._compress_context_middlewares:
+            await self._compress_context_impl(
+                context_config=context_config,
+                instructions=instructions,
+            )
+        else:
+
+            async def execute_chain(
+                index: int = 0,
+                context_config: ContextConfig | None = context_config,
+                instructions: HintBlock | None = instructions,
+            ) -&gt; None:
+                
+                if index &gt;= len(self._compress_context_middlewares):
+                    await self._compress_context_impl(
+                        context_config=context_config,
+                        instructions=instructions,
+                    )
+                else:
+                    mw = self._compress_context_middlewares[index]
+                    input_kwargs = {
+                        &quot;context_config&quot;: context_config,
+                        &quot;instructions&quot;: instructions,
+                    }
+
+                    async def next_handler(**kwargs: Any) -&gt; None:
+                        await execute_chain(
+                            index + 1,
+                            **{**input_kwargs, **kwargs},
+                        )
+
+                    await mw.on_compress_context(
+                        agent=self,
+                        input_kwargs=input_kwargs,
+                        next_handler=next_handler,
+                    )
+
+            await execute_chain()</code></pre>
+</div>
+<div class="fn" id="f-compress-impl">
+<h4><span class="num">7</span>_compress_context_impl（L392-614）</h4>
+<p class="sig">async def _compress_context_impl(self, context_config=None, instructions=None) -> None</p>
+<p class="loc">agent/_agent.py L392-614</p>
+<p>压缩主逻辑，是整个文件最复杂的函数之一（222 行）。流程：</p><ol><li><b>估 token</b>（L412-413）：调 <code>model.count_tokens(_prepare_model_input())</code>。</li><li><b>未超阈值就返回</b>（L416-418）：<code>threshold = cfg.trigger_ratio * self.model.context_size</code>。</li><li><b>空 context 报错</b>（L428-438）：如果 context 为空但超阈值，说明 system prompt 本身就超长——这是配置错误，raise <code>RuntimeError</code>。</li><li><b>切分</b>（L443-466）：调 <code>_split_context_for_compression</code> 把 context 分成'要压的'和'要留的'。</li><li><b>构造压缩 prompt</b>（L473-498）：system prompt + summary（如果已有）+ 要压的消息 + 压缩指令。</li><li><b>检查 overflow</b>（L515-526）：如果待压缩内容本身已超 context_size，打 warning。</li><li><b>调模型生成 summary</b>（L529-533）：用 <code>generate_structured_output</code> + <code>summary_schema</code>，要求模型产出结构化摘要。</li><li><b>overflow 回退</b>（L536-571）：如果压缩失败且已标记 overflow，就<b>逐条丢最旧消息</b>重试，直到待压内容降到 <code>trigger_ratio × context_size</code> 以内。</li><li><b>中断处理</b>（L576-580）：如果 <code>finished_reason == INTERRUPTED</code>，跳过压缩，raise <code>CancelledError</code>。</li><li><b>应用变更</b>（L583-614）：新 summary 替换旧；如果配了 offloader，把被压的消息卸载到磁盘并在 summary 里附路径。</li></ol><div class='note clever'><span class='t'>★ 设计精妙点：summary 是<b>累积</b>的</span>压缩不是一次性把所有历史压成一个 summary，而是<b>每次压缩都在旧 summary 基础上追加</b>（L479-480：把旧 summary 当作 user 消息也喂给模型）。所以 summary 会越长越长——这就是为什么 AgentScope 还配了 offloader，把被压的原始消息写到磁盘，summary 里只留一句'完整上下文在 path'。</div>
+<p><b>源码：</b></p>
+<pre><code>    async def _compress_context_impl(
+        self,
+        context_config: ContextConfig | None = None,
+        instructions: HintBlock | None = None,
+    ) -&gt; None:
+        
+        cfg: ContextConfig = context_config or self.context_config
+
+        kwargs = await self._prepare_model_input()
+        estimated_tokens = await self.model.count_tokens(**kwargs)
+
+        threshold = cfg.trigger_ratio * self.model.context_size
+        if estimated_tokens &lt; threshold:
+            return
+
+        logger.info(
+            &quot;[AGENT %s]: Current token count %d exceeds the threshold %d, &quot;
+            &quot;activating compression.&quot;,
+            self.name,
+            int(estimated_tokens),
+            int(threshold),
+        )
+
+        if len(self.state.context) == 0:
+
+            suffix = &quot;&quot;
+            if self.state.summary:
+                suffix = &quot;and the compression summary &quot;
+            raise RuntimeError(
+                f&quot;The system prompt {suffix}exceed(s) the compression &quot;
+                f&quot;threshold ({threshold} tokens), cannot be compressed.&quot;,
+            )
+
+        tools = kwargs.get(&quot;tools&quot;, [])
+        (
+            msgs_to_compress,
+            msgs_to_reserve,
+        ) = await self._split_context_for_compression(
+            cfg.reserve_ratio * self.model.context_size,
+            tools,
+        )
+
+        if len(msgs_to_compress) == 0:
+
+            logger.warning(
+                &quot;The reserve ratio %.2f is too large to compress any context.&quot;
+                &quot;Lower the reserve ratio to 0 as a fallback.&quot;,
+                cfg.reserve_ratio,
+            )
+            (
+                msgs_to_compress,
+                msgs_to_reserve,
+            ) = await self._split_context_for_compression(
+                0 * self.model.context_size,
+                tools,
+            )
+
+        msgs_system = [
+            SystemMsg(
+                name=&quot;system&quot;,
+                content=await self._get_system_prompt(),
+            ),
+        ]
+        if self.state.summary:
+            msgs_system.append(UserMsg(&quot;user&quot;, self.state.summary))
+
+        instruction_msgs: list[Msg] = []
+        if instructions is not None:
+            instruction_msgs.append(
+                AssistantMsg(
+                    name=self.name,
+                    content=[instructions],
+                ),
+            )
+
+        messages = (
+            msgs_system
+            + msgs_to_compress
+            + instruction_msgs
+            + [
+                UserMsg(name=&quot;user&quot;, content=cfg.compression_prompt),
+            ]
+        )
+
+        compression_tool_schema = [
+            {
+                &quot;type&quot;: &quot;function&quot;,
+                &quot;function&quot;: {
+                    &quot;name&quot;: &quot;generate_structured_output&quot;,
+                    &quot;description&quot;: &quot;Call this function to generate &quot;
+                    &quot;structured output required by &quot;
+                    &quot;the user.&quot;,
+                    &quot;parameters&quot;: cfg.summary_schema,
+                },
+            },
+        ]
+        context_overflow = False
+        estimated_compression_tokens = await self.model.count_tokens(
+            messages,
+            compression_tool_schema,
+        )
+        if estimated_compression_tokens &gt; self.model.context_size:
+            logger.warning(
+                &quot;The current context length exceeds the model&#x27;s context &quot;
+                &quot;length (%d tokens), the compression maybe failed due to &quot;
+                &quot;insufficient reserved context for compression.&quot;,
+                self.model.context_size,
+            )
+            context_overflow = True
+
+        try:
+            res = await self.model.generate_structured_output(
+                messages=messages,
+                structured_model=cfg.summary_schema,
+            )
+
+        except Exception as e:
+            if context_overflow:
+                logger.warning(
+                    &quot;Failed to compress context, which may be caused by &quot;
+                    &quot;insufficient reserved context for compression. &quot;
+                    &quot;Trying to compress by removing the oldest context.&quot;,
+                )
+                for i in range(1, len(msgs_to_compress) + 1):
+                    messages = (
+                        msgs_system
+                        + msgs_to_compress[i:]
+                        + instruction_msgs
+                        + [
+                            UserMsg(
+                                name=&quot;user&quot;,
+                                content=cfg.compression_prompt,
+                            ),
+                        ]
+                    )
+                    estimated_compression_tokens = (
+                        await self.model.count_tokens(
+                            messages,
+                            compression_tool_schema,
+                        )
+                    )
+
+                    if (
+                        estimated_compression_tokens
+                        &lt; self.model.context_size * cfg.trigger_ratio
+                    ):
+                        break
+
+                res = await self.model.generate_structured_output(
+                    messages=messages,
+                    structured_model=cfg.summary_schema,
+                )
+
+            else:
+                raise e from None
+
+        if res.finished_reason == FinishedReason.INTERRUPTED:
+            logger.warning(
+                &quot;The context compression was interrupted and skipped. &quot;,
+            )
+            raise asyncio.CancelledError()
+
+        async def _apply_change() -&gt; None:
+            
+            new_summary = cfg.summary_template.format(**res.content)
+            if self.offloader:
+                path = await self.offloader.offload_context(
+                    self.state.session_id,
+                    msgs=msgs_to_compress,
+                )
+                new_summary += (
+                    f&quot;\n&lt;system-reminder&gt;The compressed context is offloaded &quot;
+                    f&quot;to &#x27;{path}&#x27;, you can refer to it when needed.&quot;
+                    f&quot;&lt;/system-reminder&gt;&quot;
+                )
+
+            await self._clear_unreserved_read_cache(msgs_to_reserve)
+
+            self.state.summary = new_summary
+            self.state.context = msgs_to_reserve
+
+            logger.info(
+                &quot;[AGENT %s]: The context compression finished.&quot;,
+                self.name,
+            )
+
+        apply_task = asyncio.create_task(_apply_change())
+        try:
+            await asyncio.shield(apply_task)
+        except asyncio.CancelledError:
+            await apply_task
+            raise</code></pre>
+</div>
+
+<h2>第三层：reply 主循环</h2>
+<p class="lead">这是整个文件的核心：一个 while cur_iter < max_iters 的 reasoning→acting 循环。每轮先推理（调模型），如果有工具调用就执行，然后把工具结果喂回模型继续推理。</p>
+<div class="fn" id="f-reply-entry">
+<h4><span class="num">8</span>_reply（L620-668）</h4>
+<p class="sig">async def _reply(self, inputs=None) -> AsyncGenerator[AgentEvent | Msg, None]</p>
+<p class="loc">agent/_agent.py L620-668</p>
+<p>中间件入口。如果没有 <code>_reply_middlewares</code>，直接调 <code>_reply_impl</code>。否则构造一个 <code>execute_chain</code> 递归链——每个中间件收到 <code>next_handler</code>，可以选择调或者不调，从而实现'中间件可以短路整个 reply'。</p><p>这个模式（中间件链 + next_handler）在 reasoning、acting、model_call、compress_context 里<b>重复出现</b>——AgentScope 把它当成了通用的横切扩展原语。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _reply(
+        self,
+        inputs: Msg
+        | list[Msg]
+        | UserConfirmResultEvent
+        | UserInterruptEvent
+        | ExternalExecutionResultEvent
+        | None = None,
+    ) -&gt; AsyncGenerator[AgentEvent | Msg, None]:
+        
+        if not self._reply_middlewares:
+            async for item in self._reply_impl(inputs=inputs):
+                yield item
+        else:
+
+            async def execute_chain(
+                index: int = 0,
+                inputs: Msg
+                | list[Msg]
+                | UserConfirmResultEvent
+                | UserInterruptEvent
+                | ExternalExecutionResultEvent
+                | None = inputs,
+            ) -&gt; AsyncGenerator[AgentEvent | Msg, None]:
+                if index &gt;= len(self._reply_middlewares):
+                    async for item in self._reply_impl(inputs=inputs):
+                        yield item
+                else:
+                    mw = self._reply_middlewares[index]
+                    input_kwargs = {&quot;inputs&quot;: inputs}
+
+                    async def next_handler(
+                        **kwargs: Any,
+                    ) -&gt; AsyncGenerator[AgentEvent | Msg, None]:
+                        async for item in execute_chain(
+                            index + 1,
+                            **{**input_kwargs, **kwargs},
+                        ):
+                            yield item
+
+                    async for item in mw.on_reply(
+                        agent=self,
+                        input_kwargs=input_kwargs,
+                        next_handler=next_handler,
+                    ):
+                        yield item
+
+            async for item in execute_chain():
+                yield item</code></pre>
+</div>
+<div class="fn" id="f-close-unfinished">
+<h4><span class="num">9</span>_close_unfinished_tool_calls（L670-730）</h4>
+<p class="sig">async def _close_unfinished_tool_calls(self) -> AsyncGenerator[...]</p>
+<p class="loc">agent/_agent.py L670-730</p>
+<p>中断时清理未完成的工具调用。遍历最后一条 assistant 消息里的所有 <code>ToolCallBlock</code>，如果它没有对应的 <code>ToolResultBlock</code>，就给它补一个 <code>state=INTERRUPTED</code> 的结果。确保 context 里<b>每个 ToolCall 都有对应的 ToolResult</b>，否则下次调模型会因为消息结构不完整而报错。</p><p>注意 L705-710 的细节：如果工具调用已经是 <code>ALLOWED</code> 状态（意味着已经发出了 START 事件但还没执行完），就<b>不再重复发 START</b>，直接发 INTERRUPTED 的 delta 和 end。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _close_unfinished_tool_calls(
+        self,
+    ) -&gt; AsyncGenerator[
+        ToolResultStartEvent | ToolResultTextDeltaEvent | ToolResultEndEvent,
+        None,
+    ]:
+        
+        if not self.state.context:
+            return
+
+        last_msg = self.state.context[-1]
+        if last_msg.role != &quot;assistant&quot; or last_msg.name != self.name:
+            return
+
+        awaiting_tool_calls: dict = {}
+        for index, block in enumerate(last_msg.content):
+            if isinstance(block, ToolCallBlock):
+                awaiting_tool_calls[block.id] = index
+            elif isinstance(block, ToolResultBlock):
+                awaiting_tool_calls.pop(block.id, None)
+
+        interruption_message = (
+            &quot;&lt;system-reminder&gt;The tool call has been interrupted by &quot;
+            &quot;the user.&lt;/system-reminder&gt;&quot;
+        )
+
+        for index in awaiting_tool_calls.values():
+            call_block = last_msg.content[index]
+            assert isinstance(call_block, ToolCallBlock)
+
+            if call_block.state != ToolCallState.ALLOWED:
+                yield ToolResultStartEvent(
+                    reply_id=self.state.reply_id,
+                    tool_call_id=last_msg.content[index].id,
+                    tool_call_name=last_msg.content[index].name,
+                )
+
+            call_block.state = ToolCallState.FINISHED
+            yield ToolResultTextDeltaEvent(
+                reply_id=self.state.reply_id,
+                tool_call_id=last_msg.content[index].id,
+                delta=interruption_message,
+            )
+            yield ToolResultEndEvent(
+                reply_id=self.state.reply_id,
+                tool_call_id=last_msg.content[index].id,
+                state=ToolResultState.INTERRUPTED,
+            )
+            last_msg.content.append(
+                ToolResultBlock(
+                    id=last_msg.content[index].id,
+                    name=last_msg.content[index].name,
+                    output=interruption_message,
+                    state=ToolResultState.INTERRUPTED,
+                ),
+            )</code></pre>
+</div>
+<div class="fn" id="f-reply-impl">
+<h4><span class="num">10</span>_reply_impl（L732-989）</h4>
+<p class="sig">async def _reply_impl(self, inputs=None) -> AsyncGenerator[AgentEvent | Msg, None]</p>
+<p class="loc">agent/_agent.py L732-989</p>
+<p>这是整个文件最关键的函数（258 行）。它的结构是四步：</p><ol><li><b>Step 1（L760-783）</b>：分发输入。<code>UserInterruptEvent</code> 短路退出；其他事件走 <code>_check_incoming_event</code>；普通消息走 <code>_handle_incoming_messages</code>，然后初始化 <code>reply_id</code> 和 <code>cur_iter=0</code>，发 <code>ReplyStartEvent</code>。</li><li><b>Step 2（L785-876）</b>：<code>while cur_iter &lt; max_iters</code> 主循环。每轮：<ul><li>调 <code>_check_next_action()</code> 决定下一步是 reasoning 还是 acting。如果返回 <code>('exit', Msg)</code>，yield 那个 Msg 然后 return。</li><li>如果是 reasoning：先 <code>compress_context()</code>（可能压缩），再 <code>_inject_runtime_state()</code>（注入时间/任务等运行态），再 <code>_reasoning()</code>（调模型）。如果 reasoning 产出了 <code>Msg</code>（意味着模型给出了最终回复且没有工具调用），就 yield 它并 return。</li><li>如果 reasoning 被中断（<code>finished_reason == INTERRUPTED</code>），设置 <code>end_event</code> 并 return。</li></ul></li><li><b>Step 3（L878-938）</b>：工具执行。调 <code>_batch_tool_calls()</code> 拿到顺序批/并发批，逐批执行。如果某批触发了 HITL（<code>RequireUserConfirmEvent</code> 或 <code>RequireExternalExecutionEvent</code>），就 yield 一条占位消息然后 return——等外部事件触发下一次 reply。</li><li><b>Step 4（L940-990）</b>：超过 max_iters。yield <code>ExceedMaxItersEvent</code>，发 warning，设置 <code>EXCEED_MAX_ITERS</code> 的 end_event，yield 一条占位 Msg。</li></ol><p><code>finally</code> 块（L960-990）负责收尾：如果 <code>end_event.finished_reason == INTERRUPTED</code>，调 <code>_close_unfinished_tool_calls()</code> 清理未完成工具调用，再 yield 一条占位 Msg。最后 yield <code>end_event</code>。</p><div class='note clever'><span class='t'>★ 这个 while 就是 AgentScope 和 InternAgent 的根本差异</span><b>AgentScope 的单 agent 就能自己跑很多轮</b>（默认 max_iters 由 ReActConfig 控制），每轮都能调任意已注册工具、看结果、改主意。它把<b>自治性下沉到单个 agent</b>。<br>而 InternAgent 的 11 个 agent 里，<b>只有 generation 用 ReAct 工具循环</b>，其余 10 个都是'一步 execute + 结构化 JSON 输出'，把多步思考<b>上移到 ④ 编排层</b>。同样 6 层，重量分布相反。</div>
+<p><b>源码：</b></p>
+<pre><code>    async def _reply_impl(
+        self,
+        inputs: Msg
+        | list[Msg]
+        | UserConfirmResultEvent
+        | UserInterruptEvent
+        | ExternalExecutionResultEvent
+        | None = None,
+    ) -&gt; AsyncGenerator[AgentEvent | Msg, None]:
+        
+
+        end_event: ReplyEndEvent | None = None
+        try:
+
+            event: (
+                UserConfirmResultEvent
+                | UserInterruptEvent
+                | ExternalExecutionResultEvent
+                | None
+            )
+            msgs: Msg | list[Msg] | None
+            if isinstance(
+                inputs,
+                (
+                    UserConfirmResultEvent,
+                    UserInterruptEvent,
+                    ExternalExecutionResultEvent,
+                ),
+            ):
+                event = inputs
+                msgs = None
+            else:
+                event = None
+                msgs = inputs
+
+            if isinstance(inputs, UserInterruptEvent):
+                if self.state.has_awaiting_tool_calls(self.name):
+                    end_event = ReplyEndEvent(
+                        session_id=self.state.session_id,
+                        reply_id=self.state.reply_id,
+                        finished_reason=ReplyFinishedReason.INTERRUPTED,
+                    )
+                return
+
+            is_awaiting = await self._check_incoming_event(event)
+
+            if is_awaiting:
+                async for evt in self._handle_incoming_event(event):
+                    yield evt
+            else:
+                await self._handle_incoming_messages(msgs)
+
+                self.state.reply_id = _generate_id()
+                self.state.cur_iter = 0
+
+                yield ReplyStartEvent(
+                    session_id=self.state.session_id,
+                    reply_id=self.state.reply_id,
+                    name=self.name,
+                )
+
+            while self.state.cur_iter &lt; self.react_config.max_iters:
+
+                action, data = self._check_next_action()
+                if action == &quot;exit&quot; and isinstance(data, Msg):
+                    yield data
+                    return
+
+                if action == &quot;reasoning&quot;:
+
+                    await self.compress_context()
+
+                    async for evt in self._inject_runtime_state():
+                        yield evt
+
+                    interrupted = False
+                    async for evt in self._reasoning():
+
+                        if isinstance(evt, Msg):
+                            end_event = ReplyEndEvent(
+                                session_id=self.state.session_id,
+                                reply_id=self.state.reply_id,
+                                finished_reason=ReplyFinishedReason.COMPLETED,
+                            )
+                            yield evt
+                            return
+
+                        elif isinstance(evt, ModelCallEndEvent):
+                            interrupted = (
+                                evt.finished_reason
+                                == FinishedReason.INTERRUPTED
+                            )
+
+                        yield evt
+
+                    if interrupted:
+                        end_event = ReplyEndEvent(
+                            session_id=self.state.session_id,
+                            reply_id=self.state.reply_id,
+                            finished_reason=ReplyFinishedReason.INTERRUPTED,
+                        )
+                        return
+
+                for batch in await self._batch_tool_calls():
+                    if batch.type == &quot;sequential&quot;:
+                        evt_generator = self._execute_sequential_tool_calls(
+                            batch.tool_calls,
+                        )
+
+                    elif batch.type == &quot;concurrent&quot;:
+                        evt_generator = self._execute_concurrent_tool_calls(
+                            batch.tool_calls,
+                        )
+
+                    else:
+                        raise ValueError(
+                            f&quot;Invalid batch type: {batch.type}&quot;,
+                        )
+
+                    break_execution_for_hitl = False
+                    break_execution_for_interruption = False
+                    break_message = &quot;&quot;
+                    async for evt in evt_generator:
+                        yield evt
+                        if isinstance(
+                            evt,
+                            (
+                                RequireUserConfirmEvent,
+                                RequireExternalExecutionEvent,
+                            ),
+                        ):
+                            break_execution_for_hitl = True
+                            break_message = (
+                                &quot;Waiting for tool calls to be confirmed or &quot;
+                                &quot;executed from outside ...&quot;
+                            )
+
+                        elif (
+                            isinstance(evt, ToolResultEndEvent)
+                            and evt.state == ToolResultState.INTERRUPTED
+                        ):
+
+                            break_execution_for_interruption = True
+
+                    if break_execution_for_interruption:
+                        end_event = ReplyEndEvent(
+                            session_id=self.state.session_id,
+                            reply_id=self.state.reply_id,
+                            finished_reason=ReplyFinishedReason.INTERRUPTED,
+                        )
+                        return
+
+                    if break_execution_for_hitl:
+                        yield AssistantMsg(
+                            id=self.state.reply_id,
+                            name=self.name,
+                            content=break_message,
+                        )
+                        return
+
+                self.state.cur_iter += 1
+
+            yield ExceedMaxItersEvent(
+                reply_id=self.state.reply_id,
+                name=self.name,
+            )
+            logger.warning(
+                &quot;Agent %s exceeds the max iteration numbers %d. &quot;
+                &quot;Stop the react loop.&quot;,
+                self.name,
+                self.react_config.max_iters,
+            )
+
+            end_event = ReplyEndEvent(
+                session_id=self.state.session_id,
+                reply_id=self.state.reply_id,
+                finished_reason=ReplyFinishedReason.EXCEED_MAX_ITERS,
+            )
+
+            yield AssistantMsg(
+                id=self.state.reply_id,
+                name=self.name,
+                content=&quot;Executed maximum iterations of reasoning-acting loop &quot;
+                &quot;without finishing the task.&quot;,
+            )
+
+        except asyncio.CancelledError:
+
+            end_event = ReplyEndEvent(
+                session_id=self.state.session_id,
+                reply_id=self.state.reply_id,
+                finished_reason=ReplyFinishedReason.INTERRUPTED,
+            )
+
+            if self.react_config.interruption_raise_cancelled_error:
+                raise
+
+        finally:
+            if end_event is not None:
+                if (
+                    end_event.finished_reason
+                    == ReplyFinishedReason.INTERRUPTED
+                ):
+
+                    async for _ in self._close_unfinished_tool_calls():
+                        yield _
+
+                    yield AssistantMsg(
+                        id=self.state.reply_id,
+                        name=self.name,
+                        content=self.react_config.interruption_message,
+                    )
+
+                yield end_event</code></pre>
+</div>
+<div class="fn" id="f-inject">
+<h4><span class="num">11</span>_inject_runtime_state（L991-1232）</h4>
+<p class="sig">async def _inject_runtime_state(self) -> AsyncGenerator[HintBlockEvent, None]</p>
+<p class="loc">agent/_agent.py L991-1232</p>
+<p>把'会随时间变化的信息'作为 <code>HintBlock</code> 注入 context。三个维度：</p><ul><li><b>时间</b>（L1108-1161）：首次注入、压缩后注入、或距上次注入超过 <code>time_interval</code> 小时时注入。注入带时区的当前时间，让 agent 有'时间感'。</li><li><b>计划任务</b>（L1163-1174）：如果有 pending/in_progress 任务，且 agent 当前没意识到它们（task 相关工具调用已被压缩掉），注入提醒。</li><li><b>上下文长度</b>（L1176-1204）：仅在 <code>cur_iter == 0</code> 检查。如果当前 token 数已经接近压缩阈值，注入'快压缩了'的提醒，让 agent 心里有数。</li></ul><p>注入是<b>非临时性的</b>——HintBlock 会被持久化进 context，而不是只在下一轮推理时用一下。这是故意的：让 agent 能感知'时间是怎么流逝的'、'我在每个步骤做了什么'。</p><div class='note plain'><span class='t'>设计权衡</span>用 HintBlock 而不是改 system prompt，是为了<b>保住 prompt caching</b>——system prompt 不变，缓存命中率高；变化的部分单独作为 HintBlock 附在 context 里。</div>
+<p><b>源码：</b></p>
+<pre><code>    async def _inject_runtime_state(
+        self,
+    ) -&gt; AsyncGenerator[HintBlockEvent, None]:
+        
+        if not self.injection_config.inject_runtime_state:
+            return
+
+        injections: dict = {}
+
+        now = datetime.now(_resolve_timezone(self.injection_config.timezone))
+
+        injection_source = self.injection_config.injection_source
+
+        task_status: dict = collections.defaultdict(int)
+        for task in self.state.tasks_context.tasks:
+            task_status[task.state] += 1
+
+        has_uncompleted_tasks = (
+            task_status[&quot;pending&quot;] &gt; 0 or task_status[&quot;in_progress&quot;] &gt; 0
+        )
+
+        last_time_text: str | None = None
+
+        aware_of_tasks = not has_uncompleted_tasks
+
+        for msg in reversed(self.state.context):
+            if last_time_text is not None and aware_of_tasks:
+
+                break
+
+            if msg.role != &quot;assistant&quot;:
+                continue
+
+            for block in reversed(msg.content):
+                if (
+                    isinstance(block, HintBlock)
+                    and block.source == injection_source
+                ):
+                    if isinstance(block.hint, str):
+                        text = block.hint
+                    else:
+                        text = &quot;&quot;.join(
+                            _.text
+                            for _ in block.hint
+                            if isinstance(_, TextBlock)
+                        )
+
+                    if last_time_text is None and &quot;&lt;current-time&gt;&quot; in text:
+                        last_time_text = text
+                    if not aware_of_tasks and &quot;&lt;tasks&gt;&quot; in text:
+                        aware_of_tasks = True
+
+                elif (
+                    isinstance(block, ToolCallBlock)
+                    and block.name in self.injection_config.task_tool_names
+                ):
+                    aware_of_tasks = True
+
+        inject_time = True
+        if last_time_text is not None:
+
+            match = re.search(
+                r&quot;&lt;current-time&gt;(.*?)&lt;/current-time&gt;&quot;,
+                last_time_text,
+            )
+            last_time = None
+            if match is not None:
+                try:
+                    last_time = datetime.strptime(
+                        match.group(1).strip(),
+                        self.injection_config.time_format,
+                    )
+                except ValueError:
+
+                    last_time = None
+
+            if last_time is not None:
+                if last_time.tzinfo is None:
+
+                    match_tz = re.search(
+                        r&quot;&lt;timezone&gt;(.*?)&lt;/timezone&gt;&quot;,
+                        last_time_text,
+                    )
+                    last_time = last_time.replace(
+                        tzinfo=_resolve_timezone(
+                            match_tz.group(1).strip()
+                            if match_tz
+                            else self.injection_config.timezone,
+                        ),
+                    )
+
+                elapsed_hours = (now - last_time).total_seconds() / 3600
+
+                inject_time = not (
+                    0 &lt;= elapsed_hours &lt;= self.injection_config.time_interval
+                )
+
+        if inject_time:
+            injections[&quot;current-time&quot;] = now.strftime(
+                self.injection_config.time_format,
+            )
+            injections[&quot;timezone&quot;] = self.injection_config.timezone
+
+        if has_uncompleted_tasks and not aware_of_tasks:
+            injections[&quot;tasks&quot;] = (
+                f&quot;You have {task_status[&#x27;in_progress&#x27;]} in-progress tasks &quot;
+                f&quot;and {task_status[&#x27;pending&#x27;]} pending tasks. &quot;
+                f&quot;Use `TaskList` to view them if you don&#x27;t know.&quot;
+            )
+
+        if self.state.cur_iter == 0:
+
+            kwargs = await self._prepare_model_input()
+            input_tokens = await self.model.count_tokens(**kwargs)
+
+            trigger_tokens = int(
+                self.context_config.trigger_ratio * self.model.context_size,
+            )
+
+            if input_tokens &gt; (
+                max(
+                    0.0,
+                    self.context_config.trigger_ratio
+                    - self.injection_config.context_buffer_ratio,
+                )
+                * self.model.context_size
+            ):
+
+                injections[&quot;context-length&quot;] = (
+                    f&quot;Your current context contains {input_tokens} &quot;
+                    f&quot;tokens. When reaching {trigger_tokens} tokens, &quot;
+                    f&quot;your context will be compressed.&quot;
+                )
+
+        if injections:
+
+            injections.update(self.injection_config.extra_fields)
+
+            hint_block = HintBlock(
+                source=injection_source,
+
+                hint=self.injection_config.template.replace(
+                    &quot;{runtime_state}&quot;,
+                    &quot;\n&quot;.join(
+                        f&quot;&lt;{k}&gt;{v}&lt;/{k}&gt;&quot; for k, v in injections.items()
+                    ),
+                ),
+            )
+            self.state.append_context(
+                self.name,
+                [hint_block],
+            )
+            if self.injection_config.emit_hint_event:
+                yield HintBlockEvent(
+                    reply_id=self.state.reply_id,
+                    block_id=hint_block.id,
+                    source=hint_block.source,
+                    hint=hint_block.hint,
+                )</code></pre>
+</div>
+
+<h2>第四层：reasoning（调模型）</h2>
+<p class="lead">reasoning 负责调模型、把模型响应转成事件流、判断是否需要继续循环。它是 _reply_impl 里 while 循环的'推理半圈'。</p>
+<div class="fn" id="f-reasoning">
+<h4><span class="num">12</span>_reasoning（L1234-1289）</h4>
+<p class="sig">async def _reasoning(self, tool_choice=None) -> AsyncGenerator[...]</p>
+<p class="loc">agent/_agent.py L1234-1289</p>
+<p>reasoning 的中间件入口，和 <code>_reply</code> 结构完全一样：如果有 <code>_reasoning_middlewares</code>，构造 <code>execute_chain</code> 链；否则直接调 <code>_reasoning_impl</code>。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _reasoning(
+        self,
+        tool_choice: ToolChoice | None = None,
+    ) -&gt; AsyncGenerator[
+        ModelCallStartEvent
+        | TextBlockStartEvent
+        | TextBlockDeltaEvent
+        | TextBlockEndEvent
+        | ToolCallBlock
+        | ToolCallDeltaEvent
+        | ToolCallEndEvent
+        | ThinkingBlockStartEvent
+        | ThinkingBlockDeltaEvent
+        | ThinkingBlockEndEvent
+        | DataBlockStartEvent
+        | DataBlockDeltaEvent
+        | DataBlockEndEvent
+        | ModelCallEndEvent
+        | Msg,
+        None,
+    ]:
+        
+        if not self._reasoning_middlewares:
+            async for item in self._reasoning_impl(tool_choice=tool_choice):
+                yield item
+        else:
+
+            async def execute_chain(
+                index: int = 0,
+                tool_choice: ToolChoice = tool_choice,
+            ) -&gt; AsyncGenerator:
+                if index &gt;= len(self._reasoning_middlewares):
+                    async for item in self._reasoning_impl(
+                        tool_choice=tool_choice,
+                    ):
+                        yield item
+                else:
+                    mw = self._reasoning_middlewares[index]
+                    input_kwargs = {&quot;tool_choice&quot;: tool_choice}
+
+                    async def next_handler(**kwargs: Any) -&gt; AsyncGenerator:
+                        async for item in execute_chain(
+                            index + 1,
+                            **{**input_kwargs, **kwargs},
+                        ):
+                            yield item
+
+                    async for item in mw.on_reasoning(
+                        agent=self,
+                        input_kwargs=input_kwargs,
+                        next_handler=next_handler,
+                    ):
+                        yield item
+
+            async for item in execute_chain():
+                yield item</code></pre>
+</div>
+<div class="fn" id="f-reasoning-impl">
+<h4><span class="num">13</span>_reasoning_impl（L1291-1440）</h4>
+<p class="sig">async def _reasoning_impl(self, tool_choice=None) -> AsyncGenerator[...]</p>
+<p class="loc">agent/_agent.py L1291-1440</p>
+<p>reasoning 主逻辑。流程：</p><ol><li><b>发 ModelCallStartEvent</b>（L1297-1300）。</li><li><b>准备输入</b>（L1308）：调 <code>_prepare_model_input()</code> 拿 messages 和 tools schema。</li><li><b>调模型</b>（L1311-1313）：调 <code>_call_model()</code>。</li><li><b>处理响应</b>（L1324-1350）：如果响应是 async generator（流式），逐 chunk 转 event；否则直接转 event。用 <code>block_ids</code> 字典跟踪 text/thinking/tools/data 四类 block 的 id，确保流式分块的事件 id 一致。</li><li><b>收尾 end 事件</b>（L1352-1382）：给还没关闭的 block 发 End 事件。</li><li><b>保存到 context</b>（L1396-1397）：调 <code>_save_to_context</code> 把模型产出写进 conversation context。</li><li><b>判断是否退出循环</b>（L1399-1441）：如果 <code>finished_reason != INTERRUPTED</code> 且没有 ToolCallBlock 且不是只有 thinking block，就 yield 一个 <code>AssistantMsg</code>——这会被 <code>_reply_impl</code> 的 while 循环捕获并 return。<b>这个 yield Msg 就是'模型说完了，可以结束 reply'的信号。</b></li></ol><div class='note warn'><span class='t'>★ 只有 thinking 的响应</span>如果模型只产出 <code>ThinkingBlock</code>（'只思考不说话'），循环<b>不会退出</b>，而是继续下一轮让模型产出文本/工具调用。这是最近修的 bug（commit <code>96290e0f</code> 'continue the agent loop after thinking-only responses'）。</div>
+<p><b>源码：</b></p>
+<pre><code>    async def _reasoning_impl(
+        self,
+        tool_choice: ToolChoice | None = None,
+    ) -&gt; AsyncGenerator[
+        ModelCallStartEvent
+        | TextBlockStartEvent
+        | TextBlockDeltaEvent
+        | TextBlockEndEvent
+        | ToolCallBlock
+        | ToolCallDeltaEvent
+        | ToolCallEndEvent
+        | ThinkingBlockStartEvent
+        | ThinkingBlockDeltaEvent
+        | ThinkingBlockEndEvent
+        | DataBlockStartEvent
+        | DataBlockDeltaEvent
+        | DataBlockEndEvent
+        | ModelCallEndEvent
+        | Msg,
+        None,
+    ]:
+        
+
+        yield ModelCallStartEvent(
+            reply_id=self.state.reply_id,
+            model_name=self.model.model,
+        )
+
+        kwargs = await self._prepare_model_input()
+
+        res = await self._call_model(
+            tool_choice=tool_choice,
+            **kwargs,
+        )
+
+        block_ids: dict = {
+            &quot;text&quot;: None,
+            &quot;thinking&quot;: None,
+            &quot;tools&quot;: [],
+            &quot;data&quot;: [],
+        }
+        completed_response: ChatResponse | None = None
+
+        if inspect.isasyncgen(res):
+            async for chunk in res:
+
+                if chunk.is_last:
+                    completed_response = chunk
+
+                else:
+
+                    async for evt in self._convert_chat_response_to_event(
+                        block_ids,
+                        chunk,
+                    ):
+                        yield evt
+
+        elif isinstance(res, ChatResponse):
+            completed_response = res
+            async for evt in self._convert_chat_response_to_event(
+                block_ids,
+                res,
+            ):
+                yield evt
+
+        if block_ids[&quot;text&quot;] is not None:
+            yield TextBlockEndEvent(
+                reply_id=self.state.reply_id,
+                block_id=block_ids[&quot;text&quot;],
+            )
+        if block_ids[&quot;thinking&quot;] is not None:
+            yield ThinkingBlockEndEvent(
+                reply_id=self.state.reply_id,
+                block_id=block_ids[&quot;thinking&quot;],
+            )
+        for tool_call_id in block_ids[&quot;tools&quot;]:
+            yield ToolCallEndEvent(
+                reply_id=self.state.reply_id,
+                tool_call_id=tool_call_id,
+            )
+        for data_block_id in block_ids[&quot;data&quot;]:
+            yield DataBlockEndEvent(
+                reply_id=self.state.reply_id,
+                block_id=data_block_id,
+            )
+
+        if completed_response is None:
+            raise RuntimeError(
+                &quot;Model returned an empty streaming response: no is_last=True&quot;
+                &quot; chunk was received.  The model call may have been &quot;
+                &quot;interrupted mid-stream (network dropout, timeout, or model &quot;
+                &quot;bug).&quot;,
+            )
+
+        yield ModelCallEndEvent(
+            reply_id=self.state.reply_id,
+            input_tokens=completed_response.usage.input_tokens
+            if completed_response.usage
+            else 0,
+            output_tokens=completed_response.usage.output_tokens
+            if completed_response.usage
+            else 0,
+            finished_reason=completed_response.finished_reason,
+        )
+
+        self._save_to_context(
+            list(completed_response.content),
+            completed_response.usage,
+        )
+
+        has_only_thinking_blocks = bool(completed_response.content) and all(
+            isinstance(block, ThinkingBlock)
+            for block in completed_response.content
+        )
+
+        if (
+            completed_response.finished_reason != FinishedReason.INTERRUPTED
+            and not any(
+                isinstance(_, ToolCallBlock)
+                for _ in completed_response.content
+            )
+            and not has_only_thinking_blocks
+        ):
+            last_ctx = self._get_last_msg()
+            final_usage = (
+                Usage(
+                    input_tokens=last_ctx.usage.input_tokens,
+                    output_tokens=last_ctx.usage.output_tokens,
+                )
+                if last_ctx is not None and last_ctx.usage is not None
+                else None
+            )
+            yield AssistantMsg(
+                id=self.state.reply_id,
+                name=self.name,
+
+                content=list(completed_response.content),
+                usage=final_usage,
+            )</code></pre>
+</div>
+<div class="fn" id="f-check-incoming">
+<h4><span class="num">14</span>_check_incoming_event（L1442-1531）</h4>
+<p class="sig">async def _check_incoming_event(self, event) -> bool</p>
+<p class="loc">agent/_agent.py L1442-1531</p>
+<p>判断是否在等待一个外部事件（HITL 确认、外部执行结果）。如果 <code>state.has_awaiting_tool_calls(self.name)</code>，说明上一轮 reply 暂停在等待外部响应，这次进来的 event 就要被处理；否则走正常的 incoming messages 处理。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _check_incoming_event(
+        self,
+        event: UserConfirmResultEvent | ExternalExecutionResultEvent | None,
+    ) -&gt; bool:
+        
+        awaiting_confirmations = []
+        awaiting_external_executions = []
+
+        last_msg = self._get_last_msg()
+        if last_msg:
+
+            tool_result_ids = [
+                _.id for _ in last_msg.get_content_blocks(&quot;tool_result&quot;)
+            ]
+
+            for tool_call in last_msg.get_content_blocks(&quot;tool_call&quot;):
+                if tool_call.state == ToolCallState.ASKING:
+                    awaiting_confirmations.append(tool_call.id)
+                elif (
+                    tool_call.state == ToolCallState.SUBMITTED
+                    and tool_call.id not in tool_result_ids
+                ):
+
+                    awaiting_external_executions.append(tool_call.id)
+
+        if event is None and (
+            awaiting_confirmations or awaiting_external_executions
+        ):
+            raise ValueError(
+                f&quot;Agent is waiting for {len(awaiting_confirmations)} tool &quot;
+                f&quot;calls and external execution results for &quot;
+                f&quot;{len(awaiting_external_executions)} tool calls, &quot;
+                f&quot;but received no event.&quot;,
+            )
+
+        if isinstance(event, UserConfirmResultEvent):
+            if not awaiting_confirmations:
+                raise ValueError(
+                    f&quot;Agent is not waiting for user confirmation, &quot;
+                    f&quot;but received UserConfirmResultEvent: {event}&quot;,
+                )
+
+            extra_ids = set(
+                _.tool_call.id for _ in event.confirm_results
+            ) - set(awaiting_confirmations)
+            if extra_ids:
+                raise ValueError(
+                    f&quot;Received UserConfirmResultEvent with tool call ids &quot;
+                    f&quot;{extra_ids} that are not waiting for confirmation.&quot;,
+                )
+
+        if isinstance(event, ExternalExecutionResultEvent):
+            if not awaiting_external_executions:
+                raise ValueError(
+                    f&quot;Agent is not waiting for external execution result, &quot;
+                    f&quot;but received ExternalExecutionResultEvent: {event}&quot;,
+                )
+
+            extra_ids = set(_.id for _ in event.execution_results) - set(
+                awaiting_external_executions,
+            )
+            if extra_ids:
+                raise ValueError(
+                    f&quot;Received ExternalExecutionResultEvent with tool call &quot;
+                    f&quot;ids {extra_ids} that are not waiting for external &quot;
+                    f&quot;execution results.&quot;,
+                )
+
+        return event is not None</code></pre>
+</div>
+<div class="fn" id="f-handle-incoming">
+<h4><span class="num">15</span>_handle_incoming_event（L1533-1634）</h4>
+<p class="sig">async def _handle_incoming_event(self, event) -> AsyncGenerator[...]</p>
+<p class="loc">agent/_agent.py L1533-1634</p>
+<p>处理上一轮 reply 暂停后等到的外部事件。三种情况：</p><ul><li><code>UserConfirmResultEvent</code>：用户确认/拒绝了某些工具调用。把被允许的 ToolCallBlock 状态改成 <code>ALLOWED</code>，被拒绝的生成错误结果。</li><li><code>ExternalExecutionResultEvent</code>：外部执行完了某些工具，把结果写回 context。</li><li><code>UserInterruptEvent</code>：用户要中断。清理所有 awaiting tool calls。</li></ul></p>
+<p><b>源码：</b></p>
+<pre><code>    async def _handle_incoming_event(
+        self,
+        event: UserConfirmResultEvent | ExternalExecutionResultEvent | None,
+    ) -&gt; AsyncGenerator[
+        ToolResultStartEvent
+        | ToolResultTextDeltaEvent
+        | ToolResultDataDeltaEvent
+        | ToolResultEndEvent,
+        None,
+    ]:
+        
+
+        if event is None or len(self.state.context) == 0:
+            return
+
+        if isinstance(event, UserConfirmResultEvent):
+
+            confirmed_tool_calls = {
+                _.tool_call.id: _ for _ in event.confirm_results
+            }
+
+            last_msg = self.state.context[-1]
+            for tool_call in last_msg.get_content_blocks(&quot;tool_call&quot;):
+                if len(confirmed_tool_calls) == 0:
+                    break
+
+                if tool_call.id in confirmed_tool_calls:
+                    confirmation = confirmed_tool_calls[tool_call.id]
+                    if confirmation.confirmed:
+
+                        self._update_tool_call_state(
+                            tool_call.id,
+                            ToolCallState.ALLOWED,
+                        )
+
+                        tool_call.name = confirmation.tool_call.name
+                        tool_call.input = confirmation.tool_call.input
+
+                        if confirmation.rules:
+                            for rule in confirmation.rules:
+                                self._engine.add_rule(rule)
+
+                    else:
+
+                        async for evt in self._handle_error_tool_call(
+                            tool_call,
+                            message=(
+                                &quot;&lt;system-reminder&gt;The execution of tool &quot;
+                                f&#x27;&quot;{tool_call.name}&quot; is denied by user!&#x27;
+                                &quot;&lt;/system-reminder&gt;&quot;
+                            ),
+                            state=ToolResultState.DENIED,
+                        ):
+                            yield evt
+
+                    confirmed_tool_calls.pop(tool_call.id)
+
+        elif isinstance(event, ExternalExecutionResultEvent):
+
+            for tool_result in event.execution_results:
+                async for evt in self._convert_tool_chunk_to_event(
+                    tool_result.id,
+                    tool_result.output,
+                ):
+                    yield evt
+
+                yield ToolResultEndEvent(
+                    reply_id=self.state.reply_id,
+                    tool_call_id=tool_result.id,
+                    state=tool_result.state,
+                    metadata=tool_result.metadata,
+                )
+
+                self._save_to_context([tool_result])
+
+                self._update_tool_call_state(
+                    tool_result.id,
+                    ToolCallState.FINISHED,
+                )
+
+        else:
+            raise ValueError(f&quot;Invalid event type: {event}&quot;)</code></pre>
+</div>
+<div class="fn" id="f-handle-msgs">
+<h4><span class="num">16</span>_handle_incoming_messages（L1635-1661）</h4>
+<p class="sig">async def _handle_incoming_messages(self, msgs) -> None</p>
+<p class="loc">agent/_agent.py L1635-1661</p>
+<p>处理正常的输入消息：把 user/assistant 消息追加到 <code>self.state.context</code>。如果是 assistant 自己的消息（续跑场景），也会正确处理。不做推理，只做上下文更新。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _handle_incoming_messages(
+        self,
+        msgs: Msg | list[Msg] | None,
+    ) -&gt; None:
+        
+        if msgs:
+            copied_msgs: list = deepcopy(msgs)
+            if isinstance(copied_msgs, Msg):
+                copied_msgs = [copied_msgs]
+            for msg in copied_msgs:
+                if (
+                    not isinstance(msg, Msg)
+                    or msg.role == &quot;system&quot;
+                    or msg.has_content_blocks(
+                        [&quot;tool_call&quot;, &quot;tool_result&quot;, &quot;thinking&quot;],
+                    )
+                ):
+                    raise ValueError(
+                        f&quot;Invalid message in the input: {msg}. &quot;
+                        f&quot;The message should be a Msg object with &quot;
+                        f&quot;role &#x27;user&#x27; or &#x27;assistant&#x27;, &quot;
+                        f&quot;and should not contain tool calls, &quot;
+                        f&quot;tool results or thinking blocks.&quot;,
+                    )
+
+                self.state.context.append(msg)</code></pre>
+</div>
+
+<h2>第五层：acting（工具执行）</h2>
+<p class="lead">工具执行是 reasoning 的'行动半圈'。模型一次可能产出多个工具调用，AgentScope 把它们分批：顺序批一个一个跑，并发批用 asyncio.gather 同时跑。每个工具调用都要过权限检查。</p>
+<div class="fn" id="f-batch">
+<h4><span class="num">17</span>_batch_tool_calls（L1663-1700）</h4>
+<p class="sig">async def _batch_tool_calls(self) -> list[_ToolCallBatch]</p>
+<p class="loc">agent/_agent.py L1663-1700</p>
+<p>把待执行的工具调用按'是否可并发'分批。遍历每个 tool call，查对应 tool 的 <code>is_concurrency_safe</code>：</p><ul><li>如果 tool 是 None（未注册）或 <code>is_concurrency_safe=True</code>：归到 <code>concurrent</code> 批。</li><li>否则：归到 <code>sequential</code> 批。</li></ul><p>关键：相邻的同类型调用会<b>合并到同一批</b>（L1680-1688 和 L1690-1698 的 else 分支）。所以如果模型一次产出 3 个只读工具调用，它们会被合到一个 concurrent 批里并发执行。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _batch_tool_calls(self) -&gt; list[_ToolCallBatch]:
+        
+
+        tool_calls = self._get_executable_tool_calls()
+
+        batches: list[_ToolCallBatch] = []
+        for tool_call in tool_calls:
+            tool = await self.toolkit.get_tool(tool_call.name)
+
+            if tool is None or tool.is_concurrency_safe:
+                if len(batches) == 0 or batches[-1].type != &quot;concurrent&quot;:
+                    batches.append(
+                        _ToolCallBatch(
+                            type=&quot;concurrent&quot;,
+                            tool_calls=[tool_call],
+                        ),
+                    )
+                else:
+                    batches[-1].tool_calls.append(tool_call)
+            else:
+                if len(batches) == 0 or batches[-1].type != &quot;sequential&quot;:
+                    batches.append(
+                        _ToolCallBatch(
+                            type=&quot;sequential&quot;,
+                            tool_calls=[tool_call],
+                        ),
+                    )
+                else:
+                    batches[-1].tool_calls.append(tool_call)
+
+        return batches</code></pre>
+</div>
+<div class="fn" id="f-seq-exec">
+<h4><span class="num">18</span>_execute_sequential_tool_calls（L1702-1750）</h4>
+<p class="sig">async def _execute_sequential_tool_calls(self, tool_calls) -> AsyncGenerator[...]</p>
+<p class="loc">agent/_agent.py L1702-1750</p>
+<p>顺序执行一批工具调用。简单 for 循环，每个调 <code>_execute_tool_call</code>。如果中途遇到 <code>RequireUserConfirmEvent</code>、<code>RequireExternalExecutionEvent</code> 或 <code>INTERRUPTED</code> 结果，就 break——停在第一个需要外部交互的工具调用上，等下一轮 reply。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _execute_sequential_tool_calls(
+        self,
+        tool_calls: list[ToolCallBlock],
+    ) -&gt; AsyncGenerator[
+        RequireUserConfirmEvent
+        | RequireExternalExecutionEvent
+        | ToolResultStartEvent
+        | ToolResultTextDeltaEvent
+        | ToolResultDataDeltaEvent
+        | ToolResultEndEvent,
+        None,
+    ]:
+        
+        break_execution = False
+        for tool_call in tool_calls:
+            async for evt in self._execute_tool_call(tool_call):
+                yield evt
+                if isinstance(
+                    evt,
+                    (
+                        RequireUserConfirmEvent,
+                        RequireExternalExecutionEvent,
+                    ),
+                ) or (
+                    isinstance(evt, ToolResultEndEvent)
+                    and evt.state == ToolResultState.INTERRUPTED
+                ):
+                    break_execution = True
+                    break
+            if break_execution:
+                break</code></pre>
+</div>
+<div class="fn" id="f-conc-exec">
+<h4><span class="num">19</span>_execute_concurrent_tool_calls（L1752-1882）</h4>
+<p class="sig">async def _execute_concurrent_tool_calls(self, tool_calls) -> AsyncGenerator[...]</p>
+<p class="loc">agent/_agent.py L1752-1882</p>
+<p>并发执行一批工具调用（130 行，最复杂的执行路径之一）。核心机制：</p><ol><li><b>Queue + sentinel</b>（L1808-1840）：所有 worker 把事件 put 到一个共享 Queue，<code>_run_all</code> 在 gather 完成后 put 一个 sentinel。主循环从 Queue 取事件，遇到 sentinel 就退出。</li><li><b>不取消失败任务</b>（L1829-1837）：<code>return_exceptions=True</code>，一个任务失败不会取消其他任务，所有任务都跑完后把异常收集成 <code>ExceptionGroup</code> 一起 raise。</li><li><b>Cancelled 处理</b>（L1852-1872）：如果主任务被外部 cancel，先 cancel gather_task，然后把 Queue 里残留的事件 flush 出来，最后 <code>asyncio.current_task().uncancel()</code> 吞掉 cancel——让调用方通过 <code>ToolResultEndEvent(state=INTERRUPTED)</code> 事件感知中断，而不是靠异常。</li></ol><p><code>kept_rules</code>（L1819）是一个 batch 级共享的'已确认规则'累加器，用于并发批的去重：如果一个非安全 ASK 的调用已经被前一个调用产生的规则覆盖了，就不用再弹窗了。这避免了并发执行多个写操作时弹 10 个窗的情况。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _execute_concurrent_tool_calls(
+        self,
+        tool_calls: list[ToolCallBlock],
+    ) -&gt; AsyncGenerator[
+        RequireUserConfirmEvent
+        | RequireExternalExecutionEvent
+        | ToolResultStartEvent
+        | ToolResultTextDeltaEvent
+        | ToolResultDataDeltaEvent
+        | ToolResultEndEvent,
+        None,
+    ]:
+        
+
+        sentinel = object()
+
+        queue: Queue = Queue()
+
+        kept_rules: list[PermissionRule] = []
+
+        async def _run_all() -&gt; list[BaseException | None]:
+            
+
+            results = await asyncio.gather(
+                *[
+                    self._into_queue(tc, queue, kept_rules)
+                    for tc in tool_calls
+                ],
+                return_exceptions=True,
+            )
+
+            await queue.put(sentinel)
+            return results
+
+        gather_task = asyncio.create_task(_run_all())
+
+        try:
+
+            while True:
+                event = await queue.get()
+                if event is sentinel:
+                    break
+                yield event
+        except asyncio.CancelledError:
+
+            gather_task.cancel()
+            try:
+                await gather_task
+            except asyncio.CancelledError:
+                pass
+            while True:
+                try:
+                    event = queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+                if event is sentinel:
+                    continue
+                yield event
+
+            asyncio.current_task().uncancel()
+            return
+
+        results = await gather_task
+        exceptions = [r for r in results if isinstance(r, Exception)]
+        if exceptions:
+            raise ExceptionGroup(
+                &quot;One or more tool calls raised an exception&quot;,
+                exceptions,
+            )</code></pre>
+</div>
+<div class="fn" id="f-into-queue">
+<h4><span class="num">20</span>_into_queue（L1884-1904）</h4>
+<p class="sig">async def _into_queue(self, tool_call, queue, kept_rules) -> None</p>
+<p class="loc">agent/_agent.py L1884-1904</p>
+<p>单个工具调用执行并把事件推入队列的 helper。它把 <code>_execute_tool_call</code> 的所有 yield 事件都 put 到 queue 里。返回 None，异常由 <code>return_exceptions=True</code> 捕获。这是 <code>_execute_concurrent_tool_calls</code> 里每个 worker 的实际工作。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _into_queue(
+        self,
+        tool_call: ToolCallBlock,
+        queue: Queue,
+        kept_rules: list[PermissionRule] | None = None,
+    ) -&gt; None:
+        
+        async for evt in self._execute_tool_call(tool_call, kept_rules):
+            await queue.put(evt)</code></pre>
+</div>
+<div class="fn" id="f-exec-tool">
+<h4><span class="num">21</span>_execute_tool_call（L1906-2198）</h4>
+<p class="sig">async def _execute_tool_call(self, tool_call, kept_rules=None) -> AsyncGenerator[...]</p>
+<p class="loc">agent/_agent.py L1906-2198</p>
+<p>单个工具调用的完整生命周期（292 行，文件里第二长的函数）。五步：</p><ol><li><b>Step 1：校验输入</b>（L1956-1991）。调 <code>toolkit.check_tool_available</code> 确认工具存在且已激活；用 <code>_json_loads_with_repair</code> 尝试解析 tool_call.input；用 jsonschema 校验。任何失败都调 <code>_handle_error_tool_call</code> 生成错误结果并返回。</li><li><b>Step 2：权限检查</b>（L1993-2006）。如果 tool_call.state 已经是 <code>ALLOWED</code>（被上一轮 HITL 确认过），直接放行；否则调 <code>PermissionEngine.check_permission</code>。</li><li><b>Step 3：处理 ASK</b>（L2013-2059）。如果决策是 ASK 或 PASSTHROUGH：先做 batch 去重检查（如果 kept_rules 里已有规则覆盖此调用，就 return 不弹窗）；否则把 tool_call 状态设成 ASKING，yield <code>RequireUserConfirmEvent</code>，return 等下一轮。</li><li><b>Case 2：DENY</b>（L2062-2070）。调 <code>_handle_error_tool_call</code> 生成拒绝结果。</li><li><b>Case 3：ALLOW</b>（L2074-2194）。设置状态为 ALLOWED，发 <code>ToolResultStartEvent</code>。如果工具是 <code>is_external_tool</code>，把状态设成 SUBMITTED，yield <code>RequireExternalExecutionEvent</code>，return。否则委托给 <code>_acting</code> 执行原始工具，拿到 <code>ToolResponse</code> 后调 <code>_split_tool_result_for_compression</code> 截断超长结果，<code>_save_to_context</code> 保存，最后发 <code>ToolResultEndEvent</code>。</li></ol><div class='note clever'><span class='t'>★ 外部工具 vs 内置工具</span><code>is_external_tool=True</code> 的工具不会在 AgentScope 进程内执行——它 yield 一个 <code>RequireExternalExecutionEvent</code>，暂停 reply，等外部系统执行完后发 <code>ExternalExecutionResultEvent</code> 续跑。这是 AgentScope 支持'<b>工具执行外包</b>'的机制，和 InternAgent 把整个实验循环外包给 Claude Code 是同一个思路，只是粒度更细——逐工具外包。</div>
+<p><b>源码：</b></p>
+<pre><code>    async def _execute_tool_call(
+        self,
+        tool_call: ToolCallBlock,
+        kept_rules: list[PermissionRule] | None = None,
+    ) -&gt; AsyncGenerator[
+        RequireUserConfirmEvent
+        | RequireExternalExecutionEvent
+        | ToolResultStartEvent
+        | ToolResultTextDeltaEvent
+        | ToolResultDataDeltaEvent
+        | ToolResultEndEvent,
+        None,
+    ]:
+        
+
+        try:
+
+            tool = await self.toolkit.check_tool_available(
+                tool_call.name,
+                self.state.tool_context.activated_groups,
+            )
+
+            parsed_input = _json_loads_with_repair(
+                tool_call.input,
+                tool.input_schema,
+            )
+
+            try:
+                jsonschema.validate(parsed_input, tool.input_schema)
+            except jsonschema.ValidationError as e:
+                raise AgentOrientedException(
+                    f&quot;Input validation failed for tool &#x27;{tool_call.name}&#x27;: &quot;
+                    f&quot;{e.message}&quot;,
+                ) from e
+
+        except AgentOrientedException as e:
+            async for evt in self._handle_error_tool_call(
+                tool_call,
+                e.message,
+                state=ToolResultState.ERROR,
+            ):
+                yield evt
+
+            return
+
+        if tool_call.state == ToolCallState.ALLOWED:
+
+            decision = PermissionDecision(
+                behavior=PermissionBehavior.ALLOW,
+                message=&quot;Already allowed by user confirmation.&quot;,
+            )
+        else:
+            decision = await self._engine.check_permission(
+                tool,
+                parsed_input,
+            )
+
+        if decision.behavior in [
+            PermissionBehavior.ASK,
+            PermissionBehavior.PASSTHROUGH,
+        ]:
+
+            is_safety_ask = (
+                decision.behavior == PermissionBehavior.ASK
+                and decision.bypass_immune
+            )
+            if kept_rules is not None and not is_safety_ask:
+                for rule in kept_rules:
+                    if rule.tool_name != tool.name:
+                        continue
+                    if await _execute_async_or_sync_func(
+                        tool.match_rule,
+                        rule.rule_content,
+                        parsed_input,
+                    ):
+
+                        return
+
+            if kept_rules is not None:
+
+                kept_rules.extend(decision.suggested_rules or [])
+
+            self._update_tool_call_state(
+                tool_call.id,
+                ToolCallState.ASKING,
+            )
+
+            tool_call.suggested_rules = decision.suggested_rules or []
+            yield RequireUserConfirmEvent(
+                reply_id=self.state.reply_id,
+                tool_calls=[tool_call],
+            )
+            return
+
+        if decision.behavior == PermissionBehavior.DENY:
+            async for evt in self._handle_error_tool_call(
+                tool_call,
+                decision.message,
+                state=ToolResultState.DENIED,
+            ):
+                yield evt
+
+            return
+
+        if decision.behavior == PermissionBehavior.ALLOW:
+            self._update_tool_call_state(
+                tool_call.id,
+                ToolCallState.ALLOWED,
+            )
+
+            yield ToolResultStartEvent(
+                reply_id=self.state.reply_id,
+                tool_call_id=tool_call.id,
+                tool_call_name=tool_call.name,
+            )
+
+            if tool.is_external_tool:
+
+                self._update_tool_call_state(
+                    tool_call.id,
+                    ToolCallState.SUBMITTED,
+                )
+                yield RequireExternalExecutionEvent(
+                    reply_id=self.state.reply_id,
+                    tool_calls=[tool_call],
+                )
+                return
+
+            async for chunk in self._acting(tool_call):
+
+                if isinstance(chunk, ToolResponse):
+                    tool_result_block = ToolResultBlock(
+                        id=tool_call.id,
+                        name=tool_call.name,
+                        output=[TextBlock(text=chunk.content)]
+                        if isinstance(chunk.content, str)
+                        else chunk.content,
+                        state=chunk.state,
+                        metadata=chunk.metadata,
+                    )
+
+                    (
+                        reserved_tool_result_block,
+                        offload_tool_result_block,
+                    ) = await self._split_tool_result_for_compression(
+                        tool_result_block,
+                    )
+
+                    if offload_tool_result_block is not None:
+                        reminder = (
+                            &quot;\n&lt;&lt;&lt;TRUNCATED&gt;&gt;&gt;\n&lt;system-reminder&gt;The &quot;
+                            &quot;remaining content has been omitted for &quot;
+                            &quot;limited context.{offload_reminder}&quot;
+                            &quot;&lt;/system-reminder&gt;&quot;
+                        )
+
+                        offload_reminder = &quot;&quot;
+                        if self.offloader:
+                            path = await self.offloader.offload_tool_result(
+                                self.state.session_id,
+                                offload_tool_result_block,
+                            )
+
+                            offload_reminder = (
+                                f&quot; You can refer to the file in &#x27;{path}&#x27; &quot;
+                                f&quot;for the truncated content if needed.&quot;
+                            )
+
+                        reminder = reminder.format(
+                            offload_reminder=offload_reminder,
+                        )
+
+                        if isinstance(reserved_tool_result_block.output, str):
+                            reserved_tool_result_block.output += reminder
+
+                        elif len(
+                            reserved_tool_result_block.output,
+                        ) &gt; 0 and isinstance(
+                            reserved_tool_result_block.output[-1],
+                            TextBlock,
+                        ):
+                            reserved_tool_result_block.output[
+                                -1
+                            ].text += reminder
+
+                        else:
+                            reserved_tool_result_block.output += [
+                                TextBlock(text=reminder),
+                            ]
+
+                    self._save_to_context([reserved_tool_result_block])
+
+                    self._update_tool_call_state(
+                        tool_call.id,
+                        ToolCallState.FINISHED,
+                    )
+
+                    yield ToolResultEndEvent(
+                        reply_id=self.state.reply_id,
+                        tool_call_id=tool_call.id,
+                        state=chunk.state,
+                        metadata=chunk.metadata,
+                    )
+
+                else:
+
+                    async for evt in self._convert_tool_chunk_to_event(
+                        tool_call.id,
+                        chunk.content,
+                    ):
+                        yield evt
+
+            return
+
+        raise ValueError(
+            f&quot;Invalid permission decision behavior: {decision.behavior}&quot;,
+        )</code></pre>
+</div>
+<div class="fn" id="f-acting">
+<h4><span class="num">22</span>_acting（L2200-2252）</h4>
+<p class="sig">async def _acting(self, tool_call) -> AsyncGenerator[ToolChunk | ToolResponse, None]</p>
+<p class="loc">agent/_agent.py L2200-2252</p>
+<p>acting 的中间件入口，和 <code>_reply</code> / <code>_reasoning</code> 同构。中间件可以通过 <code>on_acting</code> 钩子拦截、修改、重试工具执行。<b>注意：这里不做权限检查和 context 写入</b>——那些是 <code>_execute_tool_call</code> 的责任。这层只管'把工具调用喂给 toolkit.call_tool 并拿回结果'。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _acting(
+        self,
+        tool_call: ToolCallBlock,
+    ) -&gt; AsyncGenerator[&quot;ToolChunk | ToolResponse&quot;, None]:
+        
+        if not self._acting_middlewares:
+            async for item in self._acting_impl(tool_call):
+                yield item
+        else:
+
+            async def execute_chain(
+                index: int = 0,
+                tool_call: ToolCallBlock = tool_call,
+            ) -&gt; AsyncGenerator:
+                if index &gt;= len(self._acting_middlewares):
+                    async for item in self._acting_impl(tool_call):
+                        yield item
+                else:
+                    mw = self._acting_middlewares[index]
+                    input_kwargs = {&quot;tool_call&quot;: tool_call}
+
+                    async def next_handler(**kwargs: Any) -&gt; AsyncGenerator:
+                        async for item in execute_chain(
+                            index + 1,
+                            **{**input_kwargs, **kwargs},
+                        ):
+                            yield item
+
+                    async for item in mw.on_acting(
+                        agent=self,
+                        input_kwargs=input_kwargs,
+                        next_handler=next_handler,
+                    ):
+                        yield item
+
+            async for item in execute_chain():
+                yield item</code></pre>
+</div>
+<div class="fn" id="f-acting-impl">
+<h4><span class="num">23</span>_acting_impl（L2254-2282）</h4>
+<p class="sig">async def _acting_impl(self, tool_call) -> AsyncGenerator[ToolChunk | ToolResponse, None]</p>
+<p class="loc">agent/_agent.py L2254-2282</p>
+<p>acting 的核心实现，极简——直接 <code>async for chunk in self.toolkit.call_tool(tool_call, self.state): yield chunk</code>。所有复杂度都在 Toolkit 里。docstring 里有个 TODO：带 <code>is_state_injected=True</code> 的工具会拿到 live <code>agent.state</code>，如果把这种工具 offload 到后台任务，可能造成并发 state 突变——未来需要阻止这种 offload。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _acting_impl(
+        self,
+        tool_call: ToolCallBlock,
+    ) -&gt; AsyncGenerator[&quot;ToolChunk | ToolResponse&quot;, None]:
+        
+        async for chunk in self.toolkit.call_tool(tool_call, self.state):
+            yield chunk</code></pre>
+</div>
+<div class="fn" id="f-handle-err">
+<h4><span class="num">24</span>_handle_error_tool_call（L2284-2353）</h4>
+<p class="sig">async def _handle_error_tool_call(self, tool_call, message, state) -> AsyncGenerator[...]</p>
+<p class="loc">agent/_agent.py L2284-2353</p>
+<p>错误工具调用的快速处理。发 START → 把错误消息作为 ToolResultBlock 存进 context → 发 END → 把 ToolCallBlock 状态改成 FINISHED。用于：工具不存在、输入校验失败、权限 DENY。</p><p>注意 <code>state</code> 参数可以是 <code>ERROR</code>、<code>DENIED</code> 等——这决定了存进 context 的 ToolResultBlock 的状态字段，模型下一轮推理时会看到这个状态。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _handle_error_tool_call(
+        self,
+        tool_call: ToolCallBlock,
+        message: str,
+        state: ToolResultState,
+    ) -&gt; AsyncGenerator[
+        ToolResultStartEvent
+        | ToolResultTextDeltaEvent
+        | ToolResultDataDeltaEvent
+        | ToolResultEndEvent,
+        None,
+    ]:
+        
+
+        yield ToolResultStartEvent(
+            reply_id=self.state.reply_id,
+            tool_call_id=tool_call.id,
+            tool_call_name=tool_call.name,
+        )
+
+        result = ToolChunk(
+            content=[TextBlock(text=message)],
+            state=state,
+        )
+
+        self._save_to_context(
+            [
+                ToolResultBlock(
+                    id=tool_call.id,
+                    name=tool_call.name,
+                    output=message,
+                    state=state,
+                ),
+            ],
+        )
+
+        async for evt in self._convert_tool_chunk_to_event(
+            tool_call.id,
+            result.content,
+        ):
+            yield evt
+
+        yield ToolResultEndEvent(
+            reply_id=self.state.reply_id,
+            tool_call_id=tool_call.id,
+            state=state,
+        )
+
+        self._update_tool_call_state(
+            tool_call.id,
+            ToolCallState.FINISHED,
+        )</code></pre>
+</div>
+
+<h2>第六层：上下文切分（压缩的辅助函数）</h2>
+<p class="lead">压缩不是一刀切，AgentScope 仔细处理了'在哪切'的问题——既要满足 token 预算，又不能把一个 tool_call 和它的 tool_result 拆开。</p>
+<div class="fn" id="f-split-ctx">
+<h4><span class="num">25</span>_split_context_for_compression（L2359-2469）</h4>
+<p class="sig">async def _split_context_for_compression(self, to_reserved_tokens, tools) -> tuple[list[Msg], list[Msg]]</p>
+<p class="loc">agent/_agent.py L2359-2469</p>
+<p>把 context 分成'要压的'和'要留的'两部分。算法：</p><ol><li>从后往前扫，找到第一个使得'它后面的消息总 token &gt; to_reserved_tokens'的边界（L2389-2399）。</li><li>在边界消息内部，再从后往前找 block 级别的切点（L2417-2427），尽量多留一些 block。</li><li><b>配对修正</b>（L2432-2453）：如果保留部分有 tool_result 但没有对应的 tool_call，就把它也移到压缩部分。循环直到稳定——因为移动一个 result 可能又拆开另一对。这是为了确保<b>压缩后的 context 里每个 tool_result 都有对应的 tool_call</b>，否则模型会因为消息结构不完整而报错。</li></ol></p>
+<p><b>源码：</b></p>
+<pre><code>    async def _split_context_for_compression(
+        self,
+        to_reserved_tokens: float,
+        tools: list[dict],
+    ) -&gt; tuple[list[Msg], list[Msg]]:
+        
+
+        system_msg = [
+            SystemMsg(name=&quot;system&quot;, content=await self._get_system_prompt()),
+        ]
+
+        if self.state.summary:
+            system_msg.append(
+                UserMsg(&quot;user&quot;, self.state.summary),
+            )
+
+        msg_index = len(self.state.context) - 1
+        while msg_index &gt;= 0:
+
+            reserved_tokens = await self.model.count_tokens(
+                system_msg + self.state.context[msg_index:],
+                tools,
+            )
+
+            if reserved_tokens &gt;= to_reserved_tokens:
+                break
+            msg_index -= 1
+
+        if msg_index &lt; 0:
+            return [], deepcopy(self.state.context)
+
+        msgs_to_compress = self.state.context[:msg_index]
+        msgs_to_reserve = self.state.context[msg_index + 1 :]
+        boundary_msg = self.state.context[msg_index]
+
+        boundary_msg_to_compress = deepcopy(boundary_msg)
+        boundary_msg_to_reserve = deepcopy(boundary_msg)
+
+        attempt_msg = deepcopy(boundary_msg)
+
+        boundary_msg_content = boundary_msg.get_content_blocks()
+        block_index = len(boundary_msg_content) - 1
+        while block_index &gt;= 0:
+            attempt_msg.content = boundary_msg_content[block_index:]
+
+            try_reserved = system_msg + [attempt_msg] + msgs_to_reserve
+            reserved_tokens = await self.model.count_tokens(
+                try_reserved,
+                tools,
+            )
+            if reserved_tokens &gt; to_reserved_tokens:
+                break
+            block_index -= 1
+
+        while True:
+
+            remain_result_ids = {}
+            for i in range(
+                len(boundary_msg_content) - 1,
+                block_index,
+                -1,
+            ):
+                block = boundary_msg_content[i]
+                if isinstance(block, ToolResultBlock):
+                    remain_result_ids[block.id] = i
+                elif isinstance(block, ToolCallBlock):
+                    remain_result_ids.pop(block.id, None)
+
+            if not remain_result_ids:
+                break
+
+            block_index = max(remain_result_ids.values())
+
+        boundary_msg_to_compress.content = boundary_msg_content[
+            : block_index + 1
+        ]
+        boundary_msg_to_reserve.content = boundary_msg_content[
+            block_index + 1 :
+        ]
+
+        if len(boundary_msg_to_compress.content) &gt; 0:
+            msgs_to_compress += [boundary_msg_to_compress]
+
+        if len(boundary_msg_to_reserve.content) &gt; 0:
+            msgs_to_reserve = [boundary_msg_to_reserve] + msgs_to_reserve
+
+        return msgs_to_compress, msgs_to_reserve</code></pre>
+</div>
+<div class="fn" id="f-clear-cache">
+<h4><span class="num">26</span>_clear_unreserved_read_cache（L2471-2495）</h4>
+<p class="sig">async def _clear_unreserved_read_cache(self, msgs_to_reserve) -> None</p>
+<p class="loc">agent/_agent.py L2471-2495</p>
+<p>压缩前清理 Read 工具的文件缓存。检查 <code>state.tool_context.tool_context</code> 里的 <code>ToolContext</code>，如果某个缓存对应的文件不在保留消息里，就删掉。这是<b>内存卫生</b>：压缩把旧 Read 调用压成 summary 后，对应的文件缓存也没用了，清掉避免泄漏。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _clear_unreserved_read_cache(
+        self,
+        msgs_to_reserve: list[Msg],
+    ) -&gt; None:
+        
+        reserved_paths: set[str] = set()
+        for msg in msgs_to_reserve:
+            for block in msg.get_content_blocks(&quot;tool_call&quot;):
+                if not (
+                    isinstance(block, ToolCallBlock) and block.name == &quot;Read&quot;
+                ):
+                    continue
+
+                try:
+                    tool_input = _json_loads_with_repair(block.input)
+                except Exception:
+                    continue
+
+                file_path = tool_input.get(&quot;file_path&quot;)
+                if isinstance(file_path, str):
+                    reserved_paths.add(file_path)
+
+        await self.state.tool_context.clean_file_cache(
+            reserved_file_paths=reserved_paths,
+        )</code></pre>
+</div>
+<div class="fn" id="f-split-tool-result">
+<h4><span class="num">27</span>_split_tool_result_for_compression（L2497-2643）</h4>
+<p class="sig">async def _split_tool_result_for_compression(self, tool_result) -> tuple[ToolResultBlock, ToolResultBlock | None]</p>
+<p class="loc">agent/_agent.py L2497-2643</p>
+<p>把一个超长的工具结果分成'留在 context 里的'和'offload 到磁盘的'两部分。算法：</p><ol><li>如果总 token ≤ <code>tool_result_limit</code>，直接返回原结果，不切分（L2518-2519）。</li><li>从后往前找 block 级切点，使得保留部分的 token ≤ limit（L2531-2545）。</li><li>边界 block 如果是 TextBlock，按 token 比例做<b>文本级截断</b>（L2558-2620）：估算每个字符对应的 token 数，按剩余预算截断文本。截断后的前半部分留在 context，后半部分 offload。</li><li>边界 block 如果不是 TextBlock（不可分割），直接整个 drop 到 offload（L2622-2624）。</li></ol><p>offload 后的路径会写进保留部分的 <code>&lt;system-reminder&gt;</code>，让 agent 知道'完整结果在某个文件里，需要时去读'。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _split_tool_result_for_compression(
+        self,
+        tool_result: ToolResultBlock,
+    ) -&gt; tuple[ToolResultBlock, ToolResultBlock | None]:
+        
+        n_tokens = await self.model.count_tokens(
+            [AssistantMsg(self.name, content=tool_result.output)],
+            None,
+        )
+
+        if n_tokens &lt;= self.context_config.tool_result_limit:
+            return tool_result, None
+
+        copied_tool_result = deepcopy(tool_result)
+
+        if isinstance(copied_tool_result.output, str):
+            copied_tool_result.output = [
+                TextBlock(text=copied_tool_result.output),
+            ]
+
+        boundary_index = 0
+        for i in range(len(copied_tool_result.output) - 1, 0, -1):
+            copied_tool_result.output = tool_result.output[:i]
+            cur_tokens = await self.model.count_tokens(
+                [
+                    AssistantMsg(
+                        self.name,
+                        content=copied_tool_result.output,
+                    ),
+                ],
+                None,
+            )
+            if cur_tokens &lt; self.context_config.tool_result_limit:
+                boundary_index = i
+                break
+
+        reserved_blocks: list = [
+            deepcopy(b) for b in tool_result.output[:boundary_index]
+        ]
+        offload_blocks: list = [
+            deepcopy(b) for b in tool_result.output[boundary_index + 1 :]
+        ]
+
+        boundary_block = tool_result.output[boundary_index]
+        if isinstance(boundary_block, TextBlock):
+
+            truncated_text = boundary_block.text
+            cur_tokens = await self.model.count_tokens(
+                [AssistantMsg(self.name, content=reserved_blocks)],
+                None,
+            )
+            cur_tokens_plus = await self.model.count_tokens(
+                [
+                    AssistantMsg(
+                        self.name,
+                        content=reserved_blocks + [boundary_block],
+                    ),
+                ],
+                None,
+            )
+
+            token_delta = cur_tokens_plus - cur_tokens
+            remaining_token_budget = (
+                self.context_config.tool_result_limit - cur_tokens
+            )
+            if token_delta &lt;= 0:
+                reserved_tokens = (
+                    len(truncated_text) if remaining_token_budget &gt; 0 else 0
+                )
+            else:
+                reserved_tokens = int(
+                    remaining_token_budget / token_delta * len(truncated_text),
+                )
+            reserved_tokens = max(
+                0,
+                min(len(truncated_text), reserved_tokens),
+            )
+
+            reserved_text = truncated_text[:reserved_tokens]
+            offload_text = truncated_text[reserved_tokens:]
+
+            if reserved_text:
+                if (
+                    len(reserved_blocks) &gt; 0
+                    and reserved_blocks[-1].type == &quot;text&quot;
+                ):
+                    reserved_blocks[-1].text += reserved_text
+
+                else:
+                    reserved_blocks.append(
+                        TextBlock(text=reserved_text, id=boundary_block.id),
+                    )
+
+            if offload_text:
+                if (
+                    len(offload_blocks) &gt; 0
+                    and offload_blocks[0].type == &quot;text&quot;
+                ):
+                    offload_blocks[0].text = (
+                        offload_text + offload_blocks[0].text
+                    )
+
+                else:
+                    offload_blocks.insert(
+                        0,
+                        TextBlock(text=offload_text, id=boundary_block.id),
+                    )
+
+        else:
+
+            offload_blocks.insert(0, boundary_block)
+
+        if len(offload_blocks) == 0:
+            return tool_result, None
+
+        reserved_tool_result = ToolResultBlock(
+            id=tool_result.id,
+            name=tool_result.name,
+            output=reserved_blocks,
+            state=tool_result.state,
+        )
+        offload_tool_result = ToolResultBlock(
+            id=tool_result.id,
+            name=tool_result.name,
+            output=offload_blocks,
+            state=tool_result.state,
+        )
+
+        return reserved_tool_result, offload_tool_result</code></pre>
+</div>
+
+<h2>第七层：模型调用与输入准备</h2>
+<p class="lead">这层把 conversation context 转成模型能吃的 messages + tools schema，并处理重试和 fallback。</p>
+<div class="fn" id="f-sys-prompt">
+<h4><span class="num">28</span>_get_system_prompt（L2648-2671）</h4>
+<p class="sig">async def _get_system_prompt(self) -> str</p>
+<p class="loc">agent/_agent.py L2648-2671</p>
+<p>返回当前 system prompt。如果有 <code>_system_prompt_middlewares</code>，会让中间件有机会改写——通过 <code>on_system_prompt</code> 钩子。返回的是字符串，会包在 <code>SystemMsg</code> 里喂给模型。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _get_system_prompt(self) -&gt; str:
+        
+        prompt = [self._system_prompt]
+
+        skill_instructions = await self.toolkit.get_skill_instructions(
+            self.state.tool_context.activated_groups,
+        )
+        if skill_instructions:
+            prompt.append(skill_instructions)
+
+        if isinstance(self.offloader, WorkspaceBase):
+            offload_instructions = await self.offloader.get_instructions()
+            if offload_instructions:
+                prompt.append(offload_instructions)
+
+        result = &quot;\n&quot;.join(prompt)
+
+        for mw in self._system_prompt_middlewares:
+            result = await mw.on_system_prompt(self, result)
+
+        return result</code></pre>
+</div>
+<div class="fn" id="f-prepare-input">
+<h4><span class="num">29</span>_prepare_model_input（L2673-2701）</h4>
+<p class="sig">async def _prepare_model_input(self) -> dict[str, Any]</p>
+<p class="loc">agent/_agent.py L2673-2701</p>
+<p>准备模型输入。组装顺序：<code>SystemMsg(system_prompt)</code> → 如果有 summary，追加为 <code>UserMsg(summary)</code> → 追加 <code>state.context</code> 的所有消息 → 从 toolkit 拿激活工具组的 schema。返回 <code>{'messages': [...], 'tools': [...]}</code>。</p><p>注意 summary 是以 user 消息的形式插入的（L2687-2689），不是 system 消息——因为 summary 是'对之前对话的总结'，逻辑上属于用户视角的上下文。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _prepare_model_input(self) -&gt; dict[str, Any]:
+        
+
+        messages = [
+            SystemMsg(name=&quot;system&quot;, content=await self._get_system_prompt()),
+        ]
+
+        if self.state.summary:
+            messages.append(
+                UserMsg(name=&quot;user&quot;, content=self.state.summary),
+            )
+
+        messages.extend(self.state.context)
+
+        tools = await self.toolkit.get_tool_schemas(
+            self.state.tool_context.activated_groups,
+        )
+
+        return {
+            &quot;messages&quot;: messages,
+            &quot;tools&quot;: tools,
+        }</code></pre>
+</div>
+<div class="fn" id="f-call-model">
+<h4><span class="num">30</span>_call_model（L2703-2825）</h4>
+<p class="sig">async def _call_model(self, messages, tools, tool_choice=None) -> ChatResponse | AsyncGenerator[ChatResponse, None]</p>
+<p class="loc">agent/_agent.py L2703-2825</p>
+<p>调模型，带重试和 fallback。逻辑：</p><ol><li>构造 models 列表：<code>[self.model]</code>，如果配了 <code>fallback_model</code> 就追加（L2725-2730）。</li><li>对每个 model，重试 <code>max_retries + 1</code> 次（L2743）。每次失败记 warning，最后一次失败记'exhausted all attempts'。</li><li>调用前检查 <code>_model_call_middlewares</code>：如果有，构造和 <code>_reply</code> 一样的 execute_chain；否则直接 <code>await model(messages, tools, tool_choice)</code>（L2746-2795）。</li><li>所有 model 都用完还失败，raise 最后一个 exception（L2820-2821）。</li></ol><p><code>on_model_call</code> 中间件可以用来做：token 计费、延迟埋点、请求改写（比如注入额外的 system message）、响应过滤。这是<b>离模型最近</b>的拦截点。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _call_model(
+        self,
+        messages: list[Msg],
+        tools: list[dict],
+        tool_choice: ToolChoice | None = None,
+    ) -&gt; ChatResponse | AsyncGenerator[ChatResponse, None]:
+        
+        models = [self.model]
+
+        if self.model_config.fallback_model:
+            models.append(self.model_config.fallback_model)
+
+        last_exception = None
+
+        for index, model in enumerate(models):
+            if index &gt; 0:
+                logger.info(
+                    &quot;Fallback to model &#x27;%s&#x27;&quot;,
+                    model.model,
+                )
+
+            for attempt in range(self.model_config.max_retries + 1):
+                try:
+
+                    if not self._model_call_middlewares:
+                        return await model(
+                            messages=messages,
+                            tools=tools,
+                            tool_choice=tool_choice,
+                        )
+                    else:
+
+                        async def execute_chain(
+                            index: int = 0,
+                            current_model: ChatModelBase = model,
+                            messages: list[Msg] = messages,
+                            tools: list[dict] = tools,
+                            tool_choice: ToolChoice = tool_choice,
+                        ) -&gt; ChatResponse | AsyncGenerator[ChatResponse, None]:
+                            
+                            if index &gt;= len(self._model_call_middlewares):
+                                return await current_model(
+                                    messages=messages,
+                                    tools=tools,
+                                    tool_choice=tool_choice,
+                                )
+                            else:
+                                mw = self._model_call_middlewares[index]
+                                input_kwargs = {
+                                    &quot;current_model&quot;: current_model,
+                                    &quot;messages&quot;: messages,
+                                    &quot;tools&quot;: tools,
+                                    &quot;tool_choice&quot;: tool_choice,
+                                }
+
+                                async def next_handler(
+                                    **kwargs: Any,
+                                ) -&gt; (
+                                    ChatResponse
+                                    | AsyncGenerator[ChatResponse, None]
+                                ):
+
+                                    return await execute_chain(
+                                        index + 1,
+                                        **{**input_kwargs, **kwargs},
+                                    )
+
+                                return await mw.on_model_call(
+                                    agent=self,
+                                    input_kwargs=input_kwargs,
+                                    next_handler=next_handler,
+                                )
+
+                        return await execute_chain()
+                except Exception as e:
+                    last_exception = e
+
+                    if attempt &lt; self.model_config.max_retries:
+                        logger.warning(
+                            &quot;Model %s call failed for agent %s. &quot;
+                            &quot;Retrying (%d/%d)...&quot;,
+                            model.model,
+                            self.name,
+                            attempt + 1,
+                            self.model_config.max_retries,
+                        )
+                    else:
+                        logger.warning(
+                            &quot;Model %s exhausted all %d attempt(s) &quot;
+                            &quot;for agent %s.&quot;,
+                            model.model,
+                            self.model_config.max_retries + 1,
+                            self.name,
+                        )
+
+        if last_exception:
+            raise last_exception from None
+
+        raise RuntimeError(
+            &quot;Model call failed after retries, but no exception was raised.&quot;,
+        )</code></pre>
+</div>
+
+<h2>第八层：状态更新与辅助</h2>
+<div class="fn" id="f-update-state">
+<h4><span class="num">31</span>_update_tool_call_state（L2827-2850）</h4>
+<p class="sig">def _update_tool_call_state(self, tool_call_id, new_state) -> None</p>
+<p class="loc">agent/_agent.py L2827-2850</p>
+<p>更新指定工具调用的状态。遍历 <code>state.context</code> 最后一条 assistant 消息的所有 ToolCallBlock，找到匹配 id 的，设置新状态。同步函数（无 async），因为只是改内存对象。</p><p>这个函数在 <code>_execute_tool_call</code> 里被多处调用——每次状态转换（PENDING→ASKING→ALLOWED→FINISHED）都要显式调它更新 context 里对应 block 的状态。</p>
+<p><b>源码：</b></p>
+<pre><code>    def _update_tool_call_state(
+        self,
+        tool_call_id: str,
+        state: ToolCallState,
+    ) -&gt; None:
+        
+        if len(self.state.context) == 0:
+            return
+        last_msg = self.state.context[-1]
+        if last_msg.role != &quot;assistant&quot; or last_msg.name != self.name:
+            return
+        for block in last_msg.get_content_blocks():
+            if isinstance(block, ToolCallBlock) and block.id == tool_call_id:
+                block.state = state
+                break</code></pre>
+</div>
+<div class="fn" id="f-save">
+<h4><span class="num">32</span>_save_to_context（L2852-2924）</h4>
+<p class="sig">def _save_to_context(self, blocks, usage=None) -> None</p>
+<p class="loc">agent/_agent.py L2852-2924</p>
+<p>把内容块保存进 conversation context。核心逻辑：</p><ul><li>过滤掉音频 DataBlock（L2883-2891）：omni 模型产出的音频字节通过流式事件传给前端，但不应该进 conversation memory。</li><li>如果 context 为空，创建新的 <code>AssistantMsg</code> 追加（L2895-2903）。</li><li>如果 context 最后一条是自己（assistant，name 匹配），<b>就地追加 blocks 到那条消息里</b>（L2904-2915）——这是为什么一个 reply 的所有 thinking/text/tool_call blocks 都在同一条 AssistantMsg 里。</li><li>否则创建新的 AssistantMsg 追加。</li></ul><p>usage 参数（input/output token 数）如果提供，会累加到现有消息的 usage 上（L2910-2915）。这保证了一个 reply 内多次模型调用的 token 数能正确累计。</p>
+<p><b>源码：</b></p>
+<pre><code>    def _save_to_context(
+        self,
+        blocks: Sequence[
+            TextBlock
+            | ThinkingBlock
+            | ToolCallBlock
+            | ToolResultBlock
+            | DataBlock
+        ],
+        usage: ChatUsage | None = None,
+    ) -&gt; None:
+        
+        msg_usage = (
+            Usage(
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+            )
+            if usage is not None
+            else None
+        )
+
+        persisted_blocks = [
+            b
+            for b in blocks
+            if not (
+                isinstance(b, DataBlock)
+                and isinstance(b.source, (Base64Source, URLSource))
+                and b.source.media_type.startswith(&quot;audio/&quot;)
+            )
+        ]
+        if not persisted_blocks and msg_usage is None:
+            return
+
+        if len(self.state.context) == 0:
+            self.state.context.append(
+                AssistantMsg(
+                    id=self.state.reply_id,
+                    name=self.name,
+                    content=persisted_blocks,
+                    usage=msg_usage,
+                ),
+            )
+        else:
+            last_msg = self.state.context[-1]
+            if last_msg.role == &quot;assistant&quot; and last_msg.name == self.name:
+                if isinstance(last_msg.content, str):
+                    last_msg.content = [TextBlock(text=last_msg.content)]
+                last_msg.content.extend(persisted_blocks)
+                if msg_usage is not None:
+                    if last_msg.usage is None:
+                        last_msg.usage = msg_usage
+                    else:
+                        last_msg.usage.input_tokens += msg_usage.input_tokens
+                        last_msg.usage.output_tokens += msg_usage.output_tokens
+            else:
+                self.state.context.append(
+                    AssistantMsg(
+                        id=self.state.reply_id,
+                        name=self.name,
+                        content=persisted_blocks,
+                        usage=msg_usage,
+                    ),
+                )</code></pre>
+</div>
+<div class="fn" id="f-last-msg">
+<h4><span class="num">33</span>_get_last_msg（L2926-2933）</h4>
+<p class="sig">def _get_last_msg(self) -> Msg | None</p>
+<p class="loc">agent/_agent.py L2926-2933</p>
+<p>极简 helper：返回 <code>self.state.context[-1]</code>，空则返回 None。被 <code>_check_next_action</code>、<code>_close_unfinished_tool_calls</code> 等多处调用。</p>
+<p><b>源码：</b></p>
+<pre><code>    def _get_last_msg(self) -&gt; Msg | None:
+        
+        if len(self.state.context) == 0:
+            return None
+        last_msg = self.state.context[-1]
+        if last_msg.role == &quot;assistant&quot; and last_msg.name == self.name:
+            return last_msg
+        return None</code></pre>
+</div>
+<div class="fn" id="f-next-action">
+<h4><span class="num">34</span>_check_next_action（L2935-3029）</h4>
+<p class="sig">def _check_next_action(self) -> tuple[Literal['exit'], Msg] | tuple[Literal['reasoning'], None] | tuple[Literal['acting'], None]</p>
+<p class="loc">agent/_agent.py L2935-3029</p>
+<p>决定下一步做什么。这个函数是 while 循环的'大脑'。决策矩阵（见 docstring 表格）：</p><table><tr><th></th><th>有 awaiting tool calls</th><th>无 awaiting tool calls</th></tr><tr><td>有 executable tool calls</td><td>acting</td><td>acting</td></tr><tr><td>无 executable tool calls</td><td>exit（等待外部事件）</td><td>reasoning</td></tr></table><p>实现细节：</p><ul><li>取最后一条消息，过滤出'没有对应 tool_result 的 tool_call'（L2977-2984）。</li><li>把这些未完成的 tool_call 按 state 分类：PENDING/ALLOWED 是 executable，ASKING/SUBMITTED 是 awaiting（L2991-3001）。</li><li>如果有 executable，返回 <code>('acting', None)</code>。</li><li>如果有 awaiting 但没 executable，返回 <code>('exit', AssistantMsg('我在等待...'))</code>——yield 这条消息后 reply 就结束了，等外部事件触发下一次 reply。</li><li>否则返回 <code>('reasoning', None)</code>——进入下一轮推理。</li></ul><div class='note clever'><span class='t'>★ 这就是为什么 AgentScope 的 ReAct loop 是'深'的</span><code>_check_next_action</code> + <code>while cur_iter &lt; max_iters</code> 的组合，让一个 agent 能<b>持续 reasoning → acting → reasoning → acting ...</b>直到模型给出最终回复或达到迭代上限。对比 InternAgent 的 11 个一次性专员 agent，每个只做一步——这就是'重量在 ②③ 单 agent 深 loop'vs'重量在 ④ 编排层'的具体含义。</div>
+<p><b>源码：</b></p>
+<pre><code>    def _check_next_action(
+        self,
+    ) -&gt; (
+        tuple[Literal[&quot;exit&quot;], Msg]
+        | tuple[Literal[&quot;reasoning&quot;], None]
+        | tuple[Literal[&quot;acting&quot;], None]
+    ):
+
+        last_msg = self._get_last_msg()
+        if last_msg is None:
+            return &quot;reasoning&quot;, None
+
+        finished_ids = {
+            _.id for _ in last_msg.get_content_blocks(&quot;tool_result&quot;)
+        }
+        unfinished_tool_calls = [
+            _
+            for _ in last_msg.get_content_blocks(&quot;tool_call&quot;)
+            if _.id not in finished_ids
+        ]
+
+        awaiting_tool_calls: list[ToolCallBlock] = []
+        executable_tool_calls: list[ToolCallBlock] = []
+
+        confirming_names, asking_names = [], []
+        for _ in unfinished_tool_calls:
+            if _.state in [ToolCallState.PENDING, ToolCallState.ALLOWED]:
+                executable_tool_calls.append(_)
+
+            elif _.state == ToolCallState.ASKING:
+                asking_names.append(_.name)
+                awaiting_tool_calls.append(_)
+
+            elif _.state == ToolCallState.SUBMITTED:
+                confirming_names.append(_.name)
+                awaiting_tool_calls.append(_)
+
+        if executable_tool_calls:
+            return &quot;acting&quot;, None
+
+        if awaiting_tool_calls:
+
+            evt = [&quot;I&#x27;m waiting for &quot;]
+            if asking_names:
+                evt += [
+                    f&quot;user confirmation for {len(asking_names)} tool calls&quot;,
+                ]
+
+            if confirming_names:
+                if evt:
+                    evt += [&quot;, and &quot;]
+                evt += [
+                    f&quot;external execution results for {len(confirming_names)} &quot;
+                    f&quot;tool calls&quot;,
+                ]
+
+            text = &quot;&quot;.join(evt) + &quot;.&quot;
+
+            return &quot;exit&quot;, AssistantMsg(
+                name=self.name,
+                content=[TextBlock(text=text)],
+            )
+
+        return &quot;reasoning&quot;, None</code></pre>
+</div>
+<div class="fn" id="f-exec-calls">
+<h4><span class="num">35</span>_get_executable_tool_calls（L3031-3062）</h4>
+<p class="sig">def _get_executable_tool_calls(self) -> list[ToolCallBlock]</p>
+<p class="loc">agent/_agent.py L3031-3062</p>
+<p>从最后一条消息里取出待执行的工具调用。筛选条件：</p><ol><li>没有对应的 tool_result（还没执行过）。</li><li>状态是 PENDING 或 ALLOWED（不是 ASKING/SUBMITTED/FINISHED）。</li></ol><p>被 <code>_batch_tool_calls</code> 调用。和 <code>_check_next_action</code> 的逻辑部分重叠，但这个只返回可执行的调用列表，不做决策。</p>
+<p><b>源码：</b></p>
+<pre><code>    def _get_executable_tool_calls(self) -&gt; list[ToolCallBlock]:
+        
+        last_msg = self._get_last_msg()
+        if last_msg is None:
+            return []
+
+        result_ids = {_.id for _ in last_msg.get_content_blocks(&quot;tool_result&quot;)}
+
+        tool_calls_wo_results = [
+            _
+            for _ in last_msg.get_content_blocks(&quot;tool_call&quot;)
+            if _.id not in result_ids
+        ]
+
+        pending_tool_calls = [
+            _
+            for _ in tool_calls_wo_results
+            if _.state
+            in [
+                ToolCallState.PENDING,
+                ToolCallState.ALLOWED,
+            ]
+        ]
+        return pending_tool_calls</code></pre>
+</div>
+<div class="fn" id="f-convert">
+<h4><span class="num">36</span>_convert_chat_response_to_event（L3064-3191）</h4>
+<p class="sig">async def _convert_chat_response_to_event(self, block_ids, chunk) -> AsyncGenerator</p>
+<p class="loc">agent/_agent.py L3064-3191</p>
+<p>把模型响应的一个 chunk 转成事件序列。按 block 类型分别处理：</p><ul><li><b>ThinkingBlock</b>（L3098-3118）：首次出现时发 ThinkingBlockStartEvent（分配新 id），之后发 ThinkingBlockDeltaEvent。如果没有 thinking block 且也没有 data block，发 End 关闭。</li><li><b>TextBlock</b>（L3123-3140）：同 thinking，发 TextBlockStartEvent / TextBlockDeltaEvent / TextBlockEndEvent。</li><li><b>ToolCallBlock</b>（L3143-3168）：新 id 发 ToolCallStartEvent，已存在发 ToolCallDeltaEvent。前一轮有但这一轮没有的 id，发 ToolCallEndEvent。</li><li><b>DataBlock</b>（L3174-3191）：仅处理 Base64Source 的 data block（流式二进制，如 omni 音频）。发 DataBlockStartEvent / DataBlockDeltaEvent。</li></ul><p>核心难点是<b>流式分块的事件 id 一致性</b>：同一个 text block 可能被分成多个 chunk 到达，每个 chunk 都要用同一个 block_id，前端才能把它们拼回一个连续的流。这个函数用 <code>block_ids</code> 字典来跟踪这些 id。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _convert_chat_response_to_event(
+        self,
+        block_ids: dict,
+        chunk: ChatResponse,
+    ) -&gt; AsyncGenerator:
+        
+
+        text_blocks, thinking_blocks, tool_call_blocks = [], [], []
+        data_blocks: list = []
+        for block in chunk.content:
+            if isinstance(block, TextBlock):
+                text_blocks.append(block)
+            elif isinstance(block, ThinkingBlock):
+                thinking_blocks.append(block)
+            elif isinstance(block, ToolCallBlock):
+                tool_call_blocks.append(block)
+            elif isinstance(block, DataBlock):
+                data_blocks.append(block)
+
+        if thinking_blocks:
+
+            if not block_ids.get(&quot;thinking&quot;):
+                block_ids[&quot;thinking&quot;] = _generate_id()
+                yield ThinkingBlockStartEvent(
+                    reply_id=self.state.reply_id,
+                    block_id=block_ids[&quot;thinking&quot;],
+                )
+
+            yield ThinkingBlockDeltaEvent(
+                reply_id=self.state.reply_id,
+                block_id=block_ids[&quot;thinking&quot;],
+                delta=&quot;&quot;.join([_.thinking for _ in thinking_blocks]),
+            )
+
+        elif block_ids.get(&quot;thinking&quot;) and not data_blocks:
+            yield ThinkingBlockEndEvent(
+                reply_id=self.state.reply_id,
+                block_id=block_ids[&quot;thinking&quot;],
+            )
+            block_ids[&quot;thinking&quot;] = None
+
+        if text_blocks:
+            if not block_ids.get(&quot;text&quot;):
+                block_ids[&quot;text&quot;] = _generate_id()
+                yield TextBlockStartEvent(
+                    reply_id=self.state.reply_id,
+                    block_id=block_ids[&quot;text&quot;],
+                )
+            yield TextBlockDeltaEvent(
+                reply_id=self.state.reply_id,
+                block_id=block_ids[&quot;text&quot;],
+                delta=&quot;&quot;.join([_.text for _ in text_blocks]),
+            )
+        elif block_ids.get(&quot;text&quot;) and not data_blocks:
+            yield TextBlockEndEvent(
+                reply_id=self.state.reply_id,
+                block_id=block_ids[&quot;text&quot;],
+            )
+            block_ids[&quot;text&quot;] = None
+
+        for tool_call in tool_call_blocks:
+
+            if tool_call.id not in block_ids[&quot;tools&quot;]:
+                block_ids[&quot;tools&quot;].append(tool_call.id)
+                yield ToolCallStartEvent(
+                    reply_id=self.state.reply_id,
+                    tool_call_id=tool_call.id,
+                    tool_call_name=tool_call.name,
+                )
+            yield ToolCallDeltaEvent(
+                reply_id=self.state.reply_id,
+                tool_call_id=tool_call.id,
+                delta=tool_call.input,
+            )
+
+        finished_ids = set(block_ids[&quot;tools&quot;]) - set(
+            _.id for _ in tool_call_blocks
+        )
+        for finished_id in finished_ids:
+            yield ToolCallEndEvent(
+                reply_id=self.state.reply_id,
+                tool_call_id=finished_id,
+            )
+            block_ids[&quot;tools&quot;].remove(finished_id)
+
+        for data_block in data_blocks:
+            if not isinstance(data_block.source, Base64Source):
+
+                continue
+            if data_block.id not in block_ids[&quot;data&quot;]:
+                block_ids[&quot;data&quot;].append(data_block.id)
+                yield DataBlockStartEvent(
+                    reply_id=self.state.reply_id,
+                    block_id=data_block.id,
+                    media_type=data_block.source.media_type,
+                )
+            yield DataBlockDeltaEvent(
+                reply_id=self.state.reply_id,
+                block_id=data_block.id,
+                data=data_block.source.data,
+                media_type=data_block.source.media_type,
+            )</code></pre>
+</div>
+<div class="fn" id="f-convert-chunk">
+<h4><span class="num">37</span>_convert_tool_chunk_to_event（L3193-3229）</h4>
+<p class="sig">async def _convert_tool_chunk_to_event(self, tool_call_id, content) -> AsyncGenerator</p>
+<p class="loc">agent/_agent.py L3193-3229</p>
+<p>把工具执行的中间 chunk（<code>ToolChunk</code>）转成事件。和 <code>_convert_chat_response_to_event</code> 类似，但针对的是工具输出的流式分块。发 ToolResultStartEvent / ToolResultTextDeltaEvent / ToolResultDataDeltaEvent / ToolResultEndEvent。被 <code>_execute_tool_call</code> 在处理 ToolChunk 时调用。</p>
+<p><b>源码：</b></p>
+<pre><code>    async def _convert_tool_chunk_to_event(
+        self,
+        tool_call_id: str,
+        output_blocks: str | List[TextBlock | DataBlock],
+    ) -&gt; AsyncGenerator:
+        
+        if isinstance(output_blocks, str):
+            yield ToolResultTextDeltaEvent(
+                reply_id=self.state.reply_id,
+                tool_call_id=tool_call_id,
+                delta=output_blocks,
+            )
+            return
+
+        for block in output_blocks:
+            if isinstance(block, TextBlock):
+                yield ToolResultTextDeltaEvent(
+                    reply_id=self.state.reply_id,
+                    tool_call_id=tool_call_id,
+                    delta=block.text,
+                )
+
+            elif isinstance(block, DataBlock):
+                if isinstance(block.source, Base64Source):
+                    yield ToolResultDataDeltaEvent(
+                        reply_id=self.state.reply_id,
+                        tool_call_id=tool_call_id,
+                        media_type=block.source.media_type,
+                        data=block.source.data,
+                    )
+                elif isinstance(block.source, URLSource):
+                    yield ToolResultDataDeltaEvent(
+                        reply_id=self.state.reply_id,
+                        tool_call_id=tool_call_id,
+                        media_type=block.source.media_type,
+                        url=str(block.source.url),
+                    )</code></pre>
+</div>
+
+<hr>
+<h2>函数调用关系总览</h2>
+<p>把上面 37 个函数的调用关系画出来，整个 ReAct loop 的结构就一目了然：</p>
+<pre><code>reply() / reply_stream()          ← 外部入口
+  └─ _reply()                     ← 中间件链入口
+       └─ _reply_impl()           ← ★ 核心循环
+            ├─ _check_next_action()
+            │    └─ _get_last_msg()
+            ├─ compress_context() ← 压缩
+            │    └ _compress_context_impl()
+            │         ├─ _split_context_for_compression()
+            │         ├─ _get_system_prompt()
+            │         ├─ _clear_unreserved_read_cache()
+            │         └─ _save_to_context()
+            ├─ _inject_runtime_state()  ← 运行态注入
+            ├─ _reasoning()               ← 推理入口（中间件链）
+            │    └ _reasoning_impl()
+            │         ├─ _prepare_model_input()
+            │         ├─ _call_model()
+            │         ├─ _convert_chat_response_to_event()
+            │         └─ _save_to_context()
+            ├─ _batch_tool_calls()        ← 分批
+            │    �:none _get_executable_tool_calls()
+            ├─ _execute_sequential_tool_calls()   ← 顺序执行
+            ├─ _execute_concurrent_tool_calls()   ← 并发执行
+            │    ├─ _into_queue()
+            │    └ _execute_tool_call()          ← ★ 单工具执行
+            │         ├─ _handle_error_tool_call()
+            │         ├─ PermissionEngine.check_permission()
+            │         ├─ _acting()               ← acting 入口（中间件链）
+            │         │    └ _acting_impl()
+            │         │         └ toolkit.call_tool()
+            │         ├─ _split_tool_result_for_compression()
+            │         ├─ _convert_tool_chunk_to_event()
+            │         ├─ _update_tool_call_state()
+            │         └ _save_to_context()
+            └ _close_unfinished_tool_calls()    ← 中断清理</code></pre>
+
+<p style="margin-top:30px"><a href="02_modules.html">→ 下一篇：模块解剖</a></p>
+
+<footer>
+  <b>AgentScope 2.0 架构精读</b> · ① ReAct loop 逐函数精读（附源码） · 源码版本 2.0.4.post1<br>
+  精读范围：<code>src/agentscope/agent/_agent.py</code>（3229 行，37 个函数）<br>
+  对照参考：<code>InternAgent-1.5_源码架构导读.html</code>
+</footer>
+
+</div>
+</body>
+</html>

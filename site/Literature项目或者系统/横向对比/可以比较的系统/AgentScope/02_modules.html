@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentScope 2.0 · ② 模块逐函数精读（附源码）</title>
+<style>body{background:#faf5ec;color:#3b2f23;font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.75;margin:0}
+*{box-sizing:border-box}
+.wrap{max-width:980px;margin:0 auto;padding:36px 26px 80px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:#b4530a;background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:14px}
+.back:hover{background:#b4530a;color:#fff}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}
+.nav a{display:inline-block;font-size:13px;text-decoration:none;color:#b4530a;background:#fffdf8;border:1px solid #e0c49c;border-radius:6px;padding:8px 16px}
+.nav a:hover{background:#b4530a;color:#fff}
+.nav a.cur{background:#b4530a;color:#fff;font-weight:700}
+h2{font-size:21px;border-left:5px solid #b4530a;padding-left:12px;margin:36px 0 12px}
+h3{font-size:16.5px;color:#b4530a;margin:24px 0 8px}
+h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.7px}
+code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,Consolas,monospace}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55;max-height:520px}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid #e8dcc8;padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}
+tr:nth-child(even) td{background:#fbf7ee}
+a{color:#b4530a}
+hr{border:none;border-top:1px solid #e8dcc8;margin:30px 0}
+strong{color:#8f4208}
+.lead{font-size:15.5px;color:#3b2f23}
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;font-size:13.8px;line-height:1.7}
+.note .t{display:inline-block;font-weight:700;margin-bottom:4px}
+.note.clever{background:#f3eefe;border:1px solid #cbb8f7}
+.note.clever .t{color:#7c4ddb}
+.note.plain{background:#f3f8f6;border:1px solid #b8e0d2}
+.note.plain .t{color:#0d9488}
+.num{display:inline-block;background:#b4530a;color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+.fn{scroll-margin-top:20px;border:1px solid #e8dcc8;border-left:4px solid #0d9488;border-radius:8px;padding:14px 18px;margin:16px 0;background:#fffdf8}
+.fn h4{margin:0 0 4px;color:#0d9488;font-size:15px}
+.fn .sig{font-size:12px;color:#6f5f4d;margin:0 0 8px;font-family:"SF Mono",Menlo,Consolas,monospace;word-break:break-all}
+.fn .loc{font-size:11.5px;color:#6f5f4d;margin:0 0 10px}
+.fn p{font-size:13.6px;margin:6px 0}
+.fn ul{font-size:13.6px;margin:6px 0;padding-left:22px}
+.fn ol{font-size:13.6px;margin:6px 0;padding-left:22px}
+footer{margin-top:50px;border-top:1px solid #e8dcc8;padding-top:14px;color:#6f5f4d;font-size:12.3px}</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../../../index.html">← 返回总览</a>
+
+<div class="nav">
+  <a href="index.html">总览</a>
+  <a href="01_loop.html">① ReAct loop</a>
+  <a class="cur" href="02_modules.html">② 模块解剖</a>
+  <a href="03_compare.html">③ 与 InternAgent 对照</a>
+  <a href="04_takeaway.html">④ 结论</a>
+</div>
+
+<header>
+  <h1>② 模块逐函数精读（附源码）</h1>
+  <p class="sub" style="color:#6f5f4d;font-size:14px;margin:0 0 4px">AgentScope 2.0 的 14 个子模块，按「核心 → 能力域 → 适配」逐层拆解。middleware / permission / tool / workspace 四大核心模块的每个关键函数均附源码代码块；model / rag / app 等模块给出类与方法清单，源码见仓库。</p>
+</header>
+
+<h2>模块地图 &amp; 规模</h2>
+<p class="lead">按行数降序排列，正好反映「能力域厚、内核薄」的重量分布。</p>
+<table>
+  <tr><th>模块</th><th>.py</th><th>行数</th><th>角色</th></tr>
+  <tr><td><code>app/</code></td><td>116</td><td>27,896</td><td>FastAPI 服务层：多租户、多会话、RAG 索引 worker、存储、Agent Team、Web UI</td></tr>
+  <tr><td><code>workspace/</code></td><td>31</td><td>6,993</td><td>沙箱后端：Local / Docker / E2B / Daytona / K8s / OpenSandbox</td></tr>
+  <tr><td><code>tool/</code></td><td>28</td><td>7,716</td><td>工具系统：builtin(Bash/Edit/Read/Write/Glob/Grep) + MCP 适配 + Toolkit 注册表</td></tr>
+  <tr><td><code>middleware/</code></td><td>24</td><td>6,177</td><td>中间件系统：7 个钩子点，RAG / Budget / Tracing / TTS / �期记忆均为中间件</td></tr>
+  <tr><td><code>model/</code></td><td>21</td><td>5,913</td><td>LLM 客户端抽象：8 家模型提供商</td></tr>
+  <tr><td><code>rag/</code></td><td>21</td><td>4,393</td><td>RAG：parser + chunker + 4 种向量库 + KnowledgeBase</td></tr>
+  <tr><td><code>formatter/</code></td><td>11</td><td>4,502</td><td>格式化：统一不同模型原始输出为 4 类 Block</td></tr>
+  <tr><td><code>agent/</code></td><td>4</td><td>3,608</td><td>核心 Agent 类（3229 行 _agent.py）—— 详见 <a href="01_loop.html">① ReAct loop</a></td></tr>
+  <tr><td><code>embedding/</code></td><td>15</td><td>2,314</td><td>嵌入模型抽象</td></tr>
+  <tr><td><code>permission/</code></td><td>6</td><td>1,118</td><td>权限引擎：5 种模式 + 细粒度规则匹配</td></tr>
+  <tr><td><code>credential/</code></td><td>12</td><td>628</td><td>密钥管理</td></tr>
+  <tr><td><code>tts/</code></td><td>13</td><td>2,310</td><td>语音合成</td></tr>
+  <tr><td><code>state/</code></td><td>3</td><td>301</td><td>AgentState / Task / TaskContext</td></tr>
+  <tr><td>其他</td><td>—</td><td>—</td><td>event / message / mcp / skill / types / exception / _utils</td></tr>
+</table>
+
+<h2 id="middleware">中间件系统（middleware/）</h2><p class="lead"><code>MiddlewareBase</code> 是 AgentScope「组件注入 + hook」哲学的载体。6 个钩子点覆盖 agent 生命周期的关键节点。</p><div class="fn"><h4><span class="num">1</span>MiddlewareBase（middleware/_base.py:12）</h4><p class="sig">class MiddlewareBase</p><p class="loc">middleware py line on_reply</p><p>所有中间件的基类。定义 7 个钩子，每个子类只需实现关心的钩子。基类提供 <code>is_implemented</code> 检测子类是否覆写某钩子——AgentScope 用它在 <code>Agent.__init__</code> 里把中间件按钩子拆到不同桶。</p><p><b>源码：</b></p><pre><code>    async def on_reply(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., AsyncGenerator],
+    ) -&gt; AsyncGenerator:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_reply&quot;,
+        )
+        yield</code></pre></div><div class="fn"><h4><span class="num">2</span>is_implemented（L52-57）</h4><p class="sig">def is_implemented(self, hook_name: str) -> bool</p><p class="loc">middleware py line is_implemented</p><p>检查子类是否实现了指定钩子。通过<b>引用不等</b>判断：<code>getattr(MiddlewareBase, hook_name) is not getattr(type(self), hook_name)</code>。</p><p><b>源码：</b></p><pre><code>    def is_implemented(self, hook_name: str) -&gt; bool:
+        
+        base_method = getattr(MiddlewareBase, hook_name, None)
+        sub_method = getattr(type(self), hook_name, None)
+        return base_method is not sub_method</code></pre></div><div class="fn"><h4><span class="num">3</span>on_reply（L65-84）</h4><p class="sig">async def on_reply(self, agent, input_kwargs, next_handler) -> AsyncGenerator[AgentEvent | Msg, None]</p><p class="loc">middleware py line on_reply</p><p>拦截整个 reply 过程。<b>洋葱模式</b>：中间件在 next_handler 前后插入自己的逻辑。next_handler 是 async generator，调它执行下一个中间件或原始方法。典型用途：会话级日志、指标采集。</p><p><b>源码：</b></p><pre><code>    async def on_reply(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., AsyncGenerator],
+    ) -&gt; AsyncGenerator:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_reply&quot;,
+        )
+        yield</code></pre></div><div class="fn"><h4><span class="num">4</span>on_reasoning（L86-103）</h4><p class="sig">async def on_reasoning(self, agent, input_kwargs, next_handler) -> AsyncGenerator</p><p class="loc">middleware py line on_reasoning</p><p>拦截推理（调模型）阶段。input_kwargs 包含 <code>tool_choice</code>。改 prompt、过滤输出的关键钩子。</p><p><b>源码：</b></p><pre><code>    async def on_reasoning(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., AsyncGenerator],
+    ) -&gt; AsyncGenerator:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_reasoning&quot;,
+        )
+        yield</code></pre></div><div class="fn"><h4><span class="num">5</span>on_acting（L105-144）</h4><p class="sig">async def on_acting(self, agent, input_kwargs, next_handler) -> AsyncGenerator[ToolChunk | ToolResponse, None]</p><p class="loc">middleware py line on_acting</p><p>拦截工具执行。<b>只包 <code>toolkit.call_tool</code> 那一层</b>——权限检查、输入校验、context 写入都在 Agent 层，不在这个钩子可见。这让 on_acting 中间件可安全地把 next_handler offload 到后台任务。</p><p><b>源码：</b></p><pre><code>    async def on_acting(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., AsyncGenerator],
+    ) -&gt; AsyncGenerator:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_acting&quot;,
+        )
+        yield</code></pre></div><div class="fn"><h4><span class="num">6</span>on_model_call（L146-171）</h4><p class="sig">async def on_model_call(self, agent, input_kwargs, next_handler) -> ChatResponse | AsyncGenerator[ChatResponse, None]</p><p class="loc">middleware py line on_model_call</p><p>拦截<b>原始模型 API 调用</b>。离模型最近的拦截点——token 计费、延迟埋点、请求/响应改写。input_kwargs 含 messages、tools、tool_choice、current_model。</p><p><b>源码：</b></p><pre><code>    async def on_model_call(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[
+            ...,
+            Awaitable[&quot;ChatResponse&quot; | AsyncGenerator[&quot;ChatResponse&quot;, None]],
+        ],
+    ) -&gt; &quot;ChatResponse&quot; | AsyncGenerator[&quot;ChatResponse&quot;, None]:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_model_call&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">7</span>on_compress_context（L173-188）</h4><p class="sig">async def on_compress_context(self, agent, input_kwargs, next_handler) -> None</p><p class="loc">middleware py line on_compress_context</p><p>拦截上下文压缩。input_kwargs 含 context_config 和 instructions。实现自定义压缩策略或阻止压缩。</p><p><b>源码：</b></p><pre><code>    async def on_compress_context(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., Awaitable[None]],
+    ) -&gt; None:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_compress_context&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">8</span>on_system_prompt（L190-204）</h4><p class="sig">async def on_system_prompt(self, agent, current_prompt: str) -> str</p><p class="loc">middleware py line on_system_prompt</p><p><b>变压器模式</b>而非洋葱模式。多个中间件顺序应用，每个接收前一个的输出。动态注入指令到 system prompt。</p><p><b>源码：</b></p><pre><code>    async def on_system_prompt(
+        self,
+        agent: &quot;Agent&quot;,
+        current_prompt: str,
+    ) -&gt; str:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_system_prompt&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">9</span>list_tools（L206-217）</h4><p class="sig">async def list_tools(self) -> list[ToolBase]</p><p class="loc">middleware py line list_tools</p><p>中间件可提供自己的工具。默认返回空列表。RAGMiddleware 可提供一个 <code>SearchKnowledgeBase</code> 工具，Agent 不用显式注册。</p><p><b>源码：</b></p><pre><code>    async def list_tools(self) -&gt; list[ToolBase]:
+        
+        return []</code></pre></div><div class="fn"><h4><span class="num">10</span>get_middleware_key（L219-225）</h4><p class="sig">async def get_middleware_key(self) -> str</p><p class="loc">middleware py line get_middleware_key</p><p>返回中间件唯一键，用于在 AgentState 里保存中间件状态。默认返回类名，子类可覆写。</p><p><b>源码：</b></p><pre><code>    async def get_middleware_key(self) -&gt; str:
+        
+        return self.__class__.__name__</code></pre></div><h3>内置中间件</h3><table><tr><th>中间件</th><th>作用</th></tr><tr><td><code>RAGMiddleware</code></td><td>reasoning 前检索知识库，注入相关 chunk</td></tr><tr><td><code>ReplyBudgetControlMiddleware</code></td><td>按 token/轮数/工具调用数限制单次 reply 预算</td></tr><tr><td><code>AgenticMemoryMiddleware</code></td><td>AgentScope 自研 agentic memory：agent 自己决定存什么、何时召回</td></tr><tr><td><code>Mem0Middleware</code></td><td>对接 Mem0 第三方记忆库</td></tr><tr><td><code>ReMeMiddleware</code></td><td>对接 ReMe 长期记忆(graph-based)</td></tr><tr><td><code>TracingMiddleware</code></td><td>OpenTelemetry 全链路追踪</td></tr><tr><td><code>TTSMiddleware</code></td><td>文本回复转语音流式吐出</td></tr></table>
+
+<hr><h2 id="permission">权限系统（permission/）</h2><p class="lead">权限是 AgentScope 区别于很多 agent 框架的招牌能力。1118 行代码实现细粒度的工具/资源访问控制引擎。</p><div class="fn"><h4><span class="num">11</span>PermissionMode（permission/_types.py:18）</h4><p class="sig">class PermissionMode(Enum): DEFAULT | ACCEPT_EDITS | EXPLORE | BYPASS | DONT_ASK</p><p class="loc">middleware py line on_reply</p><p>五种权限模式：<b>DEFAULT</b>（最安全，每个操作都 ASK，除非 allow 规则匹配或工具自身 check_permissions 返回 ALLOW；目前只有 Bash 对识别的只读命令如 <code>ls</code> 自动放行）；<b>ACCEPT_EDITS</b>（自动接受编辑类操作，但仍对危险操作 ASK，适用于用户在场的快速迭代开发）；<b>EXPLORE</b>（只读探索模式，允许只读工具和只读 bash 命令，拒绝任何修改操作）；<b>BYPASS</b>（跳过所有权限检查全部 ALLOW，除非有显式用户配置的 deny/ask 规则；<b>安全 ASK 不强制执行</b>——包括 <code>rm -rf /</code>、写 <code>~/.bashrc</code>、命令注入模式等，适用于你完全信任 agent 的沙箱环境）；<b>DONT_ASK</b>（把所有 ASK 包括安全 ASK 和 ASK 规则命中转成 DENY，<b>无人值守执行的安全默认</b>——宁可拒绝也不要在用户不在时执行危险操作）。</p><p><b>源码：</b></p><pre><code>    async def on_reply(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., AsyncGenerator],
+    ) -&gt; AsyncGenerator:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_reply&quot;,
+        )
+        yield</code></pre></div><div class="fn"><h4><span class="num">12</span>PermissionBehavior（permission/_types.py:88）</h4><p class="sig">class PermissionBehavior(Enum): ALLOW | DENY | ASK | PASSTHROUGH</p><p class="loc">middleware py line on_reasoning</p><p>四种决策行为：ALLOW（放行）、DENY（拒绝并返回错误给 agent）、ASK（暂停，向用户/外部请求确认）、PASSTHROUGH（让权限引擎继续规则匹配，工具用这个把决策权交回引擎）。</p><p><b>源码：</b></p><pre><code>    async def on_reasoning(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., AsyncGenerator],
+    ) -&gt; AsyncGenerator:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_reasoning&quot;,
+        )
+        yield</code></pre></div><div class="fn"><h4><span class="num">13</span>PermissionEngine（permission/_engine.py:17）</h4><p class="sig">class PermissionEngine</p><p class="loc">middleware py line on_acting</p><p>权限引擎核心。持有 <code>PermissionContext</code>（含当前模式、工作目录、额外工作目录）和一组用户配置的规则。Agent 在 <code>__init__</code> 里从 <code>state.permission_context</code> 构造一个实例。</p><p><b>源码：</b></p><pre><code>    async def on_acting(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., AsyncGenerator],
+    ) -&gt; AsyncGenerator:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_acting&quot;,
+        )
+        yield</code></pre></div><div class="fn"><h4><span class="num">14</span>add_rule（permission/_engine.py:49）</h4><p class="sig">def add_rule(self, rule: PermissionRule) -> None</p><p class="loc">permission py line add_rule</p><p>添加一条权限规则到引擎。规则分 DENY/ASK/ALLOW 三类，按类型存到对应列表。</p><p><b>源码：</b></p><pre><code>    def add_rule(self, rule: PermissionRule) -&gt; None:
+        
+
+        if rule.behavior == PermissionBehavior.ALLOW:
+            if rule.tool_name not in self.context.allow_rules:
+                self.context.allow_rules[rule.tool_name] = []
+            self.context.allow_rules[rule.tool_name].append(rule)
+        elif rule.behavior == PermissionBehavior.DENY:
+            if rule.tool_name not in self.context.deny_rules:
+                self.context.deny_rules[rule.tool_name] = []
+            self.context.deny_rules[rule.tool_name].append(rule)
+        elif rule.behavior == PermissionBehavior.ASK:
+            if rule.tool_name not in self.context.ask_rules:
+                self.context.ask_rules[rule.tool_name] = []
+            self.context.ask_rules[rule.tool_name].append(rule)</code></pre></div><div class="fn"><h4><span class="num">15</span>check_permission（permission/_engine.py:77）</h4><p class="sig">async def check_permission(self, tool: ToolBase, tool_input: dict) -> PermissionDecision</p><p class="loc">permission py line check_permission</p><p>权限检查入口。根据 <code>context.mode</code> 分派到 5 个私有方法之一：<code>_check_default / _check_explore / _check_accept_edits / _check_bypass / _check_dont_ask</code>。这样每种模式的策略自包含且可读。</p><p><b>源码：</b></p><pre><code>    async def check_permission(
+        self,
+        tool: ToolBase,
+        tool_input: dict[str, Any],
+    ) -&gt; PermissionDecision:
+        
+        mode = self.context.mode
+        if mode == PermissionMode.DEFAULT:
+            return await self._check_default(tool, tool_input)
+        if mode == PermissionMode.EXPLORE:
+            return await self._check_explore(tool, tool_input)
+        if mode == PermissionMode.ACCEPT_EDITS:
+            return await self._check_accept_edits(tool, tool_input)
+        if mode == PermissionMode.BYPASS:
+            return await self._check_bypass(tool, tool_input)
+        if mode == PermissionMode.DONT_ASK:
+            return await self._check_dont_ask(tool, tool_input)
+        raise ValueError(f&quot;Unknown permission mode: {mode}&quot;)</code></pre></div><div class="fn"><h4><span class="num">16</span>_check_default（permission/_engine.py:117）</h4><p class="sig">async def _check_default(self, tool, tool_input) -> PermissionDecision</p><p class="loc">permission py line _check_default</p><p>DEFAULT 模式的评估链，6 步顺序检查：1) Deny rules 命中则 DENY，最高优先级；2) Ask rules 命中则 ASK（带建议规则）；3) Read-only fast path 只读工具直接 ALLOW；4) Tool 自身 check_permissions：ALLOW/DENY 直接返回，安全 ASK（bypass-immune）带建议返回，非安全 ASK / PASSTHROUGH 继续；5) Allow rules 命中则 ALLOW；6) Mode fallback 默认 ASK（带建议规则）。</p><div class='note clever'><span class='t'>★ 安全 ASK 是 bypass-immune 的</span> 安全 ASK（如 <code>rm -rf /</code>）即使在 BYPASS 模式下也不会被绕过——除非有显式 deny 规则。这是 AgentScope 权限模型的<b>底线安全</b>设计。DONT_ASK 模式更保守：把所有 ASK 都转成 DENY。</div><p><b>源码：</b></p><pre><code>    async def _check_default(
+        self,
+        tool: ToolBase,
+        tool_input: dict[str, Any],
+    ) -&gt; PermissionDecision:
+        
+
+        deny = await self._check_deny_rules(tool, tool_input)
+        if deny:
+            return deny
+
+        ask = await self._check_ask_rules(tool, tool_input)
+        if ask:
+            ask.suggested_rules = await self._generate_suggestions(
+                tool,
+                tool_input,
+            )
+            return ask
+
+        read_only = await self._check_read_only_fast_path(tool, tool_input)
+        if read_only:
+            return read_only
+
+        tool_decision = await tool.check_permissions(tool_input, self.context)
+        if tool_decision.behavior in (
+            PermissionBehavior.ALLOW,
+            PermissionBehavior.DENY,
+        ):
+            return tool_decision
+        if self._is_safety_ask(tool_decision):
+            tool_decision.suggested_rules = await self._generate_suggestions(
+                tool,
+                tool_input,
+            )
+            return tool_decision
+
+        allow = await self._check_allow_rules(tool, tool_input)
+        if allow:
+            return allow
+
+        default = PermissionDecision(
+            behavior=PermissionBehavior.ASK,
+            message=f&quot;Permission required for {tool.name}&quot;,
+            decision_reason=f&quot;Mode: {self.context.mode.value}&quot;,
+        )
+        default.suggested_rules = await self._generate_suggestions(
+            tool,
+            tool_input,
+        )
+        return default</code></pre></div><div class="fn"><h4><span class="num">17</span>_check_explore（permission/_engine.py:214）</h4><p class="sig">async def _check_explore(self, tool, tool_input) -> PermissionDecision</p><p class="loc">permission py line _check_explore</p><p>EXPLORE 模式：只读工具 ALLOW，修改类工具 DENY。用户配置的 DENY/ASK 规则优先于只读自动放行。</p><p><b>源码：</b></p><pre><code>    async def _check_explore(
+        self,
+        tool: ToolBase,
+        tool_input: dict[str, Any],
+    ) -&gt; PermissionDecision:
+        
+
+        deny = await self._check_deny_rules(tool, tool_input)
+        if deny:
+            return deny
+
+        ask = await self._check_ask_rules(tool, tool_input)
+        if ask:
+            ask.suggested_rules = await self._generate_suggestions(
+                tool,
+                tool_input,
+            )
+            return ask
+
+        read_only = await self._check_read_only_fast_path(tool, tool_input)
+        if read_only:
+            return read_only
+
+        return PermissionDecision(
+            behavior=PermissionBehavior.DENY,
+            message=(
+                f&quot;Permission denied for {tool.name} &quot;
+                f&quot;(explore mode is read-only)&quot;
+            ),
+            decision_reason=&quot;Explore mode does not allow modifications&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">18</span>_check_accept_edits（permission/_engine.py:297）</h4><p class="sig">async def _check_accept_edits(self, tool, tool_input) -> PermissionDecision</p><p class="loc">permission py line _check_accept_edits</p><p>ACCEPT_EDITS 模式：自动放行工作目录内的文件写操作和文件系统命令（mkdir/rm/mv/cp，仅当所有目标路径解析到工作目录内）。其他操作走正常规则。</p><p><b>源码：</b></p><pre><code>    async def _check_accept_edits(
+        self,
+        tool: ToolBase,
+        tool_input: dict[str, Any],
+    ) -&gt; PermissionDecision:
+        
+
+        deny = await self._check_deny_rules(tool, tool_input)
+        if deny:
+            return deny
+
+        ask = await self._check_ask_rules(tool, tool_input)
+        if ask:
+            ask.suggested_rules = await self._generate_suggestions(
+                tool,
+                tool_input,
+            )
+            return ask
+
+        read_only = await self._check_read_only_fast_path(tool, tool_input)
+        if read_only:
+            return read_only
+
+        tool_decision = await tool.check_permissions(tool_input, self.context)
+        if tool_decision.behavior in (
+            PermissionBehavior.ALLOW,
+            PermissionBehavior.DENY,
+        ):
+            return tool_decision
+        if self._is_safety_ask(tool_decision):
+            tool_decision.suggested_rules = await self._generate_suggestions(
+                tool,
+                tool_input,
+            )
+            return tool_decision
+
+        allow = await self._check_allow_rules(tool, tool_input)
+        if allow:
+            return allow
+
+        default = PermissionDecision(
+            behavior=PermissionBehavior.ASK,
+            message=f&quot;Permission required for {tool.name}&quot;,
+            decision_reason=f&quot;Mode: {self.context.mode.value}&quot;,
+        )
+        default.suggested_rules = await self._generate_suggestions(
+            tool,
+            tool_input,
+        )
+        return default</code></pre></div><div class="fn"><h4><span class="num">19</span>_check_bypass（permission/_engine.py:395）</h4><p class="sig">async def _check_bypass(self, tool, tool_input) -> PermissionDecision</p><p class="loc">permission py line _check_bypass</p><p>BYPASS 模式：跳过所有检查（全部 ALLOW），除非有显式 deny/ask 规则。<b>安全 ASK 不强制</b>——包括 <code>rm -rf /</code>、写 <code>~/.bashrc</code> 等。需要用 deny 规则保护特定路径。无人值守但需要安全的场景应该用 DONT_ASK 而非 BYPASS。</p><p><b>源码：</b></p><pre><code>    async def _check_bypass(
+        self,
+        tool: ToolBase,
+        tool_input: dict[str, Any],
+    ) -&gt; PermissionDecision:
+        
+
+        deny = await self._check_deny_rules(tool, tool_input)
+        if deny:
+            return deny
+
+        ask = await self._check_ask_rules(tool, tool_input)
+        if ask:
+            ask.suggested_rules = await self._generate_suggestions(
+                tool,
+                tool_input,
+            )
+            return ask
+
+        read_only = await self._check_read_only_fast_path(tool, tool_input)
+        if read_only:
+            return read_only
+
+        tool_decision = await tool.check_permissions(tool_input, self.context)
+        if tool_decision.behavior in (
+            PermissionBehavior.ALLOW,
+            PermissionBehavior.DENY,
+        ):
+            return tool_decision
+
+        allow = await self._check_allow_rules(tool, tool_input)
+        if allow:
+            return allow
+
+        return PermissionDecision(
+            behavior=PermissionBehavior.ALLOW,
+            message=f&quot;Permission granted for {tool.name} (bypass mode)&quot;,
+            decision_reason=&quot;Bypass mode allows all operations&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">20</span>_check_dont_ask（permission/_engine.py:491）</h4><p class="sig">async def _check_dont_ask(self, tool, tool_input) -> PermissionDecision</p><p class="loc">permission py line _check_dont_ask</p><p>DONT_ASK 模式：把所有 ASK（包括安全 ASK 和 ASK 规则命中）转成 DENY。安全默认的无人值守模式。</p><p><b>源码：</b></p><pre><code>    async def _check_dont_ask(
+        self,
+        tool: ToolBase,
+        tool_input: dict[str, Any],
+    ) -&gt; PermissionDecision:
+        
+
+        deny = await self._check_deny_rules(tool, tool_input)
+        if deny:
+            return deny
+
+        ask = await self._check_ask_rules(tool, tool_input)
+        if ask:
+            ask.suggested_rules = await self._generate_suggestions(
+                tool,
+                tool_input,
+            )
+            return self._convert_ask_to_deny(tool, ask)
+
+        read_only = await self._check_read_only_fast_path(tool, tool_input)
+        if read_only:
+            return read_only
+
+        tool_decision = await tool.check_permissions(tool_input, self.context)
+        if tool_decision.behavior in (
+            PermissionBehavior.ALLOW,
+            PermissionBehavior.DENY,
+        ):
+            return tool_decision
+        if self._is_safety_ask(tool_decision):
+            tool_decision.suggested_rules = await self._generate_suggestions(
+                tool,
+                tool_input,
+            )
+            return self._convert_ask_to_deny(tool, tool_decision)
+
+        allow = await self._check_allow_rules(tool, tool_input)
+        if allow:
+            return allow
+
+        return PermissionDecision(
+            behavior=PermissionBehavior.DENY,
+            message=(
+                f&quot;Permission denied for {tool.name} &quot;
+                f&quot;(dont_ask mode - user not available)&quot;
+            ),
+            decision_reason=&quot;User is not available to answer permission &quot;
+            &quot;prompts&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">21</span>_check_read_only_fast_path（permission/_engine.py:659）</h4><p class="sig">async def _check_read_only_fast_path(self, tool, tool_input) -> PermissionDecision | None</p><p class="loc">permission py line _check_read_only_fast_path</p><p>只读工具直接 ALLOW，跳过完整规则匹配。</p><p><b>源码：</b></p><pre><code>    async def _check_read_only_fast_path(
+        self,
+        tool: ToolBase,
+        tool_input: dict[str, Any],
+    ) -&gt; PermissionDecision | None:
+        
+        if await tool.check_read_only(tool_input):
+            return PermissionDecision(
+                behavior=PermissionBehavior.ALLOW,
+                message=(
+                    f&quot;Permission granted for {tool.name} &quot;
+                    f&quot;(read-only invocation)&quot;
+                ),
+                decision_reason=&quot;Read-only operations are auto-allowed&quot;,
+            )
+        return None</code></pre></div><div class="fn"><h4><span class="num">22</span>_check_deny_rules / _check_ask_rules / _check_allow_rules（permission/_engine.py:694-775）</h4><p class="sig">async def _check_deny_rules / _check_ask_rules / _check_allow_rules(self, tool, tool_input) -> PermissionDecision | None</p><p class="loc">permission py line _check_deny_rules</p><p>分别遍历对应类型的规则，调用 <code>_rule_matches</code> 检查是否命中。返回 PermissionDecision 或 None（无命中）。<b>源码（以 _check_deny_rules 为例）：</b></p><p><b>源码：</b></p><pre><code>    async def _check_deny_rules(
+        self,
+        tool: ToolBase,
+        input_data: dict[str, Any],
+    ) -&gt; PermissionDecision | None:
+        
+        rules = self.context.deny_rules.get(tool.name, [])
+        for rule in rules:
+            if await self._rule_matches(tool, rule, input_data):
+                return PermissionDecision(
+                    behavior=PermissionBehavior.DENY,
+                    message=f&quot;Permission to use {tool.name} has been denied&quot;,
+                    decision_reason=f&quot;Rule: {rule.rule_content}&quot;,
+                )
+        return None</code></pre></div><div class="fn"><h4><span class="num">23</span>_rule_matches（permission/_engine.py:775）</h4><p class="sig">async def _rule_matches(self, rule, tool, tool_input) -> bool</p><p class="loc">permission py line _rule_matches</p><p>检查一条规则是否匹配当前工具调用。支持工具名匹配和工具自身的 <code>match_rule</code> 方法。</p><p><b>源码：</b></p><pre><code>    async def _rule_matches(
+        self,
+        tool: ToolBase,
+        rule: PermissionRule,
+        input_data: dict[str, Any],
+    ) -&gt; bool:
+        
+
+        if not rule.rule_content:
+            return True
+
+        return await _execute_async_or_sync_func(
+            tool.match_rule,
+            rule.rule_content,
+            input_data,
+        )</code></pre></div><div class="fn"><h4><span class="num">24</span>_generate_suggestions（permission/_engine.py:812）</h4><p class="sig">async def _generate_suggestions(self, tool, tool_input) -> list[PermissionRule] | None</p><p class="loc">permission py line _generate_suggestions</p><p>根据当前工具调用生成建议规则。当 ASK 用户时，同时给出「以后这类操作可以自动放行」的建议规则，用户确认后加入 allow 规则库。</p><p><b>源码：</b></p><pre><code>    async def _generate_suggestions(
+        self,
+        tool: ToolBase,
+        tool_input: dict[str, Any],
+    ) -&gt; List[PermissionRule]:
+        
+
+        return await _execute_async_or_sync_func(
+            tool.generate_suggestions,
+            tool_input,
+        )</code></pre></div>
+
+<hr><h2 id="tool">工具系统（tool/）</h2><p class="lead">28 文件 / 7716 行。仿照 Claude Code 设计，提供 builtin 工具 + MCP 适配 + Toolkit 注册表。</p><div class="fn"><h4><span class="num">25</span>ToolBase（tool/_base.py:94）</h4><p class="sig">class ToolBase(ABC)</p><p class="loc">middleware py line on_model_call</p><p>所有工具的抽象基类。核心属性：<code>name</code>、<code>description</code>、<code>input_schema</code>、<code>is_external_tool</code>、<code>is_concurrency_safe</code>、<code>is_read_only</code>。这些属性决定了工具如何被批处理和权限检查。</p><p><b>源码：</b></p><pre><code>    async def on_model_call(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[
+            ...,
+            Awaitable[&quot;ChatResponse&quot; | AsyncGenerator[&quot;ChatResponse&quot;, None]],
+        ],
+    ) -&gt; &quot;ChatResponse&quot; | AsyncGenerator[&quot;ChatResponse&quot;, None]:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_model_call&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">26</span>ToolBase.call（tool/_base.py:144）</h4><p class="sig">async def call(self, *args, **kwargs) -> ToolChunk | AsyncGenerator[ToolChunk, None]</p><p class="loc">tool_base py line call</p><p>工具实现的<b>新覆写点</b>。子类应该覆写这个方法而不是 <code>__call__</code>。基类实现：非外部工具 raise NotImplementedError；外部工具 raise RuntimeError（外部工具不应直接调用）。</p><p><b>源码：</b></p><pre><code>    async def call(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -&gt; ToolChunk | AsyncGenerator[ToolChunk, None]:
+        
+        if not self.is_external_tool:
+            raise NotImplementedError(
+                f&quot;{self.__class__.__name__} does not implement call&quot;,
+            )
+
+        raise RuntimeError(
+            f&quot;{self.__class__.__name__} is an external tool and should not &quot;
+            f&quot;be called directly&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">27</span>ToolBase.__call__（tool/_base.py:175）</h4><p class="sig">async def __call__(self, *args, **kwargs) -> ToolChunk | AsyncGenerator[ToolChunk, None]</p><p class="loc">tool_base py line __call__</p><p>工具调用入口，在 <code>call</code> 外层叠加中间件。关键设计：<b>只接受关键字参数</b>（传位置参数 raise TypeError，避免位置参数被静默丢弃）；<b>洋葱模式中间件</b>（和 Agent 的中间件链同构，第一个注册的中间件是最外层）；<b>归一化 call 的两种形态</b>（call 可能是 async generator function 如 Bash，或返回单个 ToolChunk / AsyncGenerator 的 coroutine 如 FunctionTool，统一成单个流让中间件不用区分）。</p><p><b>源码：</b></p><pre><code>    async def __call__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -&gt; ToolChunk | AsyncGenerator[ToolChunk, None]:
+        
+        if args:
+            raise TypeError(
+                f&quot;{type(self).__name__} must be called with keyword arguments &quot;
+                f&quot;only, but got {len(args)} positional argument(s).&quot;,
+            )
+
+        middlewares = getattr(self, &quot;_middlewares&quot;, [])
+        if not middlewares:
+            if inspect.isasyncgenfunction(self.call):
+                return self.call(**kwargs)
+            return await self.call(**kwargs)
+
+        async def execute_chain(
+            index: int = 0,
+            **chain_kwargs: Any,
+        ) -&gt; AsyncGenerator[ToolChunk, None]:
+            
+            if index &gt;= len(middlewares):
+
+                if inspect.isasyncgenfunction(self.call):
+                    async for chunk in self.call(**chain_kwargs):
+                        yield chunk
+                else:
+                    result = await self.call(**chain_kwargs)
+                    if isinstance(result, AsyncGenerator):
+                        async for chunk in result:
+                            yield chunk
+                    else:
+                        yield result
+            else:
+                mw = middlewares[index]
+                input_kwargs = dict(chain_kwargs)
+
+                async def next_handler(
+                    **kw: Any,
+                ) -&gt; AsyncGenerator[ToolChunk, None]:
+                    async for chunk in execute_chain(index + 1, **kw):
+                        yield chunk
+
+                async for chunk in mw.on_tool_call(
+                    tool=self,
+                    input_kwargs=input_kwargs,
+                    next_handler=next_handler,
+                ):
+                    yield chunk
+
+        return execute_chain(**kwargs)</code></pre></div><div class="fn"><h4><span class="num">28</span>ToolBase.check_permissions（tool/_base.py:251）</h4><p class="sig">async def check_permissions(self, tool_input: dict, context: PermissionContext) -> PermissionDecision</p><p class="loc">tool_base py line check_permissions</p><p>工具自身的权限检查。默认返回 PASSTHROUGH（让权限引擎决定）。<b>Bash 工具覆写这个方法</b>，对识别的只读命令（<code>ls</code> / <code>git status</code> 等）返回 ALLOW。</p><p><b>源码：</b></p><pre><code>    async def check_permissions(
+        self,
+        tool_input: dict[str, Any],
+        context: PermissionContext,
+    ) -&gt; PermissionDecision:
+        </code></pre></div><div class="fn"><h4><span class="num">29</span>ToolBase.check_read_only（tool/_base.py:258）</h4><p class="sig">async def check_read_only(self, tool_input: dict) -> bool</p><p class="loc">tool_base py line check_read_only</p><p>检查工具调用是否是只读操作。</p><p><b>源码：</b></p><pre><code>    async def check_read_only(
+        self,
+        tool_input: dict[str, Any],
+    ) -&gt; bool:
+        
+        return self.is_read_only</code></pre></div><div class="fn"><h4><span class="num">30</span>ToolBase.match_rule（tool/_base.py:282）</h4><p class="sig">async def match_rule(self, rule, tool_input: dict) -> bool</p><p class="loc">tool_base py line match_rule</p><p>检查一条用户配置的规则是否匹配当前工具调用。工具可以用自己的逻辑覆写这个方法。</p><p><b>源码：</b></p><pre><code>    async def match_rule(
+        self,
+        rule_content: str | None,
+        tool_input: dict[str, Any],
+    ) -&gt; bool:
+        
+
+        return rule_content is None</code></pre></div><div class="fn"><h4><span class="num">31</span>ToolBase.generate_suggestions（tool/_base.py:315）</h4><p class="sig">async def generate_suggestions(self, tool_input: dict) -> list[PermissionRule]</p><p class="loc">tool_base py line generate_suggestions</p><p>根据当前工具调用生成建议规则。用于 ASK 时给用户提供「以后自动放行」的选项。</p><p><b>源码：</b></p><pre><code>    async def generate_suggestions(
+        self,
+        tool_input: dict[str, Any],
+    ) -&gt; List[PermissionRule]:
+        
+        return [
+            PermissionRule(
+                tool_name=self.name,
+                rule_content=None,
+                behavior=PermissionBehavior.ALLOW,
+                source=&quot;suggested&quot;,
+            ),
+        ]</code></pre></div><div class="fn"><h4><span class="num">32</span>ToolBase._path_in_allowed_working_path（tool/_base.py:350）</h4><p class="sig">def _path_in_allowed_working_path(self, file_path: str) -> bool</p><p class="loc">tool_base py line _path_in_allowed_working_path</p><p>检查文件路径是否在允许的工作目录内。用于 ACCEPT_EDITS 模式的路径检查。</p><p><b>源码：</b></p><pre><code>    def _path_in_allowed_working_path(
+        self,
+        file_path: str,
+        context: PermissionContext,
+    ) -&gt; bool:
+        
+        current_dir = os.getcwd()
+        additional_dirs = list(context.working_directories.keys())
+        all_working_dirs = [current_dir] + additional_dirs
+
+        abs_file_path = os.path.realpath(os.path.expanduser(file_path))
+
+        for working_dir in all_working_dirs:
+            abs_working_dir = os.path.realpath(
+                os.path.expanduser(working_dir),
+            )
+            try:
+                os.path.relpath(abs_file_path, abs_working_dir)
+                if (
+                    abs_file_path.startswith(abs_working_dir + os.sep)
+                    or abs_file_path == abs_working_dir
+                ):
+                    return True
+            except ValueError:
+
+                continue
+
+        return False</code></pre></div><div class="fn"><h4><span class="num">33</span>ToolBase._is_dangerous_path（tool/_base.py:402）</h4><p class="sig">def _is_dangerous_path(self, file_path: str) -> bool</p><p class="loc">tool_base py line _is_dangerous_path</p><p>检查路径是否危险（如 <code>~/.bashrc</code>、<code>/etc</code> 等）。用于安全 ASK 的判断。</p><p><b>源码：</b></p><pre><code>    def _is_dangerous_path(self, file_path: str) -&gt; bool:
+        
+
+        abs_path = os.path.abspath(os.path.expanduser(file_path))
+
+        path_parts = Path(abs_path).parts
+        path_parts_lower = [p.lower() for p in path_parts]
+
+        filename = os.path.basename(abs_path)
+        filename_lower = filename.lower()
+        for dangerous_file in self.dangerous_files:
+            if filename_lower == dangerous_file.lower():
+                return True
+
+        for dangerous_dir in self.dangerous_directories:
+            dangerous_dir_lower = dangerous_dir.lower()
+            if dangerous_dir_lower in path_parts_lower:
+                return True
+
+        return False</code></pre></div><div class="fn"><h4><span class="num">34</span>Toolkit（tool/_toolkit.py:66）</h4><p class="sig">class Toolkit</p><p class="loc">middleware py line on_compress_context</p><p>工具容器，Agent 通过 <code>self.toolkit</code> 访问。负责：注册 FunctionTool / MCPTool / ToolGroup；把工具 schema 转成模型可识别的 function-calling 格式；在 <code>call_tool</code> 里执行工具（输入校验、权限检查、执行、结果回写）；管理「激活的工具组」——可在运行时动态开关某些工具集。</p><p><b>源码：</b></p><pre><code>    async def on_compress_context(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., Awaitable[None]],
+    ) -&gt; None:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_compress_context&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">35</span>Toolkit.call_tool（tool/_toolkit.py:225）</h4><p class="sig">async def call_tool(self, tool_call: ToolCallBlock, state: AgentState) -> AsyncGenerator[ToolChunk | ToolResponse, None]</p><p class="loc">tool_toolkit py line call_tool</p><p>工具执行的核心。流程：1) 解析工具名，找到对应的 ToolBase 实例；2) 解析工具输入（JSON），用 jsonschema 校验；3) 调 <code>tool.check_permissions</code> 做工具自身的权限检查；4) 调 <code>tool(**parsed_input)</code> 执行工具（触发 <code>__call__</code> → 中间件链 → <code>call</code>）；5) 流式 yield ToolChunk（中间结果）和 ToolResponse（最终结果）。</p><p><b>中断处理</b>：如果工具执行过程中被 CancelledError，<code>call_tool</code> 会 catch 并 yield 一个 <code>state=INTERRUPTED</code> 的 ToolResponse，而不是让异常向上传播。这保证了 context 里每个 ToolCall 都有对应的 ToolResult。</p><p><b>源码：</b></p><pre><code>    async def call_tool(
+        self,
+        tool_call: ToolCallBlock,
+        state: AgentState,
+    ) -&gt; AsyncGenerator[ToolChunk | ToolResponse, None]:
+        
+        tool_response = ToolResponse(id=tool_call.id)
+
+        available_tools = await self._get_available_tools(
+            state.tool_context.activated_groups,
+        )
+
+        if tool_call.name not in available_tools:
+            all_tools = await self._get_available_tools(
+                groups=[_.name for _ in self.tool_groups],
+            )
+
+            if tool_call.name in all_tools:
+                group_name = all_tools[tool_call.name].group
+                chunk = ToolChunk(
+                    content=[
+                        TextBlock(
+                            text=(
+                                &quot;ToolGroupInactiveError: The tool &quot;
+                                f&quot;&#x27;{tool_call.name}&#x27; in group &#x27;{group_name}&#x27; &quot;
+                                &quot;is currently inactive. You should first &quot;
+                                &quot;activate the group by calling the &quot;
+                                f&quot;&#x27;{self.builtin_meta_tool.tool.name}&#x27; tool.&quot;
+                            ),
+                        ),
+                    ],
+                    state=ToolResultState.ERROR,
+                )
+                yield chunk
+                yield tool_response.append_chunk(chunk)
+                return
+
+            chunk = ToolChunk(
+                content=[
+                    TextBlock(
+                        text=f&quot;ToolNotFoundError: The tool named &quot;
+                        f&quot;&#x27;{tool_call.name}&#x27; doesn&#x27;t exist.&quot;,
+                    ),
+                ],
+                state=ToolResultState.ERROR,
+            )
+            yield chunk
+            yield tool_response.append_chunk(chunk)
+            return
+
+        tool_func = available_tools[tool_call.name].tool
+
+        try:
+
+            kwargs = _json_loads_with_repair(tool_call.input)
+
+            if (
+                tool_func.is_state_injected
+                and not tool_func.is_mcp
+                and not tool_func.is_external_tool
+            ):
+                kwargs[&quot;_agent_state&quot;] = state
+
+            if inspect.iscoroutinefunction(tool_func.__call__):
+                res = await tool_func(**kwargs)
+            else:
+
+                res = tool_func(**kwargs)
+
+            if isinstance(res, ToolChunk):
+                yield res
+                tool_response.append_chunk(res)
+
+            elif isinstance(res, AsyncGenerator):
+                async for chunk in res:
+                    yield chunk
+                    tool_response.append_chunk(chunk)
+
+            elif isinstance(res, Generator):
+                for chunk in res:
+                    yield chunk
+                    tool_response.append_chunk(chunk)
+
+            else:
+                raise DeveloperOrientedException(
+                    &quot;The tool function must return a ToolChunk object, or an &quot;
+                    &quot;AsyncGenerator/Generator of ToolChunk objects, &quot;
+                    f&quot;but got {type(res)}.&quot;,
+                )
+
+        except mcp.shared.exceptions.McpError as e:
+            chunk = ToolChunk(
+                content=[
+                    TextBlock(
+                        type=&quot;text&quot;,
+                        text=f&quot;Error occurred when calling MCP tool: {e}&quot;,
+                    ),
+                ],
+                state=ToolResultState.ERROR,
+            )
+            yield chunk
+            tool_response.append_chunk(chunk)
+
+        except Exception as e:
+
+            if isinstance(e, DeveloperOrientedException):
+                raise e from None
+
+            chunk = ToolChunk(
+                content=[
+                    TextBlock(
+                        type=&quot;text&quot;,
+                        text=str(e),
+                    ),
+                ],
+                state=ToolResultState.ERROR,
+            )
+            yield chunk
+            tool_response.append_chunk(chunk)
+
+        except asyncio.CancelledError:
+            chunk = ToolChunk(
+                content=[
+                    TextBlock(
+                        type=&quot;text&quot;,
+                        text=&quot;&lt;system-reminder&gt;&quot;
+                        &quot;The tool call has been interrupted &quot;
+                        &quot;by the user.&quot;
+                        &quot;&lt;/system-reminder&gt;&quot;,
+                    ),
+                ],
+                state=ToolResultState.INTERRUPTED,
+            )
+            yield chunk
+            tool_response.append_chunk(chunk)
+
+        finally:
+
+            yield tool_response</code></pre></div><div class="fn"><h4><span class="num">36</span>Toolkit.get_tool_schemas（tool/_toolkit.py:171）</h4><p class="sig">async def get_tool_schemas(self, activated_groups) -> list[dict]</p><p class="loc">tool_toolkit py line get_tool_schemas</p><p>把激活工具组里的所有工具转成 OpenAI function-calling 格式的 schema 列表。这个列表会传给模型的 <code>tools</code> 参数。</p><p><b>源码：</b></p><pre><code>    async def get_tool_schemas(
+        self,
+        groups: list[str] | None = None,
+    ) -&gt; list[dict]:
+        
+        function_schemas = []
+
+        tools_dict = await self._get_available_tools(groups)
+        for tool in tools_dict.values():
+            function_schemas.append(tool.get_tool_schema())
+
+        return function_schemas</code></pre></div><div class="fn"><h4><span class="num">37</span>Toolkit.get_tool（tool/_toolkit.py:578）</h4><p class="sig">def get_tool(self, name: str) -> ToolBase | None</p><p class="loc">tool_toolkit py line get_tool</p><p>按名查找工具实例，找不到返回 None。</p><p><b>源码：</b></p><pre><code>    async def get_tool(self, name: str) -&gt; ToolBase | None:
+        
+        tools = await self._get_available_tools(
+            [_.name for _ in self.tool_groups],
+        )
+        registered_tool = tools.get(name, None)
+        if registered_tool is None:
+            return None
+        return registered_tool.tool</code></pre></div><div class="fn"><h4><span class="num">38</span>Toolkit.check_tool_available（tool/_toolkit.py:540）</h4><p class="sig">async def check_tool_available(self, tool_name: str) -> bool</p><p class="loc">tool_toolkit py line check_tool_available</p><p>检查工具是否存在且在激活组内。</p><p><b>源码：</b></p><pre><code>    async def check_tool_available(
+        self,
+        tool_name: str,
+        activated_groups: list[str],
+    ) -&gt; ToolBase:
+        
+        tools = await self._get_available_tools(activated_groups)
+        if tool_name not in tools:
+            raise ToolNotFoundError(
+                f&quot;ToolNotFoundError: The tool named &#x27;{tool_name}&#x27; doesn&#x27;t &quot;
+                f&quot;exist.&quot;,
+            )
+
+        group_name = tools[tool_name].group
+        if group_name != &quot;basic&quot; and group_name not in activated_groups:
+            raise ToolGroupInactiveError(
+                f&quot;ToolGroupInactiveError: The tool &#x27;{tool_name}&#x27; in group &quot;
+                f&quot;&#x27;{group_name}&#x27; is currently inactive. &quot;
+                f&quot;You should first activate the group by calling the &quot;
+                f&quot;&#x27;{self.builtin_meta_tool.tool.name}&#x27; tool.&quot;,
+            )
+
+        return tools[tool_name].tool</code></pre></div><div class="fn"><h4><span class="num">39</span>Toolkit._get_available_tools（tool/_toolkit.py:469）</h4><p class="sig">async def _get_available_tools(self) -> list[ToolBase]</p><p class="loc">tool_toolkit py line _get_available_tools</p><p>获取所有可用工具（builtin + MCP + 中间件提供的）。</p><p><b>源码：</b></p><pre><code>    async def _get_available_tools(
+        self,
+        groups: list[str] | None,
+    ) -&gt; dict[str, RegisteredTool]:
+        
+        available_tools = {}
+
+        skills = await self._get_available_skills(groups)
+        if len(skills):
+            available_tools[
+                self.builtin_skill_viewer.tool.name
+            ] = self.builtin_skill_viewer
+
+        if (
+            len(self.tool_groups) == 1
+            and self.tool_groups[0].name != &quot;basic&quot;
+            or len(self.tool_groups) &gt; 1
+        ):
+            available_tools[
+                self.builtin_meta_tool.tool.name
+            ] = self.builtin_meta_tool
+
+        groups_filter = [&quot;basic&quot;] + (groups or [])
+        for group in self.tool_groups:
+            if group.name not in groups_filter:
+                continue
+
+            cache_tools = []
+
+            for tool in group.tools:
+                cache_tools.append(tool)
+
+            for client in group.mcps:
+                tools = await client.list_tools()
+                cache_tools.extend(tools)
+
+            for tool in cache_tools:
+                if tool.name in available_tools:
+                    logger.warning(
+                        &quot;Duplicate tool name &#x27;%s&#x27; found in group &#x27;%s&#x27;, &quot;
+                        &quot;overwriting it.&quot;,
+                        tool.name,
+                        group.name,
+                    )
+                available_tools[tool.name] = RegisteredTool(
+                    tool=tool,
+                    group=group.name,
+                )
+
+        return available_tools</code></pre></div><div class="fn"><h4><span class="num">40</span>Toolkit._get_available_skills / get_skill_instructions（tool/_toolkit.py:390-468）</h4><p class="sig">async def _get_available_skills / get_skill_instructions(self)</p><p class="loc">tool_toolkit py line _get_available_skills</p><p>技能系统的查找与指令生成。技能是 AgentScope 的扩展机制——一个技能可包含 prompt 模板、工具定义、MCP 配置等。</p><p><b>源码：</b></p><pre><code>    async def _get_available_skills(
+        self,
+        groups: list[str] | None = None,
+    ) -&gt; dict[str, Skill]:
+        
+        groups_filter = [&quot;basic&quot;] + (groups or [])
+
+        skills = OrderedDict()
+        for group in self.tool_groups:
+            if group.name not in groups_filter:
+                continue
+
+            for skill in await group.list_skills():
+                if skill.name in skills:
+                    logger.warning(
+                        &quot;Duplicate skill name &#x27;%s&#x27; found in group &#x27;%s&#x27;, &quot;
+                        &quot;overwriting it.&quot;,
+                        skill.name,
+                        group.name,
+                    )
+                skills[skill.name] = skill
+
+        return skills</code></pre></div><div class="fn"><h4><span class="num">41</span>Toolkit.clear（tool/_toolkit.py:612）</h4><p class="sig">def clear(self) -> None</p><p class="loc">tool_toolkit py line clear</p><p>清空所有注册的工具和技能。</p><p><b>源码：</b></p><pre><code>    def clear(self) -&gt; None:
+        
+        self.tool_groups.clear()</code></pre></div><h3>Builtin 工具（tool/_builtin/）</h3><table><tr><th>工具</th><th>文件</th><th>作用</th><th>权限要点</th></tr><tr><td><code>Read</code></td><td><code>_read.py</code></td><td>读文件，支持 offset/limit 分页</td><td>只读，fast-path 放行</td></tr><tr><td><code>Write</code></td><td><code>_write.py</code></td><td>写文件(覆盖或新建)</td><td>写操作，DEFAULT 模式下 ASK</td></tr><tr><td><code>Edit</code></td><td><code>_edit.py</code></td><td>基于 old_string/new_string 的精确替换</td><td>写操作</td></tr><tr><td><code>Glob</code></td><td><code>_glob.py</code></td><td>按 glob 模式找文件</td><td>只读</td></tr><tr><td><code>Grep</code></td><td><code>_grep.py</code></td><td>正则搜文件内容</td><td>只读</td></tr><tr><td><code>Bash</code></td><td><code>_bash.py</code> + <code>_bash_parser.py</code></td><td>执行 shell 命令</td><td><b>最危险</b>，有 bash_parser 做命令审计；对识别的只读命令自动放行</td></tr></table><p>另外有 <code>_backend.py</code>（BackendBase / LocalBackend / ExecResult）提供本地命令执行后端，<code>_meta.py</code> 提供元工具，<code>_skill.py</code> 提供技能管理。</p><h3>MCP 适配（tool/_adapters.py）</h3><p><code>MCPTool</code> 把外部 MCP(Model Context Protocol) 服务器暴露的工具，适配成 AgentScope 的 <code>ToolBase</code>。这让 AgentScope 能直接接入第三方 MCP 工具生态。依赖 <code>mcp&lt;2.0.0</code> 锁了上界避免协议变更。</p>
+
+<hr><h2 id="workspace">工作区系统（workspace/）</h2><p class="lead">31 文件 / 6993 行。把「工具在哪执行、文件存在哪」抽象成 <code>WorkspaceBase</code>，6 种后端实现。</p><div class="fn"><h4><span class="num">42</span>WorkspaceBase（workspace/_base.py:103）</h4><p class="sig">class WorkspaceBase</p><p class="loc">middleware py line list_tools</p><p>所有工作区实现的抽象基类。核心属性：<code>workspace_id</code>（唯一标识符）、<code>workdir</code>（agent 可见的根目录）、<code>is_alive</code>（是否仍在运行）、<code>_backend</code>（当前执行后端）、<code>default_mcps</code> / <code>skill_paths</code>（初始化时注册的 MCP 和技能）、<code>_mcps</code>（当前注册的 MCP 列表）、<code>_mcp_lock</code> / <code>_skill_lock</code>（保护突变的 asyncio.Lock）。</p><p><b>源码：</b></p><pre><code>    async def list_tools(self) -&gt; list[ToolBase]:
+        
+        return []</code></pre></div><div class="fn"><h4><span class="num">43</span>initialize（workspace/_base.py:255）</h4><p class="sig">async def initialize(self) -> None</p><p class="loc">workspace_base py line initialize</p><p><b>抽象方法</b>。分配资源、连接 MCP 服务器、复制技能。子类必须实现。支持 <code>async with</code> 上下文管理器。</p><p><b>源码：</b></p><pre><code>    async def initialize(self) -&gt; None:
+        </code></pre></div><div class="fn"><h4><span class="num">44</span>close（workspace/_base.py:259）</h4><p class="sig">async def close(self) -> None</p><p class="loc">workspace_base py line close</p><p><b>抽象方法</b>。释放所有资源和连接。</p><p><b>源码：</b></p><pre><code>    async def close(self) -&gt; None:
+        </code></pre></div><div class="fn"><h4><span class="num">45</span>reset（workspace/_base.py:263）</h4><p class="sig">async def reset(self) -> None</p><p class="loc">workspace_base py line reset</p><p>重置工作区到干净状态。关闭并移除所有注册的 MCP，删除所有技能，擦除每会话状态（offloaded context / tool results 和任何数据文件）。<b>构造时的 default_mcps 和 skill_paths 不会重新种子</b>——reset 返回空状态，不是初始状态。</p><p><b>源码：</b></p><pre><code>    async def reset(self) -&gt; None:
+        </code></pre></div><div class="fn"><h4><span class="num">46</span>get_backend（workspace/_base.py:276）</h4><p class="sig">def get_backend(self) -> BackendBase</p><p class="loc">workspace_base py line get_backend</p><p>返回工作区当前激活的文件系统/执行后端。如果 _backend 为 None 则 raise RuntimeError（工作区未初始化）。<b>Docker 和 E2B 工作区可能在重连时替换后端</b>，所以调用方应该每次操作开始时从工作区解析后端，而不是保留一个过时的私有 _backend 引用。</p><p><b>源码：</b></p><pre><code>    def get_backend(self) -&gt; BackendBase:
+        
+        if self._backend is None:
+            raise RuntimeError(
+                f&quot;{type(self).__name__} has no active backend. &quot;
+                &quot;Initialize the workspace before requesting its backend.&quot;,
+            )
+        return self._backend</code></pre></div><div class="fn"><h4><span class="num">47</span>get_instructions（workspace/_base.py:312）</h4><p class="sig">async def get_instructions(self) -> str</p><p class="loc">workspace_base py line get_instructions</p><p><b>抽象方法</b>。返回工作区特定的 system prompt 片段。</p><p><b>源码：</b></p><pre><code>    async def get_instructions(self) -&gt; str:
+        </code></pre></div><div class="fn"><h4><span class="num">48</span>list_tools（workspace/_base.py:318）</h4><p class="sig">async def list_tools(self) -> list[ToolBase]</p><p class="loc">workspace_base py line list_tools</p><p>返回作用于此工作区的 builtin 工具列表。</p><p><b>源码：</b></p><pre><code>    async def list_tools(self) -&gt; list[ToolBase]:
+        
+        from ..tool import Bash, Edit, Glob, Grep, Read, Write
+
+        backend = self.get_backend()
+        glob_kwargs: dict = {&quot;backend&quot;: backend}
+        if self._glob_helper_path is not None:
+            glob_kwargs[&quot;glob_helper_path&quot;] = self._glob_helper_path
+        return [
+            Bash(cwd=self.workdir, backend=backend),
+            Edit(backend=backend),
+            Glob(**glob_kwargs),
+            Grep(backend=backend),
+            Read(backend=backend),
+            Write(backend=backend),
+        ]</code></pre></div><div class="fn"><h4><span class="num">49</span>list_mcps（workspace/_base.py:348）</h4><p class="sig">async def list_mcps(self) -> list[MCPClient]</p><p class="loc">workspace_base py line list_mcps</p><p>返回当前注册的 MCP 客户端列表。</p><p><b>源码：</b></p><pre><code>    async def list_mcps(self) -&gt; list[MCPClient]:
+        
+        return list(self._mcps)</code></pre></div><div class="fn"><h4><span class="num">50</span>add_mcp（workspace/_base.py:354）</h4><p class="sig">async def add_mcp(self, mcp_client: MCPClient) -> None</p><p class="loc">workspace_base py line add_mcp</p><p><b>抽象方法</b>。注册一个 MCP 客户端到工作区。</p><p><b>源码：</b></p><pre><code>    async def add_mcp(self, mcp_client: MCPClient) -&gt; None:
+        </code></pre></div><div class="fn"><h4><span class="num">51</span>remove_mcp（workspace/_base.py:367）</h4><p class="sig">async def remove_mcp(self, name: str) -> None</p><p class="loc">workspace_base py line remove_mcp</p><p><b>抽象方法</b>。按名移除一个注册的 MCP 客户端。</p><p><b>源码：</b></p><pre><code>    async def remove_mcp(self, name: str) -&gt; None:
+        </code></pre></div><div class="fn"><h4><span class="num">52</span>offload_context（workspace/_base.py:411）</h4><p class="sig">async def offload_context(self, msgs, summary) -> str</p><p class="loc">workspace_base py line offload_context</p><p>把被压缩的对话消息写到磁盘（<code>sessions/{session_id}/offloaded_context_{timestamp}.json</code>），返回文件路径。被 <code>Agent._compress_context_impl</code> 调用。AgentScope 会在压缩后的 summary 里附这个路径，让 agent 知道「完整上下文在这个文件里」。</p><p><b>源码：</b></p><pre><code>    async def offload_context(
+        self,
+        session_id: str,
+        msgs: list[Msg],
+    ) -&gt; str:
+        
+        backend = self.get_backend()
+        base = backend.join_path(self._sessions_dir, session_id)
+        path = backend.join_path(base, &quot;context.jsonl&quot;)
+
+        copied = deepcopy(msgs)
+        lines: list[str] = []
+        for msg in copied:
+            if not isinstance(msg.content, str):
+                content: list = []
+                for block in msg.content:
+                    if isinstance(block, DataBlock) and isinstance(
+                        block.source,
+                        Base64Source,
+                    ):
+                        block = await self._offload_data_block(block)
+                    content.append(block)
+                msg.content = content
+            lines.append(msg.model_dump_json())
+
+        payload = &quot;\n&quot;.join(lines) + &quot;\n&quot;
+
+        existing = b&quot;&quot;
+        try:
+            existing = await backend.read_file(path)
+        except (FileNotFoundError, OSError):
+            pass
+        await backend.write_file(path, existing + payload.encode(&quot;utf-8&quot;))
+        return path</code></pre></div><div class="fn"><h4><span class="num">53</span>offload_tool_result（workspace/_base.py:467）</h4><p class="sig">async def offload_tool_result(self, tool_result_block) -> str</p><p class="loc">workspace_base py line offload_tool_result</p><p>把超长的工具结果写到磁盘（<code>data/tool_result_{tool_call_id}.json</code>），返回文件路径。被压缩的工具结果会引用这个路径。</p><p><b>源码：</b></p><pre><code>    async def offload_tool_result(
+        self,
+        session_id: str,
+        tool_result: ToolResultBlock,
+    ) -&gt; str:
+        
+        backend = self.get_backend()
+        base = backend.join_path(self._sessions_dir, session_id)
+        path = backend.join_path(base, f&quot;tool_result-{tool_result.id}.txt&quot;)
+
+        index = 1
+        while await backend.file_exists(path):
+            path = backend.join_path(
+                base,
+                f&quot;tool_result-{tool_result.id}({index}).txt&quot;,
+            )
+            index += 1
+
+        parts: list[str] = []
+        if isinstance(tool_result.output, str):
+            parts.append(tool_result.output)
+        else:
+            for block in tool_result.output:
+                if isinstance(block, TextBlock):
+                    parts.append(block.text)
+                elif isinstance(block, DataBlock):
+                    if isinstance(block.source, Base64Source):
+                        d = await self._offload_data_block(block)
+                        url = str(d.source.url)
+                    else:
+                        url = str(block.source.url)
+                    parts.append(
+                        f&quot;&lt;data url=&#x27;{url}&#x27; name=&#x27;{block.name}&#x27; &quot;
+                        f&quot;media_type=&#x27;{block.source.media_type}&#x27;/&gt;&quot;,
+                    )
+
+        await backend.write_file(path, &quot;&quot;.join(parts).encode(&quot;utf-8&quot;))
+        return path</code></pre></div><div class="fn"><h4><span class="num">54</span>_offload_data_block（workspace/_base.py:526）</h4><p class="sig">async def _offload_data_block(self, block: DataBlock) -> DataBlock</p><p class="loc">workspace_base py line _offload_data_block</p><p>把 DataBlock（如 base64 编码的图像）写到磁盘，用文件 URI 替换内联数据。这是<b>多模态 payload 卸载</b>——避免 base64 字符串撑爆 context。</p><p><b>源码：</b></p><pre><code>    async def _offload_data_block(self, block: DataBlock) -&gt; DataBlock:
+        
+        if not isinstance(block.source, Base64Source):
+            return block
+
+        backend = self.get_backend()
+        hash_str = hashlib.sha256(block.source.data.encode()).hexdigest()
+        ext = mimetypes.guess_extension(block.source.media_type) or &quot;.bin&quot;
+        path = backend.join_path(self._data_dir, f&quot;{hash_str}{ext}&quot;)
+
+        if not await backend.file_exists(path):
+            await backend.write_file(
+                path,
+                base64.b64decode(block.source.data),
+            )
+
+        return DataBlock(
+            id=block.id,
+            name=block.name,
+            source=URLSource(
+                url=AnyUrl(self._path_to_file_uri(path)),
+                media_type=block.source.media_type,
+            ),
+        )</code></pre></div><div class="fn"><h4><span class="num">55</span>list_skills（workspace/_base.py:571）</h4><p class="sig">async def list_skills(self) -> list[Skill]</p><p class="loc">workspace_base py line list_skills</p><p>返回工作区 <code>skills/</code> 目录下所有可用的技能。技能是 AgentScope 的扩展机制——一个技能可包含 prompt 模板、工具定义、MCP 配置等，工作区初始化时从 <code>skill_paths</code> 复制到 <code>skills/</code> 目录。</p><p><b>源码：</b></p><pre><code>    async def list_skills(self) -&gt; list[Skill]:
+        
+        import frontmatter as fm
+
+        backend = self.get_backend()
+        if not await backend.is_dir(self._skills_dir):
+            return []
+
+        entries = await backend.list_dir(self._skills_dir, recursive=True)
+
+        skills: list[Skill] = []
+        for md_path in entries:
+            if backend.basename(md_path) != &quot;SKILL.md&quot;:
+                continue
+            try:
+                raw = await backend.read_file(md_path)
+                doc = fm.loads(raw.decode(&quot;utf-8&quot;))
+                name = doc.get(&quot;name&quot;)
+                desc = doc.get(&quot;description&quot;)
+                if not name or not desc:
+                    continue
+                skills.append(
+                    Skill(
+                        name=str(name),
+                        description=str(desc),
+                        dir=backend.dirname(md_path),
+                        markdown=doc.content or &quot;&quot;,
+                        updated_at=0.0,
+                    ),
+                )
+            except Exception as e:
+                logger.warning(&quot;Failed to load skill %s: %s&quot;, md_path, e)
+        return skills</code></pre></div><h3>6 种沙箱后端</h3><table><tr><th>后端</th><th>类</th><th>隔离级别</th><th>典型场景</th></tr><tr><td>Local</td><td><code>LocalWorkspace</code></td><td>无隔离(本机进程)</td><td>开发调试、单机跑</td></tr><tr><td>Docker</td><td><code>DockerWorkspace</code></td><td>容器级</td><td>需要稳定环境的批量任务</td></tr><tr><td>E2B</td><td><code>E2BWorkspace</code></td><td>云端 microVM</td><td>把执行外包到 E2B</td></tr><tr><td>Daytona</td><td><code>DaytonaWorkspace</code></td><td>云端 dev 环境</td><td>2026-07 新增，INTE 标记</td></tr><tr><td>K8s</td><td><code>K8sWorkspace</code></td><td>K8s Pod 级</td><td>2026-07 新增，集群化部署</td></tr><tr><td>OpenSandbox</td><td><code>OpenSandboxWorkspace</code></td><td>第三方沙箱</td><td>受控沙箱平台</td></tr></table><p>后端通过 <code>BackendBase</code> 抽象统一接口：<code>read_file</code> / <code>write_file</code> / <code>run_command</code> / <code>list_directory</code> / <code>join_path</code> 等。LocalBackend 是本地实现，DockerBackend / E2BBackend / K8sBackend / DaytonaBackend / OpenSandboxBackend 分别对应各自的沙箱后端。</p><div class="note plain"><span class="t">和 InternAgent 的 ④.5 对照</span> InternAgent 的「做实验」是<b>外包给 Claude Code CLI</b>(subprocess shell)，它自己不提供沙箱。AgentScope 正相反——它<b>不假定外包</b>，而是自己提供一整套沙箱后端，让用户根据隔离需求选择。这符合它「通用框架」的定位：你不能假设每个用户都装了 claude CLI。</div>
+
+<hr><h2 id="model">模型适配（model/）</h2><p class="lead">21 文件 / 5913 行。<code>ChatModelBase</code> 提供统一接口，8 家模型提供商各自实现。</p><div class="fn"><h4><span class="num">56</span>ChatModelBase（model/_base.py）</h4><p class="sig">class ChatModelBase</p><p class="loc">middleware py line get_middleware_key</p><p>所有模型客户端的抽象基类。核心方法：<code>__call__(messages, tools, tool_choice)</code>（调模型，返回 ChatResponse 或 AsyncGenerator[ChatResponse] 流式）、<code>count_tokens(messages, tools)</code>（估算 token 数，被上下文压缩和工具结果截断调用）、<code>generate_structured_output(messages, structured_model)</code>（生成结构化输出，被上下文压缩调用生成 summary）。核心属性：<code>model</code>（模型名）、<code>context_size</code>（上下文窗口大小，单位 token）、<code>max_retries</code>（重试次数）。</p><p><b>源码：</b>见仓库 <code>model/_base.py</code>（抽象基类 + 8 家子类各自实现）。</p><p><b>源码：</b></p><pre><code>    async def get_middleware_key(self) -&gt; str:
+        
+        return self.__class__.__name__</code></pre></div><p>8 家模型提供商：AnthropicChatModel / DashScopeChatModel / DeepSeekChatModel / GeminiChatModel / OllamaChatModel / OpenAIChatModel / XAIChatModel / MoonshotChatModel。每家一个子目录，实现自己的 ChatModelBase 子类。关键差异：消息格式、工具调用格式、流式响应、thinking/reasoning 支持（Anthropic extended thinking、OpenAI o1 reasoning 等）。</p>
+
+<hr><h2 id="rag">RAG 系统（rag/）</h2><p class="lead">21 文件 / 4393 行。完整的 RAG 实现：文档解析、分块、向量存储、知识库管理。</p><div class="fn"><h4><span class="num">57</span>KnowledgeBase（rag/_knowledge.py:44）</h4><p class="sig">class KnowledgeBase</p><p class="loc">middleware py line on_system_prompt</p><p>RAG 的核心类，封装「知识库」概念。核心方法：<code>ensure_collection()</code>（确保向量库中存在对应 collection，如不存在则创建）、<code>search(query, top_k)</code>（语义检索，返回 top_k 个相关 chunk。这是 <code>RAGMiddleware</code> 在 reasoning 前调用的方法）、<code>insert_document(document)</code>（插入文档。流程：解析 → 分块 → 嵌入 → 存入向量库）、<code>delete_document(document_id)</code>（删除文档及其所有 chunk）、<code>list_documents()</code>（列出知识库中所有文档的摘要）。核心属性：<code>embedding_model</code>（嵌入模型实例）、<code>vector_store</code>（向量库实例）、<code>collection</code>（向量库 collection 名）、<code>metadata_filter</code>（元数据过滤条件）。</p><p><b>源码：</b>见仓库 <code>rag/_knowledge.py</code>（含 KnowledgeBase 全部方法实现）。</p><p><b>源码：</b></p><pre><code>    async def on_system_prompt(
+        self,
+        agent: &quot;Agent&quot;,
+        current_prompt: str,
+    ) -&gt; str:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_system_prompt&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">58</span>文档解析（rag/_parser/）</h4><p class="sig">ParserBase / PDFParser / PPTParser / WordParser / ExcelParser / TextParser / ImageParser</p><p class="loc">middleware py line on_system_prompt</p><p>7 种文档格式的解析器，都继承 <code>ParserBase</code>。每个解析器把文档转成 <code>Section</code> 列表（标题 + 内容），用于后续分块。</p><p><b>源码：</b>见仓库 <code>rag/_parser/</code>。</p><p><b>源码：</b></p><pre><code>    async def on_system_prompt(
+        self,
+        agent: &quot;Agent&quot;,
+        current_prompt: str,
+    ) -&gt; str:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_system_prompt&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">59</span>分块（rag/_chunker/）</h4><p class="sig">ChunkerBase / ApproxTokenChunker</p><p class="loc">middleware py line on_compress_context</p><p>把解析后的 Section 切成固定大小的 Chunk。<code>ApproxTokenChunker</code> 按近似 token 数分块（避免精确 tokenizer 的开销）。</p><p><b>源码：</b>见仓库 <code>rag/_chunker/</code>。</p><p><b>源码：</b></p><pre><code>    async def on_compress_context(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., Awaitable[None]],
+    ) -&gt; None:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_compress_context&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">60</span>向量存储（rag/_vdb/）</h4><p class="sig">VectorStoreBase / MilvusLiteStore / QdrantStore / MongoDBStore / ElasticsearchStore</p><p class="loc">middleware py line on_compress_context</p><p>4 种向量库后端 + 1 个抽象基类。统一接口：<code>insert</code> / <code>search</code> / <code>delete</code>。被 <code>KnowledgeBase</code> 持有。</p><p><b>源码：</b>见仓库 <code>rag/_vdb/</code>。</p><p><b>源码：</b></p><pre><code>    async def on_compress_context(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., Awaitable[None]],
+    ) -&gt; None:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_compress_context&quot;,
+        )</code></pre></div>
+
+<hr><h2 id="app">服务层（app/）</h2><p class="lead">代码量最大的模块（116 文件 / 27896 行）。基于 FastAPI 的生产级 agent 服务。</p><div class="fn"><h4><span class="num">61</span>create_app（app/_app.py:43）</h4><p class="sig">def create_app(...) -> FastAPI</p><p class="loc">middleware py line on_reply</p><p>FastAPI 应用工厂。配置路由、中间件、数据库连接、生命周期管理。整个服务层的入口点。</p><p><b>源码：</b>见仓库 <code>app/_app.py</code>。</p><p><b>源码：</b></p><pre><code>    async def on_reply(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., AsyncGenerator],
+    ) -&gt; AsyncGenerator:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_reply&quot;,
+        )
+        yield</code></pre></div><div class="fn"><h4><span class="num">62</span>多租户存储（app/storage/）</h4><p class="sig">SQLAlchemy + Alembic 迁移</p><p class="loc">middleware py line on_reasoning</p><p>生产级存储抽象，支持多租户。核心实体模型：Agent Team（<code>_team.py</code>，多 agent 编排单元）、Session（<code>_session.py</code>，一次对话）、Agent 配置（<code>_agent.py</code>，模型/工具/中间件等）、Credential（<code>_credential.py</code>，API key 等）、KnowledgeBase（<code>_knowledge_base.py</code>，RAG 知识库元数据）、KnowledgeDocument（<code>_knowledge_document.py</code>）、User、Schedule（定时任务）。存储后端通过 <code>_sql/_storage.py</code> 的 SQL 后端实现，支持 cursor-based 分页。Alembic 迁移脚本在 <code>_sql/_alembic/versions/</code>。</p><p><b>源码：</b>见仓库 <code>app/storage/</code>。</p><p><b>源码：</b></p><pre><code>    async def on_reasoning(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., AsyncGenerator],
+    ) -&gt; AsyncGenerator:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_reasoning&quot;,
+        )
+        yield</code></pre></div><div class="fn"><h4><span class="num">63</span>Agent Team 工具（app/_tool/）</h4><p class="sig">TeamCreate / TeamDelete / AgentCreate / AgentInvite / TeamSay</p><p class="loc">middleware py line on_acting</p><p>多 agent 编排原语。这些工具被注入主 agent，让它能在运行时动态创建子 agent、邀请它们加入团队、向团队发消息。这是 AgentScope 里少有的「编排放大」能力。<b>关键设计：编排很轻</b>——没有 InternAgent 那种 <code>OrchestrationAgent.phase_handlers</code> 状态机，也没有 max_iter 的多 agent 反思循环。它只提供「建团队、发消息」的原子操作，编排逻辑由模型自己决定。</p><p><b>源码：</b>见仓库 <code>app/_tool/</code>。</p><p><b>源码：</b></p><pre><code>    async def on_acting(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., AsyncGenerator],
+    ) -&gt; AsyncGenerator:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_acting&quot;,
+        )
+        yield</code></pre></div><div class="fn"><h4><span class="num">64</span>分布式 RAG 服务（app/rag/）</h4><p class="sig">KnowledgeBaseManager / BlobStore / IndexWorker</p><p class="loc">middleware py line on_model_call</p><p>分布式 RAG 实现：<b>KnowledgeBaseManager</b>（<code>knowledge_base_manager/</code>，管理多租户环境下的知识库，按 collection 切分，支持维度策略和错误处理）、<b>BlobStore</b>（<code>blob_store/</code>，二进制大对象存储，支持 S3 和本地两种后端，用于存储 RAG 文档的原始二进制内容）、<b>IndexWorker</b>（<code>index_worker/</code>，异步索引 worker。把文档解析 → 分块 → 嵌入 → 存入向量库的过程异步化，避免阻塞主请求。入口在 <code>__main__.py</code>，可独立进程运行）。</p><p><b>源码：</b>见仓库 <code>app/rag/</code>。</p><p><b>源码：</b></p><pre><code>    async def on_model_call(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[
+            ...,
+            Awaitable[&quot;ChatResponse&quot; | AsyncGenerator[&quot;ChatResponse&quot;, None]],
+        ],
+    ) -&gt; &quot;ChatResponse&quot; | AsyncGenerator[&quot;ChatResponse&quot;, None]:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_model_call&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">65</span>消息总线与中间件（app/message_bus/ + app/middleware/）</h4><p class="sig">消息总线 + 服务层中间件</p><p class="loc">middleware py line on_compress_context</p><p>服务层的横切关注点：<b>消息总线</b>（<code>message_bus/</code>，服务层内部组件间的事件总线，用于解耦 RAG 索引、会话管理、Agent Team 等子系统）、<b>中间件</b>（<code>middleware/</code>，服务层级别的中间件，和 Agent 级别的 MiddlewareBase 区分。用于请求认证、租户隔离、日志等）。</p><p><b>源码：</b>见仓库 <code>app/message_bus/</code> 和 <code>app/middleware/</code>。</p><p><b>源码：</b></p><pre><code>    async def on_compress_context(
+        self,
+        agent: &quot;Agent&quot;,
+        input_kwargs: dict,
+        next_handler: Callable[..., Awaitable[None]],
+    ) -&gt; None:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_compress_context&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">66</span>访问控制与依赖注入（app/access/ + app/deps.py）</h4><p class="sig">访问控制 + 依赖注入</p><p class="loc">middleware py line on_system_prompt</p><p>FastAPI 的依赖注入和访问控制：<code>deps.py</code> 定义 FastAPI 依赖（如数据库会话、当前用户、当前租户），<code>access/</code> 实现基于角色的访问控制。</p><p><b>源码：</b>见仓库 <code>app/access/</code> 和 <code>app/deps.py</code>。</p><p><b>源码：</b></p><pre><code>    async def on_system_prompt(
+        self,
+        agent: &quot;Agent&quot;,
+        current_prompt: str,
+    ) -&gt; str:
+        
+        raise RuntimeError(
+            f&quot;{type(self).__name__} does not implement on_system_prompt&quot;,
+        )</code></pre></div><div class="fn"><h4><span class="num">67</span>Web UI 后端（app/_router/ + app/_service/）</h4><p class="sig">路由 + 服务</p><p class="loc">middleware py line list_tools</p><p>Web UI 的后端 API：<code>_router/</code> 定义 HTTP 路由（会话管理、消息发送、agent 配置等），<code>_service/</code> 实现业务逻辑。前端在 <code>examples/web_ui/</code>（Vue + FastAPI）。</p><p><b>源码：</b>见仓库 <code>app/_router/</code> 和 <code>app/_service/</code>。</p><p><b>源码：</b></p><pre><code>    async def list_tools(self) -&gt; list[ToolBase]:
+        
+        return []</code></pre></div>
+
+<hr><h2 id="others">其他模块</h2><h3>formatter/（11 文件 / 4502 行）</h3><p>把不同模型的原始输出统一成 4 类 Block：<code>TextBlock</code> / <code>ThinkingBlock</code> / <code>ToolCallBlock</code> / <code>DataBlock</code>。被 <code>Agent._convert_chat_response_to_event</code> 和 <code>_reasoning_impl</code> 调用。</p><h3>embedding/（15 文件 / 2314 行）</h3><p>嵌入模型抽象，被 RAG 的 KnowledgeBase 持有。</p><h3>credential/（12 文件 / 628 行）</h3><p>密钥管理，支持多种密钥存储后端。</p><h3>tts/（13 文件 / 2310 行）</h3><p>语音合成，通过 TTSMiddleware 集成。</p><h3>state/（3 文件 / 301 行）</h3><p>AgentState / Task / TaskContext。AgentState 持有 conversation context、summary、tasks、permission_context 等。Task 和 TaskContext 实现 agent 的任务管理能力。</p><h3>event / message / mcp / skill / types / exception / _utils</h3><p>小模块：event（事件类型）、message（消息类型 Msg）、mcp（MCP 客户端）、skill（技能系统）、types（公共类型）、exception（异常类型）、_utils（工具函数）。</p>
+
+<hr>
+<p style="margin-top:30px"><a href="03_compare.html">→ 下一篇：与 InternAgent 的重量对照</a></p>
+
+<footer>
+  <b>AgentScope 2.0 架构精读</b> · ② 模块逐函数精读（附源码） · 源码版本 2.0.4.post1<br>
+  精读范围：middleware / permission / tool / workspace（附源码） + model / rag / app / 其他（类与方法清单）<br>
+  对照参考：<code>InternAgent-1.5_源码架构导读.html</code>
+</footer>
+
+</div>
+</body>
+</html>
