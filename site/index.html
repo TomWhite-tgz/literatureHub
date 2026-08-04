@@ -220,11 +220,12 @@
 <header>
   <h1>Literature <span>·</span> 自动化科研文献模块 总览</h1>
   <p class="sub">文献搜索 / 文献问答 / 深度研究系统的调研档案入口。按「复杂 — 简单 — 包装的好看」三档可信度分类；点击卡片内链接进入各精读 / 分析子页面。下方板块默认折叠，点击标题展开。</p>
-  <div style="background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:14px 20px;margin-top:20px;font-size:13.6px;line-height:1.7">
-    <b style="color:#b4530a">📦 这是 Literature 调研档案的分享站 · 持续更新</b><br>
-    所有<b>精读页面、审计结论、配图、笔记、论文 PDF</b> 都已包含，论文链接点开即可阅读原文。<br>
-    源码仓库与数据集未打包（原始档案 107 GB）：相应链接指向官方仓库，或跳到 <a href="_未包含的内容.html" style="color:#b4530a">未包含内容说明</a>。
-  </div>
+<div style="background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:14px 20px;margin-top:20px;font-size:13.6px;line-height:1.7">
+  <b style="color:#b4530a">📦 这是 Literature 调研档案的分享站 · 持续更新</b><br>
+  所有<b>精读页面、审计结论、配图、笔记、论文 PDF</b> 都已包含，论文链接点开即可阅读原文。<br>
+  源码仓库与数据集未打包（原始档案 107 GB）：相应链接指向官方仓库，或跳到 <a href="_未包含的内容.html" style="color:#b4530a">未包含内容说明</a>。
+</div>
+
   <div class="map">
     <div class="map-col">
       <div class="map-title">① 选题讨论 · 我要做什么</div>
@@ -235,7 +236,7 @@
     <div class="map-col">
       <div class="map-title">② 领域调研 · 别人做了什么</div>
       <a class="map-item" href="#landscape">🗺 领域版图<span>约 130 篇八大类 + 56 个系统分类</span></a>
-      <a class="map-item" href="#systems">📚 项目与系统<span>14 个项目深读 · 复杂/简单/包装三档</span></a>
+      <a class="map-item" href="#systems">📚 项目与系统<span>15 个项目深读 · 复杂/简单/包装三档</span></a>
       <a class="map-item sub" href="#compare">⚖️ 横向对比<span>文献搜索四系统横评</span></a>
       <a class="map-item" href="#benchmark">🎯 Benchmark<span>7 张卡 · 4 篇已深读</span></a>
       <a class="map-item" href="#datalib">📖 文献库 · 数据接口<span>DeepXiv 等</span></a>
@@ -698,7 +699,7 @@ PubMed / EuropePMC ─ 医学与生命科学增强</div>
             <tr><th class="w">工作</th><th>做什么</th></tr>
             <tr><td><a href="https://arxiv.org/abs/2409.13740">PaperQA2</a> (2024)</td><td>科学文献问答与知识综合，检索 + 证据抽取 + 引用绑定生成有来源支撑的回答。<span class="note-inline">本页已归档</span></td></tr>
             <tr><td><a href="https://arxiv.org/abs/2411.14199">OpenScholar</a> (2024)</td><td>检索增强 LM 搜索科学文献并撰写带引用的研究综述。<span class="note-inline">本页已归档</span></td></tr>
-            <tr><td><a href="https://arxiv.org/abs/2404.07738">ResearchAgent</a> (2024)</td><td>在科学文献基础上迭代生成、扩展和改进研究想法。<span class="note-inline">待归档目录中</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2404.07738">ResearchAgent</a> (2024)</td><td>在科学文献基础上迭代生成、扩展和改进研究想法。<span class="note-inline">已精读 · 简单档</span></td></tr>
             <tr><td><a href="https://arxiv.org/abs/2502.14767">Tree-of-Debate</a> (2025)</td><td>多角色辩论树比较科学论文，围绕方法、证据和结论批判性分析。</td></tr>
             <tr><td><a href="https://arxiv.org/abs/2603.20278">OpenResearcher</a> (2026)</td><td>开放长程 Deep Research 轨迹生成管线，记录搜索、开页、文内查找步骤。<span class="note-inline">本页已归档</span></td></tr>
             <tr><td><a href="https://arxiv.org/abs/2601.10029">PaperScout</a> (2026)</td><td>学术论文搜索自主 Agent，优化多步检索过程与最终发现质量。<span class="note-inline">本页已深读</span></td></tr>
@@ -1141,6 +1142,15 @@ return timeout_answer</div>
       <div class="links">
         <a href="Literature项目或者系统/简单/SciAtlas/SciAtlas_精读.html">精读页面 (html)</a>
         <a class="dir" href="_未包含的内容.html">论文 + 原图 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>ResearchAgent <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-ok">复现失守的开山作</span></h4>
+      <div class="meta">KAIST × MSR · NAACL 2025 · arXiv:2404.07738 · 科研 Idea 生成</div>
+      <p class="blurb">Idea 生成方向开山作之一（218 引）：引用图 top-10 + 5 万篇实体共现知识库 + 三阶段「生成-评审」迭代；评审标准从 10 组人标诱导，方法设计被大量沿用。但三轮 ARR 才录用；开源代码是发表后重写的推理壳——无 benchmark 筛选/知识库构建/评测代码，默认 gpt-4o 使时间隔离失效，引用方向三处口径不一，主结果不可复现。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/简单/ResearchAgent/ResearchAgent_精读与代码审计.html">精读与代码审计</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 源码 →</a>
       </div>
     </div>
   </div>

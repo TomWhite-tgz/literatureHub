@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ResearchAgent (NAACL 2025) 中文精读：论文方法、实验结果与开源代码的交叉审计。">
+    <title>ResearchAgent 精读 · 迭代式科研 Idea 生成</title>
+    <style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+        .container { width: min(920px, calc(100% - 44px)); margin: 0 auto; padding: 52px 18px 76px; }
+        header { margin-bottom: 34px; padding-bottom: 34px; border-bottom: 1px solid var(--line); text-align: center; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: var(--accent); font-size: 0.93rem; font-weight: 650; text-decoration: none; transition: color .2s ease, transform .2s ease; }
+        .back-link:hover { color: var(--accent-dark); transform: translateX(-2px); }
+        .status-row, .resource-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .status-row { margin-bottom: 18px; }
+        .resource-row { margin-top: 22px; }
+        .badge, .evidence { display: inline-flex; align-items: center; width: fit-content; border-radius: 999px; white-space: nowrap; }
+        .badge { padding: 4px 11px; color: var(--accent-dark); background: var(--accent-pale); font-size: 0.79rem; font-weight: 650; }
+        .badge.gray { color: var(--muted); background: #eee9e0; }
+        .resource-link { display: inline-block; padding: 7px 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent-dark); background: var(--panel); font-size: 0.84rem; font-weight: 620; text-decoration: none; transition: box-shadow .2s ease, transform .2s ease; }
+        .resource-link.primary { border-color: var(--accent); color: var(--white); background: var(--accent); }
+        .resource-link:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+        h1 { margin-bottom: 12px; font-size: clamp(2.1rem, 6vw, 2.9rem); font-weight: 670; letter-spacing: -0.03em; line-height: 1.12; }
+        .subtitle { max-width: 720px; margin: 0 auto; color: var(--muted); font-size: 1.06rem; font-weight: 360; }
+        .meta { margin-top: 12px; color: var(--muted); font-size: 0.91rem; font-weight: 360; }
+        h2 { margin: 56px 0 24px; padding-bottom: 11px; border-bottom: 2px solid var(--accent); font-size: 1.72rem; font-weight: 630; line-height: 1.3; }
+        h3 { margin: 30px 0 14px; color: var(--accent); font-size: 1.22rem; font-weight: 630; }
+        h4 { margin-bottom: 8px; color: var(--accent-dark); font-size: 1.01rem; font-weight: 650; }
+        p { margin-bottom: 17px; font-weight: 360; }
+        strong { font-weight: 660; }
+        a { color: var(--accent-dark); }
+        .lead { color: #343b37; font-size: 1.02rem; }
+        .eyebrow { display: block; margin-bottom: 7px; color: var(--muted); font-size: 0.75rem; font-weight: 720; letter-spacing: 0.08em; text-transform: uppercase; }
+        .toc { position: sticky; top: 10px; z-index: 20; display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin: 24px 0 34px; padding: 10px; border: 1px solid rgba(231,225,215,.9); border-radius: 16px; background: rgba(247,244,239,.93); box-shadow: 0 8px 24px rgba(31,36,33,.06); backdrop-filter: blur(10px); }
+        .toc a { padding: 6px 10px; border-radius: 999px; color: var(--muted); font-size: 0.8rem; font-weight: 620; text-decoration: none; }
+        .toc a:hover { color: var(--accent-dark); background: var(--accent-pale); }
+        .highlight-box, .source-note, .warning-note, .critical-note, .code-note {
+            margin: 26px 0; padding: 21px 25px; border-left: 4px solid var(--accent); border-radius: 5px; background: var(--panel); box-shadow: var(--shadow);
+        }
+        .source-note { border-left-color: var(--green); background: var(--green-pale); }
+        .code-note { border-left-color: var(--blue); background: var(--blue-pale); }
+        .warning-note { border-left-color: var(--warning); background: var(--warning-pale); }
+        .critical-note { border-left-color: var(--danger); background: var(--danger-pale); }
+        .highlight-box p:last-child, .source-note p:last-child, .warning-note p:last-child, .critical-note p:last-child, .code-note p:last-child { margin-bottom: 0; }
+        .key-insight { margin: 32px 0; padding: 28px 31px; border-radius: 8px; color: var(--white); background: linear-gradient(135deg, var(--accent), var(--accent-dark)); box-shadow: 0 4px 12px rgba(196,97,47,.22); }
+        .key-insight h3, .key-insight p { color: var(--white); }
+        .key-insight h3 { margin-top: 0; }
+        .key-insight p:last-child { margin-bottom: 0; }
+        .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; margin: 24px 0; }
+        .card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .card { padding: 21px 23px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+        .card h3 { margin-top: 0; font-size: 1.08rem; }
+        .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+        .evidence { margin-bottom: 10px; padding: 3px 9px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; }
+        .evidence.paper { color: var(--accent-dark); background: var(--accent-pale); }
+        .evidence.code { color: var(--blue); background: var(--blue-pale); }
+        .evidence.inference { color: var(--warning); background: var(--warning-pale); }
+        .evidence.audit { color: var(--danger); background: var(--danger-pale); }
+        .figure, .figure-grid { margin: 30px 0; }
+        .figure { text-align: center; }
+        .figure-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .figure-grid .figure { margin: 0; }
+        .figure a { display: block; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--white); box-shadow: var(--figure-shadow); }
+        .figure img { display: block; width: 100%; height: auto; }
+        .figure figcaption { max-width: 760px; margin: 11px auto 0; color: var(--muted); font-size: 0.86rem; font-style: italic; line-height: 1.55; text-align: center; }
+        .comparison-table { width: 100%; margin: 26px 0; border-collapse: collapse; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+        .comparison-table th { padding: 13px 15px; color: var(--white); background: var(--accent); font-size: 0.88rem; font-weight: 620; text-align: left; }
+        .comparison-table td { padding: 12px 15px; border-bottom: 1px solid var(--line); font-size: 0.89rem; font-weight: 360; vertical-align: top; }
+        .comparison-table tr:last-child td { border-bottom: 0; }
+        .comparison-table .focus-row td { background: #f8ede4; font-weight: 590; }
+        .comparison-table td.num, .comparison-table th.num { text-align: center; white-space: nowrap; }
+        .table-scroll { width: 100%; margin: 26px 0; border-radius: 8px; overflow-x: auto; }
+        .table-scroll .comparison-table { min-width: 660px; margin: 0; }
+        .flow-diagram { margin: 29px 0; padding: 27px 31px; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+        .flow-step { position: relative; margin: 16px 0; padding: 18px 22px; border-left: 4px solid var(--accent); border-radius: 4px; background: var(--white); }
+        .flow-step::before { content: "▼"; position: absolute; bottom: -28px; left: 50%; color: var(--accent); font-size: 18px; transform: translateX(-50%); }
+        .flow-step:last-child::before { content: ""; }
+        .flow-step p { margin-bottom: 0; }
+        .flow-step.blue { border-left-color: var(--blue); }
+        .flow-step.blue::before { color: var(--blue); }
+        .flow-step.green { border-left-color: var(--green); }
+        .flow-step.green::before { color: var(--green); }
+        ul { margin: 15px 0 19px 2px; list-style: none; }
+        li { position: relative; margin-bottom: 9px; padding-left: 22px; font-weight: 360; }
+        li::before { content: "•"; position: absolute; left: 2px; color: var(--accent); font-size: 1.2rem; font-weight: 700; }
+        details { margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+        summary { display: flex; align-items: center; gap: 12px; padding: 17px 20px; cursor: pointer; font-weight: 630; list-style: none; }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: "＋"; margin-left: auto; color: var(--accent); font-size: 1.1rem; }
+        details[open] summary::after { content: "−"; }
+        .details-body { padding: 18px 22px 22px; border-top: 1px solid var(--line); }
+        code { padding: 2px 5px; border-radius: 4px; color: var(--accent-dark); background: var(--accent-pale); font-size: 0.88em; }
+        pre { margin: 22px 0; padding: 20px 22px; border: 1px solid #343b37; border-radius: 8px; color: #edf2ee; background: var(--ink); font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 0.84rem; line-height: 1.65; overflow-x: auto; }
+        pre code { padding: 0; color: inherit; background: transparent; }
+        pre .c { color: #93a29a; }
+        footer { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.86rem; font-weight: 360; text-align: center; }
+        @media (max-width: 760px) {
+            .container { width: min(100% - 28px, 920px); padding: 34px 8px 56px; }
+            .card-grid, .card-grid.three, .figure-grid { grid-template-columns: 1fr; }
+            .toc { position: static; }
+            .flow-diagram { padding: 20px 16px; }
+            h2 { margin-top: 46px; font-size: 1.5rem; }
+            .highlight-box, .key-insight { padding: 22px; }
+            .subtitle, .meta { overflow-wrap: anywhere; }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header>
+            <a class="back-link" href="../../../index.html">← 返回 Literature 调研档案首页</a>
+            <div class="status-row">
+                <span class="badge">NAACL 2025</span>
+                <span class="badge">arXiv:2404.07738v2（2025-02，本页所读版本）</span>
+                <span class="badge">三轮 ARR 才录用</span>
+                <span class="badge">代码开源（无 license 文件）</span>
+                <span class="badge gray">归档：简单档</span>
+            </div>
+            <h1>ResearchAgent</h1>
+            <p class="subtitle">迭代式科研 Idea 生成：从一篇核心论文出发，靠「引用图 + 实体共现知识库 + 互相评审的 LLM 代理」产出 Problem → Method → Experiment 三件套</p>
+            <p class="meta">Jinheon Baek · Sujay Kumar Jauhar · Silviu Cucerzan · Sung Ju Hwang<br>KAIST AI × Microsoft Research × DeepAuto.ai（现 Prescient）· GitHub: JinheonBaek/ResearchAgent</p>
+            <div class="resource-row">
+                <a class="resource-link primary" href="paper/ResearchAgent_arXiv_2404.07738.pdf">论文 PDF（本地）</a>
+                <a class="resource-link" href="https://arxiv.org/abs/2404.07738">arXiv 页面</a>
+                <a class="resource-link" href="https://github.com/JinheonBaek/ResearchAgent">官方 GitHub</a>
+                <a class="resource-link" href="https://arxiv.org/src/2404.07738">TeX 源码（arXiv 官方）</a>
+            </div>
+        </header>
+
+        <div class="highlight-box">
+            <p><strong>这篇论文到底做了什么：</strong>给定一篇 2023 年 5 月之后的核心论文，ResearchAgent 自动产出一份完整的科研 Idea（研究问题 + 方法 + 实验设计）。它的特别之处不在「LLM 写想法」，而在三个结构性设计：① 输入端用引用图找相关论文、用 5 万篇论文挖出的<strong>实体共现知识库</strong>注入跨领域概念；② 过程端让 6 个 LLM 代理分三阶段「生成—评审—修改」迭代 3 轮；③ 评分端的评审标准不是人写的，而是<strong>从 10 组真实人类评审标注里反向诱导</strong>出来的。本页同时给出对官方仓库的审计：开源代码是 2025 年 8 月（NAACL 发表后）重写的推理流水线，<strong>复现不了论文的全部实验</strong>，且有两处与论文描述不符。</p>
+        </div>
+
+        <nav class="toc" aria-label="页面导航">
+            <a href="#submission">投稿历程与认可度</a>
+            <a href="#pipeline">流水线机制</a>
+            <a href="#knowledge">知识库与检索</a>
+            <a href="#criteria">评审标准对齐</a>
+            <a href="#results">实验结果</a>
+            <a href="#code-audit">代码审计</a>
+            <a href="#assessment">评价与启示</a>
+        </nav>
+
+        <!-- ══════════════ 投稿历程 ══════════════ -->
+        <section id="submission">
+            <h2>〇、投稿历程与学界认可度</h2>
+            <p class="lead">OpenReview 记录显示：这篇论文从 arXiv 挂出到 NAACL 录用，走了<strong>三轮 ARR 滚动评审、整整一年</strong>——不是一篇「一轮过」的论文，但它的引用影响力远超 venue 档次。</p>
+
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>时间</th><th>动作</th><th>结果</th></tr></thead>
+                    <tbody>
+                        <tr><td>2024-04-11</td><td>arXiv v1 挂出；同月投 <strong>ACL ARR 2024 April</strong></td><td>未中</td></tr>
+                        <tr><td>2024-08-16</td><td>修改后转投 <strong>ARR 2024 August</strong></td><td>未中</td></tr>
+                        <tr><td>2024-10-15</td><td>再投 <strong>ARR 2024 October</strong></td><td>分数达标后 commit</td></tr>
+                        <tr class="focus-row"><td>2025-02-09</td><td>arXiv v2（camera-ready 对应版，+3 页附录）→ <strong>NAACL 2025 Long Paper</strong></td><td>✔ 录用（2025-04 开会）</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <ul>
+                <li><strong>ARR 机制：</strong>ACL 系滚动评审——每轮拿到审稿意见后可修改重投下一轮，或把已有评审 commit 给具体会议（ACL/NAACL/EMNLP）由 Senior AC 裁决。三轮才中说明前两轮分数大概率在 borderline，初稿说服力不足；</li>
+                <li><strong>v1 → v2 的变化</strong>（27 → 30 页）：补了 GPT-4 具体版本（Nov-06-2023）、知识库规模（50,091 篇）、Label Studio 人评平台等实现细节，附录扩充——正是审稿人最可能追问的可复现性问题；</li>
+                <li><strong>认可度（截至 2026-08）：Semantic Scholar 218 次引用、influential citation 25 次</strong>。NAACL 在 NLP 三大里相对最弱，但 2024-04 的论文两年多 218 引，在「LLM for Science」方向属于高频引用的种子论文——problem/method/experiment 三件套定义、五维评审标准、human-aligned rubric 诱导被后续工作（AI Scientist、ResearchTown、AI Researcher 等）大量沿用；</li>
+                <li><strong>一句话定位：</strong>「引用影响力 ≫ venue 档次」的典型——方向开创性真实（踩中 2024 最热赛道），实验严谨性有水分（磨了一年才过审）。引用它的人引的是问题定义和框架，不是实验数字。这与本页代码审计的结论互为印证。</li>
+            </ul>
+
+            <div class="source-note">
+                <p><strong>版本说明：</strong>本页精读基于 <strong>arXiv v2</strong>（2025-02-09，即 NAACL 录用后的修订版，本地 <code>paper/ResearchAgent_arXiv_2404.07738.pdf</code> 经 md5 校验与 v2 完全一致），不是 2024-04 被拒的 v1。投稿记录来源：OpenReview API（Submission I0oWWdH7cS / A8OgNNF3rV / dMlO5MP42A）；引用数据来源：Semantic Scholar。</p>
+            </div>
+        </section>
+
+        <!-- ══════════════ 流水线 ══════════════ -->
+        <section id="pipeline">
+            <h2>一、流水线：三阶段 × 生成-评审迭代</h2>
+            <p class="lead">ResearchAgent 把「读文献想 Idea」形式化为三步：p = f(L) 找问题、m = f(p, L) 提方法、d = f(p, m, L) 设计实验。每一步都不是一次生成，而是「生成 → 五维评审 → 按低分维度修改」循环 3 轮。</p>
+
+            <figure class="figure">
+                <a href="assets/concept_fig.png"><img src="assets/concept_fig.png" alt="ResearchAgent 概念图"></a>
+                <figcaption>论文 Fig.1（概念图）。(A) 知识来源：核心论文 + 引用图上的相关论文 + 实体知识库；(B) 生成流程：Problem → Method → Experiment，每步由 ReviewingAgents 评审迭代。注意图中知识库被画成独立的「第二输入」，与引用图平行——这正是它和「RAG 式文献问答」的区别。</figcaption>
+            </figure>
+
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <h4>输入：一篇核心论文 l₀</h4>
+                    <p>论文设定：2023-05-01 之后发表（GPT-4 训练截止 2023-04，避免背答案）、引用数 &gt; 20，采样 300 篇构成 benchmark。每篇平均带 87 篇参考文献。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>补充材料：相关论文 + 外部实体</h4>
+                    <p>引用图上按摘要相似度（SPECTER v2）取 top-10 相关论文；再从知识库检索 top-30 个「共现强度高」的实体。两者连同标题摘要一起塞进 prompt。</p>
+                </div>
+                <div class="flow-step blue">
+                    <h4>Problem 阶段：Identifier ⇄ Validator</h4>
+                    <p>ProblemIdentifier 生成「研究问题 + 理由」；ProblemValidator 用 5 个线程并行按 Clarity / Relevance / Originality / Feasibility / Significance 打分（1–5 Likert，每档有文字 rubric）；低于 5 分的维度连同 review/feedback 回喂给 Identifier 重写。循环 3 轮。</p>
+                </div>
+                <div class="flow-step blue">
+                    <h4>Method 阶段：Developer ⇄ Validator</h4>
+                    <p>同样结构，5 个维度换成 Clarity / Validity / Rigorousness / Innovativeness / Generalizability。拿到上一阶段选出的最佳 problem 作为上下文。</p>
+                </div>
+                <div class="flow-step blue">
+                    <h4>Experiment 阶段：Designer ⇄ Validator</h4>
+                    <p>5 个维度：Clarity / Validity / Robustness / Feasibility / Reproducibility。拿到最佳 problem + 最佳 method。</p>
+                </div>
+                <div class="flow-step green">
+                    <h4>输出：每阶段 best-of-3</h4>
+                    <p>每阶段保留 3 轮历史，按五维平均分选出最佳版本传给下一阶段——<strong>不是顺序改进到第 3 轮就停</strong>，而是 3 选 1。最终得到 [problem, method, experiment] 三件套。</p>
+                </div>
+            </div>
+
+            <div class="source-note">
+                <p><strong>「生成-评审」如何分工（代码确认）：</strong>生成代理（Identifier/Developer/Designer）维护<strong>多轮对话历史</strong>——refinement 是在同一个会话里追加 user 消息完成的，模型看得到自己上一轮的输出；评审代理（Validator）则是<strong>无状态单轮调用</strong>，5 个维度各开一个线程、各自独立打分。生成侧代码在 <code>pipelines/agents/problem_identifier.py</code>，评审侧在 <code>problem_validator.py</code>（ThreadPoolExecutor，max_workers=5）。</p>
+            </div>
+
+            <div class="key-insight">
+                <h3>为什么是这个结构？</h3>
+                <p>作者把「人类研究者怎么想 Idea」拆成三个要素：读相关工作（→ 引用图）、跨领域概念联想（→ 实体知识库）、同行讨论迭代（→ ReviewingAgents）。整篇论文可以读作：把这三个要素分别 operationalize 成 LLM 流水线的一个部件，然后逐个做消融证明它们都贡献分数。这个「按人类科研流程建模」的叙事是它对后续工作（AI Scientist、ResearchTown 等）最有影响力的部分。</p>
+            </div>
+        </section>
+
+        <!-- ══════════════ 知识库 ══════════════ -->
+        <section id="knowledge">
+            <h2>二、实体中心知识库：跨领域 Idea 从哪来</h2>
+            <p class="lead">引用图只能给你「这篇论文的邻居」，知识库要回答的是「哪些概念经常和这些概念一起出现，但不在你的文献列表里」——这是论文声称的 novelty 主要来源。</p>
+
+            <h3>构建方式（论文 §4.2）</h3>
+            <ul>
+                <li>用 BLINK 实体链接器在 2023-05-01 ~ 2023-12-31 的论文标题+摘要上抽实体，共 <strong>50,091 篇</strong>（含参考文献）；</li>
+                <li>得到稀疏共现矩阵 K ∈ R^(m×m)：K[i][j] = 实体 i 和 j 在同一篇论文里共现的次数，外加每个实体的独立计数；</li>
+                <li>实体抽取允许重复（multiset），同一篇内的所有实体两两配对计入共现。</li>
+            </ul>
+
+            <h3>检索方式：贝叶斯近似</h3>
+            <p>对当前文献组抽出的实体集合 E，检索 top-k 个外部实体，打分函数（论文 Eq.2）：</p>
+            <pre><code>score(e<sub>i</sub>) = Σ<sub>e<sub>j</sub> ∈ E</sub> log P(e<sub>j</sub> | e<sub>i</sub>) + log P(e<sub>i</sub>)
+
+  P(e<sub>j</sub> | e<sub>i</sub>) = cooccur(e<sub>i</sub>, e<sub>j</sub>) / Σ<sub>x</sub> cooccur(e<sub>i</sub>, x)   <span class="c"># 条件概率，由 K 归一化</span>
+  P(e<sub>i</sub>)       = count(e<sub>i</sub>) / Σ<sub>x</sub> count(x)               <span class="c"># 先验</span></code></pre>
+            <p>直觉：一个候选实体越能「解释」当前文献里出现的实体（条件似然高）、同时本身不太偏门（先验不过分低），就越值得注入 prompt。论文明确说这只是一种实例化，附录里换成 embedding 检索（BLINK 向量余弦相似）结果基本持平（4.52/4.28/4.18 vs 4.49/4.34/4.16）——说明贡献来自「有外部实体」而非检索公式本身。</p>
+
+            <div class="code-note">
+                <p><strong>代码确认（knowledge/store.py）：</strong>实现与公式逐项对应，外加两个论文没写的细节：① 候选实体要求<strong>共现次数 ≥ 3</strong> 才进入打分（去长尾噪声）；② 概率取 log2 且加 1e-16 平滑；③ top_k 默认 30，用 <code>torch.topk</code> 选取。注意 <code>get_entity_log_likelihood</code> 里重复出现的实体会重复累加条件概率（multiset 语义），与论文「允许重复」一致。</p>
+            </div>
+
+            <h3>定性例子（论文 Table 13）</h3>
+            <p>一个被反复引用的案例：核心论文关于果蝇遗传变异，知识库检索到「Drosophila Genetic Reference Panel」和「CRISPR」两个实体，最终生成的 Idea 是「用 CRISPR 在 DGRP 面板上系统扰动，桥接遗传变异与 CRISPR 应用」——单看引用图上的论文推不出这个组合。这类「实体撮合」是作者论证 cross-pollination 的核心证据，但论文只给了定性展示，没有量化「有多少 Idea 真正用到了检索实体」。</p>
+        </section>
+
+        <!-- ══════════════ 评审标准 ══════════════ -->
+        <section id="criteria">
+            <h2>三、评审标准：从 10 组人类标注里诱导</h2>
+            <p class="lead">这是全文方法论上最新颖、也最需要警惕的一环：ReviewingAgents 的打分 rubric 不是人工设计的，而是 LLM 从真实评审数据里「反推」出来的。</p>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence paper">论文声称</span>
+                    <h3>诱导流程</h3>
+                    <p>收集 10 对（生成的 Idea， 人类评审的五维 Likert 分数），标注者是发过 ≥3 篇论文的研究者；把这 10 对喂给 GPT-4，让它为每个维度写出 1–5 每一档的详细文字描述（附录 Tables 8–10，每档一段 rubric）。另有 5 名评审者主观认可这些标准（2 人强烈同意、3 人中度同意）。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence code">代码确认</span>
+                    <h3>rubric 真的在 prompt 里</h3>
+                    <p>Validator 每个维度的 prompt 末尾都完整附上该维度 1–5 档的诱导 rubric 原文，并要求输出 <code>Review: / Feedback: / Rating (1-5):</code>。prompt 里还有一句明确的防灌水指令：「请保持挑剔，避免无理由地给 4–5 高分」。评审时相关论文只给标题（<code>include_abstract=False</code>），不给摘要。</p>
+                </article>
+            </div>
+
+            <figure class="figure">
+                <a href="assets/distribution_fig.png"><img src="assets/distribution_fig.png" alt="人类与模型评分分布对比"></a>
+                <figcaption>论文 Fig.6。左：人类评分分布；中：未对齐的模型评分（明显偏向高分、分布偏斜）；右：用诱导标准对齐后的模型评分，分布形状更接近人类。这是「标准诱导有效」的主要定量证据。</figcaption>
+            </figure>
+
+            <div class="warning-note">
+                <p><strong>容易误解的一点：</strong>「与人类偏好对齐」的定量证据其实不厚——全部依据是 10 组标注对诱导出的 rubric + 分布形状对比 + 人-机一致性（Spearman 0.49–0.64，见下表）。10 个样本诱导 15 套 rubric，样本效率惊人但也意味着 rubric 几乎肯定过拟合了这 10 组的风格；而且诱导用的主要是 CS 论文（作者承认），跨领域适用性只用「引用数-分数相关性在两个领域同向」间接论证。</p>
+            </div>
+
+            <h3>一致性数据（论文 Table 1）</h3>
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>比较双方</th><th>方式</th><th class="num">Problem</th><th class="num">Method</th><th class="num">Experiment</th></tr></thead>
+                    <tbody>
+                        <tr><td>人 ⇄ 人（20% 双标）</td><td>打分（Spearman）</td><td class="num">0.83</td><td class="num">0.76</td><td class="num">0.67</td></tr>
+                        <tr><td>人 ⇄ 人</td><td>两两比较（Cohen's κ）</td><td class="num">0.62</td><td class="num">0.62</td><td class="num">0.41</td></tr>
+                        <tr class="focus-row"><td>人 ⇄ 模型</td><td>打分（Spearman）</td><td class="num">0.64</td><td class="num">0.58</td><td class="num">0.49</td></tr>
+                        <tr><td>人 ⇄ 模型</td><td>两两比较（κ）</td><td class="num">0.71</td><td class="num">0.62</td><td class="num">0.52</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>读法：Experiment 维度上所有一致性都最低（人-人 κ 只有 0.41），作者解释为「实验设计评价本身主观」——这同时也说明该维度的人机一致性数字（0.49/0.52）已经逼近人类自身噪声上限，模型评分在 Experiment 上的绝对数值不宜过度解读。</p>
+        </section>
+
+        <!-- ══════════════ 实验结果 ══════════════ -->
+        <section id="results">
+            <h2>四、实验结果：增益真实但分布集中</h2>
+
+            <h3>主结果：人评 + 机评雷达图</h3>
+            <figure class="figure">
+                <a href="assets/radar_human.png"><img src="assets/radar_human.png" alt="人类评估雷达图"></a>
+                <figcaption>论文 Fig.2 上半：人类评估（10 位专家，评自己论文生成的 Idea，共 150 个完整 Idea）。ResearchAgent（含实体）在 15 个维度+3 个均分上全面领先 Naive（只用核心论文）和 w/o Entity（无实体检索），Originality / Innovativeness 等创造性维度差距最大。</figcaption>
+            </figure>
+            <figure class="figure">
+                <a href="assets/radar_model.png"><img src="assets/radar_model.png" alt="模型评估雷达图"></a>
+                <figcaption>论文 Fig.2 下半：模型评估（GPT-4 + 诱导标准，300 篇核心论文全量）。形状与人评一致，绝对分更高、方差更小——典型的 LLM-judge 分数膨胀迹象。</figcaption>
+            </figure>
+
+            <figure class="figure">
+                <a href="assets/pairwise_fig.png"><img src="assets/pairwise_fig.png" alt="两两比较胜率"></a>
+                <figcaption>论文 Fig.3：两两比较胜率（人评/机评各一组）。完整版 ResearchAgent 对两个消融变体胜率均显著 &gt;50%，Naive 最弱。机评下的胜率比人评更夸张，再次提示 LLM 评委放大了差距。</figcaption>
+            </figure>
+
+            <h3>消融：知识源各自贡献多少（Table 2，机评均分）</h3>
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>变体</th><th class="num">Problem</th><th class="num">Method</th><th class="num">Experiment</th></tr></thead>
+                    <tbody>
+                        <tr class="focus-row"><td>ResearchAgent（完整）</td><td class="num">4.52</td><td class="num">4.28</td><td class="num">4.18</td></tr>
+                        <tr><td>– 去掉实体</td><td class="num">4.35</td><td class="num">4.13</td><td class="num">4.02</td></tr>
+                        <tr><td>– 换成随机实体</td><td class="num">4.41</td><td class="num">4.19</td><td class="num">4.13</td></tr>
+                        <tr><td>– 去掉相关论文</td><td class="num">4.26</td><td class="num">4.08</td><td class="num">3.97</td></tr>
+                        <tr><td>– 换成随机论文</td><td class="num">4.35</td><td class="num">4.16</td><td class="num">4.02</td></tr>
+                        <tr><td>– 两者都去（≈ Naive）</td><td class="num">4.20</td><td class="num">4.03</td><td class="num">3.92</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <ul>
+                <li>相关论文的贡献（+0.17~0.22）大于实体的贡献（+0.15~0.17），论文自己也承认 references 更关键；</li>
+                <li><strong>随机实体/随机论文都好过不给</strong>——作者的解释是 LLM 能过滤噪声并从不相关材料中获得「偶然价值」。这个发现诚实但微妙：它意味着打分增益里有一部分来自「prompt 里有更多东西」本身，而不是精准的检索；</li>
+                <li>所有分数都在 4 分上下（5 分制），绝对差距 0.1–0.3 分。配合 LLM 评委普遍的高分偏置，这些差距的实用意义（研究者拿到手会不会觉得 Idea 更好）论文没有直接验证。</li>
+            </ul>
+
+            <h3>迭代轮次与领域差异</h3>
+            <div class="figure-grid">
+                <figure class="figure">
+                    <a href="assets/iteration_fig.png"><img src="assets/iteration_fig.png" alt="迭代轮次与分数"></a>
+                    <figcaption>论文 Fig.4：分数随 refinement 轮次的变化，3 轮后饱和——这是「iterations=3」这个超参的出处。</figcaption>
+                </figure>
+                <figure class="figure">
+                    <a href="assets/discipline_fig.png"><img src="assets/discipline_fig.png" alt="核心论文领域分布"></a>
+                    <figcaption>论文 Fig.7：300 篇核心论文的领域分布，CS / 医学 / 工程占前三——benchmark 本身偏向高资源领域。</figcaption>
+                </figure>
+            </div>
+
+            <h3>两张值得单独看的表</h3>
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>底座 LLM</th><th>Naive（P/M/E）</th><th>完整 ResearchAgent（P/M/E）</th><th>知识增强是否有效</th></tr></thead>
+                    <tbody>
+                        <tr><td>GPT-4 (1106)</td><td class="num">4.20 / 4.03 / 3.92</td><td class="num"><strong>4.52 / 4.28 / 4.18</strong></td><td>✔ 显著</td></tr>
+                        <tr><td>Llama3-8B</td><td class="num">3.76 / 3.69 / 3.54</td><td class="num">4.18 / 4.03 / 3.95</td><td>✔ 显著</td></tr>
+                        <tr><td>Qwen1.5-32B</td><td class="num">3.64 / 3.74 / 3.66</td><td class="num">4.02 / 3.97 / 3.94</td><td>✔ 显著</td></tr>
+                        <tr><td>GPT-3.5</td><td class="num">3.56 / 3.56 / 3.63</td><td class="num">3.58 / 3.58 / 3.60</td><td>✘ 几乎无差</td></tr>
+                        <tr><td>Mixtral-8x7B</td><td class="num">3.31 / 3.27 / 3.20</td><td class="num">3.28 / 3.35 / 3.31</td><td>✘ 几乎无差</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>（Table 5）整条流水线的收益<strong>依赖底座模型的复杂概念整合能力</strong>：弱模型上 references+entities 塞进去也不涨分。作者归因于涌现能力；对我们的启示是——这类「知识增强 + 多代理评审」框架在弱底座上没有意义，评测时必须绑定强模型讨论。</p>
+
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>对比（Table 4，假设生成任务）</th><th class="num">有效性</th><th class="num">新颖性</th><th class="num">清晰度</th><th class="num">相关性</th><th class="num">重要性</th></tr></thead>
+                    <tbody>
+                        <tr><td>SciMON</td><td class="num">4.04</td><td class="num">4.37</td><td class="num">4.56</td><td class="num">3.98</td><td class="num">4.15</td></tr>
+                        <tr><td>Hypothesis Proposer</td><td class="num">3.97</td><td class="num">4.14</td><td class="num">4.07</td><td class="num">4.01</td><td class="num">4.11</td></tr>
+                        <tr class="focus-row"><td>ResearchAgent</td><td class="num"><strong>4.11</strong></td><td class="num"><strong>4.88</strong></td><td class="num"><strong>4.77</strong></td><td class="num"><strong>4.05</strong></td><td class="num"><strong>4.81</strong></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>与既有假设生成方法（SciMON、Hypothesis Proposer）不在同一任务定义上（它们做变量间链接预测），这个对比是「迁就式」的，只作参考。</p>
+
+            <h3>人工评价的组织方式（附录 A）</h3>
+            <ul>
+                <li>10 位评审：美/韩招募，CS/医学/生物方向，每人 ≥3 篇论文；时薪 $22.20，6 页标注指南，Label Studio 平台；</li>
+                <li><strong>每位评审只评基于自己论文生成的 Idea</strong>（保证领域对口），1 小时约评 3 组×3 变体共 9 个 Idea；</li>
+                <li>三轮人评（中间穿插系统修改），受成本所限共完整评价 150 个 Idea。非专家人评作者试过，「效果次优」后弃用。</li>
+            </ul>
+        </section>
+
+        <!-- ══════════════ 代码审计 ══════════════ -->
+        <section id="code-audit">
+            <h2>五、代码审计：一个「能跑的推理壳」，不是复现包</h2>
+            <p class="lead">官方仓库共 18 个 Python 文件、约 1,100 行。通读后结论：<strong>论文的推理流水线忠实实现了，但产生论文数字的那套东西基本都不在仓库里</strong>。仓库 2025-01-14 首次提交，核心代码写于 2025-05 ~ 2025-08（NAACL 2025 年 4 月开会之后），是从零重写的干净版，不是论文实验的原始代码。</p>
+
+            <h3>仓库结构</h3>
+            <pre><code>ResearchAgent/
+├── code/main.py                     <span class="c"># 入口：S2 拉论文 → 检索 references+entities → 跑流水线</span>
+├── code/pipelines/research_pipeline.py   <span class="c"># 三阶段 × (生成→评审)×3 轮 + best-of-3 选择</span>
+├── code/pipelines/agents/
+│   ├── base.py                      <span class="c"># prompt 拼接公共件（论文/实体/feedback 格式化）</span>
+│   ├── problem_identifier.py        <span class="c"># 生成代理：首轮生成 / 后续按低分维度 refine（带对话历史）</span>
+│   ├── problem_validator.py         <span class="c"># 评审代理：5 维度并行线程打分（无状态）</span>
+│   ├── method_developer.py / method_validator.py      <span class="c"># 同构，换维度</span>
+│   └── experiment_designer.py / experiment_validator.py
+├── code/knowledge/store.py          <span class="c"># 共现矩阵统计 + 贝叶斯检索（top-30，共现≥3）</span>
+├── code/models/openai.py            <span class="c"># OpenAI 封装：temperature=1.25, max_tokens=1000, 4^n 退避</span>
+├── code/utils/{s2, evaluation, data_io, formatting}.py
+└── data/
+    ├── papers.jsonl     (6,417 行)   <span class="c"># 候选论文元数据（代码只取前 300 篇）</span>
+    ├── knowledge.jsonl  (37,903 行)  <span class="c"># corpusid → 实体计数（注意：部分论文 knowledge 为空 {}）</span>
+    └── references.jsonl (43,674 行)  <span class="c"># 引用快照——⚠ 没有任何代码读这个文件</span></code></pre>
+
+            <h3>论文 ⇄ 代码差异清单</h3>
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>事项</th><th>论文说法</th><th>代码实际</th><th>判定</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>引用方向</strong></td>
+                            <td>「perusing other papers that <em>cite or are cited by</em> it」（双向）</td>
+                            <td><code>s2.get_relevant_references</code> 只调 S2 的 <code>/references</code> 端点——即核心论文<strong>引用的</strong>论文（向后看）；但 prompt 却告诉模型「related papers 是<em>引用了</em>目标论文的研究」（向前看），方向正好说反</td>
+                            <td><span class="evidence audit">审计发现</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>默认模型</strong></td>
+                            <td>GPT-4 (2023-11-06 版)</td>
+                            <td><code>main.py</code> 与 <code>OpenAIClient</code> 默认 <code>gpt-4o</code>——训练数据已包含 2023-05 之后的论文，论文「避免数据泄漏」的时间隔离在默认配置下不成立</td>
+                            <td><span class="evidence audit">审计发现</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>知识库构建</strong></td>
+                            <td>BLINK 在 50,091 篇论文上抽实体建共现矩阵</td>
+                            <td>仓库只给<strong>成品</strong> <code>knowledge.jsonl</code>（37,903 行，且部分条目实体为空），BLINK 抽取与建矩阵的代码不存在；实体「每篇平均 2.17 个」的口径无法核对</td>
+                            <td><span class="evidence audit">审计发现</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>评测代码</strong></td>
+                            <td>人评（Label Studio，150 Idea）+ GPT-4 机评 + 两两比较 + 一致性统计</td>
+                            <td>无评测脚本、无标注数据、无 pairwise 比较实现。<code>utils/evaluation.py</code> 只是反馈分数的聚合工具（平均分/低分筛选），不是论文评测器</td>
+                            <td><span class="evidence audit">审计发现</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>标准诱导</strong></td>
+                            <td>GPT-4 从 10 组人类标注诱导 rubric</td>
+                            <td>诱导过程无代码；诱导产物（rubric 文本）被硬编码进各 Validator 的 prompt</td>
+                            <td><span class="evidence code">代码确认</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>references.jsonl</strong></td>
+                            <td>—（论文未提）</td>
+                            <td>43,674 行引用快照随仓库发布，但全仓库无任何文件读取它——运行期引用实时走 S2 API。推测是构建数据时的中间产物误打包</td>
+                            <td><span class="evidence audit">审计发现</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>迭代与选择</strong></td>
+                            <td>3 轮迭代，分数 3 轮后饱和</td>
+                            <td>每阶段独立 3 轮「生成→评审」，最后按五维平均分 <strong>best-of-3</strong> 选出进入下一阶段的版本；阶段间串行、阶段内轮次间通过 context 传递最佳结果。论文 Fig.4 暗示「逐轮变好」，实现其实是「多臂采样选优」</td>
+                            <td><span class="evidence code">代码确认</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>采样参数</strong></td>
+                            <td>未写明</td>
+                            <td>temperature=1.25（很高，利于多样性）、max_tokens=1000、超时 30s、重试 3 次 4^n 退避；<strong>重试耗尽后把错误字符串当正常输出返回</strong>，解析失败则 problem 置 None 静默跳过评审</td>
+                            <td><span class="evidence code">代码确认</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="critical-note">
+                <p><strong>最重要的审计结论：</strong>这个仓库<strong>不能复现论文的任何一张表/图</strong>——没有 benchmark 论文筛选代码（论文说「&gt;20 引用、300 篇」，仓库 papers.jsonl 有 6,417 行且筛选逻辑缺失）、没有知识库构建代码、没有评测代码、默认模型换了。它能做的是：用你自己的 OpenAI key，对任意 S2 论文 ID 跑通「生成—评审」流水线、得到三件套 Idea。定位是<strong>演示用推理代码</strong>，对待它的方式应该是「读机制」而非「验数字」。</p>
+            </div>
+
+            <details>
+                <summary>附：生成 prompt 的实际拼装顺序（problem_identifier.py，其余两阶段同构）</summary>
+                <div class="details-body">
+                    <pre><code>[system] 你是以「发现有价值新科学问题」为目标的 AI 助手
+[user]
+  1. 任务说明：要生成 original / clear / feasible / relevant / significant 的问题
+  2. 材料解读指引：目标论文是中心、related papers 提供上下文、entities 是灵感来源（"not all may be relevant"）
+  3. 系统性步骤：先读目标论文 → 再读相关论文 → 最后浏览实体
+  4. 材料本体：目标论文标题+摘要 | 10 篇相关论文标题+摘要 | 30 个实体（' | ' 分隔）
+  5. 收尾：再次重复目标论文标题+摘要（防 Lost-in-the-Middle），要求按
+     "Problem: \nRationale: " 格式输出
+[refinement 轮] 同一对话追加：低分维度名 + 该维度的定义/Review/Feedback 原文，
+     要求保持高分维度优势、重写 Problem+Rationale</code></pre>
+                    <p>评审 prompt 则是完全独立的单轮：system 设定评审角色 → 任务+材料（相关论文只给标题）→ 该维度 1–5 档诱导 rubric → 要求 <code>Review: / Feedback: / Rating (1-5):</code> 三行输出，正则解析。</p>
+                </div>
+            </details>
+        </section>
+
+        <!-- ══════════════ 评价 ══════════════ -->
+        <section id="assessment">
+            <h2>六、评价：对我们的启示</h2>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence inference">合理推断</span>
+                    <h3>真正立得住的贡献</h3>
+                    <ul>
+                        <li><strong>问题定义</strong>：把 idea generation 拆成 problem/method/experiment 三件套 + 各 5 维评审标准，这套任务形式化被后续工作大量沿用；</li>
+                        <li><strong>人类对齐的评审标准诱导</strong>：用极少标注（10 对）让 LLM 评委的分布贴近人类，思路比 rubric 本身更有价值；</li>
+                        <li><strong>实体共现知识库</strong>：给「跨领域联想」提供了一个可计算、可消融的载体，弱模型实验诚实暴露了框架的适用边界。</li>
+                    </ul>
+                </article>
+                <article class="card">
+                    <span class="evidence inference">合理推断</span>
+                    <h3>明显的天花板</h3>
+                    <ul>
+                        <li>评测闭环是「LLM 生成 + LLM 评审」，人评只有 150 个 Idea 且评审者就是论文作者群的同行；没有「Idea 被执行后是否真的成立」的任何下游验证；</li>
+                        <li>增益集中在 0.1–0.3 分（5 分制），且随机材料也能涨分——分数里有「prompt 更丰富」的水分；</li>
+                        <li>三阶段串行、每阶段独立打分，没有「problem 不好就回去改 problem」的全局回环；Experiment 阶段的人-人 κ 只有 0.41，该维度结论天然不牢；</li>
+                        <li>代码与论文的差距（上节）意味着第三方无法验证主结果。</li>
+                    </ul>
+                </article>
+            </div>
+
+            <div class="key-insight">
+                <h3>对我们（自动化科研方向）最有用的三个点</h3>
+                <p>① <strong>「生成代理带对话历史 refine、评审代理无状态并行打分」是一个干净好用的多代理模板</strong>，代码实现直白（各约 100 行），可以直接借鉴结构；② <strong>评审标准应该显式写出来并尽量对齐真人偏好</strong>——哪怕只用 10 组标注做诱导，也比拍脑袋 rubric 强，且诱导过程本身可以自动化；③ <strong>警惕「随机也好过没有」式的消融结果</strong>：它提示知识增强类系统必须用「随机材料基线」做对照，否则增益归因不清。反过来，它的局限也是机会：idea 的下游可执行性验证（接到实验/代码 agent 上）、全局回环纠错、弱模型下的知识蒸馏，都是这篇 2024 年工作留出的空位。</p>
+            </div>
+
+            <div class="source-note">
+                <p><strong>归档说明：</strong>本页基于 arXiv v2（2025-02-09，NAACL 2025 录用版）+ 其 tex 源码，与官方仓库 commit <code>babb49b</code>（2025-08-24，当前 HEAD）交叉核对；论文 PDF、TeX 源码、代码 clone 均存档于本目录 <code>paper/</code> 与 <code>code/</code>。归档位置（2026-08-04 定档）：Literature项目或者系统 / <strong>简单</strong> —— 有实质（任务定义、标准诱导、实体知识库均被后续工作沿用）但贡献有限：三轮 ARR 才录用，且开源代码复现不了主结果（详见第五节审计），不足以入「复杂」档。</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>ResearchAgent 中文精读 · 论文 + 代码交叉审计</p>
+            <p>整理日期：2026-08-04 · 代码版本：JinheonBaek/ResearchAgent @ babb49b（2025-08-24）</p>
+        </footer>
+    </main>
+</body>
+</html>
