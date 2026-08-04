@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Tree-of-Debate 精读：多人格辩论树做科学论文对比分析，论文与代码互相印证的深读与复现审计。">
+<title>Tree-of-Debate｜把两篇论文变成辩手，让辩论树长出对比总结</title>
+<style>
+:root {
+    --ink: #1f2421; --muted: #5c635d; --paper: #f7f4ef; --panel: #fbf9f5;
+    --white: #fff; --line: #e7e1d7; --accent: #c4612f; --accent-dark: #a94e22;
+    --accent-pale: #f2e3d6; --green: #315b45; --green-pale: #edf2ee;
+    --blue: #355f78; --blue-pale: #edf4f7; --warning: #8a641c; --warning-pale: #fff7e6;
+    --danger: #934958; --danger-pale: #fff0f2;
+    --shadow: 0 2px 8px rgba(31,36,33,.06); --figure-shadow: 0 4px 14px rgba(31,36,33,.11);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { color: var(--ink); background: var(--paper); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 16px; line-height: 1.72; overflow-x: hidden; }
+.container { width: min(920px, calc(100% - 44px)); margin: 0 auto; padding: 52px 18px 76px; }
+header { margin-bottom: 34px; padding-bottom: 34px; border-bottom: 1px solid var(--line); text-align: center; }
+.status-row, .resource-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.status-row { margin-bottom: 18px; }
+.resource-row { margin-top: 22px; }
+.badge, .evidence { display: inline-flex; align-items: center; width: fit-content; border-radius: 999px; white-space: nowrap; }
+.badge { padding: 4px 11px; color: var(--accent-dark); background: var(--accent-pale); font-size: .79rem; font-weight: 650; }
+.badge.green { color: var(--green); background: var(--green-pale); }
+.resource-link { display: inline-block; padding: 7px 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent-dark); background: var(--panel); font-size: .84rem; font-weight: 620; text-decoration: none; transition: box-shadow .2s ease, transform .2s ease; }
+.resource-link.primary { border-color: var(--accent); color: var(--white); background: var(--accent); }
+.resource-link:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+h1 { margin-bottom: 12px; font-size: clamp(2.35rem, 7vw, 3.25rem); font-weight: 670; letter-spacing: -.035em; line-height: 1.08; }
+.subtitle { max-width: 720px; margin: 0 auto; color: var(--muted); font-size: 1.08rem; font-weight: 360; }
+.meta { margin-top: 12px; color: var(--muted); font-size: .91rem; font-weight: 360; }
+h2 { margin: 56px 0 24px; padding-bottom: 11px; border-bottom: 2px solid var(--accent); font-size: 1.78rem; font-weight: 630; line-height: 1.3; }
+h3 { margin: 30px 0 14px; color: var(--accent); font-size: 1.25rem; font-weight: 630; }
+h4 { margin-bottom: 8px; color: var(--accent-dark); font-size: 1.01rem; font-weight: 650; }
+p { margin-bottom: 17px; font-weight: 360; }
+strong { font-weight: 660; }
+a { color: var(--accent-dark); }
+.lead { color: #343b37; font-size: 1.02rem; }
+.toc { position: sticky; top: 10px; z-index: 20; display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin: 24px 0 34px; padding: 10px; border: 1px solid rgba(231,225,215,.9); border-radius: 16px; background: rgba(247,244,239,.93); box-shadow: 0 8px 24px rgba(31,36,33,.06); backdrop-filter: blur(10px); }
+.toc a { padding: 6px 10px; border-radius: 999px; color: var(--muted); font-size: .8rem; font-weight: 620; text-decoration: none; }
+.toc a:hover { color: var(--accent-dark); background: var(--accent-pale); }
+.highlight-box, .source-note, .warning-note, .critical-note, .code-note { margin: 26px 0; padding: 21px 25px; border-left: 4px solid var(--accent); border-radius: 5px; background: var(--panel); box-shadow: var(--shadow); }
+.source-note { border-left-color: var(--green); background: var(--green-pale); }
+.code-note { border-left-color: var(--blue); background: var(--blue-pale); }
+.warning-note { border-left-color: var(--warning); background: var(--warning-pale); }
+.critical-note { border-left-color: var(--danger); background: var(--danger-pale); }
+.highlight-box p:last-child, .source-note p:last-child, .warning-note p:last-child, .critical-note p:last-child, .code-note p:last-child { margin-bottom: 0; }
+.key-insight { margin: 32px 0; padding: 28px 31px; border-radius: 8px; color: var(--white); background: linear-gradient(135deg, var(--accent), var(--accent-dark)); box-shadow: 0 4px 12px rgba(196,97,47,.22); }
+.key-insight h3, .key-insight p { color: var(--white); }
+.key-insight h3 { margin-top: 0; }
+.key-insight p:last-child { margin-bottom: 0; }
+.card-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 15px; margin: 24px 0; }
+.card-grid.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.card { padding: 21px 23px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+.card h3 { margin-top: 0; font-size: 1.08rem; }
+.card p:last-child, .card ul:last-child { margin-bottom: 0; }
+.evidence { margin-bottom: 10px; padding: 3px 9px; font-size: .72rem; font-weight: 700; letter-spacing: .02em; }
+.evidence.paper { color: var(--accent-dark); background: var(--accent-pale); }
+.evidence.code { color: var(--blue); background: var(--blue-pale); }
+.evidence.inference { color: var(--warning); background: var(--warning-pale); }
+.evidence.audit { color: var(--danger); background: var(--danger-pale); }
+.figure { margin: 30px 0; text-align: center; }
+.figure a, .figure-frame { display: block; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--white); box-shadow: var(--figure-shadow); }
+.figure img { display: block; width: 100%; height: auto; }
+.figure figcaption { max-width: 760px; margin: 11px auto 0; color: var(--muted); font-size: .86rem; font-style: italic; line-height: 1.55; }
+.comparison-table { width: 100%; margin: 26px 0; border-collapse: collapse; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+.comparison-table th { padding: 13px 15px; color: var(--white); background: var(--accent); font-size: .88rem; font-weight: 620; text-align: left; }
+.comparison-table td { padding: 13px 15px; border-bottom: 1px solid var(--line); font-size: .89rem; font-weight: 360; vertical-align: top; }
+.comparison-table tr:last-child td { border-bottom: 0; }
+.comparison-table .focus-row td { background: #f8ede4; font-weight: 590; }
+.table-scroll { width: 100%; margin: 26px 0; border-radius: 8px; overflow-x: auto; }
+.table-scroll .comparison-table { min-width: 680px; margin: 0; }
+.flow-diagram { margin: 29px 0; padding: 27px 31px; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+.flow-step { position: relative; margin: 16px 0; padding: 18px 22px; border-left: 4px solid var(--accent); border-radius: 4px; background: var(--white); }
+.flow-step::before { content: "▼"; position: absolute; bottom: -28px; left: 50%; color: var(--accent); font-size: 18px; transform: translateX(-50%); }
+.flow-step:last-child::before { content: ""; }
+.flow-step p { margin-bottom: 0; }
+ul { margin: 15px 0 19px 2px; list-style: none; }
+li { position: relative; margin-bottom: 9px; padding-left: 22px; font-weight: 360; }
+li::before { content: "•"; position: absolute; left: 2px; color: var(--accent); font-size: 1.2rem; font-weight: 700; }
+details { margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+summary { display: flex; align-items: center; gap: 12px; padding: 17px 20px; cursor: pointer; font-weight: 630; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "＋"; margin-left: auto; color: var(--accent); font-size: 1.1rem; }
+details[open] summary::after { content: "−"; }
+.details-body { padding: 18px 22px 22px; border-top: 1px solid var(--line); }
+code { padding: 2px 5px; border-radius: 4px; color: var(--accent-dark); background: var(--accent-pale); font-size: .88em; }
+pre { margin: 22px 0; padding: 20px 22px; border: 1px solid #343b37; border-radius: 8px; color: #edf2ee; background: var(--ink); font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .84rem; line-height: 1.65; overflow-x: auto; }
+pre code { padding: 0; color: inherit; background: transparent; }
+.code-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin: 22px 0; }
+.code-item { padding: 16px 18px; border: 1px solid var(--line); border-radius: 7px; background: var(--white); }
+.code-item code { display: inline-block; margin-bottom: 7px; color: var(--blue); background: var(--blue-pale); font-weight: 660; }
+.code-item p { margin-bottom: 0; color: var(--muted); font-size: .86rem; }
+.quote-vs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 24px 0; }
+.quote-vs .q { padding: 18px 20px; border-radius: 8px; font-size: .9rem; line-height: 1.65; }
+.quote-vs .q.bad { background: var(--danger-pale); border: 1px solid #e8c9cf; }
+.quote-vs .q.good { background: var(--green-pale); border: 1px solid #cfe0d5; }
+.quote-vs .q h4 { margin-bottom: 8px; }
+.quote-vs mark.bad { background: #f6d3da; color: #7c2d3d; padding: 0 2px; }
+.quote-vs mark.good { background: #d3e6da; color: #1f4630; padding: 0 2px; }
+footer { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: .86rem; font-weight: 360; text-align: center; }
+@media (max-width: 760px) {
+    .container { width: min(100% - 28px, 920px); padding: 34px 8px 56px; }
+    .card-grid, .card-grid.three, .code-list, .quote-vs { grid-template-columns: 1fr; }
+    .toc { position: static; }
+    h2 { margin-top: 46px; font-size: 1.55rem; }
+    .subtitle, .meta { overflow-wrap: anywhere; }
+}
+@media print { .toc { display: none; } body { background: white; } .container { width: 100%; max-width: none; padding: 24px; } .figure a, .card, details { box-shadow: none; } }
+</style>
+</head>
+<body>
+<main class="container">
+
+<header>
+  <div class="status-row">
+    <span class="badge">ACL 2025 Main</span>
+    <span class="badge">arXiv:2502.14767 · v2 2025-06</span>
+    <span class="badge green">论文 / 代码 / 数据集齐全</span>
+  </div>
+  <h1>Tree-of-Debate</h1>
+  <p class="subtitle">把两篇论文变成两个 LLM 辩手，就"谁的贡献更好"逐话题辩论；辩论过程动态长成一棵树，最后由主持人把整棵树合成为一段<strong>对比总结</strong>。辩论不是提升答案的手段——辩论树本身就是产出。</p>
+  <p class="meta">Priyanka Kargupta · Ishika Agarwal · Tal August · Jiawei Han（UIUC，韩家炜组）</p>
+  <div class="resource-row">
+    <a class="resource-link primary" href="paper/Tree-of-Debate_arXiv_2502.14767.pdf">论文 PDF</a>
+    <a class="resource-link" href="paper/tex_source/acl_latex.tex">TeX source</a>
+    <a class="resource-link" href="code/README.html">本地代码</a>
+    <a class="resource-link" href="https://github.com/pkargupta/tree-of-debate/tree/main/dataset">数据集（100 对论文）</a>
+    <a class="resource-link" href="https://github.com/pkargupta/tree-of-debate">官方 GitHub</a>
+    <a class="resource-link" href="https://arxiv.org/abs/2502.14767">arXiv</a>
+  </div>
+</header>
+
+<div class="highlight-box">
+  <p><strong>最短理解：</strong>比较两篇论文时，直接让 LLM 写对比摘要只会得到"表面语义差异的抽取式罗列"。ToD 的做法是：让论文 A、B 各自化身辩手，围绕"我对话题 n 的贡献比你更好"辩论；主持人把辩论中冒出的子话题拆成子节点继续辩，直到论点不再推进。<strong>相似的想法会辩出长子树（谁更好），真正独有的想法会很快收敛（对方无话可说）</strong>——树的形状本身就编码了两篇论文的重叠与差异。</p>
+</div>
+
+<nav class="toc">
+  <a href="#position">定位</a>
+  <a href="#method">方法机制</a>
+  <a href="#code">代码执行链</a>
+  <a href="#experiments">实验与结果</a>
+  <a href="#audit">复现审计</a>
+  <a href="#verdict">最终判断</a>
+</nav>
+
+<!-- ==================== 定位 ==================== -->
+<section id="position">
+<h2>01 · 它解决的问题：非引用关系论文的"新颖性对比"</h2>
+<p class="lead">已有的 comparative summarization 走两步管线：先各自抽取式总结，再找异同。问题在于它捕捉的是<strong>字面语义差异</strong>，而研究者真正需要的是"BERT 的贡献放在 RoBERTa 的语境下还剩多少"这种<strong>相对新颖性判断</strong>——尤其当两篇论文互不引用、来自不同社区时。</p>
+
+<figure class="figure">
+  <div class="figure-frame"><img src="assets/fig1_hierarchy.png" alt="论文贡献层级示意图"></div>
+  <figcaption>论文 Fig.1：两篇论文（ToT vs CoT）对根话题的贡献层级。绿勾 = 某篇独有的贡献，红叉 = 重叠贡献。ToD 的目标就是自动长出这棵"贡献异同树"。</figcaption>
+</figure>
+
+<div class="card-grid three">
+  <article class="card">
+    <span class="evidence paper">设计原则 1</span>
+    <h3>论文人格辩论</h3>
+    <p>每篇论文实例化为一个 persona，为自己的贡献辩护、质疑对方的新颖性。对比推理由对抗性诱导，而非一次性生成。</p>
+  </article>
+  <article class="card">
+    <span class="evidence paper">设计原则 2</span>
+    <h3>树结构分解</h3>
+    <p>一篇论文的贡献可拆成多个子想法，各自的新颖程度应<strong>独立评估</strong>。节点 = 一个子话题的辩论回合，边 = 值得深挖的未决问题。</p>
+  </article>
+  <article class="card">
+    <span class="evidence paper">设计原则 3</span>
+    <h3>迭代检索</h3>
+    <p>全文太长、只用摘要太浅。检索 query 由辩论进程动态决定，越深的节点取到的证据段落越细粒度。</p>
+  </article>
+</div>
+
+<div class="source-note">
+  <p><strong>与相邻工作的边界：</strong>多智能体辩论（如 MAD、ChatEval）用辩论<em>改进最终答案</em>；ToD 的辩论树<em>直接就是输出物</em>。persona 方面，Bridger 用作者 persona 做推荐（仅表示、不辩论），ToD 的 persona 代表单篇论文且主动辩护。相比 related-work 生成类工作（UR3WG、DIR），ToD 免训练、推理时运行、领域无关。<em>来源：Related Work，Sec 2。</em></p>
+</div>
+</section>
+
+<!-- ==================== 方法机制 ==================== -->
+<section id="method">
+<h2>02 · 方法机制：每个树节点是一场三阶段辩论</h2>
+
+<figure class="figure">
+  <div class="figure-frame"><img src="assets/fig2_framework.png" alt="Tree-of-Debate 框架总览"></div>
+  <figcaption>论文 Fig.2：框架总览。每个节点依次经历自我斟酌（self-deliberation）→ 辩论（present / respond / revise）→ 扩展判定；图中 A→B 读作"给定 A，persona 得到 B"。</figcaption>
+</figure>
+
+<p class="lead">输入：论文 <code>p₁</code>、<code>p₂</code> 和用户给的根话题 <code>n₀</code>（如 "inference-time LLM reasoning methods"）。辩题统一是"<strong>p₁ 对话题 nᵢ 的贡献比 p₂ 更好</strong>"——作者试过直接辩"更新颖"，反而得到更表面的论点；"更好"迫使双方摆机制细节。目标不是判胜负，而是收集辩论诱导出的具体推理。</p>
+
+<div class="flow-diagram">
+  <div class="flow-step">
+    <h4>阶段 1 · Self-Deliberation（赛前准备）</h4>
+    <p>每个 persona：① 用节点话题检索自己论文的 top-δ 段落（三句一段）；② 基于证据生成 ≤k 条"新颖贡献声明"（标题 + 描述 + 引用的证据编号）；③ <strong>preemption</strong>——看到对方的声明后，反向检索自己论文里能支持/反驳/澄清对方声明的段落，提前备好弹药。最后主持人根据双方声明与证据生成 ≤5 个子话题，each 映射到至少一方的贡献编号。</p>
+  </div>
+  <div class="flow-step">
+    <h4>阶段 2 · Debate（三步走）</h4>
+    <p>对每个子话题节点：双方各自 <strong>present</strong>（陈述"我为什么更好"，允许直接认输 concede）→ <strong>respond</strong>（针对对方最新发言：确认 / 答疑 / 反问 / 澄清 / 让步）→ <strong>revise</strong>（吸收交锋后修订自己的论点）。修订后的论点是该节点的最终产物。</p>
+  </div>
+  <div class="flow-step">
+    <h4>阶段 3 · 扩展判定（主持人）</h4>
+    <p>主持人依据三个信号决定是否继续深挖：论点是否实质推进（progression）、是否有未回应的关键问题（questions）、是否已分出明显胜负（clear winner）。<code>(progression ∨ questions) ∧ ¬winner</code> 为真则对该节点再来一轮 self-deliberation 生成下一层子节点；否则封叶。</p>
+  </div>
+  <div class="flow-step">
+    <h4>收尾 · Synthesis</h4>
+    <p>树收敛后，把每个节点的（话题、描述、双方修订论点）整树喂给主持人，生成一段先讲相似、重点讲差异的对比总结。</p>
+  </div>
+</div>
+
+<div class="key-insight">
+  <h3>树的形状就是结论</h3>
+  <p>两篇论文重叠的想法（如都做"Reasoning Evaluation"）会辩出<strong>更长的子树</strong>——因为"谁更好"有得争；一方独有的想法（如只有 ToT 有 "Backtracking"）会<strong>迅速封叶</strong>——对方拿不出对应证据，主持人判定无需再辩。新颖性判断从"一句话断言"变成了"可检查的结构"。</p>
+</div>
+
+<div class="warning-note">
+  <p><strong>论文表述笔误（代码是对的）：</strong>Sec 3.3 描述 preemption 过滤时写的是 "If either (1-3) are true or (4) is false, then e is <em>filtered out</em>"——按字面意思是"支持/反驳/澄清对方声明的证据要被扔掉、只留无关证据"，显然写反了。<code>persona.py:is_irrelevant_evidences()</code> 的实际逻辑：<code>irrelevant=="no" 且 (supports ∨ refutes ∨ clarifies)=="yes"</code> 才保留。读论文时以代码为准。</p>
+</div>
+</section>
+
+<!-- ==================== 代码执行链 ==================== -->
+<section id="code">
+<h2>03 · 回到代码：5000 行里的真实执行链</h2>
+<p class="lead">仓库很小、结构清晰：主链路约 900 行（含 prompt），其余是两个消融变体（no_tree / no_delib）和 baseline 的复制粘贴版本。所有 LLM 调用走 <strong>vLLM + outlines 的 JSON logits 约束解码</strong>——每一步的输出都被 pydantic schema 强制成合法 JSON，这是它工程上最稳的一处。</p>
+
+<pre><code>code/
+├── run.py                  # 入口：读 TSV 数据集 → 逐对论文跑实验（tod/single/two/no-tree/no-delib）
+├── data_pairer.py          # 按 arXiv URL 抓论文全文
+├── paper_details.py        # Paper：全文按 3 句切块 + BGE 嵌入，retrieve_top_k
+├── persona.py              # PaperAuthor：generate_arguments / preempt / present / respond / revise
+├── moderator.py            # Moderator：generate_topics / is_expand / summarize_path_debate
+├── debate.py               # DebateNode：self-deliberation 与三步辩论的编排
+├── retrieval/e5_model.py   # 实际加载 BAAI/bge-large-en-v1.5（文件名有误导性）
+├── dataset/                # 100 对论文 TSV（专家标注：领域/引用关系/方法或任务差异）
+├── baselines/  no_tree/  no_delib/  tod_no_deliberation/   # 对照与消融
+└── evaluation/             # 只有人工评测指南 PDF，没有评分代码
+</code></pre>
+
+<h3>论文概念 ↔ 代码核对表</h3>
+<div class="table-scroll">
+<table class="comparison-table">
+  <thead><tr><th>论文声称</th><th>代码位置</th><th>实际情况</th><th>核对</th></tr></thead>
+  <tbody>
+    <tr><td>BGE 检索嵌入（cite bge_embedding）</td><td><code>retrieval/e5_model.py</code></td><td>文件/类名叫 E5，E5 与 SPECTER2 路径全被注释，<code>e5_embed()</code> 实际加载 <code>BAAI/bge-large-en-v1.5</code></td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr><td>约 3 句一个检索段</td><td><code>paper_details.py</code></td><td><code>chunk_size=3</code>，按 ". " 切句拼块</td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr><td>top-δ 证据段</td><td><code>debate.py</code></td><td><code>num_evidence=5</code>；检索时还会丢弃 ≤150 字符的短块</td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr><td>每方 k 条贡献声明</td><td><code>debate.py</code> / <code>persona.py</code></td><td><code>num_arg=3</code>（prompt 说 1~3 条，schema 上限 10）</td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr><td>主持人生成 k 个子话题</td><td><code>moderator.py</code></td><td>prompt 说"至多 5 个"，schema 允许 1~10</td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr class="focus-row"><td>"enforce maximum tree depth"</td><td><code>tree_of_debate.py</code></td><td><code>depth</code> 是<strong>全局扩展计数器</strong>：BFS 队列里任何节点扩展一次就 +1，<code>max_depth=3</code> 意味着整棵树最多扩展 3 次，并非"每条路径深度 ≤3"</td><td><span class="evidence audit">与论文表述有偏差</span></td></tr>
+    <tr class="focus-row"><td>preemption 过滤规则</td><td><code>persona.py</code></td><td>论文正文把保留/丢弃写反了（见上节黄框）；代码保留 supports/refutes/clarifies 且非 irrelevant 的证据，全空时插入哨兵句 "We do not address the opposition's claim"</td><td><span class="evidence audit">论文笔误</span></td></tr>
+    <tr><td>基座 Llama-3.1-Nemotron-70B</td><td><code>run.py</code></td><td>硬编码 <code>tensor_parallel_size=4</code>——复现门槛是 4 张大显存 GPU</td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr><td>"top 1% of tokens" 采样</td><td>各 agent 方法</td><td><code>top_p=0.99</code>，温度按环节分档：判定类 0~0.1、生成类 0.3、revise 0.45、总结 0.4</td><td><span class="evidence code">代码确认</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="code-note">
+  <p><strong>工程亮点：</strong>全链路 <code>JSONLogitsProcessor(schema=...)</code> 结构化解码，argument/response/subtopic/expansion 各有 pydantic schema，从根上消灭了 JSON 解析失败；<code>enable_prefix_caching=True</code> 复用长 prompt 前缀。辩论历史喂给 persona 前会把 "Author i" 改写成 "You"/"Opposition" 的第一人称视角，并用 <code>&lt;respond_to_this&gt;</code> 标签圈出需要回应的最新发言——细节做得比多数 agent 论文仓库认真。</p>
+</div>
+
+<div class="critical-note">
+  <p><strong>两处实打实的代码缺陷：</strong>① <code>e5_embed()</code> 的 joblib 缓存被注释掉了，且模型加载在函数体内——<strong>每次检索调用都重新从磁盘加载一遍 1.3GB 的 BGE 模型</strong>，self-deliberation 里每条对方声明都触发一次，跑一对论文要反复加载几十次；② <code>debate.py:conduct_debate()</code> 先写好的辩题信息行紧接着被 <code>convo_history = "Debate History:..."</code> 整个覆盖，节点话题从未真正进入辩论历史开头（各 prompt 里另有话题字段，所以影响有限但确是 bug）。</p>
+</div>
+</section>
+
+<!-- ==================== 实验与结果 ==================== -->
+<section id="experiments">
+<h2>04 · 实验：100 对论文、5 位领域专家、全人工评测</h2>
+
+<div class="source-note">
+  <p><strong>实验设置：</strong>所有系统（含基线与消融）统一使用开源模型 <strong><code>Llama-3.1-Nemotron-70B-Instruct</code></strong>（vLLM 推理，4 卡张量并行），采样 top-p=0.99（论文表述"top 1% of tokens"），温度按环节分档（判定 0–0.1 / 生成 0.3 / 修订 0.45）；检索嵌入用 <strong><code>BAAI/bge-large-en-v1.5</code></strong>，δ=5 证据段、每方 ≤3 条声明、每层 ≤5 个子话题。附录另有两组换件实验：检索模型换成 E5（BGE 检索到的段落明显更完整、更切题）、基座 LLM 换小（性能显著下降）。<em>来源：Sec 4 + Appendix A/G/H。</em></p>
+</div>
+
+<div class="card-grid three">
+  <article class="card">
+    <span class="evidence paper">数据集</span>
+    <h3>100 对论文</h3>
+    <p>NLP / 数据挖掘 / 电子工程 / 航天工程四个领域，5 位专家（各自选熟悉的论文）标注根话题、方法差异 vs 任务差异、是否互引。<strong>70 对互不引用</strong>——这是此前对比数据集没有的设定。数据随仓库公开（TSV）。</p>
+  </article>
+  <article class="card">
+    <span class="evidence paper">基线与消融</span>
+    <h3>4 个对照</h3>
+    <p>Single Stage（题目+摘要+引言直接对比）、Two Stage（先各自总结再对比）；消融 No Tree（子话题合并成一场大辩论）、No SD（去掉迭代检索，只用摘要+引言）。同一基座模型。</p>
+  </article>
+  <article class="card">
+    <span class="evidence paper">评测</span>
+    <h3>三个人工指标</h3>
+    <p><strong>Factuality</strong>：逐句二值判断（1/0），整份摘要取句子平均；<strong>Breadth</strong>：整份 0–4 Likert（0="漏多个要点" → 4="非常全面"）；<strong>Contextualization</strong>：整份 0–4 Likert（0="纯抽取式罗列、异同无论证" → 4="所有要点都有有意义的综合"）。Likert 分做 min-max 归一（x/4），全部 ×100 进表。标注者 = 评测者 = 同一批专家，各评自己选的对。</p>
+  </article>
+</div>
+
+<div class="card-grid">
+  <article class="card">
+    <span class="evidence paper">专家画像</span>
+    <h3>5 位研究生领域专家</h3>
+    <p>均有 3 年以上科研经历、2～25 篇发表：文本/数据挖掘（三年级 PhD，10 篇）、航天电推进（三年级 PhD）、电子工程/存内计算（二年级 PhD）、数据高效 NLP（一年级 PhD，6 篇）、LLM 训练与效率（一年级 PhD，25 篇）。论文对由专家<strong>按"值得比较、自己心里有金标准"手工挑选</strong>，非随机采样。</p>
+  </article>
+  <article class="card">
+    <span class="evidence paper">一致性检验</span>
+    <h3>只在 CS 子集互评</h3>
+    <p>客观标签（方法/任务、互引与否）由 NLP 与数据挖掘专家互换重标，100% 一致。<strong>评分</strong>互评只覆盖 NLP/数据挖掘子集（其他领域找不到第二位同方向专家）：Breadth 与 Contextualization 一致率 80%、序数一致性 95%；Factuality 的 ICC ≈ 0.856–0.892（"good reliability"）。航天/电子的分数只有单人背书。</p>
+  </article>
+</div>
+
+<h3>主结果（归一化 ×100，Overall 列）</h3>
+<div class="table-scroll">
+<table class="comparison-table">
+  <thead><tr><th>模型</th><th colspan="3">Method 对（45 对）</th><th colspan="3">Task 对（55 对）</th></tr></thead>
+  <tbody>
+    <tr><td></td><td><em>Breadth</em></td><td><em>Context</em></td><td><em>Fact</em></td><td><em>Breadth</em></td><td><em>Context</em></td><td><em>Fact</em></td></tr>
+    <tr><td>Single Stage</td><td>91.07</td><td>75.59</td><td>94.39</td><td>87.58</td><td>75.15</td><td>93.14</td></tr>
+    <tr><td>Two Stage</td><td>86.31</td><td>72.02</td><td>93.69</td><td>84.85</td><td>78.79</td><td>92.28</td></tr>
+    <tr><td><em>ToD (No Tree)</em></td><td>80.36</td><td>67.86</td><td>89.82</td><td colspan="3">树去掉后 Breadth/Context 双降 → 结构是必要的</td></tr>
+    <tr><td><em>ToD (No SD)</em></td><td>88.10</td><td>88.10</td><td><strong>78.21</strong></td><td colspan="3">检索去掉后 Factuality 崩到 78 → 检索管住幻觉</td></tr>
+    <tr class="focus-row"><td><strong>Tree-of-Debate</strong></td><td><strong>94.64</strong></td><td><strong>93.45</strong></td><td><strong>95.37</strong></td><td><strong>93.94</strong></td><td><strong>96.97</strong></td><td><strong>91.16</strong></td></tr>
+  </tbody>
+</table>
+</div>
+<p>核心数字：Contextualization 平均 <strong>95.21 vs 最强基线 75.57（+26%）</strong>，Breadth +6.85%。两个消融各自击穿一条设计原则：<strong>没有树 → 论点纠缠、广度语境双降；没有检索 → 语境还在（88.10）但事实性崩盘（78.21）</strong>。作者的结论式表述"结构负责语境化、检索负责事实性"在数字上是自洽的。</p>
+
+<h3>案例：为什么基线会把"相同"说成"不同"</h3>
+<div class="quote-vs">
+  <div class="q bad">
+    <h4>Two Stage（错误）</h4>
+    <p>MEGClass "<mark class="bad">requires an initial set of weakly labeled data</mark>"，而 LOTClass "<mark class="bad">innovates by relying solely on label names</mark>"…… ——事实上<strong>两者都只需要类别名</strong>，字面措辞不同就被抽成了"差异"。</p>
+  </div>
+  <div class="q good">
+    <h4>ToD（正确且更深）</h4>
+    <p>"<mark class="good">Both papers leverage limited labeled data</mark>… MEGClass <mark class="good">uniquely leverages mutually-enhancing text granularities</mark>… LOTClass 的 <mark class="good">reliance on label names alone may introduce biases</mark>." ——先确立共同点，再在共同点之上讲差异，还给出了额外洞察。</p>
+  </div>
+</div>
+
+<details>
+<summary>更多结果：领域差异 · 深度影响 · 事实性代价</summary>
+<div class="details-body">
+  <ul>
+    <li><strong>领域差异</strong>：NLP / 数据挖掘增益最大；电子、航天的 Contextualization 也涨，但 <strong>Factuality 反而降</strong>（电子 91.36、航天 88.64，均低于基线）——作者归因于基座模型预训练里这些领域的研究级知识更稀薄。</li>
+    <li><strong>深度 1→3</strong>：深度越大，事实性与语境化普遍越好；depth=1 的总结浮在摘要层面、夸大其词，加深后 persona 会"自己把吹过头的论点收回来"。</li>
+    <li><strong>语境化 vs 事实性的权衡</strong>：错误主要发生在总结阶段<strong>把两篇论文的事实张冠李戴</strong>（如把 image classification 的方法说成也适用于 ICL）；任务型对比（重叠不显式）需要更大推理跳跃，事实性掉得更明显。</li>
+    <li><strong>一致性</strong>：四种设定（引用×方法/任务）下 ToD 标准差 σ=2.49，低于 Single 的 5.32、Two 的 3.39。</li>
+  </ul>
+</div>
+</details>
+</section>
+
+<!-- ==================== 复现审计 ==================== -->
+<section id="audit">
+<h2>05 · 复现审计与方法学批评</h2>
+
+<div class="card-grid">
+  <article class="card">
+    <span class="evidence code">本地材料</span>
+    <h3>能复现什么</h3>
+    <p>论文 PDF + 完整 TeX（含 19 个 prompt 原文、案例附录）、代码全量 clone、100 对论文数据集 TSV 都在本地。跑通主链路需要：4×大显存 GPU（Nemotron-70B, TP=4）+ vLLM + outlines。把 <code>run.py</code> 里的模型换小是可行的入口（论文附录也试过换基座）。</p>
+  </article>
+  <article class="card">
+    <span class="evidence audit">不能复现什么</span>
+    <h3>评测无法自动重跑</h3>
+    <p><code>evaluation/</code> 只有给人看的评测指南 PDF，<strong>没有任何评分代码</strong>。三个指标全部依赖 5 位领域专家人工打分——你可以复现"生成对比总结"，但论文里的每一个分数都无法机器复现。</p>
+  </article>
+</div>
+
+<h3>读结果时该扣的分</h3>
+<ul>
+  <li><strong>标注者 = 评测者。</strong>构建数据集的 5 位专家同时给自己选的论文对打分。他们知道哪份输出来自哪个系统吗？论文没有说明是否盲评——若不盲，长而详细的 ToD 输出天然占便宜。<span class="evidence inference">合理推断</span></li>
+  <li><strong>基线偏弱。</strong>对照全是"裸 prompt"，没有对比检索增强但不辩论、或辩论但单轮的中间设定（No SD 部分补位但仍属自家消融）。Contextualization +26% 的増幅里，多少来自"辩论"、多少来自"输出更长更细"，无法区分。<span class="evidence inference">合理推断</span></li>
+  <li><strong>100 对 / 5 人的规模。</strong>每格数字背后往往只有十几对论文；域级结论（电子/航天各只有 13/10 对量级）尤其脆。附录有小规模标注一致性研究，但主表没有显著性检验。<span class="evidence paper">论文可见</span></li>
+  <li><strong>"更好"辩题与"新颖性"目标之间有缝。</strong>框架辩的是 who is better，产出要的是 what is novel；论文承认直接辩 novelty 效果差才换的辩题——这个转换是经验性的，机制上为什么成立没有分析。<span class="evidence inference">合理推断</span></li>
+  <li><strong>树深控制与论文不符</strong>（全局扩展计数 ≠ 路径深度，见 03 节核对表）——意味着论文"深度 1→3"分析里的"深度"与开源代码的行为可能并不对齐。<span class="evidence audit">审计发现</span></li>
+</ul>
+
+<div class="warning-note">
+  <p><strong>容易误解：</strong>ToD 不是文献综述工具，也不做检索发现——输入就是<strong>人工选好的两篇论文 + 根话题</strong>。它解决的是 pairwise 对比这一步；要接到真实文献工作流里，前面还缺"选哪两篇来比"的环节（论文对由专家按'值得比较'手工挑选，连这一步都是领域知识密集的）。</p>
+</div>
+</section>
+
+<!-- ==================== 最终判断 ==================== -->
+<section id="verdict">
+<h2>06 · 最终判断</h2>
+
+<div class="key-insight">
+  <h3>一句话评价</h3>
+  <p>一个想法清楚、实现诚实、评测认真但规模小的<strong>推理时框架</strong>：树结构 + 迭代检索这两个组件的必要性被消融干净地拆开了（结构 → 语境化，检索 → 事实性），这比多数 agent 论文"堆组件涨点"的叙事扎实。上限也很明确：纯 prompt 编排、无学习、评测不可自动复现、只覆盖 pairwise 对比这一小步。</p>
+</div>
+
+<div class="card-grid">
+  <article class="card">
+    <h3>对本档案的价值</h3>
+    <p>与文献调研工作流的衔接点在<strong>对比/定位环节</strong>：① "树形辩论 + 每节点独立检索"可以移植为 related-work 写作或 idea novelty check 的子模块；② 100 对含 70 对<strong>非互引</strong>论文的专家标注数据集，是做论文对比 / novelty 评估时少见的可用资源；③ outlines 结构化解码 + 视角改写（You/Opposition）的工程做法值得抄。</p>
+  </article>
+  <article class="card">
+    <h3>归档建议</h3>
+    <p>建议归入<strong>「简单（有实质但贡献有限）」</strong>：方法真实、代码可跑、专家评测认真（相对同类已属可信）；但体量小（主链路 ~900 行 prompt 编排）、无训练成分、评测依赖人工且规模有限，够不上"复杂"档的系统深度。待你过目后定档。</p>
+  </article>
+</div>
+</section>
+
+<footer>
+  <p>Tree-of-Debate 中文精读 · 论文（ACL 2025, arXiv:2502.14767v2）与官方代码（commit 1f096c8）交叉核对完成</p>
+  <p>整理日期：2026-08-04 · 材料：paper/（PDF + TeX 源码）· code/（全量 clone，含数据集）· assets/（论文原图）</p>
+</footer>
+
+</main>
+</body>
+</html>
