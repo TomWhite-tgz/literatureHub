@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PaSa、PaSaMaster、PaperPilot 与 PaperScout：学术文献搜索 Agent 的任务、方法、Benchmark、Baseline 与实验可比性横向分析。">
+    <title>四种学术文献搜索 Agent：横向比较与方法精读</title>
+    <style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --violet: #64507c;
+            --violet-pale: #f1edf6;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: min(1120px, calc(100% - 44px));
+            margin: 0 auto;
+            padding: 52px 18px 76px;
+        }
+
+        header {
+            margin-bottom: 34px;
+            padding-bottom: 34px;
+            border-bottom: 1px solid var(--line);
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-size: 0.93rem;
+            font-weight: 650;
+            text-decoration: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--accent-dark);
+            transform: translateX(-2px);
+        }
+
+        .status-row,
+        .resource-row,
+        .tag-list,
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .status-row {
+            margin-bottom: 18px;
+        }
+
+        .resource-row {
+            margin-top: 22px;
+        }
+
+        .badge,
+        .tag,
+        .evidence,
+        .method-chip {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .badge {
+            padding: 4px 11px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.79rem;
+            font-weight: 650;
+        }
+
+        .resource-link,
+        .control-button {
+            display: inline-block;
+            flex: 0 0 auto;
+            padding: 7px 13px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent-dark);
+            background: var(--panel);
+            font: inherit;
+            font-size: 0.84rem;
+            font-weight: 620;
+            text-decoration: none;
+            cursor: pointer;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .resource-link.primary {
+            border-color: var(--accent);
+            color: var(--white);
+            background: var(--accent);
+        }
+
+        .resource-link:hover,
+        .control-button:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        h1 {
+            margin-bottom: 12px;
+            font-size: clamp(2.35rem, 7vw, 3.45rem);
+            font-weight: 670;
+            letter-spacing: -0.04em;
+            line-height: 1.08;
+        }
+
+        .subtitle {
+            max-width: 820px;
+            margin: 0 auto;
+            color: var(--muted);
+            font-size: 1.08rem;
+            font-weight: 360;
+        }
+
+        .meta {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.91rem;
+            font-weight: 360;
+        }
+
+        h2 {
+            margin: 58px 0 24px;
+            padding-bottom: 11px;
+            border-bottom: 2px solid var(--accent);
+            font-size: 1.78rem;
+            font-weight: 630;
+            line-height: 1.3;
+        }
+
+        h3 {
+            margin: 30px 0 14px;
+            color: var(--accent);
+            font-size: 1.25rem;
+            font-weight: 630;
+        }
+
+        h4 {
+            margin-bottom: 8px;
+            color: var(--accent-dark);
+            font-size: 1.01rem;
+            font-weight: 650;
+        }
+
+        p {
+            margin-bottom: 17px;
+            font-weight: 360;
+        }
+
+        strong {
+            font-weight: 660;
+        }
+
+        a {
+            color: var(--accent-dark);
+        }
+
+        .lead {
+            color: #343b37;
+            font-size: 1.02rem;
+        }
+
+        .eyebrow {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 720;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .toc {
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 7px;
+            margin: 24px 0 34px;
+            padding: 10px;
+            border: 1px solid rgba(231, 225, 215, 0.9);
+            border-radius: 16px;
+            background: rgba(247, 244, 239, 0.93);
+            box-shadow: 0 8px 24px rgba(31, 36, 33, 0.06);
+            backdrop-filter: blur(10px);
+        }
+
+        .toc a {
+            flex: 0 0 auto;
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 620;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .highlight-box,
+        .source-note,
+        .warning-note,
+        .critical-note,
+        .code-note {
+            margin: 26px 0;
+            padding: 21px 25px;
+            border-left: 4px solid var(--accent);
+            border-radius: 5px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .source-note {
+            border-left-color: var(--green);
+            background: var(--green-pale);
+        }
+
+        .code-note {
+            border-left-color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .warning-note {
+            border-left-color: var(--warning);
+            background: var(--warning-pale);
+        }
+
+        .critical-note {
+            border-left-color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .highlight-box p:last-child,
+        .source-note p:last-child,
+        .warning-note p:last-child,
+        .critical-note p:last-child,
+        .code-note p:last-child {
+            margin-bottom: 0;
+        }
+
+        .key-insight {
+            margin: 32px 0;
+            padding: 28px 31px;
+            border-radius: 8px;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 4px 12px rgba(196, 97, 47, 0.22);
+        }
+
+        .key-insight h3,
+        .key-insight p {
+            color: var(--white);
+        }
+
+        .key-insight h3 {
+            margin-top: 0;
+        }
+
+        .key-insight p:last-child {
+            margin-bottom: 0;
+        }
+
+        .card-grid,
+        .method-grid,
+        .figure-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .card-grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            padding: 21px 23px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1.08rem;
+        }
+
+        .card p:last-child,
+        .card ul:last-child {
+            margin-bottom: 0;
+        }
+
+        .evidence {
+            margin-bottom: 10px;
+            padding: 3px 9px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .evidence.paper {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .evidence.code {
+            color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .evidence.inference {
+            color: var(--warning);
+            background: var(--warning-pale);
+        }
+
+        .evidence.audit {
+            color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .method-chip {
+            padding: 3px 9px;
+            color: var(--green);
+            background: var(--green-pale);
+            font-size: 0.72rem;
+            font-weight: 680;
+        }
+
+        .figure {
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .figure-grid .figure {
+            margin: 0;
+        }
+
+        .figure a,
+        .figure-frame {
+            display: block;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: var(--figure-shadow);
+        }
+
+        .figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .figure figcaption {
+            max-width: 820px;
+            margin: 11px auto 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-style: italic;
+            line-height: 1.55;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin: 26px 0;
+            border-collapse: collapse;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            padding: 13px 15px;
+            color: var(--white);
+            background: var(--accent);
+            font-size: 0.88rem;
+            font-weight: 620;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 13px 15px;
+            border-bottom: 1px solid var(--line);
+            font-size: 0.89rem;
+            font-weight: 360;
+            vertical-align: top;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .comparison-table .focus-row td {
+            background: #f8ede4;
+            font-weight: 590;
+        }
+
+        .comparison-table .caution-row td {
+            background: var(--warning-pale);
+        }
+
+        .table-scroll {
+            width: 100%;
+            margin: 26px 0;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .table-scroll .comparison-table {
+            min-width: 820px;
+            margin: 0;
+        }
+
+        .task-map {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin: 28px 0;
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .concept-stack {
+            display: grid;
+            grid-template-columns: 0.8fr 1.25fr 1.5fr;
+            align-items: stretch;
+            gap: 28px;
+            margin: 28px 0;
+        }
+
+        .concept-level {
+            position: relative;
+            display: flex;
+            min-height: 148px;
+            padding: 20px 22px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            background: var(--white);
+            box-shadow: var(--shadow);
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .concept-level:not(:last-child)::after {
+            content: "→";
+            position: absolute;
+            top: 50%;
+            right: -22px;
+            color: var(--accent);
+            font-size: 1.45rem;
+            font-weight: 800;
+            transform: translateY(-50%);
+        }
+
+        .concept-level.task {
+            border-color: var(--accent);
+            background: var(--accent-pale);
+        }
+
+        .concept-level.bench {
+            border-color: #b8cbbd;
+            background: var(--green-pale);
+        }
+
+        .concept-level h3 {
+            margin: 0 0 7px;
+            font-size: 1.04rem;
+        }
+
+        .concept-level p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .dataset-pair {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .dataset-pill {
+            padding: 9px 10px;
+            border-radius: 7px;
+            color: var(--green);
+            background: var(--white);
+            font-size: 0.78rem;
+            font-weight: 620;
+            line-height: 1.4;
+        }
+
+        .task-node {
+            position: relative;
+            min-height: 155px;
+            padding: 18px;
+            border-radius: 8px;
+            background: var(--white);
+        }
+
+        .task-node:not(:last-child)::after {
+            content: "→";
+            position: absolute;
+            top: 50%;
+            right: -16px;
+            z-index: 2;
+            color: var(--accent);
+            font-size: 1.35rem;
+            font-weight: 800;
+            transform: translateY(-50%);
+        }
+
+        .task-node h3 {
+            margin: 0 0 8px;
+            font-size: 1.02rem;
+        }
+
+        .task-node p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .method-grid {
+            align-items: start;
+        }
+
+        details {
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 17px 20px;
+            cursor: pointer;
+            font-weight: 630;
+            list-style: none;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: "＋";
+            margin-left: auto;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        details[open] summary::after {
+            content: "−";
+        }
+
+        .details-body {
+            padding: 20px 22px 24px;
+            border-top: 1px solid var(--line);
+        }
+
+        .method-panel summary {
+            min-height: 95px;
+            align-items: flex-start;
+        }
+
+        .method-number {
+            display: grid;
+            flex: 0 0 34px;
+            width: 34px;
+            height: 34px;
+            place-items: center;
+            border-radius: 50%;
+            color: var(--white);
+            background: var(--accent);
+            font-size: 0.82rem;
+        }
+
+        .summary-copy {
+            display: block;
+        }
+
+        .summary-copy strong,
+        .summary-copy small {
+            display: block;
+        }
+
+        .summary-copy strong {
+            margin-bottom: 4px;
+            color: var(--ink);
+            font-size: 1.08rem;
+        }
+
+        .summary-copy small {
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 430;
+            line-height: 1.45;
+        }
+
+        .method-panel.pasamaster .method-number {
+            background: var(--green);
+        }
+
+        .method-panel.paperpilot .method-number {
+            background: var(--violet);
+        }
+
+        .method-panel.paperscout .method-number {
+            background: var(--blue);
+        }
+
+        .mini-spec {
+            display: grid;
+            grid-template-columns: 108px 1fr;
+            gap: 0;
+            margin: 18px 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .mini-spec dt,
+        .mini-spec dd {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--line);
+            font-size: 0.85rem;
+        }
+
+        .mini-spec dt {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-weight: 670;
+        }
+
+        .mini-spec dd {
+            background: var(--white);
+        }
+
+        .mini-spec dt:last-of-type,
+        .mini-spec dd:last-of-type {
+            border-bottom: 0;
+        }
+
+        .formula {
+            margin: 25px 0;
+            padding: 21px 23px;
+            border-radius: 7px;
+            color: var(--paper);
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        ul {
+            margin: 15px 0 19px 2px;
+            list-style: none;
+        }
+
+        li {
+            position: relative;
+            margin-bottom: 9px;
+            padding-left: 22px;
+            font-weight: 360;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 2px;
+            color: var(--accent);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        code {
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.88em;
+        }
+
+        .tag-list {
+            margin: 13px 0 22px;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            color: var(--green);
+            background: var(--green-pale);
+            font-size: 0.78rem;
+            font-weight: 630;
+        }
+
+        .truth-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            margin: 24px 0;
+        }
+
+        .truth-card {
+            padding: 21px 23px;
+            border-top: 4px solid var(--green);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: var(--shadow);
+        }
+
+        .truth-card.cannot {
+            border-top-color: var(--danger);
+        }
+
+        .truth-card h3 {
+            margin-top: 0;
+            font-size: 1.08rem;
+        }
+
+        footer {
+            margin-top: 72px;
+            padding-top: 28px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-weight: 360;
+            text-align: center;
+        }
+
+        @media (max-width: 900px) {
+            .task-map {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .task-node:nth-child(2)::after {
+                content: "";
+            }
+        }
+
+        @media (max-width: 760px) {
+            .container {
+                width: min(100% - 28px, 1120px);
+                padding: 34px 8px 56px;
+            }
+
+            .card-grid,
+            .card-grid.three,
+            .method-grid,
+            .figure-grid,
+            .truth-grid,
+            .task-map,
+            .concept-stack {
+                grid-template-columns: 1fr;
+            }
+
+            .concept-level:not(:last-child)::after {
+                content: "↓";
+                top: auto;
+                right: 50%;
+                bottom: -25px;
+                transform: translateX(50%);
+            }
+
+            .task-node::after {
+                content: "↓" !important;
+                top: auto !important;
+                right: 50% !important;
+                bottom: -19px;
+                transform: translateX(50%) !important;
+            }
+
+            .task-node:last-child::after {
+                content: "" !important;
+            }
+
+            .toc {
+                position: static;
+            }
+
+            h2 {
+                margin-top: 46px;
+                font-size: 1.55rem;
+            }
+
+            h1 {
+                font-size: 2.05rem;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .highlight-box,
+            .key-insight {
+                padding: 22px;
+            }
+
+            .badge {
+                max-width: 100%;
+                white-space: normal;
+            }
+
+            .subtitle,
+            .meta {
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .mini-spec {
+                grid-template-columns: 92px 1fr;
+            }
+        }
+
+        @media print {
+            .toc,
+            .back-link,
+            .control-row {
+                display: none;
+            }
+
+            body {
+                background: white;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 24px;
+            }
+
+            .figure a,
+            .card,
+            details {
+                box-shadow: none;
+            }
+
+            details {
+                break-inside: avoid;
+            }
+
+            details > .details-body {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header>
+            <a class="back-link" href="文献搜索系统_归档说明.html">← 返回归档说明</a>
+            <div class="status-row">
+                <span class="badge">ACL 2025 + arXiv 2026</span>
+                <span class="badge">Agentic Literature Search</span>
+                <span class="badge">论文、代码与评测协议交叉核对</span>
+            </div>
+            <h1>四种学术文献搜索 Agent</h1>
+            <p class="subtitle">PaSa · PaSaMaster · PaperPilot · PaperScout：它们都在“找论文”，但输入、目标集合、交互方式和评测协议并不相同。</p>
+            <p class="meta">横向比较与方法精读 · 版本截至 2026-07-31</p>
+            <div class="resource-row">
+                <a class="resource-link primary" href="https://arxiv.org/abs/2501.10120">PaSa PDF</a>
+                <a class="resource-link" href="https://arxiv.org/abs/2605.14306">PaSaMaster PDF</a>
+                <a class="resource-link" href="https://arxiv.org/abs/2607.00597">PaperPilot PDF</a>
+                <a class="resource-link" href="https://arxiv.org/abs/2601.10029">PaperScout PDF</a>
+            </div>
+        </header>
+
+        <div class="highlight-box">
+            <p><strong>30 秒结论：</strong>PaSa 学习一个“搜索—沿引用扩展—筛选”的双 Agent 流程；PaperScout 把同类任务改造成可自适应决策的 POMDP，并用 PSPO 训练；PaperPilot 从锚点论文出发，把用户澄清落实成可编辑 DAG；PaSaMaster 面向跨学科多约束查询，用检索证据递归更新意图，并只对真实论文排序。四者不是一个排行榜上的四行。</p>
+        </div>
+
+        <nav class="toc" aria-label="页面导航">
+            <a href="#landscape">任务地图</a>
+            <a href="#matrix">总对照</a>
+            <a href="#methods">四项方法</a>
+            <a href="#benchmarks">Benchmark</a>
+            <a href="#baselines">Baseline</a>
+            <a href="#results">实验结果</a>
+            <a href="#audit">客观审计</a>
+            <a href="#takeaway">最终理解</a>
+        </nav>
+
+        <section id="landscape">
+            <h2>先划清任务边界：四种“找论文”</h2>
+            <p class="lead">最容易产生误判的地方，是把所有自然语言论文搜索都视为同一个任务。实际上，这四项工作覆盖从“开放式高召回”到“锚点关系检索”和“多约束验证”的不同问题。</p>
+
+            <h3>先用 PaSa 分清三个概念</h3>
+            <div class="concept-stack" aria-label="PaSa 的研究问题、任务与 Benchmark 关系">
+                <article class="concept-level">
+                    <span class="eyebrow">研究问题 · Why</span>
+                    <h3>研究者怎样少漏论文？</h3>
+                    <p>普通关键词搜索难以理解细粒度条件，也不会主动沿引用网络继续探索。</p>
+                </article>
+                <article class="concept-level task">
+                    <span class="eyebrow">任务 · What to do</span>
+                    <h3>Comprehensive Academic Paper Search</h3>
+                    <p>输入复杂学术 Query，输出尽可能完整且准确的相关论文集合。这才是 PaSa 处理的任务。</p>
+                </article>
+                <article class="concept-level bench">
+                    <span class="eyebrow">数据集 / Benchmark · How to train &amp; test</span>
+                    <h3>用什么题目训练和检验任务？</h3>
+                    <div class="dataset-pair">
+                        <div class="dataset-pill">AutoScholarQuery<br>合成 · Train / Dev / Test</div>
+                        <div class="dataset-pill">RealScholarQuery<br>真实 · Test only</div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="source-note">
+                <p><strong>最简洁的表述：</strong>PaSa 研究的是 <em>Comprehensive Academic Paper Search</em> 任务；AutoScholarQuery 和 RealScholarQuery 是承载该任务的训练/评测数据，不是两个独立任务。</p>
+            </div>
+
+            <div class="task-map">
+                <article class="task-node">
+                    <span class="eyebrow">PaSa</span>
+                    <h3>从复杂 Query 出发</h3>
+                    <p>任务：广泛 Search 与引用扩展，先提高候选池召回率，再由 Selector 保精度。</p>
+                </article>
+                <article class="task-node">
+                    <span class="eyebrow">PaperScout</span>
+                    <h3>让检索策略自适应</h3>
+                    <p>仍是开放式 Query，但由 Agent 根据论文池动态选择 Search 或 Expand。</p>
+                </article>
+                <article class="task-node">
+                    <span class="eyebrow">PaperPilot</span>
+                    <h3>围绕锚点与偏好</h3>
+                    <p>给定 Anchor Paper，经过多轮澄清寻找前作、后续、同类、Benchmark 或 Survey。</p>
+                </article>
+                <article class="task-node">
+                    <span class="eyebrow">PaSaMaster</span>
+                    <h3>满足组合约束</h3>
+                    <p>同时理解主题、方法、应用、年份、期刊和排除条件，返回可验证的 Top-K。</p>
+                </article>
+            </div>
+
+            <div class="warning-note">
+                <p><strong>这个箭头不是严格的时间演进，也不是优劣排名。</strong>它表示任务结构逐渐增加：PaperScout 与 PaSa 最接近；PaperPilot 改变了输入形式；PaSaMaster 则强调跨学科、多约束和来源真实性。</p>
+            </div>
+        </section>
+
+        <section id="matrix">
+            <h2>一张表看懂：任务、流程、适应与训练</h2>
+            <p class="lead">统一问四件事：<strong>要找什么、流程怎么走、检索时什么会改变、模型参数是否训练</strong>。这里的“检索时自适应”与“训练时更新参数”是两回事。</p>
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>维度</th>
+                            <th>PaSa</th>
+                            <th>PaperScout</th>
+                            <th>PaperPilot</th>
+                            <th>PaSaMaster</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>任务怎么定义</strong></td>
+                            <td>复杂 Query → 尽可能完整、准确的相关论文集合</td>
+                            <td>复杂 Query → 在有限调用下，经过多轮决策发现更多相关论文</td>
+                            <td>Anchor Paper + 演化中的用户意图 → 关系明确的排序论文列表</td>
+                            <td>多约束 Query → 满足 Checklist、来源可验证的 Top-K</td>
+                        </tr>
+                        <tr>
+                            <td><strong>输入 → 输出</strong></td>
+                            <td>细粒度 Query → 筛选后的论文集合</td>
+                            <td>Query + 论文池的部分观察 → 多轮积累的论文集合</td>
+                            <td>Anchor + Query + Direction + 反馈 → Top-50、证据/关系图与 DAG</td>
+                            <td>自然语言约束 → Top-K、逐条件判断、证据与分数</td>
+                        </tr>
+                        <tr>
+                            <td><strong>方法流程</strong></td>
+                            <td>Query → Crawler Search/Expand/Stop → 候选队列 → Selector 筛选</td>
+                            <td>观察 Paper Pool → 动态选 Search/Expand → 评分、去重、入池 → 循环</td>
+                            <td>生成 Typed DAG → 向用户澄清 → 编辑 DAG → 执行与缓存 → 排序/证据</td>
+                            <td>Navigator 产出 Strategy + Checklist → Librarian 召回、验真、评分、重排 → 反思后进入下一轮</td>
+                        </tr>
+                        <tr>
+                            <td><strong>检索时谁在变</strong></td>
+                            <td>Crawler 会选不同动作；Crawler/Selector 分工固定，没有用户反馈回路</td>
+                            <td>检索状态不同，下一步 Search/Expand 及其参数就不同</td>
+                            <td>用户反馈直接改变 DAG 的节点、连边或参数</td>
+                            <td>已排序证据反过来修改 Strategy 与 Checklist；模型权重不在线更新</td>
+                        </tr>
+                        <tr>
+                            <td><strong>是否训练，训练什么</strong></td>
+                            <td>Selector SFT；Crawler Imitation + Session-level PPO</td>
+                            <td><strong>训练策略。</strong>Qwen3-4B 用 PSPO 做交互序列级 Actor-Critic；相关性奖励来自 PaSa Selector</td>
+                            <td><strong>训练工作流生成。</strong>5,540 条 Workflow SFT + 1,733 个困难偏好对的 IPO-style DPO</td>
+                            <td><strong>训练轻量 Scorer/Ranker。</strong>多学科 Teacher 蒸馏；递归反思本身是推理时流程，不是系统级 RL</td>
+                        </tr>
+                        <tr class="focus-row">
+                            <td><strong>方法本质</strong></td>
+                            <td><strong>分工：</strong>谁负责找，谁负责筛</td>
+                            <td><strong>策略：</strong>下一步该 Search 还是 Expand</td>
+                            <td><strong>表示与控制：</strong>把意图变成可编辑工作流</td>
+                            <td><strong>认知迭代与验真：</strong>用证据修正意图，只排序真实来源</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="methods">
+            <h2>四项方法精读：2 × 2 折叠视图</h2>
+            <p class="lead">点击卡片展开。每个方法都按相同问题阅读：它处理什么任务、怎样运行、怎样训练、用什么 Benchmark/Baseline，以及结果能支持什么结论。</p>
+            <div class="control-row" aria-label="折叠控制">
+                <button class="control-button" type="button" id="expand-all">展开四项</button>
+                <button class="control-button" type="button" id="collapse-all">收起四项</button>
+            </div>
+
+            <div class="method-grid">
+                <details class="method-panel pasa" id="pasa">
+                    <summary>
+                        <span class="method-number">01</span>
+                        <span class="summary-copy">
+                            <strong>PaSa</strong>
+                            <small>双 Agent：Crawler 追求召回，Selector 追求精度</small>
+                        </span>
+                    </summary>
+                    <div class="details-body">
+                        <div class="tag-list">
+                            <span class="tag">ACL 2025 Main</span>
+                            <span class="tag">Qwen2.5-7B</span>
+                            <span class="tag">Session-level PPO</span>
+                        </div>
+
+                        <div class="highlight-box">
+                            <p><strong>任务 ≠ Benchmark：</strong>PaSa 的任务是“给定复杂 Query，找出尽可能完整、准确的相关论文集合”。AutoScholarQuery 是合成训练/评测集，RealScholarQuery 是只用于测试真实泛化的评测集。</p>
+                        </div>
+
+                        <figure class="figure">
+                            <a href="文献搜索系统横向比较_assets/pasa_architecture.png" target="_blank">
+                                <img loading="lazy" src="文献搜索系统横向比较_assets/pasa_architecture.png" alt="PaSa 的 Crawler 与 Selector 架构图">
+                            </a>
+                            <figcaption>PaSa Fig. 1：Crawler 负责 Search、阅读与沿引用扩展；Selector 对队列中的论文逐篇判断。点击查看原图。</figcaption>
+                        </figure>
+
+                        <dl class="mini-spec">
+                            <dt>任务</dt><dd><strong>Comprehensive Academic Paper Search：</strong>从复杂 Query 中尽可能完整地找出符合条件的论文。</dd>
+                            <dt>流程</dt><dd>Crawler 负责 Search/Expand 建候选池，Selector 再逐篇筛选与排序。</dd>
+                            <dt>训练</dt><dd>Selector 做 SFT；Crawler 先模仿学习，再做 Session-level PPO；数据来自 AutoScholarQuery Train。</dd>
+                            <dt>评测数据</dt><dd>AutoScholarQuery Test + RealScholarQuery Test；另有 200 对 Selector Test。</dd>
+                            <dt>主 Baseline</dt><dd>Google、Google Scholar、Google+GPT-4o、ChatGPT、GPT-o1、PaSa-GPT-4o。</dd>
+                            <dt>指标</dt><dd>Crawler Recall、Precision、Recall、Recall@20/50/100。</dd>
+                        </dl>
+
+                        <h3>执行链</h3>
+                        <ul>
+                            <li><strong>Search：</strong>LLM 生成检索式，经 Google <code>site:arxiv.org</code> 与日期限制召回论文。</li>
+                            <li><strong>Expand：</strong>选择当前论文的一个章节，抽取该章节引用并加入 Paper Queue。</li>
+                            <li><strong>Stop：</strong>结束当前 Session，切换到队列下一篇论文。</li>
+                            <li><strong>Select：</strong>输入 Query、标题和摘要，生成 True/False、理由及可用于排序的概率。</li>
+                        </ul>
+
+                        <h3>训练为什么不是普通 PPO</h3>
+                        <p>一次 Query 可能产生数百乃至上千篇候选，完整轨迹采样过长。论文把轨迹按 Stop 切成 Session，在 Session 内估计 Return，同时把后续新论文 Session 的价值纳入当前动作。</p>
+                        <div class="formula">reward = α × 新发现的相关论文 − Search/Expand 成本</div>
+                        <p>标准答案不完整时，训练还接受 Selector 判断为相关的论文作为辅助正奖励；这提高奖励密度，但也使 Crawler 的学习质量部分依赖 Selector。</p>
+
+                        <div class="figure-grid">
+                            <figure class="figure">
+                                <a href="文献搜索系统横向比较_assets/pasa_autoquery.png" target="_blank">
+                                    <img loading="lazy" src="文献搜索系统横向比较_assets/pasa_autoquery.png" alt="AutoScholarQuery 构造示意">
+                                </a>
+                                <figcaption>AutoScholarQuery：从顶会论文 Related Work 的引用反推查询。</figcaption>
+                            </figure>
+                            <figure class="figure">
+                                <a href="文献搜索系统横向比较_assets/pasa_realquery.png" target="_blank">
+                                    <img loading="lazy" src="文献搜索系统横向比较_assets/pasa_realquery.png" alt="RealScholarQuery 示例">
+                                </a>
+                                <figcaption>RealScholarQuery：50 个真实 AI 研究查询，候选池经多系统汇总后人工筛选。</figcaption>
+                            </figure>
+                        </div>
+
+                        <div class="source-note">
+                            <p><span class="evidence paper">论文支持</span><strong>最干净的内部对照是 PaSa-GPT-4o。</strong>它保留 PaSa 的工具流程但不训练 7B 策略，用于说明增益并非只来自更强通用模型或 Prompt。</p>
+                        </div>
+                        <div class="warning-note">
+                            <p><strong>边界：</strong>AutoScholarQuery 主要来自 AI 顶会，Related Work 只标出部分重要引用；RealScholarQuery 的候选池又包含 PaSa 自己，因此不能把它当成无偏、完整的开放世界 Ground Truth。</p>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="method-panel pasamaster" id="pasamaster">
+                    <summary>
+                        <span class="method-number">02</span>
+                        <span class="summary-copy">
+                            <strong>PaSaMaster</strong>
+                            <small>递归自演化检索：让证据持续修正意图与 Checklist</small>
+                        </span>
+                    </summary>
+                    <div class="details-body">
+                        <div class="tag-list">
+                            <span class="tag">38 学科</span>
+                            <span class="tag">Constraint-aware</span>
+                            <span class="tag">Evidence-grounded</span>
+                        </div>
+
+                        <figure class="figure">
+                            <a href="文献搜索系统横向比较_assets/pasamaster_overview.png" target="_blank">
+                                <img loading="lazy" src="文献搜索系统横向比较_assets/pasamaster_overview.png" alt="PaSaMaster 系统与 Benchmark 总览">
+                            </a>
+                            <figcaption>PaSaMaster Fig. 1：左侧是 Navigator—Librarian—可信语料三层系统；右侧是专家 Checklist 驱动的 Benchmark 标注。</figcaption>
+                        </figure>
+
+                        <dl class="mini-spec">
+                            <dt>任务</dt><dd>满足主题、方法、应用、时间、期刊与排除条件的组合式检索。</dd>
+                            <dt>流程</dt><dd>Navigator 写 Strategy/Checklist；Librarian 召回、验真、评分与重排；Navigator 根据结果继续修正。</dd>
+                            <dt>训练</dt><dd>多学科 Teacher 蒸馏轻量 Scorer/Ranker；“自演化”是推理时更新策略与 Checklist，不更新权重。</dd>
+                            <dt>Benchmark</dt><dd>PaSaMaster-Bench：244 个任务、38 个学科、真实 Web 搜索。</dd>
+                            <dt>主 Baseline</dt><dd>Google Scholar、OpenScholar、Bohrium、6 个工具增强 LLM、Google Scholar Labs。</dd>
+                            <dt>指标</dt><dd>NDCG/Recall/Precision/F1@20、幻觉率、每 Query 成本。</dd>
+                        </dl>
+
+                        <h3>三层系统</h3>
+                        <ul>
+                            <li><strong>Navigator：</strong>把隐含意图分解为 Retrieval Strategy 与逐项 Verification Checklist；每轮查看结果后反思缺口。</li>
+                            <li><strong>Librarian Swarm：</strong>并行召回、阅读、定位证据、逐约束评分和重排。</li>
+                            <li><strong>Verified Corpus &amp; Tools：</strong>分为 Metadata、Abstract、Full-text Chunk 层，只对能映射到真实论文库的记录排序。</li>
+                        </ul>
+
+                        <h3>Recursive Self-Evolving</h3>
+                        <div class="formula">⟨S(t+1), C(t+1)⟩ = Reflect(q, S(t), C(t), Pscored(t))</div>
+                        <p>这里的“自演化”不是在线更新模型参数，而是<strong>检索时认知状态演化</strong>：已评分论文暴露覆盖缺口、歧义或未探索方向，Navigator 据此更新下一轮策略和 Checklist。</p>
+
+                        <h3>如何避免来源幻觉</h3>
+                        <p>系统使用 Semantic Direct Retrieval、Citation Network Expansion 和 Web-to-Repository Verification 建候选池；Scorer 只评估真实召回的论文。对每个 Checklist 条件先定位全文证据 Chunk，再输出 1–5 分、理由和整体概率，最后进行 Listwise Rerank。</p>
+
+                        <div class="source-note">
+                            <p><span class="evidence paper">论文支持</span><strong>规划—检索分离是成本主张的来源。</strong>Frontier LLM 只做高层意图分解和反思，大规模阅读与评分交给轻量 Librarian、定制索引和蒸馏 Scorer。</p>
+                        </div>
+                        <div class="critical-note">
+                            <p><span class="evidence code">代码核对</span><strong>当前 GitHub 不是完整实现。</strong>本地仓库只有 README 与图片资源，系统可通过在线服务/CLI 使用，但无法从公开仓库完整审计 Navigator、Scorer 和检索后端。</p>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="method-panel paperpilot" id="paperpilot">
+                    <summary>
+                        <span class="method-number">03</span>
+                        <span class="summary-copy">
+                            <strong>PaperPilot</strong>
+                            <small>多轮工作流归纳：把用户偏好变成可执行 DAG 的编辑</small>
+                        </span>
+                    </summary>
+                    <div class="details-body">
+                        <div class="tag-list">
+                            <span class="tag">Anchor-based</span>
+                            <span class="tag">Typed DAG</span>
+                            <span class="tag">SFT + IPO/DPO</span>
+                        </div>
+
+                        <figure class="figure">
+                            <a href="文献搜索系统横向比较_assets/paperpilot_overview.png" target="_blank">
+                                <img loading="lazy" src="文献搜索系统横向比较_assets/paperpilot_overview.png" alt="PaperPilot 多轮工作流归纳总览">
+                            </a>
+                            <figcaption>PaperPilot Fig. 2：Anchor + Query + Direction 先生成 DAG；澄清回答转化为加节点、改过滤器、调整打分等显式编辑。</figcaption>
+                        </figure>
+
+                        <dl class="mini-spec">
+                            <dt>任务</dt><dd>围绕锚点论文寻找 predecessor、successor、sibling、benchmark 或 survey。</dd>
+                            <dt>流程</dt><dd>归纳 Typed DAG，经过 2–3 轮澄清编辑节点/连边/参数，再确定性执行并返回证据。</dd>
+                            <dt>训练</dt><dd>5,540 条成功 Workflow 做 SFT；1,733 个困难偏好对做 IPO-style DPO。</dd>
+                            <dt>Benchmark</dt><dd>自建 Hold-out；每 Case 有锚点、方向与 6–15 篇隐藏 Gold，起始约 200 Cases。</dd>
+                            <dt>主 Baseline</dt><dd>GPT-5.4 Web、o4-mini DeepResearch、固定 Workflow、未训练 Toolset Agent。</dd>
+                            <dt>指标</dt><dd>Hit@5/10/15、Recall@50、MRR、nDCG、成本与 DAG 编辑质量。</dd>
+                        </dl>
+
+                        <h3>搜索即工作流归纳</h3>
+                        <p>工作流是有类型的 DAG：节点是 Operator 与参数，边表示中间论文集合、关键词、分数、证据或关系图的流向。约 50 个 Operator 覆盖关键词搜索、引用扩展、集合操作、过滤、BM25/语义/NLI 评分、LLM 重排和证据抽取。</p>
+                        <div class="formula">Gt = Induce(q, p0, Pt, Ht) → Execute(Gt) → Refine(Gt, feedback)</div>
+                        <p>与“把用户回答追加到 Prompt”不同，PaperPilot 将反馈落实为工作流结构或参数变化，因此结果可检查、可复现，也更容易定位失败发生在哪个节点。</p>
+
+                        <h3>训练</h3>
+                        <ul>
+                            <li>从 2,723 个 Anchor-Query 训练 Case 让强 Teacher 生成完整轨迹。</li>
+                            <li>保留 Gold Paper 进入 Top-5 的成功 Turn，得到 5,540 个 Workflow SFT 样本。</li>
+                            <li>通过删关键节点、错接输入、偏移过滤器、使用错误 Operator 等方式构造 Rejected Workflow。</li>
+                            <li>过滤简单样本后，用 1,733 个困难偏好对进行 IPO-style DPO。</li>
+                        </ul>
+
+                        <div class="warning-note">
+                            <p><strong>多轮 Benchmark 不是纯人工交互。</strong>固定 Qwen3.5-397B-A17B Simulator 看得到隐藏 Gold Metadata；论文用 Prompt、字符串检测和额外 Leak Checker 阻止它直接泄漏标题或作者，但模拟偏好仍不等于真实研究者行为。</p>
+                        </div>
+                        <div class="code-note">
+                            <p><span class="evidence code">代码核对</span>公开仓库包含 Core、API、UI、部分 Evaluation 与测试；README 明确说明 Web 前端、完整训练基础设施和轨迹数据尚未随首版全部公开。</p>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="method-panel paperscout" id="paperscout">
+                    <summary>
+                        <span class="method-number">04</span>
+                        <span class="summary-copy">
+                            <strong>PaperScout</strong>
+                            <small>POMDP + PSPO：训练 Agent 自主平衡搜索广度与引用深度</small>
+                        </span>
+                    </summary>
+                    <div class="details-body">
+                        <div class="tag-list">
+                            <span class="tag">Qwen3-4B</span>
+                            <span class="tag">Search / Expand</span>
+                            <span class="tag">Sequence-level RL</span>
+                        </div>
+
+                        <figure class="figure">
+                            <a href="文献搜索系统横向比较_assets/paperscout_overview.png" target="_blank">
+                                <img loading="lazy" src="文献搜索系统横向比较_assets/paperscout_overview.png" alt="PaperScout POMDP 与 PSPO 动机">
+                            </a>
+                            <figcaption>PaperScout Fig. 2：左侧用 Paper Pool 表示潜在状态；右侧对比 Token-level 与 Sequence-level 信用分配。</figcaption>
+                        </figure>
+
+                        <dl class="mini-spec">
+                            <dt>任务</dt><dd>给定复杂 Query，通过多轮 Search/Expand 最大化相关论文召回。</dd>
+                            <dt>流程</dt><dd>观察 Paper Pool 的摘要状态，动态选择 Search/Expand，评分去重后入池，再继续决策。</dd>
+                            <dt>训练</dt><dd>Qwen3-4B 在 AutoScholarQuery Train 上用 PSPO 训练；完整回复是一个动作，并先预训练 Critic。</dd>
+                            <dt>Benchmark</dt><dd>复用 PaSa 的 AutoScholarQuery 与 RealScholarQuery。</dd>
+                            <dt>主 Baseline</dt><dd>Google、Google+LLM、Google Scholar、PaSa、SPAR、未训练 4B/Max。</dd>
+                            <dt>指标</dt><dd>阈值后 P/R/F1、Recall@All/25/50/100、三 Judge LLM-score。</dd>
+                        </dl>
+
+                        <h3>POMDP 中每个变量是什么</h3>
+                        <ul>
+                            <li><strong>State：</strong>完整 Paper Pool，保存内容、元数据、相关分与是否已扩展。</li>
+                            <li><strong>Observation：</strong>受 Context 限制，只展示已扩展与未扩展的高分论文，以及历史动作。</li>
+                            <li><strong>Action：</strong>一次完整回复，可包含一个或多个 Search/Expand 调用。</li>
+                            <li><strong>Transition：</strong>工具结果经相关性阈值和去重后合并进 Paper Pool。</li>
+                        </ul>
+
+                        <div class="formula">reward = Top-k 新论文相关性增益 − η × 重复调用</div>
+                        <p>相关性由 PaSa-7B-Selector 给出。奖励鼓励在有限工具调用下持续发现新相关论文，而不是只沿某一篇论文无限扩展。</p>
+
+                        <h3>PSPO 解决什么</h3>
+                        <p>工具执行后得到的奖励属于一次完整 Agent 回复，而普通 PPO 把回复拆成许多 Token Action，导致奖励粒度与行为粒度不匹配。PSPO 将整段 Response 当作原子动作，在交互序列层做 GAE、Importance Sampling 和 Clipped Actor-Critic 更新，并加入 Critic 预训练、Return Normalization 与非对称裁剪。</p>
+
+                        <div class="source-note">
+                            <p><span class="evidence paper">论文支持</span>主实验还比较 PPO、GSPO、无 Process Reward 的 PSPO* 与完整 PSPO，因此不仅测试“系统是否有效”，也单独测试训练算法。</p>
+                        </div>
+                        <div class="warning-note">
+                            <p><strong>公平性边界：</strong>训练用本地 Milvus/ar5iv 环境，测试统一走 Google Search；AutoScholarQuery 只评测至少有 5 篇答案的 112 个 Query，不是 PaSa 原论文完整 1,000 个 Test Query。</p>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <section id="benchmarks">
+            <h2>Benchmark 横向拆解：谁在测什么能力</h2>
+            <p class="lead"><strong>任务</strong>规定系统需要完成什么；<strong>数据集/Benchmark</strong>提供具体 Query 与 Gold Papers；<strong>指标</strong>规定如何把输出换算成分数。Benchmark 的差异比模型差异更大，只有先看 Gold Set 如何产生、Agent 能看到什么、指标如何计算，结果数字才有意义。</p>
+
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Benchmark</th>
+                            <th>规模与领域</th>
+                            <th>Gold 如何构造</th>
+                            <th>真正测到的能力</th>
+                            <th>主要风险</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>AutoScholarQuery</strong><br><span class="method-chip">训练 + 评测数据</span><br>PaSa；PaperScout 复用</td>
+                            <td>33,551 Train / 1,000 Dev / 1,000 Test；AI 顶会</td>
+                            <td>从源论文 Related Work 引用得到答案，再由 GPT-4o 生成 Query</td>
+                            <td>对细粒度 AI Query 的搜索与引用扩展召回</td>
+                            <td>引用集合不完整；Query 为合成；领域窄</td>
+                        </tr>
+                        <tr>
+                            <td><strong>RealScholarQuery</strong><br><span class="method-chip">真实测试集</span><br>PaSa；PaperScout 复用</td>
+                            <td>50 个真实 AI Query；平均 15.82 个答案</td>
+                            <td>多系统建候选池，专业标注者筛选</td>
+                            <td>真实复杂需求下的开放检索</td>
+                            <td>Pooling 包含被测系统；50 个样本较小</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PaSaMaster-Bench</strong></td>
+                            <td>244 Tasks；38 学科；Top-20</td>
+                            <td>专家写 Query 与 Checklist；多通道建池；逐条件标注</td>
+                            <td>组合约束、跨学科、真实 Web、来源真实性</td>
+                            <td>自建 Benchmark；建池含 PaSaMaster；未独立复验</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PaperPilot Hold-out</strong></td>
+                            <td>约 200 Cases；5 个 Anchor 关系方向；每题 6–15 Gold</td>
+                            <td>引用图、人工筛选、LLM 辅助、Related-Work Cohort</td>
+                            <td>锚点关系检索、早期命中、多轮偏好对齐、DAG 编辑</td>
+                            <td>模拟用户；Gold 部分由 LLM 辅助；任务不是开放主题检索</td>
+                        </tr>
+                        <tr class="caution-row">
+                            <td><strong>PaperScout 的 Auto 子集</strong></td>
+                            <td>112 个至少有 5 篇 Gold 的 Test Query</td>
+                            <td>从 AutoScholarQuery 1,000 Test 中筛选</td>
+                            <td>更适合测多轮工具调用下的召回曲线</td>
+                            <td>不能直接拿结果数字与 PaSa 的 1,000 Query 主表比较</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="key-insight">
+                <h3>Benchmark 的谱系比“模型大小”更重要</h3>
+                <p>PaSa 创造了 Query → 多论文集合的基础任务；PaperScout 在它上面研究策略学习。PaperPilot 改成 Anchor → 关系论文；PaSaMaster 改成多约束 Query → 经证据验证的 Top-20。后两者的结果回答了不同研究问题。</p>
+            </div>
+        </section>
+
+        <section id="baselines">
+            <h2>Baseline 选择：每篇论文试图排除哪一种解释</h2>
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>工作</th>
+                            <th>传统检索</th>
+                            <th>通用/商业 LLM</th>
+                            <th>相近 Agent 或内部控制</th>
+                            <th>Baseline 设计要回答的问题</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>PaSa</strong></td>
+                            <td>Google、Google Scholar、Google+GPT-4o 改写</td>
+                            <td>Search-enabled GPT-4o、GPT-o1</td>
+                            <td>PaSa-GPT-4o；PaSa-7B Ensemble</td>
+                            <td>多步 Agent 是否优于一次搜索？训练后的 7B 是否优于同框架 GPT-4o？</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PaSaMaster</strong></td>
+                            <td>Google Scholar</td>
+                            <td>DeepSeek、Kimi、MiniMax、GLM、Gemini、GPT，均带 Search/Visit</td>
+                            <td>OpenScholar、Bohrium；Google Scholar Labs</td>
+                            <td>递归自演化是否优于关键词、语义检索、生成式 Agent 和固定 Agent Workflow？</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PaperPilot</strong></td>
+                            <td>—</td>
+                            <td>GPT-5.4 Web；o4-mini DeepResearch</td>
+                            <td>同一模型的固定 Workflow 与自适应 Toolset；未训练 Qwen 9B/397B；PaperPilot-9B</td>
+                            <td>提升来自检索工具本身、工作流自适应、多轮澄清，还是专门训练？</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PaperScout</strong></td>
+                            <td>Google、Google+LLM、Google Scholar</td>
+                            <td>Qwen3-Max 未训练策略</td>
+                            <td>PaSa、SPAR、未训练 4B；PPO、GSPO、PSPO*</td>
+                            <td>自适应策略是否优于固定流程？增益来自模型规模还是 PSPO？</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence inference">横向判断</span>
+                    <h3>PaSa 的对照最适合验证“训练有效”</h3>
+                    <p>PaSa-GPT-4o 与 PaSa-7B 共用大体相同框架，能相对清楚地区分 Prompt Agent 和经过 RL 的 Agent。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence inference">横向判断</span>
+                    <h3>PaperPilot 的内部控制最细</h3>
+                    <p>固定 Workflow、同模型 Toolset、单轮/多轮和专门训练模型形成因子化比较；代价是任务和后端均为自建。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence inference">横向判断</span>
+                    <h3>PaperScout 最重视算法 Baseline</h3>
+                    <p>PPO、GSPO、PSPO* 与完整 PSPO 直接检验序列级优化及 Process Reward，而不只比较系统名称。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence audit">审计提醒</span>
+                    <h3>PaSaMaster 的 Baseline 最新但最难复现</h3>
+                    <p>多个商业模型和 Google Scholar Labs 会随时间变化；在线系统、工具权限与成本也难以完全重建。</p>
+                </article>
+            </div>
+        </section>
+
+        <section id="results">
+            <h2>实验结果怎么读：证据、结论与不可比之处</h2>
+
+            <h3>PaSa：共享任务上的第一代训练式 Agent</h3>
+            <figure class="figure">
+                <a href="文献搜索系统横向比较_assets/pasa_results.png" target="_blank">
+                    <img loading="lazy" src="文献搜索系统横向比较_assets/pasa_results.png" alt="PaSa 在 AutoScholarQuery 与 RealScholarQuery 上的结果">
+                </a>
+                <figcaption>PaSa 主结果图。RealScholarQuery 上，PaSa-7B 的 Recall 为 0.6111、Precision 为 0.5146；PaSa-GPT-4o 分别为 0.3075、0.4721。来源：论文 Tables 4–5 的项目图。</figcaption>
+            </figure>
+            <p>这个结果支持“训练后的 7B 策略能比同框架 Prompted GPT-4o 找到更多目标论文”。但 AutoScholarQuery 的低 Precision 与不完整 Gold 有关，不能简单解释成 85% 结果都无关。</p>
+
+            <h3>PaSaMaster：在自己的多约束 Benchmark 上领先</h3>
+            <figure class="figure">
+                <a href="文献搜索系统横向比较_assets/pasamaster_results.png" target="_blank">
+                    <img loading="lazy" src="文献搜索系统横向比较_assets/pasamaster_results.png" alt="PaSaMaster-Bench 主实验结果">
+                </a>
+                <figcaption>PaSaMaster Table 2：F1@20 为 23.00，Google Scholar Labs 为 18.87，GLM-5 为 18.18；PaSaMaster 报告 0% 来源幻觉与每 Query 约 0.05 美元。</figcaption>
+            </figure>
+            <p>表格支持 PaSaMaster 在该 Benchmark 与该工具配置下同时改善排序、约束满足、真实性和成本。但“16.5× Google Scholar”来自 Google Scholar 在复杂自然语言约束上的极低 F1，不能外推为所有学术搜索场景的普遍倍数。</p>
+
+            <h3>PaperPilot：专门训练的 9B 更稳，但不是全表最佳</h3>
+            <figure class="figure">
+                <a href="文献搜索系统横向比较_assets/paperpilot_results.png" target="_blank">
+                    <img loading="lazy" src="文献搜索系统横向比较_assets/paperpilot_results.png" alt="PaperPilot 主实验结果表">
+                </a>
+                <figcaption>PaperPilot Table 2：PaperPilot-9B 的 Hit@5 为 77.0、Recall@50 为 40.0、MRR 为 59.4，工作流执行错误从未训练 9B 多轮 Toolset 的 9.5% 降到 0%。</figcaption>
+            </figure>
+            <div class="critical-note">
+                <p><strong>客观阅读的关键：</strong>PaperPilot-9B 不是全表最佳系统。GPT-5.4 + Web Search + Toolset 的多轮配置达到 Hit@5 84.0、Recall@50 56.8、MRR 71.8、nDCG@10 41.6。论文真正有力的主张是：专门训练让小模型显著优于未训练的同尺寸 Toolset Agent，并把 DAG 执行错误降为 0，同时成本较低。</p>
+            </div>
+
+            <h3>PaperScout：在 PaSa 数据谱系上验证自适应策略与 PSPO</h3>
+            <figure class="figure">
+                <a href="文献搜索系统横向比较_assets/paperscout_results.png" target="_blank">
+                    <img loading="lazy" src="文献搜索系统横向比较_assets/paperscout_results.png" alt="PaperScout 在 RealScholarQuery 与 AutoScholarQuery 上的结果">
+                </a>
+                <figcaption>PaperScout Table 2：RealScholarQuery 上 Recall 0.574、F1 0.441；表中 PaSa 为 0.541/0.417。AutoScholarQuery 使用筛选后的 112 个困难 Query。</figcaption>
+            </figure>
+            <p>结果支持“PSPO 训练的 4B 可以超过未训练 4B，并在部分指标上超过更大的 Qwen3-Max”。但这里的 PaSa 数字来自 PaperScout 的统一后端与协议，不等于 PaSa 原论文主表；PaperScout 又直接使用 PaSa Selector 作为相关性 Scorer，系统并非完全独立。</p>
+
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>论文最强证据</th>
+                            <th>它能支持的结论</th>
+                            <th>不应过度推出的结论</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>PaSa-7B vs PaSa-GPT-4o</td>
+                            <td>RL 训练的搜索策略有效，7B Agent 可在该任务超过 Prompted GPT-4o</td>
+                            <td>PaSa 在所有学科或所有搜索后端都优于 Google Scholar</td>
+                        </tr>
+                        <tr>
+                            <td>PaSaMaster 在 244 个多约束任务领先</td>
+                            <td>证据递归与验证式排序适合复杂组合条件</td>
+                            <td>报告的倍数、0 幻觉和成本可直接复制到其他语料/服务</td>
+                        </tr>
+                        <tr>
+                            <td>PaperPilot-9B vs 未训练 9B Toolset</td>
+                            <td>Workflow SFT + Preference 优化改善检索与 DAG 稳定性</td>
+                            <td>9B 方法优于 GPT-5.4 + 同 Toolset，或模拟用户等同真实用户</td>
+                        </tr>
+                        <tr>
+                            <td>PSPO vs PPO/GSPO/PSPO*</td>
+                            <td>序列级信用分配与过程奖励对多轮检索训练有益</td>
+                            <td>PaperScout 原始数字可与 PaSa 原论文数字直接相减</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="audit">
+            <h2>客观性审计：代码、数据与评测的可复现边界</h2>
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>工作</th>
+                            <th>当前公开情况</th>
+                            <th>能本地核对什么</th>
+                            <th>仍不能完整核对什么</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>PaSa</strong></td>
+                            <td>Apache-2.0；代码、模型和数据均有链接</td>
+                            <td>Crawler/Selector 入口、工具逻辑、训练说明</td>
+                            <td>需要模型权重、数据、Google API 和修改版训练依赖才能完整复现</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PaSaMaster</strong></td>
+                            <td>仓库当前主要是 README 与图片；Benchmark 另有链接</td>
+                            <td>产品入口、CLI/MCP 使用说明、论文材料</td>
+                            <td>Navigator、Librarian、Scorer、索引和完整 evaluator</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PaperPilot</strong></td>
+                            <td>Apache-2.0；Core/API/UI/部分 Eval 已公开</td>
+                            <td>DAG Runtime、Operator、服务接口、部分评测</td>
+                            <td>完整训练基础设施与论文轨迹数据尚未随首版开放</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PaperScout</strong></td>
+                            <td>PSPO/Actor-Critic 代码与 verl 相关实现已公开</td>
+                            <td>核心优化代码、Reward Loop、训练 Recipe</td>
+                            <td>根目录缺少独立 LICENSE；完整检索环境与外部 Scorer 仍需配置</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="truth-grid">
+                <article class="truth-card">
+                    <span class="evidence paper">可以较有把握地说</span>
+                    <h3>四项工作代表四种互补设计</h3>
+                    <ul>
+                        <li>高召回探索与精确筛选可以拆开训练。</li>
+                        <li>多轮检索策略需要状态和过程奖励。</li>
+                        <li>显式 DAG 提高可检查性和用户可控性。</li>
+                        <li>复杂约束需要逐条件证据验证，而不只是语义相似度。</li>
+                    </ul>
+                </article>
+                <article class="truth-card cannot">
+                    <span class="evidence audit">目前不能严格断言</span>
+                    <h3>不存在统一 SOTA 排名</h3>
+                    <ul>
+                        <li>四篇论文没有共享完全一致的 Query、后端、Gold、截止 K 和成本口径。</li>
+                        <li>商业 Baseline 会更新，报告数字是时间快照。</li>
+                        <li>自建 Benchmark 上的领先需要独立复验。</li>
+                        <li>“0 幻觉”只说明来源记录可验证，不等于相关性判断永不出错。</li>
+                    </ul>
+                </article>
+            </div>
+
+            <details>
+                <summary>进一步展开：四种常见评测偏差</summary>
+                <div class="details-body">
+                    <div class="card-grid">
+                        <article class="card">
+                            <h3>Pool Bias</h3>
+                            <p>Gold 候选池包含被测系统输出时，更容易覆盖该系统擅长找到的论文。RealScholarQuery 与 PaSaMaster-Bench 都需留意。</p>
+                        </article>
+                        <article class="card">
+                            <h3>Incomplete Gold</h3>
+                            <p>开放世界不可能知道所有相关论文。Exact Match Precision 偏低可能是 Gold 漏标，而不完全是系统噪声。</p>
+                        </article>
+                        <article class="card">
+                            <h3>Simulator Bias</h3>
+                            <p>PaperPilot 的多轮用户由 LLM 模拟。泄漏检测能防直接给答案，但不能保证偏好分布与真实研究者一致。</p>
+                        </article>
+                        <article class="card">
+                            <h3>Backend Drift</h3>
+                            <p>Google、Scholar、商业 LLM 和在线索引持续变化；同一 Prompt 在不同日期可能得到不同候选池和成本。</p>
+                        </article>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+        <section id="takeaway">
+            <h2>最终理解：不是选一个赢家，而是选择任务抽象</h2>
+            <div class="card-grid">
+                <article class="card">
+                    <span class="method-chip">从零开始 · 高召回</span>
+                    <h3>优先理解 PaSa</h3>
+                    <p>它提供最清楚的基础范式：搜索、引用扩展、候选池、相关性筛选，以及如何用合成 Query 训练检索 Agent。</p>
+                </article>
+                <article class="card">
+                    <span class="method-chip">自主策略 · RL 算法</span>
+                    <h3>重点看 PaperScout</h3>
+                    <p>适合研究工具 Agent 的 POMDP 建模、过程奖励、信用分配与 Search/Expand 的动态平衡。</p>
+                </article>
+                <article class="card">
+                    <span class="method-chip">用户可控 · 可解释执行</span>
+                    <h3>重点看 PaperPilot</h3>
+                    <p>适合锚点论文探索和交互式检索；核心资产不是一段隐藏 Chain-of-Thought，而是可复现、可编辑的工作流。</p>
+                </article>
+                <article class="card">
+                    <span class="method-chip">复杂约束 · 来源真实性</span>
+                    <h3>重点看 PaSaMaster</h3>
+                    <p>适合跨学科、严格条件与证据审计；需要同时注意它的强系统主张与当前公开实现不足。</p>
+                </article>
+            </div>
+
+            <div class="key-insight">
+                <h3>一条更完整的未来系统路线</h3>
+                <p>一个更强的统一系统可能吸收四者各自最好的部分：PaSa 的召回—筛选分工，PaperScout 的自适应策略训练，PaperPilot 的用户可编辑 DAG，以及 PaSaMaster 的约束 Checklist、真实来源验证和证据化排序。当前四篇论文分别解决了这条链上的不同环节，还没有一篇同时把它们完整解决。</p>
+            </div>
+
+            <div class="source-note">
+                <p><strong>阅读建议：</strong>若要进一步做研究，最有价值的统一实验不是直接复制四张主表，而是在同一语料快照、同一搜索后端、同一 Query 集、同一预算和同一人工 Relevance Pool 下，分别消融“策略自适应、显式工作流、用户反馈、Checklist 验证与来源约束”。</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>PaSa · PaSaMaster · PaperPilot · PaperScout 横向精读</p>
+            <p>论文原图版权归原作者；本页仅用于科研阅读与比较 · 整理日期：2026-07-31</p>
+        </footer>
+    </main>
+
+    <script>
+        const methodPanels = Array.from(document.querySelectorAll(".method-panel"));
+        document.getElementById("expand-all").addEventListener("click", () => {
+            methodPanels.forEach((panel) => { panel.open = true; });
+        });
+        document.getElementById("collapse-all").addEventListener("click", () => {
+            methodPanels.forEach((panel) => { panel.open = false; });
+        });
+
+        function openPanelFromHash() {
+            const target = document.querySelector(window.location.hash);
+            if (target && target.matches("details.method-panel")) {
+                target.open = true;
+            }
+        }
+
+        window.addEventListener("hashchange", openPanelFromHash);
+        openPanelFromHash();
+    </script>
+</body>
+</html>

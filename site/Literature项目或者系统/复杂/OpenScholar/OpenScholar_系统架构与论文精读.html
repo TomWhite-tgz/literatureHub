@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="OpenScholar 中文深度导读：问题定义、数据仓库、检索与重排序、自反馈生成、训练数据飞轮、ScholarQABench、实验结果、源码审计与复现边界。">
+  <title>OpenScholar｜从 4500 万篇论文到可追溯的文献综合</title>
+  <style>
+    :root{
+      --ink:#1f2421;--muted:#5c635d;--paper:#f7f4ef;--panel:#fbf9f5;--white:#fff;
+      --line:#e7e1d7;--accent:#c4612f;--accent-dark:#a94e22;--accent-pale:#f2e3d6;
+      --green:#315b45;--green-pale:#edf2ee;--blue:#355f78;--blue-pale:#edf4f7;
+      --warning:#8a641c;--warning-pale:#fff7e6;--danger:#934958;--danger-pale:#fff0f2;
+      --shadow:0 2px 8px rgba(31,36,33,.06);--figure-shadow:0 4px 14px rgba(31,36,33,.11)
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{color:var(--ink);background:var(--paper);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
+      "Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;font-size:16px;line-height:1.72;overflow-x:hidden}
+    .container{width:min(920px,calc(100% - 44px));margin:0 auto;padding:52px 18px 76px}
+    header{margin-bottom:34px;padding-bottom:34px;border-bottom:1px solid var(--line);text-align:center}
+    .back-link{display:inline-block;margin-bottom:20px;color:var(--accent);font-size:.93rem;font-weight:650;text-decoration:none}
+    .back-link:hover{color:var(--accent-dark);transform:translateX(-2px)}
+    .status-row,.resource-row{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+    .status-row{margin-bottom:18px}.resource-row{margin-top:22px}
+    .badge{display:inline-flex;padding:4px 11px;border-radius:999px;color:var(--accent-dark);background:var(--accent-pale);
+      font-size:.79rem;font-weight:650;white-space:nowrap}
+    .resource-link{display:inline-block;padding:7px 13px;border:1px solid var(--line);border-radius:999px;color:var(--accent-dark);
+      background:var(--panel);font-size:.84rem;font-weight:620;text-decoration:none;transition:.2s}
+    .resource-link.primary{border-color:var(--accent);color:#fff;background:var(--accent)}
+    .resource-link:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+    h1{margin-bottom:12px;font-size:clamp(2.35rem,7vw,3.25rem);font-weight:670;letter-spacing:-.035em;line-height:1.08}
+    .subtitle{max-width:720px;margin:0 auto;color:var(--muted);font-size:1.08rem;font-weight:360}
+    .meta{margin-top:12px;color:var(--muted);font-size:.91rem;font-weight:360}
+    h2{margin:56px 0 24px;padding-bottom:11px;border-bottom:2px solid var(--accent);font-size:1.78rem;font-weight:630;line-height:1.3}
+    h3{margin:30px 0 14px;color:var(--accent);font-size:1.25rem;font-weight:630}
+    h4{margin-bottom:8px;color:var(--accent-dark);font-size:1.01rem;font-weight:650}
+    p{margin-bottom:17px;font-weight:360}strong{font-weight:660}a{color:var(--accent-dark)}
+    .lead{color:#343b37;font-size:1.02rem}.eyebrow{display:block;margin-bottom:7px;color:var(--muted);
+      font-size:.75rem;font-weight:720;letter-spacing:.08em;text-transform:uppercase}
+    .toc{position:sticky;top:10px;z-index:20;display:flex;flex-wrap:wrap;justify-content:center;gap:7px;
+      margin:24px 0 34px;padding:10px;border:1px solid rgba(231,225,215,.9);border-radius:16px;
+      background:rgba(247,244,239,.93);box-shadow:0 8px 24px rgba(31,36,33,.06);backdrop-filter:blur(10px)}
+    .toc a{padding:6px 10px;border-radius:999px;color:var(--muted);font-size:.8rem;font-weight:620;text-decoration:none}
+    .toc a:hover{color:var(--accent-dark);background:var(--accent-pale)}
+    .summary,.note,.warning,.danger,.insight{margin:26px 0;padding:21px 25px;border-left:4px solid var(--accent);
+      border-radius:5px;background:var(--panel);box-shadow:var(--shadow)}
+    .note{border-left-color:var(--blue);background:var(--blue-pale)}
+    .warning{border-left-color:var(--warning);background:var(--warning-pale)}
+    .danger{border-left-color:var(--danger);background:var(--danger-pale)}
+    .insight{border-left-color:var(--green);background:var(--green-pale)}
+    .summary p:last-child,.note p:last-child,.warning p:last-child,.danger p:last-child,.insight p:last-child{margin-bottom:0}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:24px 0}
+    .g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .card{padding:21px 23px;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:var(--shadow)}
+    .card h3{margin-top:0;font-size:1.08rem}.card p:last-child,.card ul:last-child{margin-bottom:0}
+    .kicker{margin-bottom:7px;color:var(--muted);font-size:.7rem;font-weight:720;letter-spacing:.08em;text-transform:uppercase}
+    .metric{margin:3px 0 8px;color:var(--accent-dark);font-size:1.8rem;font-weight:760;line-height:1}
+    .tag{display:inline-flex;margin:2px;padding:4px 10px;border-radius:999px;color:var(--green);background:var(--green-pale);
+      font-size:.75rem;font-weight:630}
+    .evidence{display:inline-flex;margin-bottom:10px;padding:3px 9px;border-radius:999px;font-size:.72rem;
+      font-weight:700;letter-spacing:.02em}
+    .evidence.paper{color:var(--accent-dark);background:var(--accent-pale)}
+    .evidence.code{color:var(--blue);background:var(--blue-pale)}
+    .evidence.inference{color:var(--warning);background:var(--warning-pale)}
+    .evidence.audit{color:var(--danger);background:var(--danger-pale)}
+    figure{margin:30px 0;text-align:center}
+    figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:var(--figure-shadow)}
+    figcaption{max-width:760px;margin:11px auto 0;color:var(--muted);font-size:.86rem;font-style:italic;line-height:1.55}
+    .flow{margin:29px 0;padding:27px 31px;border-radius:8px;background:var(--panel);box-shadow:var(--shadow)}
+    .flow-box{position:relative;margin:16px 0;padding:18px 22px;border-left:4px solid var(--accent);border-radius:4px;background:#fff;text-align:left}
+    .flow-box strong{display:block;color:var(--accent-dark)}.arrow{height:18px;color:var(--accent);font-size:0;text-align:center}
+    .arrow:after{content:"▼";font-size:18px}
+    .table-wrap{width:100%;margin:26px 0;border-radius:8px;overflow-x:auto}
+    table{width:100%;min-width:680px;border-collapse:collapse;border-radius:8px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden}
+    th{padding:13px 15px;color:#fff;background:var(--accent);font-size:.88rem;font-weight:620;text-align:left;white-space:nowrap}
+    td{padding:13px 15px;border-bottom:1px solid var(--line);font-size:.89rem;font-weight:360;vertical-align:top}
+    tr:last-child td{border-bottom:0}.best{color:var(--green);font-weight:700}
+    .formula{margin:25px 0;padding:21px 23px;border-radius:7px;color:var(--paper);background:var(--ink);
+      font:500 .9rem/1.7 "SFMono-Regular",Consolas,monospace;overflow-x:auto;text-align:center;white-space:nowrap}
+    .steps{counter-reset:step;margin:29px 0;padding:27px 31px;border-radius:8px;background:var(--panel);box-shadow:var(--shadow)}
+    .step{counter-increment:step;position:relative;margin:16px 0;padding:18px 22px 18px 60px;border-left:4px solid var(--accent);
+      border-radius:4px;background:#fff}.step:before{content:counter(step);position:absolute;left:20px;top:19px;width:25px;height:25px;
+      display:grid;place-items:center;border-radius:50%;color:#fff;background:var(--accent);font-size:.74rem;font-weight:700}
+    .step p:last-child{margin-bottom:0}
+    .audit{display:grid;gap:14px;margin:24px 0}.audit-item{padding:21px 23px;border:1px solid var(--line);
+      border-left:4px solid var(--danger);border-radius:8px;background:var(--panel);box-shadow:var(--shadow)}
+    .audit-item h4{color:var(--danger)}.audit-item p:last-child{margin-bottom:0}
+    .verdict{margin:32px 0;padding:28px 31px;border-radius:8px;color:#fff;
+      background:linear-gradient(135deg,var(--accent),var(--accent-dark));box-shadow:0 4px 12px rgba(196,97,47,.22)}
+    .verdict h3,.verdict p{color:#fff}.verdict h3{margin-top:0}.verdict p:last-child{margin-bottom:0}
+    code{padding:2px 5px;border-radius:4px;color:var(--accent-dark);background:var(--accent-pale);font-size:.88em}
+    pre{margin:22px 0;padding:20px 22px;border:1px solid #343b37;border-radius:8px;color:#edf2ee;background:var(--ink);
+      font:500 .84rem/1.65 "SFMono-Regular",Consolas,monospace;overflow-x:auto}pre code{padding:0;color:inherit;background:transparent}
+    ul,ol{margin:15px 0 19px 2px;padding-left:23px}li{margin-bottom:9px;font-weight:360}
+    .files{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:22px 0}
+    .file{padding:16px 18px;border:1px solid var(--line);border-radius:7px;background:#fff}
+    .file a{display:inline-block;margin-bottom:7px;color:var(--blue);background:var(--blue-pale);font:660 .81rem monospace;overflow-wrap:anywhere}
+    .file p{margin-bottom:0;color:var(--muted);font-size:.86rem}
+    .section-head{display:block}.section-no{display:block;margin-bottom:5px;color:var(--muted);font-size:.72rem;font-weight:720;letter-spacing:.08em}
+    .section-head h2{margin-top:56px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    footer{margin-top:72px;padding-top:28px;border-top:1px solid var(--line);color:var(--muted);font-size:.86rem;text-align:center}
+    @media(max-width:760px){.container{width:min(100% - 28px,920px);padding:34px 8px 56px}
+      .grid,.g2,.g3,.g4,.files{grid-template-columns:1fr}.toc{position:static}.flow,.steps{padding:20px 16px}
+      h2,.section-head h2{margin-top:46px;font-size:1.55rem}.summary,.note,.warning,.danger,.insight,.verdict{padding:22px}}
+    @media print{.toc,.back-link{display:none}body{background:#fff}.container{width:100%;max-width:none;padding:24px}
+      figure,.card,.audit-item{break-inside:avoid;box-shadow:none}.resource-row{display:none}}
+  </style>
+</head>
+<body>
+  <main id="top" class="container">
+    <header>
+        <a class="back-link" href="README_归档说明.html">← 返回 OpenScholar 归档目录</a>
+        <div class="status-row">
+          <span class="badge">Nature 650 · 2026</span>
+          <span class="badge">arXiv:2411.14199</span>
+          <span class="badge">代码 / 模型 / 数据开放</span>
+        </div>
+        <h1>OpenScholar</h1>
+        <p class="subtitle">从 4,500 万篇开放论文中检索证据，经领域重排序、自反馈补检索与引用归因，生成可追溯的科学文献综合。这里同时拆解论文、benchmark、源码和实际复现边界。</p>
+        <p class="meta">Akari Asai 等 · University of Washington × Allen Institute for AI 等 · arXiv 2024-11 · Nature 正式发表 2026-02</p>
+        <div class="resource-row">
+          <a class="resource-link primary" href="paper/OpenScholar_Nature_2026.pdf">Nature 正式论文</a>
+          <a class="resource-link" href="paper/OpenScholar_Nature_2026_Supplementary_Information.pdf">补充材料</a>
+          <a class="resource-link" href="paper/OpenScholar_arXiv_2411.14199.pdf">arXiv 版本</a>
+          <a class="resource-link" href="code/OpenScholar/README.html">本地代码</a>
+          <a class="resource-link" href="benchmark/ScholarQABench/README.html">ScholarQABench</a>
+          <a class="resource-link" href="README_归档说明.html">归档说明</a>
+        </div>
+    </header>
+
+    <nav class="toc" aria-label="页面目录">
+      <a href="#judgment">核心判断</a>
+      <a href="#problem">问题定义</a>
+      <a href="#architecture">总体架构</a>
+      <a href="#retrieval">数据与检索</a>
+      <a href="#inference">自反馈生成</a>
+      <a href="#training">训练数据飞轮</a>
+      <a href="#benchmark">ScholarQABench</a>
+      <a href="#results">实验结果</a>
+      <a href="#interpret">如何解读</a>
+      <a href="#code">源码与复现</a>
+      <a href="#limits">局限与启发</a>
+      <a href="#files">本地材料</a>
+    </nav>
+
+      <section id="judgment">
+        <div class="section-head"><span class="section-no">SECTION 01</span><h2>先给结论：它是什么，又不是什么</h2></div>
+        <div class="summary">
+          <span class="evidence paper">论文与项目总览</span>
+          <p><strong>一句话：</strong>OpenScholar 是一个面向开放科学文献的“领域 RAG 系统 + 专用 8B 模型 + 数据仓库 + benchmark”，目标是回答需要多篇论文支持的科学问题，并把答案中的论断绑定到可检查的文献段落。</p>
+          <p>它最重要的贡献不是发明了某个全新的神经网络，而是把<strong>语料、检索、重排序、生成、反馈、补检索、引用归因、训练和评测</strong>连成一条开放链路。</p>
+        </div>
+        <div class="grid g4">
+          <div class="card"><div class="kicker">Open corpus</div><div class="metric">45M</div><p>开放获取论文，来自 peS2o / S2ORC 系谱。</p></div>
+          <div class="card blue"><div class="kicker">Passages</div><div class="metric">236M</div><p>Nature 版本报告的段落表示规模；不同版本写作 234–237M。</p></div>
+          <div class="card violet"><div class="kicker">Open generator</div><div class="metric">8B</div><p>基于 Llama 3.1 8B 的领域化生成模型。</p></div>
+          <div class="card amber"><div class="kicker">Benchmark</div><div class="metric">2,967</div><p>总问题数，另有 208 个专家长答案。</p></div>
+        </div>
+        <div class="grid g2">
+          <div class="note"><p><strong>它是：</strong>可替换生成后端的文献综合管线。后端可以是 OpenScholar-8B、Llama 70B 或 GPT-4o；系统价值不只存在于 8B 权重中。</p></div>
+          <div class="warning"><p><strong>它不是：</strong>端到端自动科研 Agent。它不提出并执行实验，不运行代码，不验证研究结论的科学有效性，也没有长期研究记忆。</p></div>
+        </div>
+      </section>
+
+      <section id="problem">
+        <div class="section-head"><span class="section-no">SECTION 02</span><h2>它试图解决的任务</h2></div>
+        <p class="lead">给定科学问题 <code>x</code>，系统需要找出相关论文、综合结论、生成长答案 <code>y</code>，并给出一组引用 <code>C</code>。关键要求不是“列出一些论文”，而是每个引用都应链接到支持答案中某段文字的具体文献段落。</p>
+        <div class="formula">y, C = G(x, R(x, D))</div>
+        <div class="grid g3">
+          <div class="card"><h4>检索难题</h4><p>自然语言问题很长且抽象；真正相关的证据可能位于数千万论文的正文深处，而非标题或摘要。</p></div>
+          <div class="card blue"><h4>综合难题</h4><p>答案往往跨多篇论文，需要组织异质证据、覆盖不同方法与结果，又不能把检索片段逐条堆砌。</p></div>
+          <div class="card amber"><h4>归因难题</h4><p>“引用是真论文”仍不够：引用内容必须支持它旁边的 claim，而且应覆盖所有需要证据的句子。</p></div>
+        </div>
+        <div class="insight"><p><strong>理解 OpenScholar 的钥匙：</strong>它优化的是三角关系——<em>coverage</em>（找得广）、<em>correctness</em>（说得对）和 <em>attribution</em>（引得准）。只追求其中一个都不够：PaperQA2 的引用较准但覆盖较窄；裸 LLM 写得流畅但引用大量虚构；简单 RAG 则可能把无关上下文塞给模型。</p></div>
+      </section>
+
+      <section id="architecture">
+        <div class="section-head"><span class="section-no">SECTION 03</span><h2>总体架构：两条链路、一个飞轮</h2></div>
+        <figure>
+          <img src="code/OpenScholar/imgs/open_scholar.png" alt="OpenScholar 官方总体架构">
+          <figcaption>官方总览：左侧是 OSDS 与检索器，中间是自反馈生成，右侧是 ScholarQABench 与评测。</figcaption>
+        </figure>
+        <div class="flow">
+          <div class="flow-box"><strong>科学问题</strong>用户提出开放式文献问题</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>候选召回</strong>OSDS + Semantic Scholar + Web</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>Cross-encoder</strong>精排到 Top N 段落</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>初稿</strong>生成回答与段落引用</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>反馈循环</strong>批评、补检索、局部修订</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>引用检查</strong>补齐 citation-worthy claims</div>
+        </div>
+        <figure>
+          <img src="assets/inference_training_pipeline.png" alt="OpenScholar 推理与训练详细流程">
+          <figcaption>论文详细图：上半部分是运行时的检索—反馈—修订；下半部分把中间轨迹转成训练数据，使 8B 模型学习这套行为。</figcaption>
+        </figure>
+        <div class="grid g2">
+          <div class="card"><div class="kicker">Inference path</div><h4>实时回答链</h4><p>围绕一个问题运行，重排候选、生成初稿、最多处理三条反馈，必要时继续检索，最后做引用归因。</p></div>
+          <div class="card violet"><div class="kicker">Training path</div><h4>能力蒸馏链</h4><p>用更强的 Llama 3.1 70B 运行同一管线，保存问题、初稿、反馈、修订和最终答案，再训练较小的 8B 模型。</p></div>
+        </div>
+      </section>
+
+      <section id="retrieval">
+        <div class="section-head"><span class="section-no">SECTION 04</span><h2>数据仓库与检索：真正的系统地基</h2></div>
+        <h3>4.1 OSDS 是怎样构造的</h3>
+        <div class="steps">
+          <div class="step"><h4>来源</h4><p>使用 peS2o 中来自 S2ORC 的开放获取论文。v3 覆盖截至 2024 年 10 月约 4,500 万篇论文；主实验仍使用较早的 v2（截至 2023 年 1 月），因为 benchmark 和模型构建早于 v3。</p></div>
+          <div class="step"><h4>切块</h4><p>把正文按空白切成约 250 词的块，并把论文标题拼到每个块前面。这样每个 passage 同时携带局部证据与论文身份。</p></div>
+          <div class="step"><h4>向量化</h4><p>用持续在 peS2o 上无监督预训练的 Contriever 编码段落，形成两亿级 dense embeddings。Nature 正文写 236M；arXiv 不同段落写 234M 或 237M，应理解为版本差异与取整，而非三个独立语料库。</p></div>
+        </div>
+        <h3>4.2 三路召回不是同一种搜索</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>来源</th><th>怎么搜</th><th>优势</th><th>主要缺口</th></tr></thead>
+          <tbody>
+            <tr><td><strong>OSDS dense retrieval</strong></td><td>110M bi-encoder 编码问题，近邻检索 Top 100 passages</td><td>正文级、规模大、开放可复现</td><td>语义相似不等于代表性，且索引极重</td></tr>
+            <tr><td><strong>Semantic Scholar API</strong></td><td>LM 先把长问题改写为关键词；每个关键词取按引用量排序的 Top 10 论文</td><td>补充论文元数据、摘要与高引用工作</td><td>引用量偏置，对新论文不友好</td></tr>
+            <tr><td><strong>You.com Web</strong></td><td>限制到 arXiv、PubMed 等学术站点取 Top 10；开放则取全文，否则取摘要</td><td>补充更近期或 OSDS 外的内容</td><td>论文实验中 web-only 最弱，噪声较大</td></tr>
+          </tbody>
+        </table></div>
+        <h3>4.3 为什么必须再排序</h3>
+        <p>Bi-encoder 把问题和段落分别编码，适合在海量语料中快速召回，却无法细致建模二者交互。OpenScholar 因此训练 340M 的 cross-encoder：把问题与候选段落联合编码，再输出相关性分数。</p>
+        <div class="flow">
+          <div class="flow-box"><strong>Top 100+</strong>dense / API / web 候选</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>Joint encoding</strong>query 与 passage 联合判断</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>Meta filtering</strong>每篇最多 3 段 + 归一化引用量</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>Top N</strong>单篇任务 5 段，多篇任务 10 段</div>
+        </div>
+        <p>Reranker 的训练数据由 Llama 3 70B Instruct 合成：根据论文摘要生成 query，对召回段落按 1–5 打分，4/5 为正例、1/2 为负例、3 丢弃，然后微调 BGE reranker。</p>
+        <div class="warning"><p><strong>最关键的消融：</strong>移除 reranker 会造成最大的综合性能下降之一。这说明 OpenScholar 的优势不是“检索越多越好”，而是先高召回，再把少量真正有用的 passage 交给生成器。</p></div>
+      </section>
+
+      <section id="inference">
+        <div class="section-head"><span class="section-no">SECTION 05</span><h2>推理循环：模型如何发现自己没答好</h2></div>
+        <div class="steps">
+          <div class="step"><h4>生成初稿 <code>y₀</code></h4><p>生成器读取问题和 Top N passages，输出长答案，并用诸如 <code>[1]</code> 的标记把句子连接到传入段落。</p></div>
+          <div class="step"><h4>生成自然语言反馈 <code>F={f₁…fₜ}</code></h4><p>模型检查组织、覆盖、错误与缺漏，最多生成三条反馈。与固定标签式 verifier 不同，反馈可以是自由文本。</p></div>
+          <div class="step"><h4>判断是否需要新证据</h4><p>如果只是结构或措辞问题，直接局部编辑；如果反馈指出缺少某类结果，模型同时生成一条自包含检索 query。</p></div>
+          <div class="step"><h4>补检索并顺序修订</h4><p>新 query 经检索与重排序得到补充 passages。系统把当前答案、反馈与新证据一起交给模型，只修改反馈涉及部分，并避免丢失原有内容。</p></div>
+          <div class="step"><h4>事后引用归因</h4><p>逐段检查需要引用的陈述是否有 passage 支撑；缺少引用时插入合适引用。注意：实现不会删除没有证据的句子，这不是严格的 entailment gate。</p></div>
+        </div>
+        <div class="formula">yₖ = G(x, yₖ₋₁, fₖ, P ∪ R(qₖ, D))　→　最终 yₜ　→　post-hoc attribution</div>
+        <div class="grid g2">
+          <div class="note"><p><strong>好处：</strong>初次检索不必一次覆盖全部子主题。答案暴露的缺口可以被转写为新 query，让检索需求随生成过程自适应变化。</p></div>
+          <div class="danger"><p><strong>不能误解为验证器：</strong>“模型批评模型”仍可能共同犯错；最后一步主要补引用，而不是以外部规则拒绝所有 unsupported claims。</p></div>
+        </div>
+      </section>
+
+      <section id="training">
+        <div class="section-head"><span class="section-no">SECTION 06</span><h2>训练数据飞轮：把昂贵推理蒸馏进 8B</h2></div>
+        <div class="flow">
+          <div class="flow-box"><strong>1M abstracts</strong>从 peS2o 采样并读取年份、引用信息</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>10K seed papers</strong>筛选 2017 年后的论文</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>Generate queries</strong>构造需多篇论文回答的问题</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>70B pipeline</strong>保存初稿、反馈、修订、终稿</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>Filter & mix</strong>质量过滤并混入通用/科学指令</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>Train 8B</strong>两轮 full fine-tuning</div>
+        </div>
+        <h3>三种监督信号</h3>
+        <div class="grid g3">
+          <div class="card"><span class="tag">x → y</span><h4>答案生成</h4><p>学习根据问题和检索证据写出带引用的最终答案。</p></div>
+          <div class="card violet"><span class="tag">y₀ → F</span><h4>反馈生成</h4><p>学习识别初稿的覆盖、组织与证据缺口。</p></div>
+          <div class="card blue"><span class="tag">yₖ₋₁,fₖ → yₖ</span><h4>反馈吸收</h4><p>学习在不破坏其余内容的前提下做局部修订。</p></div>
+        </div>
+        <h3>过滤为什么重要</h3>
+        <p>终稿并不天然优于初稿：pairwise filtering 发现约 20% 的样本中，初稿因避免过度编辑和重复而更好。系统先在 <code>y₀</code> 与 <code>yₜ</code> 中择优，再按组织、事实精度与引用准确性打 1–5 分，两项均至少 4.5 才保留。</p>
+        <div class="warning"><span class="evidence audit">审计发现</span><p><strong>资料中的数字冲突：</strong>论文与 Nature 方法写训练使用 <strong>130,000</strong> instances，Hugging Face 数据集也显示约 130k 行；官方 GitHub README 却写“13k”。结合实际数据，应把 README 的 13k 视为文档笔误。</p></div>
+        <p>最终数据约一半来自科学任务、一半来自通用指令数据；还加入基于高引用论文合成的事实验证与布尔问答。训练采用 Llama 3.1 8B Instruct、两轮、修改版 torchtune；README 报告使用 8 张 A100。</p>
+      </section>
+
+      <section id="benchmark">
+        <div class="section-head"><span class="section-no">SECTION 07</span><h2>ScholarQABench：它究竟测了什么</h2></div>
+        <figure>
+          <img src="benchmark/ScholarQABench/scholarqabench.png" alt="ScholarQABench 官方概览">
+          <figcaption>ScholarQABench 同时包含改造后的单篇开放检索任务与新构建的多篇长答案任务。</figcaption>
+        </figure>
+        <div class="table-wrap"><table>
+          <thead><tr><th>子集</th><th>规模</th><th>领域 / 形式</th><th>答案情况</th><th>主要评价</th></tr></thead>
+          <tbody>
+            <tr><td>SciFact</td><td>208</td><td>生物医学；真假判断</td><td>已有单篇数据改成开放检索</td><td>Accuracy + Citation F1</td></tr>
+            <tr><td>PubMedQA</td><td>843</td><td>生物医学；Yes / No</td><td>移除原摘要，要求自己检索</td><td>Accuracy + Citation F1</td></tr>
+            <tr><td>QASA</td><td>1,375</td><td>计算机科学；单篇长答案</td><td>端到端 QA</td><td>ROUGE-L + Citation F1</td></tr>
+            <tr><td>ScholarQA-CS</td><td>100</td><td>计算机科学；多篇长答案</td><td>平均 4.4 个专家 key ingredients，每项约 4.4 条证据</td><td>专家 rubric correctness + Citation F1</td></tr>
+            <tr><td>ScholarQA-Bio</td><td>1,451</td><td>生物医学；多篇问题</td><td>只有问题，无专家答案</td><td>Citation F1</td></tr>
+            <tr><td>ScholarQA-Neuro</td><td>1,308</td><td>神经科学；多篇问题</td><td>只有问题，无专家答案</td><td>Citation F1</td></tr>
+            <tr><td>ScholarQA-Multi</td><td>108</td><td>CS、物理、生物医学；多篇长答案</td><td>专家问题、答案与逐句引用</td><td>Citation + LLM judge + 人评</td></tr>
+          </tbody>
+        </table></div>
+        <h3>四类指标不能混为一个“正确率”</h3>
+        <div class="grid g4">
+          <div class="card"><h4>Correctness</h4><p>短任务用 accuracy，QASA 用 ROUGE-L，Scholar-CS 用 rubric score；它们数值同列但含义不同。</p></div>
+          <div class="card blue"><h4>Citation F1</h4><p>句子是否需要引用、现有引用是否支持且必要；由 AttrScore 等自动判定。</p></div>
+          <div class="card violet"><h4>LLM quality</h4><p>Prometheus 以 1–5 分评组织、覆盖和相关性，再取平均。</p></div>
+          <div class="card amber"><h4>Expert preference</h4><p>专家对模型答案与人工答案做细粒度评分和 win/tie/lose。</p></div>
+        </div>
+        <div class="note"><p><strong>Scholar-CS rubric：</strong>40% 来自长度、专业性、引用和 excerpt 等通用标准，60% 来自专家列出的内容要点；must-have 权重是 nice-to-have 的两倍。这个设计比只看参考答案相似度丰富，但也可能奖励更长、覆盖更多的回答。</p></div>
+      </section>
+
+      <section id="results">
+        <div class="section-head"><span class="section-no">SECTION 08</span><h2>实验结果：系统优势从哪里来</h2></div>
+        <h3>8.1 多篇综合主结果</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>系统</th><th>Scholar-CS Rubric ↑</th><th>CS Citation F1 ↑</th><th>Scholar-Multi LLM ↑</th><th>Multi Citation F1 ↑</th><th>估算 USD / query</th></tr></thead>
+          <tbody>
+            <tr><td>GPT-4o（无检索）</td><td>45.0</td><td>0.1</td><td>4.16</td><td>0.7</td><td>0.006</td></tr>
+            <tr><td>GPT-4o + 标准 OSDS RAG</td><td>52.4</td><td>31.1</td><td>4.03</td><td>31.5</td><td>0.01</td></tr>
+            <tr><td class="best">OpenScholar-GPT-4o</td><td class="best">57.7</td><td>39.5</td><td class="best">4.51</td><td>37.5</td><td>0.05</td></tr>
+            <tr><td>OpenScholar-8B</td><td>51.1</td><td>47.9</td><td>4.12</td><td>42.8</td><td class="best">0.003</td></tr>
+            <tr><td>PaperQA2</td><td>45.6</td><td class="best">48.0</td><td>3.82</td><td class="best">47.2</td><td>0.3–2.3</td></tr>
+            <tr><td>Perplexity Pro</td><td>40.0</td><td>—</td><td>4.15</td><td>—</td><td>0.002*</td></tr>
+          </tbody>
+        </table></div>
+        <p><small>* Perplexity 成本按每月 20 美元除以当时 9,000 次额度估算；界面无法导出 citation snippets，因此引用指标缺失。</small></p>
+        <div class="grid g3">
+          <div class="card"><div class="kicker">Pipeline gain</div><div class="metric">+12.7</div><p>OpenScholar-GPT-4o 相比裸 GPT-4o 的 Scholar-CS rubric 提升。</p></div>
+          <div class="card blue"><div class="kicker">Open 8B vs GPT-4o</div><div class="metric">+6.1</div><p>Nature 摘要报告的困难多篇任务 correctness 相对优势。</p></div>
+          <div class="card amber"><div class="kicker">Cost contrast</div><div class="metric">100×+</div><p>OS-8B 的估算单题成本显著低于 PaperQA2，但不含建设超大索引的固定成本。</p></div>
+        </div>
+        <h3>8.2 “裸模型会编造引用”具体是什么意思</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>模型</th><th>计算机科学虚构标题率</th><th>生物医学虚构标题率</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>OpenScholar-8B</td><td class="best">0%</td><td class="best">0%</td><td>引用从检索结果中选择，因此标题真实</td></tr>
+            <tr><td>Llama 3.1 8B</td><td>92.1%</td><td>97.6%</td><td>凭参数记忆直接生成论文标题</td></tr>
+            <tr><td>Llama 3.1 70B</td><td>78.1%</td><td>96.6%</td><td>更大模型仍无法可靠记住长尾文献</td></tr>
+            <tr><td>GPT-4o</td><td>78.7%</td><td>94.8%</td><td>标题看似可信，但多数不存在</td></tr>
+          </tbody>
+        </table></div>
+        <div class="warning"><p><strong>准确措辞：</strong>这是“无检索模型生成的论文标题是否真实”的统计，不等于这些模型 78–98% 的所有事实都错，也不等于 OpenScholar 的每个 claim 都被正确支持。OpenScholar 消除了虚构标题，却仍可能引用真实但不相关、过时或不代表性的论文。</p></div>
+        <h3>8.3 人类偏好实验</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>系统</th><th>组织 1–5</th><th>覆盖 1–5</th><th>相关性 1–5</th><th>Useful</th><th>相对人工 Win / Tie / Lose</th></tr></thead>
+          <tbody>
+            <tr><td>GPT-4o</td><td class="best">4.63</td><td>4.06</td><td class="best">4.50</td><td>69.7%</td><td>31.9 / 13.8 / 54.2</td></tr>
+            <tr><td>OpenScholar-8B</td><td>3.82</td><td>4.30</td><td>4.00</td><td>72.1%</td><td>50.8 / 12.3 / 36.9</td></tr>
+            <tr><td class="best">OpenScholar-GPT-4o</td><td>4.47</td><td class="best">4.38</td><td>4.30</td><td class="best">80.0%</td><td class="best">70.0 / 6.8 / 23.2</td></tr>
+          </tbody>
+        </table></div>
+        <figure>
+          <img src="assets/human_evaluation.png" alt="OpenScholar 人工评测结果">
+          <figcaption>arXiv 图中的人工评测分布。模型优势主要来自覆盖深度；8B 的组织和流畅性仍明显弱于 GPT-4o。</figcaption>
+        </figure>
+        <h3>8.4 上下文并非越多越好</h3>
+        <div class="grid g2">
+          <figure><img src="assets/top_n_accuracy.png" alt="Top N 对正确性的影响"><figcaption>Top N passages 对 correctness 的影响。</figcaption></figure>
+          <figure><img src="assets/top_n_citation.png" alt="Top N 对引用准确性的影响"><figcaption>Top N passages 对 citation F1 的影响。</figcaption></figure>
+        </div>
+        <p>普通 Llama 3.1 8B 从 Top 5 增到 Top 10 后改善，但继续增加会损害正确性和引用；训练后的 OpenScholar-8B 对更多上下文更稳健。拥有 128K context window 不代表模型能有效使用任意数量的证据。</p>
+      </section>
+
+      <section id="interpret">
+        <div class="section-head"><span class="section-no">SECTION 09</span><h2>如何正确解读“胜过 GPT-4o 和专家”</h2></div>
+        <div class="audit">
+          <div class="audit-item"><span class="evidence inference">合理推断</span><h4>“8B 胜过 GPT-4o”是系统比较，不是裸模型比较</h4><p>OpenScholar-8B 背后有 4,500 万篇语料、专用 retriever、reranker、反馈与引用归因；对手的裸 GPT-4o 没有检索。结论应是<strong>领域基础设施可以压过参数规模</strong>，而不是“8B 的一般智能更强”。</p></div>
+          <div class="audit-item"><span class="evidence paper">论文数据</span><h4>“胜过专家”主要是偏好与覆盖，不是全面科学正确性</h4><p>模型答案平均更长、引用更多。Scholar-CS 中人工答案平均约 424 词，OS-GPT-4o 约 1,447 词，OS-8B 约 706 词。专家偏好更常提到 coverage；对每个 claim 的事实性与引用并未在偏好任务中逐条人工审计。</p></div>
+          <div class="audit-item"><span class="evidence audit">比较边界</span><h4>PaperQA2 比较不是完全原生配置</h4><p>PaperQA2 没公开自己的检索库，作者把 OpenScholar 检索到的论文 PDF 提供给 PaperQA2；这有利于控制语料差异，却不等于比较其生产服务的完整检索能力。PaperQA2 引用更准，但往往只依赖少数论文，覆盖分较低。</p></div>
+          <div class="audit-item"><span class="evidence audit">评测风险</span><h4>LLM judge 带来可扩展性，也带来偏差</h4><p>Scholar-CS 由 GPT-4o 按专家 rubric 打分，Scholar-Multi 用 Prometheus。论文承认自动评估可能偏好背景、展开和较长回答，且 sentence-level citation metric 对跨句证据可能过严。</p></div>
+          <div class="audit-item"><span class="evidence inference">成本解释</span><h4>成本表没有计入基础设施固定成本</h4><p>“每题 0.003 美元”主要估算生成推理；没有摊入 520–692 GiB 数据仓库、两亿级向量索引、CPU 内存、索引构建和维护。因此它说明边际推理便宜，不代表个人部署只需几厘钱。</p></div>
+        </div>
+        <div class="verdict">
+          <h3>最稳妥的实验结论</h3>
+          <p>在开放科学文献综合中，<strong>专用语料 + 领域检索 + 强重排序 + 反馈补检索 + 引用归因</strong>比只依赖参数记忆可靠得多；同样的管线既能增强 GPT-4o，也能把能力蒸馏给开放 8B 模型。OpenScholar 的胜利首先是系统工程与信息基础设施的胜利。</p>
+        </div>
+      </section>
+
+      <section id="code">
+        <div class="section-head"><span class="section-no">SECTION 10</span><h2>源码结构与实际复现边界</h2></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>位置</th><th>作用</th><th>阅读重点</th></tr></thead>
+          <tbody>
+            <tr><td><code>run.py</code></td><td>CLI 入口，加载模型、参数和输入数据</td><td><code>top_n</code>、<code>feedback</code>、<code>posthoc_at</code>、<code>ranking_ce</code> 等开关</td></tr>
+            <tr><td><code>src/open_scholar.py</code></td><td>核心生成、重排、反馈、补检索和归因循环</td><td><code>run()</code> 及 feedback / attribution 函数</td></tr>
+            <tr><td><code>src/instructions.py</code></td><td>初稿、反馈、修订和事后归因 prompts</td><td>反馈要求同时产生可独立搜索的新问题</td></tr>
+            <tr><td><code>src/use_search_apis.py</code></td><td>Semantic Scholar 与网页搜索候选生成</td><td>外部 API key、摘要/全文的格式统一</td></tr>
+            <tr><td><code>retriever/</code></td><td>Contriever 训练、FAISS 索引与检索服务</td><td>海量 shard、CPU 内存和离线召回</td></tr>
+            <tr><td><code>training/</code></td><td>修改版 torchtune 训练树</td><td>并非轻量脚本，而是一份嵌入仓库的训练框架快照</td></tr>
+            <tr><td><code>ScholarQABench/scripts/</code></td><td>rubric、Prometheus、citation correctness 评测</td><td>不同指标不是统一 accuracy</td></tr>
+          </tbody>
+        </table></div>
+        <h3>实际运行路径</h3>
+        <pre><code># 最小标准 RAG：需要预先准备好带 ctxs 的输入
+python run.py --input_file INPUT.jsonl \
+  --model_name OpenScholar/OpenScholar_Llama-3.1-8B \
+  --use_contexts --top_n 10 --llama3 --zero_shot \
+  --output_file OUTPUT.jsonl
+
+# 完整思路对应的实际 parser flags
+--ranking_ce --feedback --posthoc_at --ss_retriever \
+--use_abstract --norm_cite --max_per_paper 3</code></pre>
+        <div class="audit">
+          <div class="audit-item"><span class="evidence code">代码与仓库确认</span><h4>“开源”不等于一键运行</h4><p>主实验的初始召回大量采用预计算结果。完整 OSDS v2 约 558 GB，v3 约 744 GB；官方也明确提示两亿级 embedding 需要大量 CPU 内存。</p></div>
+          <div class="audit-item"><span class="evidence audit">审计发现</span><h4>论文算法与当前代码存在工程落差</h4><p>反馈循环中的本地 peS2o 补检索调用在当前 <code>open_scholar.py</code> 中被注释；运行时主要依赖已有 <code>ctxs</code>，补检索需要启用 Semantic Scholar 或自行接上检索服务。</p></div>
+          <div class="audit-item"><span class="evidence audit">审计发现</span><h4>README 完整命令有参数拼写错误</h4><p>README 示例写 <code>--posthoc</code> 与 <code>--feedack</code>，实际 parser 是 <code>--posthoc_at</code> 与 <code>--feedback</code>；照抄文档不会启动预期功能。</p></div>
+          <div class="audit-item"><span class="evidence audit">审计发现</span><h4><code>max_per_paper</code> 实现疑似 off-by-one</h4><p>代码在计数 <code>&gt; max_per_paper</code> 时才跳过，因此设为 3 可能保留第 4 个 passage。论文描述的“每篇最多三段”和当前实现并不完全一致。</p></div>
+        </div>
+        <div class="warning"><p><strong>推荐复现层级：</strong>先用已发布 benchmark retrieval results + OpenScholar-8B/任意 API 后端验证生成流程；再下载 436 MB retriever 做小语料实验；最后才考虑完整 OSDS。不要一开始就把“复现论文”理解为下载 700 GB 数据。</p></div>
+      </section>
+
+      <section id="limits">
+        <div class="section-head"><span class="section-no">SECTION 11</span><h2>局限、研究位置与下一步</h2></div>
+        <div class="grid g2">
+          <div class="card amber"><h4>代表性检索不足</h4><p>相似度高不代表 seminal、最新或方法学最可靠。作者建议引入引用图、发表时间等元数据。</p></div>
+          <div class="card amber"><h4>开放获取偏差</h4><p>不使用受版权保护全文；在封闭出版比例高的领域，系统看到的文献不是完整学术世界。</p></div>
+          <div class="card amber"><h4>8B 仍会写错</h4><p>小模型的指令遵循和科学知识容量有限；真实论文标题不等于陈述正确或证据充分。</p></div>
+          <div class="card amber"><h4>benchmark 小且静态</h4><p>有专家答案的长任务只有百级，时间截点在 2024 年；公开后还存在训练污染风险。</p></div>
+          <div class="card amber"><h4>领域覆盖有限</h4><p>重点是 CS、生物医学、神经科学与物理，没有社会科学等不同证据范式的领域。</p></div>
+          <div class="card amber"><h4>缺少长期知识状态</h4><p>每次 query 基本独立，没有持续更新的研究记忆、证据版本和跨项目引用账本。</p></div>
+        </div>
+        <h3>在自动科研版图中的准确位置</h3>
+        <div class="flow">
+          <div class="flow-box"><strong>Search engine</strong>返回论文列表</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>OpenScholar</strong>检索、综合、引用绑定</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>Research Agent</strong>形成问题、规划研究、调用工具</div><div class="arrow">→</div>
+          <div class="flow-box"><strong>AI Scientist</strong>实验、分析、写作、审计</div>
+        </div>
+        <p>OpenScholar 位于第二层，是后两层非常重要的 literature substrate，但不能单独代表后两层。它更像“科学知识访问与综合引擎”，而不是拥有研究目标与行动闭环的 Agent。</p>
+        <h3>最值得继承的四个设计</h3>
+        <div class="grid g4">
+          <div class="card"><h4>开放证据层</h4><p>语料和 passage ID 可追溯，允许重跑与审计。</p></div>
+          <div class="card blue"><h4>反馈驱动检索</h4><p>让生成暴露的信息缺口反过来产生新 query。</p></div>
+          <div class="card violet"><h4>轨迹蒸馏</h4><p>不仅蒸馏终稿，也训练反馈生成和反馈吸收。</p></div>
+          <div class="card amber"><h4>分面评测</h4><p>分开测 correctness、coverage、writing 与 citation。</p></div>
+        </div>
+        <div class="insight"><p><strong>继续研究的方向：</strong>时间感知与增量索引、引用网络与研究类型建模、支持/反驳证据对齐、来源质量与偏差控制、claim-level 人工审计、持续研究记忆，以及把“真实但弱相关的引用”升级为“最代表性且能直接支持 claim 的引用”。</p></div>
+      </section>
+
+      <section id="files">
+        <div class="section-head"><span class="section-no">SECTION 12</span><h2>本地材料地图</h2></div>
+        <div class="files">
+          <div class="file"><a href="paper/OpenScholar_Nature_2026.pdf">paper/OpenScholar_Nature_2026.pdf</a><p>35 页 Nature 正式版本，结果数字以此为准。</p></div>
+          <div class="file"><a href="paper/OpenScholar_Nature_2026_Supplementary_Information.pdf">paper/...Supplementary_Information.pdf</a><p>完整实验细节、prompts、附表和案例。</p></div>
+          <div class="file"><a href="paper/arxiv_source/iclr2025_conference.tex">paper/arxiv_source/iclr2025_conference.tex</a><p>arXiv 主 TeX，可追踪表格和早期表述。</p></div>
+          <div class="file"><a href="code/OpenScholar/src/open_scholar.py">code/OpenScholar/src/open_scholar.py</a><p>运行时主循环：重排、生成、反馈与归因。</p></div>
+          <div class="file"><a href="code/OpenScholar/src/instructions.py">code/OpenScholar/src/instructions.py</a><p>系统行为的 prompt 层定义。</p></div>
+          <div class="file"><a href="../../../_未包含的内容.html">benchmark/ScholarQABench/data/</a><p>各子集问题、人工答案、rubric 元数据。</p></div>
+          <div class="file"><a href="evaluation/OpenScholar_ExpertEval/README.html">evaluation/OpenScholar_ExpertEval/</a><p>人工评测界面和结果。</p></div>
+          <div class="file"><a href="../../../_未包含的内容.html">model_and_data_metadata/OS_Train_Data/</a><p>本地已完整保存的 130k 训练数据。</p></div>
+          <div class="file"><a href="../../../_未包含的内容.html">.../OpenScholar_Retriever/</a><p>本地已完整保存的 436 MB 检索器。</p></div>
+          <div class="file"><a href="README_归档说明.html">README_归档说明.md</a><p>归档范围、提交哈希、LFS 状态和 SHA-256。</p></div>
+        </div>
+        <h3>最短阅读路线</h3>
+        <ol>
+          <li>先读本页的“总体架构、数据与检索、自反馈生成”。</li>
+          <li>再看 Nature PDF 的 Fig. 1、Table 1、Table 4 和 Limitations。</li>
+          <li>打开 <code>open_scholar.py::run()</code>，把论文的五步循环映射到真实代码。</li>
+          <li>最后看 ScholarQABench 的数据格式与评测脚本，理解论文中的“correctness”究竟如何计算。</li>
+        </ol>
+      </section>
+
+      <footer>
+        基于本地归档的 Nature 正式论文、补充材料、arXiv 源码、官方代码、ScholarQABench 与专家评测仓库整理。最后核查：2026-07-31。
+      </footer>
+  </main>
+</body>
+</html>

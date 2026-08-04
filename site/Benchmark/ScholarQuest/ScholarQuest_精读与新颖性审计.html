@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScholarQuest 精读与新颖性审计</title>
+<style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: min(920px, calc(100% - 44px));
+            margin: 0 auto;
+            padding: 52px 18px 76px;
+        }
+
+        header {
+            margin-bottom: 34px;
+            padding-bottom: 34px;
+            border-bottom: 1px solid var(--line);
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-size: 0.93rem;
+            font-weight: 650;
+            text-decoration: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--accent-dark);
+            transform: translateX(-2px);
+        }
+
+        .status-row,
+        .resource-row,
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-row,
+        .resource-row {
+            justify-content: center;
+        }
+
+        .status-row {
+            margin-bottom: 18px;
+        }
+
+        .resource-row {
+            margin-top: 22px;
+        }
+
+        .badge,
+        .tag,
+        .evidence {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .badge {
+            padding: 4px 11px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.79rem;
+            font-weight: 650;
+        }
+
+        .resource-link {
+            display: inline-block;
+            padding: 7px 13px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent-dark);
+            background: var(--panel);
+            font-size: 0.84rem;
+            font-weight: 620;
+            text-decoration: none;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .resource-link.primary {
+            border-color: var(--accent);
+            color: var(--white);
+            background: var(--accent);
+        }
+
+        .resource-link:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        h1 {
+            margin-bottom: 12px;
+            font-size: clamp(2.35rem, 7vw, 3.25rem);
+            font-weight: 670;
+            letter-spacing: -0.035em;
+            line-height: 1.08;
+        }
+
+        .subtitle {
+            max-width: 720px;
+            margin: 0 auto;
+            color: var(--muted);
+            font-size: 1.08rem;
+            font-weight: 360;
+        }
+
+        .meta {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.91rem;
+            font-weight: 360;
+        }
+
+        h2 {
+            margin: 56px 0 24px;
+            padding-bottom: 11px;
+            border-bottom: 2px solid var(--accent);
+            font-size: 1.78rem;
+            font-weight: 630;
+            line-height: 1.3;
+        }
+
+        h3 {
+            margin: 30px 0 14px;
+            color: var(--accent);
+            font-size: 1.25rem;
+            font-weight: 630;
+        }
+
+        h4 {
+            margin-bottom: 8px;
+            color: var(--accent-dark);
+            font-size: 1.01rem;
+            font-weight: 650;
+        }
+
+        p {
+            margin-bottom: 17px;
+            font-weight: 360;
+        }
+
+        strong {
+            font-weight: 660;
+        }
+
+        a {
+            color: var(--accent-dark);
+        }
+
+        .lead {
+            color: #343b37;
+            font-size: 1.02rem;
+        }
+
+        .eyebrow {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 720;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .toc {
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 7px;
+            margin: 24px 0 34px;
+            padding: 10px;
+            border: 1px solid rgba(231, 225, 215, 0.9);
+            border-radius: 16px;
+            background: rgba(247, 244, 239, 0.93);
+            box-shadow: 0 8px 24px rgba(31, 36, 33, 0.06);
+            backdrop-filter: blur(10px);
+        }
+
+        .toc a {
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 620;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .highlight-box,
+        .source-note,
+        .warning-note,
+        .critical-note,
+        .code-note,
+
+        .source-note {
+            border-left-color: var(--green);
+            background: var(--green-pale);
+        }
+
+        .code-note {
+            border-left-color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .warning-note,
+
+        .critical-note {
+            border-left-color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .highlight-box p:last-child,
+        .source-note p:last-child,
+        .warning-note p:last-child,
+        .critical-note p:last-child,
+        .code-note p:last-child,
+
+        .key-insight {
+            margin: 32px 0;
+            padding: 28px 31px;
+            border-radius: 8px;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 4px 12px rgba(196, 97, 47, 0.22);
+        }
+
+        .key-insight h3,
+        .key-insight p {
+            color: var(--white);
+        }
+
+        .key-insight h3 {
+            margin-top: 0;
+        }
+
+        .key-insight p:last-child {
+            margin-bottom: 0;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            margin: 24px 0;
+        }
+
+        .card-grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            padding: 21px 23px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1.08rem;
+        }
+
+        .card p:last-child,
+        .card ul:last-child {
+            margin-bottom: 0;
+        }
+
+        .evidence {
+            margin-bottom: 10px;
+            padding: 3px 9px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .evidence.paper {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .evidence.code {
+            color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .evidence.inference {
+            color: var(--warning);
+            background: var(--warning-pale);
+        }
+
+        .evidence.audit {
+            color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .figure,
+        .figure-grid {
+            margin: 30px 0;
+        }
+
+        .figure {
+            text-align: center;
+        }
+
+        .figure-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .figure-grid .figure {
+            margin: 0;
+        }
+
+        .figure a,
+        .figure-frame {
+            display: block;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: var(--figure-shadow);
+        }
+
+        .figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .figure figcaption {
+            max-width: 760px;
+            margin: 11px auto 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-style: italic;
+            line-height: 1.55;
+        }
+
+        .figure-placeholder {
+            display: grid;
+            min-height: 250px;
+            padding: 28px;
+            place-items: center;
+            color: var(--muted);
+            background:
+                linear-gradient(135deg, rgba(196, 97, 47, 0.08), transparent 48%),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 31px,
+                    rgba(231, 225, 215, 0.48) 32px
+                ),
+                var(--white);
+            text-align: center;
+        }
+
+        .figure-placeholder.compact {
+            min-height: 205px;
+        }
+
+        .figure-placeholder strong {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--accent);
+            font-size: 1.08rem;
+        }
+
+        .figure-placeholder span {
+            display: block;
+            max-width: 520px;
+            font-size: 0.88rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin: 26px 0;
+            border-collapse: collapse;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            padding: 13px 15px;
+            color: var(--white);
+            background: var(--accent);
+            font-size: 0.88rem;
+            font-weight: 620;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 13px 15px;
+            border-bottom: 1px solid var(--line);
+            font-size: 0.89rem;
+            font-weight: 360;
+            vertical-align: top;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .comparison-table .focus-row td {
+            background: #f8ede4;
+            font-weight: 590;
+        }
+
+        .table-scroll {
+            width: 100%;
+            margin: 26px 0;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .table-scroll .comparison-table {
+            min-width: 680px;
+            margin: 0;
+        }
+
+        .flow-diagram {
+            margin: 29px 0;
+            padding: 27px 31px;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .flow-step {
+            position: relative;
+            margin: 16px 0;
+            padding: 18px 22px;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            background: var(--white);
+        }
+
+        .flow-step::before {
+            content: "▼";
+            position: absolute;
+            bottom: -28px;
+            left: 50%;
+            color: var(--accent);
+            font-size: 18px;
+            transform: translateX(-50%);
+        }
+
+        .flow-step:last-child::before {
+            content: "";
+        }
+
+        .flow-step p {
+            margin-bottom: 0;
+        }
+
+        .formula {
+            margin: 25px 0;
+            padding: 21px 23px;
+            border-radius: 7px;
+            color: var(--paper);
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.96rem;
+            overflow-x: auto;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        ul {
+            margin: 15px 0 19px 2px;
+            list-style: none;
+        }
+
+        li {
+            position: relative;
+            margin-bottom: 9px;
+            padding-left: 22px;
+            font-weight: 360;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 2px;
+            color: var(--accent);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        details {
+            margin: 16px 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 17px 20px;
+            cursor: pointer;
+            font-weight: 630;
+            list-style: none;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: "＋";
+            margin-left: auto;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        details[open] summary::after {
+            content: "−";
+        }
+
+        .details-body {
+            padding: 18px 22px 22px;
+            border-top: 1px solid var(--line);
+        }
+
+        code {
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.88em;
+        }
+
+        pre {
+            margin: 22px 0;
+            padding: 20px 22px;
+            border: 1px solid #343b37;
+            border-radius: 8px;
+            color: #edf2ee;
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.84rem;
+            line-height: 1.65;
+            overflow-x: auto;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+        }
+
+        .code-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 22px 0;
+        }
+
+        .code-item {
+            padding: 16px 18px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: var(--white);
+        }
+
+        .code-item code {
+            display: inline-block;
+            margin-bottom: 7px;
+            color: var(--blue);
+            background: var(--blue-pale);
+            font-weight: 660;
+        }
+
+        .code-item p {
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .tag-list {
+            margin: 13px 0 22px;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            color: var(--green);
+            background: var(--green-pale);
+            font-size: 0.78rem;
+            font-weight: 630;
+        }
+
+        footer {
+            margin-top: 72px;
+            padding-top: 28px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-weight: 360;
+            text-align: center;
+        }
+
+        @media (max-width: 760px) {
+            .container {
+                width: min(100% - 28px, 920px);
+                padding: 34px 8px 56px;
+            }
+
+            .card-grid,
+            .card-grid.three,
+            .figure-grid,
+            .code-list {
+                grid-template-columns: 1fr;
+            }
+
+            .toc {
+                position: static;
+            }
+
+            .flow-diagram {
+                padding: 20px 16px;
+            }
+
+            h2 {
+                margin-top: 46px;
+                font-size: 1.55rem;
+            }
+
+            .highlight-box,
+            .key-insight {
+                padding: 22px;
+            }
+
+            .subtitle,
+            .meta {
+                overflow-wrap: anywhere;
+            }
+        }
+
+        @media print {
+            .toc,
+            .back-link,
+
+            body {
+                background: white;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 24px;
+            }
+
+            .figure a,
+            .card,
+            details {
+                box-shadow: none;
+            }
+        }
+    
+        blockquote {
+            margin: 16px 0;
+            padding: 13px 18px;
+            border-left: 3px solid var(--accent);
+            border-radius: 0 7px 7px 0;
+            background: var(--panel);
+            color: var(--ink);
+            font-size: 0.94rem;
+        }
+
+        blockquote p { margin-bottom: 9px; }
+        blockquote p:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+<main class="container">
+<header>
+  <a class="back-link" href="../../index.html">← 返回 Literature 总览</a>
+  <div class="status-row">
+    <span class="badge">arXiv:2606.20235v1</span>
+    <span class="badge">2026-06-18 · 无 venue</span>
+    <span class="badge">数据集已开源</span>
+    <span class="badge">参考文献仅 19 条</span>
+  </div>
+  <h1>ScholarQuest</h1>
+  <p class="subtitle">1,111 条分类学引导的 CS 检索查询 —— 数据集本身可用，但"填补空白"的叙事建立在把领域写空之上。</p>
+  <p class="meta">Tingyue Pan, Mingyue Cheng, Daoyu Wang, Yitong Zhou, Jie Ouyang, Qi Liu, Enhong Chen · 中科大 (USTC) · cs.IR / cs.AI</p>
+  <div class="resource-row">
+    <a class="resource-link primary" href="ScholarQuest_2606.20235v1.pdf">论文 PDF</a>
+    <a class="resource-link" href="https://arxiv.org/abs/2606.20235">arXiv</a>
+    <a class="resource-link" href="https://github.com/pty12345/ScholarQuest">GitHub (4 commits)</a>
+    <a class="resource-link" href="../AstaBench/AstaBench_精读.html">对照：AstaBench</a>
+  </div>
+</header>
+
+<div class="highlight-box">
+  <p><strong>一句话结论：</strong>这是一个<b>可用的数据集</b>配上一段<b>不合格的相关工作</b>。1,111 条查询、86.0% 严格匹配精度是实的，可以直接拿来测检索模块（但 κ=0.866 这个数不能照着读，见第 3 节）；而它声称"不存在"的标准化评测环境，<b>至少有四篇先例，包括 ICLR 2026 的 AstaBench 和早它五个月、同一细分的 ScholarGym</b> —— 全文 19 条参考文献里一篇都没有。三个贡献里：一个增量、一个已被逐组件做过（且同域有 2023 年 NeurIPS 的更严先例）、一个只剩"索引可自托管"这一窄条。</p>
+</div>
+
+<nav class="toc">
+  <a href="#task">1 它到底测什么</a>
+  <a href="#intent">2 四类意图</a>
+  <a href="#build">3 数据怎么造的</a>
+  <a href="#env">4 ScholarBase 环境</a>
+  <a href="#results">5 结果与 DeepXiv 那一行</a>
+  <a href="#relwork">6 相关工作审计</a>
+  <a href="#novelty">7 新颖性三判</a>
+  <a href="#selfcite">8 未披露自引</a>
+  <a href="#use">9 怎么用</a>
+</nav>
+
+<section id="task">
+  <h2>1 它到底测什么</h2>
+  <p class="lead">任务不是"找到那一篇"，而是<b>把满足复合条件的论文尽量全部找出来</b>。Agent 多轮调用检索工具，累积候选池 𝒫<sub>t</sub>，最后交一个排序列表与金标集 𝒫* 比对。金标集大小 5–200 篇 —— 这个量级决定了它考的是召回而非精度。</p>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig1_p1.png" alt="ScholarQuest 动机图"></div>
+    <figcaption>论文 Fig. 1。上半是它的任务观：从单次排序检索转向 search + expand 的迭代探索；下半是它声称的三个 benchmark 缺口（查询侧人工偏置/覆盖有限，答案侧难规模化，缺标准评测）。第三条缺口是本页第 7 节的争议焦点。</figcaption>
+  </figure>
+
+  <div class="card-grid">
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h3>主指标</h3>
+      <p>Recall@25 / Recall@100 / Recall@All。<b>全文不报 precision、nDCG、F1</b> —— 纯召回口径。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h3>过程指标</h3>
+      <p>交互轮数、search / expand 调用数、观察到的候选数，以及效率指标 <b>R@100 每 100 个候选</b>。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h3>鲁棒性切片</h3>
+      <p>按 4 类意图分组；按金标集规模分 5 桶（5–25 / 26–50 / 51–100 / 101–150 / 151–200）。</p>
+    </article>
+  </div>
+</section>
+
+<section id="intent">
+  <h2>2 四类意图：一个轴，不是分类学</h2>
+  <p>需要说清楚的是，论文标题里的 "Taxonomy-Guided" 其实是<b>两件不同的事</b>被合成一个卖点：<b>主题</b>来自 ACM CCS 层级（1,638 个 CS 种子），<b>意图</b>是四类人为设定的正交标签。真正没有先例的是前者，后者有大量先例（见第 7 节）。</p>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig3_p4.png" alt="四类意图的实例"></div>
+    <figcaption>论文 Fig. 3。四类意图各一个真实样例。注意右下 scope-controlled 那一类：查询里带<b>显式排除约束</b>（"排除静态分析工具"）—— 这是全表所有系统都崩掉的一档，也恰是学界已有专门 benchmark 的一档。</figcaption>
+  </figure>
+
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <thead><tr><th>意图类型</th><th>占比</th><th>考什么</th><th>样例（附录 D）</th></tr></thead>
+    <tbody>
+      <tr><td><b>Method-oriented</b></td><td>27.2%</td><td>方法层面相关，超越关键词重合</td><td>"哪些论文用深度强化学习做视频摘要？"（cs.CV，11 篇金标）</td></tr>
+      <tr><td><b>Setting-anchored</b></td><td>29.0%</td><td>任务 / 数据集 / 实验设定的细粒度约束</td><td>"医疗领域的隐私与安全问题、政策或隐私保护技术"（cs.CY，19 篇）</td></tr>
+      <tr><td><b>Scope-controlled</b></td><td>28.5%</td><td>检索广度控制，<b>含否定 / 排除约束</b></td><td>"软件维护工具，但排除静态分析工具"（cs.SE，12 篇）</td></tr>
+      <tr><td><b>Comparison-based</b></td><td>15.3%</td><td>跨对象的关系型意图</td><td>"哪些论文报告迁移学习优于随机初始化？"（cs.LG，15 篇）</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="build">
+  <h2>3 数据怎么造的：漏斗与一处自我矛盾</h2>
+
+  <div class="flow-diagram">
+    <div class="flow-step"><b>1,682</b><br>ACM CCS 原始主题</div>
+    <div class="flow-step"><b>1,638</b><br>映射到 arXiv CS 的种子<br><small>Qwen3-Max</small></div>
+    <div class="flow-step"><b>6,552</b><br>每种子 4 类意图<br><small>理论上限</small></div>
+    <div class="flow-step"><b>13,097</b><br>repo 里的过滤前池</div>
+    <div class="flow-step"><b>1,111</b><br>最终查询</div>
+  </div>
+
+  <p><b>答案集</b>：每条查询 10 个 LLM 改写（method / task / broader / narrower / terminology 五种角度）→ Google serper + arXiv API + Semantic Scholar API 各取 top-10 → 引文图扩展（每个高置信种子最多 30 篇施引 + 全部参考文献，最多 2 跳，带噪声分支剪枝）→ 多 LLM 判官打 0/1/2 分，只留 Rel ≥ 2。单条查询上限 500 篇答案或 10,000 篇打分。</p>
+
+  <div class="critical-note">
+    <p><strong>重要问题 —— 它对 PaSa 的批评反噬自己。</strong>§2.1 批评 AutoScholarQuery "tied to source papers and their Related Work section, which may inherit topic and citation biases"。但 ScholarQuest 自己的答案集正是靠<b>引文图 2 跳扩展</b>建的，这是同一族的引文偏置机制。§2 和 §6 Limitations 都没有触碰这个张力。</p>
+  </div>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig2_p3.png" alt="数据集分布"></div>
+    <figcaption>论文 Fig. 2。40 个 arXiv CS 子类上的查询分布。这是它主题覆盖度贡献的主要证据。<b>但注意</b>：1,111 条来自理论上限 6,552，被过滤掉 83%，而<b>每个 CCS 节点最终留下几条查询、有多少节点被清零，论文从未报告</b> —— 一个宣称"系统性覆盖"的设计，恰恰缺了逐节点的覆盖度账。</figcaption>
+  </figure>
+
+  <h3>人工验证：做了，但 κ=0.866 这个数不能照着读</h3>
+  <div class="card-grid three">
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h4>规模</h4>
+      <p>450 对查询–论文（三个分数组各 150），3 位博士专家，多数表决。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h4>一致性</h4>
+      <p>LLM↔人 Pearson 0.867 / Spearman 0.867 / 二次加权 κ <b>0.866</b>。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h4>精度</h4>
+      <p>score-2 组严格匹配 <b>86.0%</b>（129/150），宽松 98.7%。score-0 组仅 1/150 被人判为严格匹配。</p>
+    </article>
+  </div>
+  <p>标注者报酬 ≥ 当地最低工资 10 倍。这一节的做法（LLM 判相关 + 人工抽检 + 报一致性）本身<b>不是方法贡献</b>，2024 年起就是标准实践（Thomas et al. arXiv:2309.10621, SIGIR 2024；UMBRELA arXiv:2406.06519）。</p>
+
+  <div class="critical-note">
+    <p><strong>重要问题 —— κ=0.866 高得不正常，别当卖点读。</strong>把它放回这个领域的统计基线里看：</p>
+    <ul>
+      <li><b>UMBRELA</b>（GPT-4o 复现 Bing 判官，TREC DL 约 74k 条判断）：4 档 Cohen κ <b>0.308–0.373</b>，二值化后 0.418–0.499。作者自己的用词是 "fair agreement"。</li>
+      <li><b>LLMJudge</b> 共享任务（8 个团队 42 套标注）：4 档 κ <b>0.060–0.286</b>。有参赛者原话："on my development set it was hard to get &gt; 0.3 Cohen's κ, whereas the literature mentions values of 0.4 up to 0.6."</li>
+      <li><b>CSFCube</b>（arXiv:2103.12906, NeurIPS 2021 D&amp;B）—— 最关键的校准点：4 位 CS 研究生对 <b>6,244</b> 对做双标注，<b>裁决前</b>原始 Cohen κ 只有 <b>0.20–0.28</b>，裁决后才 0.54–0.62。也就是说<b>科学文献相关性标注的人–人一致性本身就只有 κ≈0.2–0.3</b>。</li>
+    </ul>
+    <p><span class="evidence inference">合理推断</span> ScholarQuest 报的 0.866 比整条文献高出一个量级，最可能的原因有两个叠加：一是它用的是<b>二次加权 κ</b>（quadratic-weighted），在 3 档序数尺度上会系统性高于上面那些未加权 Cohen κ，二者不可直接比；二是它比的是 LLM 对<b>三位专家多数表决后的裁决标签</b>，等于把人–人分歧先消掉了 —— 对应 CSFCube 里"裁决后"那一档。<b>所以这个数不能读成"标注质量远超同行"，只能读成"在它自己的口径下自洽"。</b>要横向比较，需要它报未加权 Cohen κ 与人–人一致性，而<b>论文两个都没报</b>。</p>
+  </div>
+
+  <div class="key-insight">
+    <h3>更该知道的：同域内有一篇 2023 年做得更严的先例</h3>
+    <p><b>DORIS-MAE / Anno-GPT</b>（arXiv:2310.04678, <b>NeurIPS 2023 Datasets &amp; Benchmarks</b>）：同样是科学文献域，LLM 标注 <b>165,144</b> 对（aspect, abstract），人工验证用的是<b>预先注册的假设检验</b> —— 开发集 90 对（调完 prompt 即冻结）、测试集 250 对 3 位 CS 研究生，bootstrap 95% CI，H₀ =「LLM–人一致性等于人–人一致性」，最终 macro-F1 64.17 vs 58.33（p=0.74）、accuracy 67.40 vs 64.13（p=0.41），<b>全部 p &gt; 0.05 故保留 H₀</b>。<br><br>这比 ScholarQuest"报三个高相关系数"的做法严格得多：它<b>显式地把"人–人一致性"作为对照基线</b>，而不是让读者以为 0.866 是绝对好。而且它 2023 年就发在 NeurIPS D&amp;B 上 —— <b>ScholarQuest 未引</b>。<br><br><span class="evidence audit">审计发现</span> 顺带一个对同类工作都成立的警告：目前最大规模的"人在环路"验证研究（TREC 2024 RAG，arXiv:2411.08275，301 主题 / 77 runs，含 NIST 作者）发现<b>人工后编辑并没有提升与全人工评测的一致性</b>，唯一确证收益是池子缩小 38–41%。所以人工抽检应当被论证为<b>审计</b>，而不是"提升了标签质量"。</p>
+  </div>
+</section>
+
+<section id="env">
+  <h2>4 ScholarBase：论文里的名字，repo 里没有</h2>
+  <p>环境建在 <b>S2 PaperData / S2ORC 快照</b>上，取有摘要的 arXiv 论文，"million-scale"（<span class="evidence audit">审计发现</span> 确切篇数论文全程未给）。BM25 走 SQLite FTS5，稠密走 Qdrant + BGE-M3 的 title–abstract 向量，RRF 混合；对外是 RESTful API：语义检索、标题精确匹配、元数据查询、引文/参考文献遍历。</p>
+
+  <div class="warning-note">
+    <p><strong>容易误解：</strong>repo 里<b>没有叫 ScholarBase 的东西</b>。后端在 <code>Lewen-API/</code> 目录下，README 称之为 "Lewen API"（约 3M arXiv 论文，4000 端口）。名字不统一，但<b>这个后端是可本地部署的</b> —— 见第 7 节，这恰好是它相对 AstaBench 唯一真实的差异点。</p>
+  </div>
+</section>
+
+<section id="results">
+  <h2>5 结果：以及 DeepXiv 那一行真正说明了什么</h2>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Table2_p5.png" alt="主结果表"></div>
+    <figcaption>论文 Table 2（主表）。9 个 baseline 分三组：非 agentic 检索、外部学术搜索系统、开源 agentic 系统。最右 Overall 三列是总口径。下半可见 Fig. 4 的效率柱状图。</figcaption>
+  </figure>
+
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <thead><tr><th>系统</th><th>R@25</th><th>R@100</th><th>R@All</th><th>备注</th></tr></thead>
+    <tbody>
+      <tr><td>Dense Retrieval (BGE-M3)</td><td>0.104</td><td>0.208</td><td>0.290</td><td>非 agentic 参照</td></tr>
+      <tr><td>Hybrid (BM25+dense, RRF)</td><td>0.107</td><td>0.214</td><td>0.244</td><td>最强非 agentic</td></tr>
+      <tr><td>Google Scholar</td><td>0.071</td><td>0.100</td><td>0.113</td><td></td></tr>
+      <tr><td>Semantic Scholar API</td><td>0.057</td><td>0.084</td><td>0.099</td><td></td></tr>
+      <tr><td><b>DeepXiv</b> (Qian et al. 2026)</td><td><b>0.054</b></td><td>0.138</td><td><b>0.288</b></td><td>R@25 全表最低，R@All 却接近 dense</td></tr>
+      <tr><td>PaSa</td><td>0.201</td><td>0.281</td><td>0.310</td><td></td></tr>
+      <tr><td>SPAR</td><td>0.197</td><td>0.270</td><td>0.291</td><td></td></tr>
+      <tr><td><b>PaperScout</b>（作者自己的系统）</td><td><b>0.214</b></td><td><b>0.314</b></td><td><b>0.355</b></td><td>全指标夺冠</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="key-insight">
+    <h3>DeepXiv 的画像：捞得到，但排不出来</h3>
+    <p>它的 R@25 是<b>全表最低（0.054）</b>，但 R@All 高达 <b>0.288</b> —— 是其他外部 API 的 2.5 倍，几乎等于纯稠密检索的 0.290。翻译成人话：它的 agent 确实把金标论文捞上来了不少，<b>但排序极差，好东西全埋在 25 名之后</b>。对一个主打"给 agent 用的数据接口"的系统，这个 profile 相当致命，因为 agent 的上下文装不下 300 篇。<span class="evidence audit">审计发现</span> 论文对这个反差<b>一个字都没分析</b>。</p>
+  </div>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig4_p5.png" alt="效率统计"></div>
+    <figcaption>论文 Fig. 4。效率对比：PaSa 用 60.1 次工具调用（55.1 次 expand）、744 个候选，换来 0.051 的 R@100/百候选；PaperScout 19.0 expand + 15.3 search、408 候选、<b>0.120</b>。效率差 2.4 倍。</figcaption>
+  </figure>
+
+  <p>其他值得记住的数字：<b>scope-controlled 是所有系统的共同灾难</b> —— PaSa/SPAR/PaperScout 的 R@100 分别只有 0.193/0.188/0.182，Google Search 0.006、Semantic Scholar API 0.002、DeepXiv 的 R@25 是 0.007。零召回失败 20/1,111（1.80%），但失败时 agent 平均仍看了 894.6 / 612.9 / 408.0 个候选 —— 论文的判断是"failures are not due to a lack of search effort, but to off-target exploration"。</p>
+
+  <div class="warning-note">
+    <p><strong>容易误解：</strong>全文<b>没有 LLM 骨干的消融</b>。它自己 pipeline 里唯一点名的模型是 <b>Qwen3-Max</b>（主题映射、查询生成、改写、判相关全用它）—— 也就是说数据集的意图分布和相关性标准，都带着单一模型的偏好。</p>
+  </div>
+</section>
+
+<section id="relwork">
+  <h2>6 相关工作审计：12 句话、6 个引用、两篇竞品</h2>
+  <p class="lead">§2 全节只有两段。这不是概括，是字面事实。</p>
+
+  <h3>§2.1 三连"承认优点 but 指出缺陷"</h3>
+  <p>三个连续的让步–转折句，句式完全一致：</p>
+  <blockquote>
+    <p>"AutoScholarQuery provides useful scale, <b>but</b> its construction is tied to source papers and their Related Work section, which may inherit topic and citation biases."</p>
+    <p>"RealScholarQuery improves realism, <b>but</b> its limited size makes it difficult to systematically cover fine-grained CS topics and diverse query intents."</p>
+    <p>"SPARBench further improves annotation quality …, <b>but</b> it remains small-scale with broad domain coverage rather than a systematic CS topic hierarchy."</p>
+  </blockquote>
+  <p><span class="evidence audit">审计发现</span> <b>"small-scale" / "limited size" 全程没有给出任何数字。</b>竞品的查询规模在论文里从未写出，Table 1 也没有 scale 列 —— 一个最容易补、也最该补的数。</p>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Table1_p2.png" alt="与已有 benchmark 的对比表"></div>
+    <figcaption>论文 Table 1。<b>三行竞品里 RealScholar 和 AutoScholar 是同一篇论文</b>（He et al. 2025），所以这张"与已有 benchmark 对比"的表，真实对比对象只有 PaSa + SPARBench <b>两篇</b>。缺两列关键信息：没有规模列，也没有环境/可复现列 —— 而后者正是 §1 列的三大缺口之一。</figcaption>
+  </figure>
+
+  <h3>§2.2 零批评，纯进步叙事</h3>
+  <p>PaSa → SPAR → <b>PaperScout</b>，三句递进，一句 "ScholarQuest complements them by…" 收尾。<b>整节没有一个 "but"，没有任何 gap claim。</b>而 benchmark 论文里 §2.2 的职责本该是论证"这些 agent 需要更好的评测"—— 它一点这个活儿没干。</p>
+
+  <h3>开篇第一句是纯凑数</h3>
+  <p>"Academic paper search is essential for both human researchers and deep-search agents…" 后面挂了三个引用，<b>三篇在全文各只出现一次，从未被描述、比较或复引</b>：</p>
+  <div class="card-grid three">
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>PaperArena (2510.10909)</h4>
+      <p>最浪费的一个引用。它<b>本身就是科学文献 agent 的评测 benchmark</b>，作者组还高度重叠（Daoyu Wang、Mingyue Cheng、Qi Liu），却被塞在一个从句里 —— <b>没进 Table 1，没进 gap 分析</b>。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>Mind2Report (2601.04879)</h4>
+      <p>自引，做的是商业报告生成。全文唯一出现 "deep research" 字样的地方，就是这篇的标题里。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>Search-R1 (2503.09516)</h4>
+      <p>既不是 benchmark 也不是论文检索系统，是个 RL 训练方法。</p>
+    </article>
+  </div>
+
+  <h3>缺失的整片版图</h3>
+  <p>对全文与参考文献做了字符串检索，以下<b>全部零命中</b>：</p>
+  <ul>
+    <li><b>标准化 / 冻结检索环境这一整支</b>：AstaBench / PaperFindingBench、ScholarGym、SAGE、BrowseComp-Plus、ResearchArena —— 即 §1 gap #3 声称不存在的那类东西，恰好有四五篇先例。</li>
+    <li><b>学术检索 benchmark</b>：LitSearch、CSFCube、DORIS-MAE、ScholarQABench / OpenScholar、ScholarSearch、BRIGHT。</li>
+    <li><b>排除 / 否定约束检索</b>：ExcluIR、NevIR、InstructIR、FollowIR、IFIR —— 即它的 scope-controlled 那一档。</li>
+    <li><b>LLM 判相关的方法学</b>：Faggioli et al.（ICTIR 2023，最早提出"抽检 LLM 判为相关的子样本"）、Thomas et al.（SIGIR 2024）虽被引但未讨论、UMBRELA、LLMJudge、Soboroff《Don't Use LLMs to Make Relevance Judgments》、Dietz et al.《Principles and Guidelines for the Use of LLM Judges》（ICTIR 2025）。</li>
+    <li><b>通用 deep-research / agentic browsing benchmark</b>：BrowseComp、GAIA、HLE、ResearchQA、SciFact、WebWalker、DeepResearch Bench。</li>
+  </ul>
+  <p>其中"通用 deep-research"那一类是最显眼的缺口 —— ScholarQuest 的第三个贡献是<b>给 agent 的冻结工具环境</b>，而"标准化 sandbox"这套规范正是在那片文献里立起来的。</p>
+  <p>全文参考文献<b>共 19 条</b>，其中 6 条是 Pearson / Spearman / Cohen / BM25 / RRF / S2ORC 这类工具引用，3 条是上面的凑数引用。</p>
+  <div class="critical-note">
+    <p><strong>净效果：</strong>§2.1 把"相关工作"定义成<b>恰好就是它拿来当 baseline 打的那两篇</b>，让整个领域看起来比实际空旷得多。</p>
+  </div>
+</section>
+
+<section id="novelty">
+  <h2>7 新颖性三判</h2>
+  <p class="lead">下面的判断基于对先行工作的独立核查（不读本文的情况下先摸清已有版图），再回头对齐。</p>
+
+  <h3>(a) 分类学引导 + 4 类意图 —— <span style="color:var(--warning)">增量</span></h3>
+  <p>拆成两半，结论不同。</p>
+  <p><b>意图分型不新，而且已有工作做得更细。</b>AstaBench 的 PaperFindingBench（arXiv:2510.21652，ICLR 2026）有明确的三类查询分型（48 navigational / 43 metadata / 242 semantic），并且在 semantic 内部再枚举挑战类型：多重条件、条件间复杂关系、罕见术语、错误术语、主张之外的细节、干扰性背景信息。SPAR 的 agent 内部分 survey / recent advances / methodological comparison；LitSearch 有 2 级 specificity；IFIR（NAACL 2025）有 3 级指令复杂度。</p>
+  <p><b>"scope-controlled" 基本是换个名字。</b>带排除 / 否定约束的检索是有专门 benchmark 的成熟子领域：<b>NevIR</b>（2305.07614）、<b>ExcluIR</b>（2404.17288，3,452 条人工标注排除型查询 + 70,293 训练查询，自称首个排除型文档检索研究）、<b>InstructIR</b>（2402.14334）、<b>FollowIR</b>（2403.15246）、<b>IFIR</b>（2503.04644，科学文献子集建在 SciFact-open 上）。AstaBench 的 metadata 查询里也已明确含否定（"not citing the transformers paper"）并支持嵌套递归。ScholarQuest 视为"最难、所有系统都崩"的那一档，恰是文献里研究得最久的一档，而这些工作<b>一篇都没引</b>。</p>
+  <div class="key-insight">
+    <h3>真正可能新的只有一点：ACM CCS 作为系统性抽样框</h3>
+    <p>此前的 benchmark 都是机会采样 —— PaSa 从 5 个会议的 related work、LitSearch 从 ACL/ICLR 行内引用、SPARBench 从 50 个手工种子、AstaBench 从产品使用日志、DORIS-MAE 明确说是"随机采样摘要"。独立核查（OpenAlex 全文检索）显示，用 ACM CCS 的相关工作只有四篇：TaxoIndex（2410.19218）、CCQGen（2502.11181, WSDM 2025）、Academic Concept Index（2601.00567）、以及 ScholarQuest 自己 —— 而前三篇实际用的是<b>微软学术 field-of-study 分类（431,416 节点）</b>，ACM CCS 只在脚注里被当例子提到，且它们的种子单位是<b>文档</b>而非分类节点，所以不构成分层抽样框。<br><br><span class="evidence inference">合理推断</span> 但两个折扣：一是这条结论受限于 OpenAlex 全文覆盖，2010 年前的 JCDL/ECDL 数字图书馆测试集可能有先例而未被检出；二是它属于<b>覆盖度贡献，不是新的评测能力</b>，而且逐节点覆盖度账没报（见第 3 节）。</p>
+  </div>
+
+  <h3>(b) 自动答案集构建 —— <span style="color:var(--danger)">已被逐组件做过</span></h3>
+  <p>这是最弱的一条。</p>
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <thead><tr><th>组件</th><th>先例</th></tr></thead>
+    <tbody>
+      <tr><td>多路召回池化</td><td>PaSa RealScholarQuery 池化 5 个系统；SPARBench 4 个 API → 198K 候选</td></tr>
+      <tr><td>级联 LLM 判相关</td><td>SPARBench：Qwen2.5-7B → 3K → Qwen2.5-72B → 2K → 人工 → 560</td></tr>
+      <tr><td>引文图扩展进池</td><td>PaSa 的 <code>[Expand]</code>（消融显示去掉掉 22.98%/32.21% recall）；RollingEval-Jun25 广度优先沿参考文献扩展</td></tr>
+      <tr><td><b>LLM 生成标准 + 人工抽检一部分</b></td><td><b>AstaBench：LLM 生成加权相关性标准，人工校验 1/5 的查询 —— 与本文 450 对抽检完全同构的设计</b></td></tr>
+      <tr><td>LLM-as-relevance-judge 本身</td><td>Thomas et al.（2309.10621, Bing）、UMBRELA（2406.06519）—— 2024 年起即标准做法</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>唯一站得住的说法是"全自动化解除了人工瓶颈"（SPARBench 卡在 50 query / 560 doc，RealScholarQuery 卡在 50 query）。这是纯规模论证，而且它背着一个反向风险：<b>RollingEval-Jun25</b>（<a href="../RollingEval-Jun25/RollingEval_归档说明.html">本地归档</a>，比 ScholarQuest 早一个月）专门论证"拿参考文献列表当金标做单轴 recall 评测"不可靠 —— 人类引用里只有 51% 被判为中度以上相关，而 AI reranker 是 86–88%。</p>
+
+  <h3>(c) 标准化检索环境 —— <span style="color:var(--danger)">至少四篇在它之前，一篇都没引</span></h3>
+  <p>§1 的原话是 "existing benchmarks do not provide a publicly available and standardized evaluation environment"。这句话在 2026 年 6 月已经站不住：</p>
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <thead><tr><th>先行工作</th><th>时间</th><th>做了什么</th><th>可下载？</th></tr></thead>
+    <tbody>
+      <tr><td><b>BrowseComp-Plus</b><br>2508.06600</td><td>2025-08</td><td>100,195 篇固定语料 + 830 条查询，人工核验支撑文档 + 挖掘的 hard negatives；BM25 (Pyserini) + 4 个稠密检索器。目的正是<b>把检索器质量与 agent 质量解耦</b>。</td><td><b>是</b>（HF <code>Tevatron/browsecomp-plus</code>）· 通用域非学术</td></tr>
+      <tr><td><b>AstaBench</b><br>2510.21652</td><td>2025-10<br><b>ICLR 2026</b></td><td>Asta Scientific Corpus，原话 "first production-grade, reproducible search tools for agents"；日期截断 + MCP 8 工具 + leaderboard + Inspect 框架 + 22 类 57 agent。</td><td>否，托管 API（<a href="../AstaBench/AstaBench_精读.html">本地精读</a>）</td></tr>
+      <tr><td><b>ScholarGym</b><br>2601.21654</td><td>2026-01<br>(v3 02-17)</td><td><b>同一个细分、早五个月</b>：570K arXiv 论文静态语料（CS+物理+数学，聚合自 PaSa 与 LitSearch 查询集、按 arXiv ID 去重）+ <b>确定性检索</b>（BM25 over title+abstract；稠密 Qwen3-Embedding-0.6B in Qdrant）+ 2,536 条专家标注查询。立论都一样："isolate algorithmic reasoning from live API variance"。</td><td>未找到发布地址</td></tr>
+      <tr><td><b>SAGE</b><br>2602.05975</td><td>2026-02</td><td>200,000 篇开放获取全文冻结语料（4 领域 × 5 万）+ 1,200 条查询。附带一个直接可用的结论：<b>BM25 比 LLM 检索器高约 30%</b>，因为 agent 发出的子查询偏关键词式。</td><td>部分（仓库只有查询）</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><span class="evidence audit">审计发现</span> <b>这四篇 ScholarQuest 一篇都没引。</b>尤其 ScholarGym 与它同细分、早五个月、连"用确定性检索隔离线上 API 波动"的动机都一致。</p>
+  <div class="key-insight">
+    <h3>但深读 AstaBench 之后，ScholarQuest 剩下一个真实差异</h3>
+    <p><b>Asta 的语料不可自托管、不可下载。</b>它是 <code>asta-tools.allen.ai/mcp/v1</code> 上的托管服务，需申请 <code>ASTA_TOOL_KEY</code>，限流约 4 req/s，走一份<b>非商用、不可转授、可随时撤销</b>的 Corpus Tool License（明确禁止 "copy, adapt, reformat, reverse-engineer … its corpus and underlying contents therein"），且论文<b>从未披露语料规模</b>、也没有索引快照版本号。它的"可复现"是<b>时间意义上的</b>（日期截断使结果不随新论文漂移），<b>不是基础设施意义上的</b> —— Ai2 关掉端点或换索引，历史数字就无法复核。<br><br>ScholarQuest 的 Lewen API 是可以本地起的（SQLite FTS5 + Qdrant，约 3M 论文）。<b>这是真实但很窄的工程差异，不是概念创新</b> —— 而且它自己在论文里叫 ScholarBase、repo 里叫 Lewen API，连名字都没统一，等于把唯一的差异点也埋掉了。</p>
+  </div>
+</section>
+
+<section id="selfcite">
+  <h2>8 未披露的自引夺冠</h2>
+  <p>PaperScout（arXiv:2601.10029）与本文共享<b>五位作者</b>，包括<b>同一个一作 Tingyue Pan</b>。但全文以纯第三人称介绍它：</p>
+  <blockquote>
+    <p>§2.2: "Building on this line of work, <b>PaperScout improves tool-use autonomy</b> by enabling the agent to decide when and how to invoke search and expansion actions according to the evolving search state (Pan et al., 2026)."</p>
+    <p>§4.1: "The third group includes open-source agentic paper search systems, including PaSa, SPAR, and PaperScout (Pan et al., 2026)."</p>
+  </blockquote>
+  <p><span class="evidence audit">审计发现</span> 检索 "our previous" / "our prior" / "we previously" / "in our earlier" —— <b>零命中</b>。</p>
+  <div class="critical-note">
+    <p><strong>为什么这重要：</strong>PaperScout 赢下了<b>所有</b>头条指标（R@100 0.314、R@All 0.355、效率 0.120、五个规模分桶全胜）。而论文给它获胜的解释是纯推测且明显有利的 —— §4.2 "One possible explanation is that more adaptive multi-turn search can help agents better navigate scattered literature evidence"；§4.3 "This efficiency advantage may stem from its autonomous tool-use policy."。加上 §2.2 那句 "Building on this line of work" 把自家系统摆在领域顶点。<br><br>这不构成学术不端（引用如实标了 Pan et al. 2026），但<b>"自建 benchmark + 自家系统夺冠 + 不披露关系 + 用推测性语言解释为何夺冠"</b>这个组合，是审稿人一定会点出来的。引用 PaperScout 那一行的数字时应当打折。<br><br><span class="evidence inference">合理推断</span> 对称地说一句公道话：AstaBench 也有类似问题 —— 它的头名 Asta v0 在自己定义的工具规范里属于 "Fully custom"，不满足最严格的 Standard 档；PaperFindingBench 的召回分母还是用<b>自家 PaperFinder 的宽松消融跑出来的并集</b>估的。自建 benchmark 自家夺冠是这个子领域的通病，不是某一家的问题。</p>
+  </div>
+</section>
+
+<section id="use">
+  <h2>9 怎么用</h2>
+  <div class="card-grid">
+    <article class="card">
+      <span class="evidence code">可直接用</span>
+      <h3>数据集拿来测检索模块</h3>
+      <p><code>datasets/ScholarQuest.jsonl</code>（1,111 条，答案集限定 5–200 篇）+ <code>datasets/query_metadata.jsonl</code>（13,097 条过滤前记录）。可直接跑；<b>但不要转述它的 κ=0.866</b>（口径问题见第 3 节），要报质量就自己抽一批重标。</p>
+    </article>
+    <article class="card">
+      <span class="evidence code">可直接用</span>
+      <h3>scope-controlled 是个真空</h3>
+      <p>所有现有系统在这一档 R@25 ≈ 0.01。如果要找可发力的缝隙，这是最明显的一个 —— 但先去读 ExcluIR / NevIR，别重复造轮子。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">别采信</span>
+      <h3>它的领域论断</h3>
+      <p>要引"agentic 论文检索的评测现状"，应引 <b>AstaBench</b>（ICLR 2026，环境 + leaderboard + 57 agent 齐全）。ScholarQuest 只宜作为"CS 细粒度意图的补充数据集"并列提及。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">需提前设防</span>
+      <h3>评测范式风险</h3>
+      <p>若自己的工作里有"用论文参考文献列表当检索金标"的设计，RollingEval-Jun25 的 51% vs 86–88% 会被审稿人拿来打。提前知道。</p>
+    </article>
+  </div>
+
+  <div class="source-note">
+    <p><strong>证据等级说明。</strong>本页 <span class="evidence paper">论文声称</span> 项均来自 arXiv HTML 全文（含附录 A–E、Table 1–11）与本地 PDF 原图核对；<span class="evidence code">可直接用</span> 项来自 GitHub 仓库文件清单；<span class="evidence audit">审计发现</span> 项为对全文 + 参考文献做字符串检索后的缺失/矛盾认定；<span class="evidence inference">合理推断</span> 项为跨论文比较得出、论文本身未言明。先行工作版图经独立核查（arXiv API + OpenAlex + Semantic Scholar API），<b>未能覆盖 Google Scholar 与 2010 年前非 arXiv 文献</b>，这是本页新颖性判断的主要盲区。</p>
+    <p><strong>归档日期</strong>：2026-08-03 · 论文版本 v1（2026-06-18）· 全部图片由本地 PDF 按图注区域裁切，见 <code>assets/</code>。</p>
+  </div>
+</section>
+</main>
+
+</body>
+</html>

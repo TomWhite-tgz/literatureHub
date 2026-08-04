@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>深读评价</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../index.html">← 返回总览</a><h1>PaSa 深读评价（2026-08-02）</h1>
+<p><strong>分类：复杂（真材实料），四篇文献搜索系统（PaSa/PaSaMaster/PaperPilot/PaperScout）中唯一经得起深读的。SOTA 数字建议打七折看。</strong></p>
+<ul>
+<li>论文：arXiv:2501.10120v2，ACL 2025 Main，ByteDance Seed</li>
+<li>深读方式：论文全文 + 全部开源代码（~1000 行）逐文件审读</li>
+</ul>
+<h2>真的部分</h2>
+<ul>
+<li><strong>Eq.3 session 级 PPO 是真算法贡献</strong>：轨迹长达数百篇论文放不进上下文，以 [Stop] 切分 session，跨 session 用折扣价值估计 V̂(S_{q+p_j}) 回传 credit——针对"动作产生新任务项"结构的干净设计。</li>
+<li>Selector 决策 token 前置、兼任 Crawler RL 训练的单 token reward model，是聪明的工程复用。</li>
+<li>从顶会 Related Work 反向合成 35k query-paper 对（AutoScholarQuery）是低成本高质量的数据方案。</li>
+<li>训练真实（SFT + PPO，16×H100），7B 权重、数据集全部开放在 HuggingFace；README 训练超参与论文 Table 12 一致。</li>
+<li>消融较充分（w/o Expand / w/o RL / w/o Selector-as-RM、α 扫描、动作成本扫描）。</li>
+</ul>
+<h2>要打折的部分</h2>
+<ol>
+<li><strong>部署形态是硬编码流水线，非论文渲染的自主 agent</strong>：<code>paper_agent.py:207-221</code> 固定 2 层 expand、每层按 Selector 分取 top-20，[Stop] 从不用于宏观终止——训练时是 MDP，推理时是 pipeline。</li>
+<li><strong>benchmark 结构性自利</strong>：GT 来自顶会引文（citation 可达），恰是 [Expand] 动作优势区（w/o Expand recall 掉 22.98% 印证同构）；RealScholarQuery 候选池由"PaSa+baselines 检索并集"构成，深爬独有发现的份额由 PaSa 自己定义。</li>
+<li><strong>成本不对等且不报</strong>：每 query 平均 382 个动作 vs Google 单次查询，延迟/成本全文缺席。</li>
+<li><strong>arXiv-only 硬限制未列入 Limitations</strong>：全部检索以 arxiv_id 为主键（<code>utils.py:38-75</code>）。</li>
+<li>真 bug：<code>run_paper_agent.py:56</code> 把 expand_papers(20) 传给了 search_queries(应为5)；ar5iv 引文解析不可靠（<code>utils.py:250</code> 作者自带 warning），是 [Expand] 单点故障。</li>
+<li>代码只含推理+评测；SFT/PPO 训练在 fork 的 trl/transformers 仓库，数据构建代码未开源。</li>
+</ol>
+<h2>与其他三篇的关系</h2>
+<p>后三篇（PaSaMaster/PaperPilot/PaperScout）实质都活在 PaSa 的问题设定和评测生态里（benchmark、reward model、baseline），但没有一篇与 PaSa 做了公平正面比较。</p><footer>由 <code>Literature项目或者系统/复杂/PaSa/深读评价.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

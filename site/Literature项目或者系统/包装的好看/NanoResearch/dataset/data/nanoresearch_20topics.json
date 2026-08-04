@@ -1,0 +1,356 @@
+[
+  {
+    "question_id": "nlp_biomed_qa",
+    "domain": "NLP",
+    "difficulty": "incremental_innovation",
+    "background": "Biomedical QA systems already perform reasonably well on PubMedQA, but lightweight improvements with clean ablations and reproducible training are still valuable.",
+    "problem_statement": "Design a practical method for improving PubMedQA under limited compute while keeping the implementation easy to reproduce.",
+    "baselines": [
+      "BioBERT",
+      "PubMedBERT",
+      "instruction-tuned biomedical QA baseline"
+    ],
+    "datasets": [
+      "PubMedQA"
+    ],
+    "user_requirements": "Generate a new idea and an implementation-oriented plan. Keep the method lightweight, ablatable, and reproducible.",
+    "extra_context": "Prefer methods that fit within a modest single-node budget and can be compared fairly against standard biomedical QA baselines."
+  },
+  {
+    "question_id": "nlp_short_text_cls",
+    "domain": "NLP",
+    "difficulty": "incremental_innovation",
+    "background": "Short-text classification benchmarks are mature, but small improvements that reduce compute and keep the stack simple remain useful for reproducible evaluation.",
+    "problem_statement": "Propose a lightweight method for improving short-text classification quality without introducing a heavy training pipeline.",
+    "baselines": [
+      "DistilBERT",
+      "BERT-base",
+      "linear bag-of-words classifier"
+    ],
+    "datasets": [
+      "AG News",
+      "SST-2"
+    ],
+    "user_requirements": "Produce a practical idea and an executable plan. Favor compact architectures, clean ablations, and fast iteration.",
+    "extra_context": "The project should be feasible on a single GPU with small batch sizes and should avoid retrieval-heavy or multi-stage systems."
+  },
+  {
+    "question_id": "nlp_sentence_pair_cls",
+    "domain": "NLP",
+    "difficulty": "incremental_innovation",
+    "background": "Sentence-pair benchmarks are easy to fine-tune and compare, making them a good testbed for compact modeling ideas rather than large-scale engineering.",
+    "problem_statement": "Design a lightweight method for improving sentence-pair classification or matching quality without adding a heavy retrieval or multi-stage stack.",
+    "baselines": [
+      "DistilBERT",
+      "BERT-base",
+      "Siamese bi-encoder baseline"
+    ],
+    "datasets": [
+      "MRPC",
+      "RTE"
+    ],
+    "user_requirements": "Return a practical research idea and an executable implementation plan. Favor compact modules, fair baselines, and short training cycles.",
+    "extra_context": "The method should remain small enough for a single-GPU run and should allow clear ablations over standard sentence-pair baselines."
+  },
+  {
+    "question_id": "cv_small_image_cls",
+    "domain": "CV",
+    "difficulty": "incremental_innovation",
+    "background": "Small-image classification tasks are easy to run and compare, making them suitable for testing whether the agent can propose reproducible improvements rather than large-scale engineering tricks.",
+    "problem_statement": "Design a lightweight image-classification method that improves small-image benchmarks without relying on oversized backbones or expensive pretraining.",
+    "baselines": [
+      "ResNet-18",
+      "MobileNetV3-small",
+      "ViT-tiny"
+    ],
+    "datasets": [
+      "CIFAR-10",
+      "FashionMNIST"
+    ],
+    "user_requirements": "Return a novel but practical method and a benchmarkable implementation plan. Keep the method compact, ablatable, and easy to train.",
+    "extra_context": "Prefer methods that can finish a meaningful run quickly on a single GPU and use standard torchvision-style tooling."
+  },
+  {
+    "question_id": "multimodal_efficiency",
+    "domain": "Multimodal",
+    "difficulty": "nontrivial_recomposition",
+    "background": "Compact multimodal systems often trade off quality against latency and systems complexity, especially when evaluated under strict deployment budgets.",
+    "problem_statement": "Propose a systems-aware multimodal method that improves benchmark quality without introducing an impractical training or serving stack.",
+    "baselines": [
+      "compact VLM baseline",
+      "late-fusion multimodal baseline"
+    ],
+    "datasets": [
+      "MMMU",
+      "ScienceQA"
+    ],
+    "user_requirements": "Produce a novel idea, an executable plan, and a benchmarkable implementation path. Avoid overly fragile or heavy multi-stage designs.",
+    "extra_context": "Reward methods with clear component interfaces, fair comparisons, and realistic implementation scope. Keep the stack compact enough for a single-GPU experiment."
+  },
+  {
+    "question_id": "tabular_budgeted_cls",
+    "domain": "Tabular ML",
+    "difficulty": "incremental_innovation",
+    "background": "Tabular classification remains a strong testbed for low-cost experimentation because datasets are small, baselines are well understood, and implementation cycles are fast.",
+    "problem_statement": "Design a lightweight tabular-learning method that improves standard tabular baselines without relying on large ensembles or expensive feature engineering.",
+    "baselines": [
+      "XGBoost",
+      "TabTransformer",
+      "MLP baseline"
+    ],
+    "datasets": [
+      "Adult",
+      "CoverType"
+    ],
+    "user_requirements": "Generate an idea and an implementation-oriented plan that is simple, fast, and easy to compare against standard baselines.",
+    "extra_context": "Favor methods that can be trained in a short wall-clock time, with clear ablations and no dependence on external retrieval or long preprocessing pipelines."
+  },
+  {
+    "question_id": "tabular_regression",
+    "domain": "Tabular ML",
+    "difficulty": "incremental_innovation",
+    "background": "Small tabular regression problems are cheap to run and easy to diagnose, so they are useful for testing whether the system can make focused improvements under tight resource budgets.",
+    "problem_statement": "Propose a lightweight tabular-regression method that improves standard regression baselines without resorting to large ensembles or expensive feature engineering.",
+    "baselines": [
+      "XGBoost regressor",
+      "CatBoost regressor",
+      "MLP regressor baseline"
+    ],
+    "datasets": [
+      "California Housing",
+      "Energy Efficiency"
+    ],
+    "user_requirements": "Return a practical idea and a runnable implementation plan. Favor compact models, clear ablations, and fast turnaround.",
+    "extra_context": "The project should be easy to implement with sklearn-style preprocessing or a small PyTorch model and should finish quickly on a single GPU or CPU-backed node."
+  },
+  {
+    "question_id": "timeseries_sensor_cls",
+    "domain": "Time Series",
+    "difficulty": "incremental_innovation",
+    "background": "Human activity recognition and other compact time-series tasks are lightweight enough for repeated experimentation while still requiring nontrivial modeling choices.",
+    "problem_statement": "Propose a lightweight time-series classification method that improves compact sensor benchmarks without using a large or highly specialized model stack.",
+    "baselines": [
+      "1D CNN baseline",
+      "GRU baseline",
+      "InceptionTime-small"
+    ],
+    "datasets": [
+      "UCI HAR"
+    ],
+    "user_requirements": "Return a practical method and a reproducible implementation plan. Keep the approach compact, interpretable, and easy to benchmark.",
+    "extra_context": "Prefer methods that can be implemented with standard PyTorch components and evaluated quickly on a single GPU."
+  },
+  {
+    "question_id": "graph_node_cls",
+    "domain": "Graph ML",
+    "difficulty": "incremental_innovation",
+    "background": "Node classification on citation graphs is a lightweight setting for probing whether the system can propose meaningful graph-model refinements without large-scale infrastructure.",
+    "problem_statement": "Design a lightweight graph-learning method that improves standard node-classification baselines while keeping the implementation simple and reproducible.",
+    "baselines": [
+      "GCN",
+      "GraphSAGE",
+      "GAT"
+    ],
+    "datasets": [
+      "Cora",
+      "Citeseer"
+    ],
+    "user_requirements": "Generate a new idea and an executable plan. Prefer simple message-passing modifications, clean ablations, and modest compute cost.",
+    "extra_context": "Avoid large graph pretraining or multi-stage pipelines. The project should be runnable quickly with a standard single-GPU setup."
+  },
+  {
+    "question_id": "audio_keyword_cls",
+    "domain": "Audio",
+    "difficulty": "incremental_innovation",
+    "background": "Keyword spotting on short audio clips is a compact benchmark family that is cheap to train, easy to compare, and useful for testing whether the system can make practical efficiency-oriented improvements.",
+    "problem_statement": "Design a lightweight audio-classification method that improves keyword spotting quality without depending on a large speech model or a complex preprocessing pipeline.",
+    "baselines": [
+      "CNN keyword-spotting baseline",
+      "CRNN baseline",
+      "tiny conformer baseline"
+    ],
+    "datasets": [
+      "SpeechCommands"
+    ],
+    "user_requirements": "Return a practical idea and an executable plan. Keep the model compact, the preprocessing standard, and the training budget modest.",
+    "extra_context": "Favor torchaudio-compatible pipelines and methods that can finish a meaningful comparison quickly on a single GPU."
+  },
+  {
+    "question_id": "nlp_token_cls",
+    "domain": "NLP",
+    "difficulty": "incremental_innovation",
+    "background": "Token-level sequence labeling tasks remain one of the cleanest settings for testing compact contextual modeling ideas and fair ablations under limited compute.",
+    "problem_statement": "Design a lightweight token-classification method that improves standard named-entity recognition benchmarks without adding a large pipeline or external retrieval system.",
+    "baselines": [
+      "DistilBERT token classifier",
+      "BERT-base token classifier",
+      "BiLSTM-CRF baseline"
+    ],
+    "datasets": [
+      "CoNLL-2003",
+      "WNUT17"
+    ],
+    "user_requirements": "Return a practical idea and an executable implementation plan. Favor compact sequence modules, clean ablations, and short fine-tuning runs.",
+    "extra_context": "The full project should run on a single GPU and should stay close to standard Hugging Face token-classification tooling."
+  },
+  {
+    "question_id": "nlp_extractive_qa",
+    "domain": "NLP",
+    "difficulty": "incremental_innovation",
+    "background": "Extractive QA is mature enough that strong baselines are available, but lightweight methods that improve calibration or answer localization remain useful and easy to benchmark.",
+    "problem_statement": "Propose a lightweight extractive QA method that improves standard span-selection baselines without relying on retrieval-heavy or multi-stage systems.",
+    "baselines": [
+      "DistilBERT QA baseline",
+      "BERT-base QA baseline",
+      "RoBERTa-base QA baseline"
+    ],
+    "datasets": [
+      "SQuAD v1.1",
+      "NewsQA"
+    ],
+    "user_requirements": "Produce a practical method and an implementation-oriented plan. Keep the method compact, reproducible, and easy to compare against standard QA baselines.",
+    "extra_context": "Prefer single-model approaches that can be trained on one GPU and evaluated with standard extractive QA metrics."
+  },
+  {
+    "question_id": "cv_finegrained_cls",
+    "domain": "CV",
+    "difficulty": "incremental_innovation",
+    "background": "Fine-grained visual classification is harder than small-image classification but still manageable on compact datasets, making it a good benchmark for lightweight representation improvements.",
+    "problem_statement": "Design a lightweight fine-grained image-classification method that improves compact benchmarks without requiring a large pretrained vision backbone.",
+    "baselines": [
+      "ResNet-18",
+      "EfficientNet-B0",
+      "ViT-tiny"
+    ],
+    "datasets": [
+      "Oxford-IIIT Pets",
+      "Flowers102"
+    ],
+    "user_requirements": "Return a practical method and a benchmarkable implementation plan. Favor compact modules, fair baselines, and simple training code.",
+    "extra_context": "The benchmark should remain feasible on a single GPU with standard torchvision or timm tooling and should support clear ablations."
+  },
+  {
+    "question_id": "cv_multilabel_cls",
+    "domain": "CV",
+    "difficulty": "incremental_innovation",
+    "background": "Compact multi-label image classification is a useful stress test for calibration and feature-sharing ideas while staying much cheaper than large-scale detection pipelines.",
+    "problem_statement": "Propose a lightweight multi-label image-classification method that improves standard baselines without introducing a heavy detection or segmentation stack.",
+    "baselines": [
+      "ResNet-18 multi-label baseline",
+      "MobileNetV3 multi-label baseline",
+      "ViT-tiny multi-label baseline"
+    ],
+    "datasets": [
+      "Pascal VOC 2007"
+    ],
+    "user_requirements": "Generate a practical idea and an executable implementation plan. Keep the model small, the training pipeline standard, and the ablations clean.",
+    "extra_context": "Prefer methods that can run with standard image-classification backbones and sigmoid multi-label heads on a single GPU."
+  },
+  {
+    "question_id": "tabular_imbalance_cls",
+    "domain": "Tabular ML",
+    "difficulty": "incremental_innovation",
+    "background": "Imbalanced tabular classification is common in real applications and is still easy to benchmark with compact models and short training loops.",
+    "problem_statement": "Design a lightweight tabular method for improving imbalanced classification without relying on large ensembles, costly resampling pipelines, or heavy AutoML stacks.",
+    "baselines": [
+      "XGBoost",
+      "LightGBM",
+      "MLP baseline"
+    ],
+    "datasets": [
+      "Credit Card Fraud",
+      "Telco Churn"
+    ],
+    "user_requirements": "Return a practical method and a runnable plan. Favor compact architectures, fair imbalance-aware metrics, and fast experimentation.",
+    "extra_context": "The project should be implementable with sklearn-style preprocessing and short training jobs on CPU or a single modest GPU."
+  },
+  {
+    "question_id": "tabular_missing_value_cls",
+    "domain": "Tabular ML",
+    "difficulty": "incremental_innovation",
+    "background": "Missing values are a realistic source of difficulty in tabular learning and provide a clean testbed for lightweight robustness ideas under short iteration cycles.",
+    "problem_statement": "Propose a lightweight tabular-classification method that improves robustness to missing-value patterns without relying on expensive imputation ensembles or large stacked models.",
+    "baselines": [
+      "XGBoost",
+      "TabTransformer",
+      "MLP baseline with imputation"
+    ],
+    "datasets": [
+      "Adult",
+      "Higgs Small"
+    ],
+    "user_requirements": "Produce a practical idea and an executable implementation plan. Keep preprocessing simple, ablations clear, and compute modest.",
+    "extra_context": "Prefer methods that can be implemented with simple masking or feature-gating ideas and benchmarked quickly on standard tabular datasets."
+  },
+  {
+    "question_id": "timeseries_ecg_cls",
+    "domain": "Time Series",
+    "difficulty": "incremental_innovation",
+    "background": "Compact ECG and UCR-style sequence benchmarks are cheap to run and make it easy to compare lightweight temporal architectures without specialized infrastructure.",
+    "problem_statement": "Design a lightweight time-series classification method that improves compact ECG-style benchmarks without using a large transformer stack or custom hardware assumptions.",
+    "baselines": [
+      "1D CNN baseline",
+      "GRU baseline",
+      "InceptionTime-small"
+    ],
+    "datasets": [
+      "ECG200",
+      "FordA"
+    ],
+    "user_requirements": "Return a practical method and a reproducible implementation plan. Favor small temporal modules, interpretable ablations, and fast turnaround.",
+    "extra_context": "The full experiment should remain compatible with plain PyTorch and run comfortably on a single GPU."
+  },
+  {
+    "question_id": "graph_link_pred",
+    "domain": "Graph ML",
+    "difficulty": "incremental_innovation",
+    "background": "Lightweight link prediction on citation or collaboration graphs is a compact graph-learning setting that still allows meaningful architectural comparison and ablation.",
+    "problem_statement": "Propose a lightweight graph-learning method that improves standard link-prediction baselines while keeping the codebase simple and easy to reproduce.",
+    "baselines": [
+      "GCN encoder + dot-product decoder",
+      "GraphSAGE encoder + MLP decoder",
+      "GAT encoder baseline"
+    ],
+    "datasets": [
+      "Cora",
+      "Citeseer"
+    ],
+    "user_requirements": "Generate a new idea and an executable plan. Favor simple neighborhood or edge-scoring modifications, clean ablations, and modest compute cost.",
+    "extra_context": "Avoid large graph pretraining and keep the project runnable on a single GPU with standard PyTorch Geometric tooling."
+  },
+  {
+    "question_id": "audio_emotion_cls",
+    "domain": "Audio",
+    "difficulty": "incremental_innovation",
+    "background": "Small audio emotion benchmarks are compact enough for repeated experimentation and are a useful testbed for lightweight temporal and spectral feature-learning ideas.",
+    "problem_statement": "Design a lightweight audio-classification method that improves small emotion-recognition benchmarks without depending on a large speech foundation model.",
+    "baselines": [
+      "CNN spectrogram baseline",
+      "CRNN baseline",
+      "tiny conformer baseline"
+    ],
+    "datasets": [
+      "RAVDESS",
+      "CREMA-D"
+    ],
+    "user_requirements": "Return a practical idea and an executable plan. Keep preprocessing standard, the model compact, and the implementation reproducible.",
+    "extra_context": "Favor torchaudio-compatible pipelines, short training cycles, and methods that can be compared fairly on a single GPU."
+  },
+  {
+    "question_id": "multimodal_hateful_memes",
+    "domain": "Multimodal",
+    "difficulty": "nontrivial_recomposition",
+    "background": "Compact multimodal classification tasks are useful for testing whether the system can improve cross-modal fusion quality without leaning on a very large vision-language model.",
+    "problem_statement": "Propose a lightweight multimodal classification method that improves compact vision-language benchmarks without introducing a heavy multi-stage or large-model serving stack.",
+    "baselines": [
+      "late-fusion multimodal baseline",
+      "CLIP linear-probe baseline",
+      "compact VLM baseline"
+    ],
+    "datasets": [
+      "Hateful Memes"
+    ],
+    "user_requirements": "Produce a novel idea, an executable plan, and a benchmarkable implementation path. Keep the model compact, the fusion strategy interpretable, and the evaluation fair.",
+    "extra_context": "Reward methods with clean image-text interfaces and realistic single-GPU training requirements."
+  }
+]

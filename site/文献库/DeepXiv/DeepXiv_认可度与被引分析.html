@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepXiv-SDK 认可度与被引分析</title>
+<style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: min(920px, calc(100% - 44px));
+            margin: 0 auto;
+            padding: 52px 18px 76px;
+        }
+
+        header {
+            margin-bottom: 34px;
+            padding-bottom: 34px;
+            border-bottom: 1px solid var(--line);
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-size: 0.93rem;
+            font-weight: 650;
+            text-decoration: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--accent-dark);
+            transform: translateX(-2px);
+        }
+
+        .status-row,
+        .resource-row,
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-row,
+        .resource-row {
+            justify-content: center;
+        }
+
+        .status-row {
+            margin-bottom: 18px;
+        }
+
+        .resource-row {
+            margin-top: 22px;
+        }
+
+        .badge,
+        .tag,
+        .evidence {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .badge {
+            padding: 4px 11px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.79rem;
+            font-weight: 650;
+        }
+
+        .resource-link {
+            display: inline-block;
+            padding: 7px 13px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent-dark);
+            background: var(--panel);
+            font-size: 0.84rem;
+            font-weight: 620;
+            text-decoration: none;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .resource-link.primary {
+            border-color: var(--accent);
+            color: var(--white);
+            background: var(--accent);
+        }
+
+        .resource-link:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        h1 {
+            margin-bottom: 12px;
+            font-size: clamp(2.35rem, 7vw, 3.25rem);
+            font-weight: 670;
+            letter-spacing: -0.035em;
+            line-height: 1.08;
+        }
+
+        .subtitle {
+            max-width: 720px;
+            margin: 0 auto;
+            color: var(--muted);
+            font-size: 1.08rem;
+            font-weight: 360;
+        }
+
+        .meta {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.91rem;
+            font-weight: 360;
+        }
+
+        h2 {
+            margin: 56px 0 24px;
+            padding-bottom: 11px;
+            border-bottom: 2px solid var(--accent);
+            font-size: 1.78rem;
+            font-weight: 630;
+            line-height: 1.3;
+        }
+
+        h3 {
+            margin: 30px 0 14px;
+            color: var(--accent);
+            font-size: 1.25rem;
+            font-weight: 630;
+        }
+
+        h4 {
+            margin-bottom: 8px;
+            color: var(--accent-dark);
+            font-size: 1.01rem;
+            font-weight: 650;
+        }
+
+        p {
+            margin-bottom: 17px;
+            font-weight: 360;
+        }
+
+        strong {
+            font-weight: 660;
+        }
+
+        a {
+            color: var(--accent-dark);
+        }
+
+        .lead {
+            color: #343b37;
+            font-size: 1.02rem;
+        }
+
+        .eyebrow {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 720;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .toc {
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 7px;
+            margin: 24px 0 34px;
+            padding: 10px;
+            border: 1px solid rgba(231, 225, 215, 0.9);
+            border-radius: 16px;
+            background: rgba(247, 244, 239, 0.93);
+            box-shadow: 0 8px 24px rgba(31, 36, 33, 0.06);
+            backdrop-filter: blur(10px);
+        }
+
+        .toc a {
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 620;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .highlight-box,
+        .source-note,
+        .warning-note,
+        .critical-note,
+        .code-note,
+
+        .source-note {
+            border-left-color: var(--green);
+            background: var(--green-pale);
+        }
+
+        .code-note {
+            border-left-color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .warning-note,
+
+        .critical-note {
+            border-left-color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .highlight-box p:last-child,
+        .source-note p:last-child,
+        .warning-note p:last-child,
+        .critical-note p:last-child,
+        .code-note p:last-child,
+
+        .key-insight {
+            margin: 32px 0;
+            padding: 28px 31px;
+            border-radius: 8px;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 4px 12px rgba(196, 97, 47, 0.22);
+        }
+
+        .key-insight h3,
+        .key-insight p {
+            color: var(--white);
+        }
+
+        .key-insight h3 {
+            margin-top: 0;
+        }
+
+        .key-insight p:last-child {
+            margin-bottom: 0;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            margin: 24px 0;
+        }
+
+        .card-grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            padding: 21px 23px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1.08rem;
+        }
+
+        .card p:last-child,
+        .card ul:last-child {
+            margin-bottom: 0;
+        }
+
+        .evidence {
+            margin-bottom: 10px;
+            padding: 3px 9px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .evidence.paper {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .evidence.code {
+            color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .evidence.inference {
+            color: var(--warning);
+            background: var(--warning-pale);
+        }
+
+        .evidence.audit {
+            color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .figure,
+        .figure-grid {
+            margin: 30px 0;
+        }
+
+        .figure {
+            text-align: center;
+        }
+
+        .figure-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .figure-grid .figure {
+            margin: 0;
+        }
+
+        .figure a,
+        .figure-frame {
+            display: block;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: var(--figure-shadow);
+        }
+
+        .figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .figure figcaption {
+            max-width: 760px;
+            margin: 11px auto 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-style: italic;
+            line-height: 1.55;
+        }
+
+        .figure-placeholder {
+            display: grid;
+            min-height: 250px;
+            padding: 28px;
+            place-items: center;
+            color: var(--muted);
+            background:
+                linear-gradient(135deg, rgba(196, 97, 47, 0.08), transparent 48%),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 31px,
+                    rgba(231, 225, 215, 0.48) 32px
+                ),
+                var(--white);
+            text-align: center;
+        }
+
+        .figure-placeholder.compact {
+            min-height: 205px;
+        }
+
+        .figure-placeholder strong {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--accent);
+            font-size: 1.08rem;
+        }
+
+        .figure-placeholder span {
+            display: block;
+            max-width: 520px;
+            font-size: 0.88rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin: 26px 0;
+            border-collapse: collapse;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            padding: 13px 15px;
+            color: var(--white);
+            background: var(--accent);
+            font-size: 0.88rem;
+            font-weight: 620;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 13px 15px;
+            border-bottom: 1px solid var(--line);
+            font-size: 0.89rem;
+            font-weight: 360;
+            vertical-align: top;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .comparison-table .focus-row td {
+            background: #f8ede4;
+            font-weight: 590;
+        }
+
+        .table-scroll {
+            width: 100%;
+            margin: 26px 0;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .table-scroll .comparison-table {
+            min-width: 680px;
+            margin: 0;
+        }
+
+        .flow-diagram {
+            margin: 29px 0;
+            padding: 27px 31px;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .flow-step {
+            position: relative;
+            margin: 16px 0;
+            padding: 18px 22px;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            background: var(--white);
+        }
+
+        .flow-step::before {
+            content: "▼";
+            position: absolute;
+            bottom: -28px;
+            left: 50%;
+            color: var(--accent);
+            font-size: 18px;
+            transform: translateX(-50%);
+        }
+
+        .flow-step:last-child::before {
+            content: "";
+        }
+
+        .flow-step p {
+            margin-bottom: 0;
+        }
+
+        .formula {
+            margin: 25px 0;
+            padding: 21px 23px;
+            border-radius: 7px;
+            color: var(--paper);
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.96rem;
+            overflow-x: auto;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        ul {
+            margin: 15px 0 19px 2px;
+            list-style: none;
+        }
+
+        li {
+            position: relative;
+            margin-bottom: 9px;
+            padding-left: 22px;
+            font-weight: 360;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 2px;
+            color: var(--accent);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        details {
+            margin: 16px 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 17px 20px;
+            cursor: pointer;
+            font-weight: 630;
+            list-style: none;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: "＋";
+            margin-left: auto;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        details[open] summary::after {
+            content: "−";
+        }
+
+        .details-body {
+            padding: 18px 22px 22px;
+            border-top: 1px solid var(--line);
+        }
+
+        code {
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.88em;
+        }
+
+        pre {
+            margin: 22px 0;
+            padding: 20px 22px;
+            border: 1px solid #343b37;
+            border-radius: 8px;
+            color: #edf2ee;
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.84rem;
+            line-height: 1.65;
+            overflow-x: auto;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+        }
+
+        .code-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 22px 0;
+        }
+
+        .code-item {
+            padding: 16px 18px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: var(--white);
+        }
+
+        .code-item code {
+            display: inline-block;
+            margin-bottom: 7px;
+            color: var(--blue);
+            background: var(--blue-pale);
+            font-weight: 660;
+        }
+
+        .code-item p {
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .tag-list {
+            margin: 13px 0 22px;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            color: var(--green);
+            background: var(--green-pale);
+            font-size: 0.78rem;
+            font-weight: 630;
+        }
+
+        footer {
+            margin-top: 72px;
+            padding-top: 28px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-weight: 360;
+            text-align: center;
+        }
+
+        @media (max-width: 760px) {
+            .container {
+                width: min(100% - 28px, 920px);
+                padding: 34px 8px 56px;
+            }
+
+            .card-grid,
+            .card-grid.three,
+            .figure-grid,
+            .code-list {
+                grid-template-columns: 1fr;
+            }
+
+            .toc {
+                position: static;
+            }
+
+            .flow-diagram {
+                padding: 20px 16px;
+            }
+
+            h2 {
+                margin-top: 46px;
+                font-size: 1.55rem;
+            }
+
+            .highlight-box,
+            .key-insight {
+                padding: 22px;
+            }
+
+            .subtitle,
+            .meta {
+                overflow-wrap: anywhere;
+            }
+        }
+
+        @media print {
+            .toc,
+            .back-link,
+
+            body {
+                background: white;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 24px;
+            }
+
+            .figure a,
+            .card,
+            details {
+                box-shadow: none;
+            }
+        }
+    
+        blockquote {
+            margin: 16px 0;
+            padding: 13px 18px;
+            border-left: 3px solid var(--accent);
+            border-radius: 0 7px 7px 0;
+            background: var(--panel);
+            color: var(--ink);
+            font-size: 0.94rem;
+        }
+
+        blockquote p { margin-bottom: 9px; }
+        blockquote p:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+<main class="container">
+<header>
+  <a class="back-link" href="../../index.html">← 返回 Literature 总览</a>
+  <div class="status-row">
+    <span class="badge">arXiv:2603.00084v2</span>
+    <span class="badge">v1 2026-02-14 / v2 2026-03-03</span>
+    <span class="badge">无 venue · 纯预印本</span>
+    <span class="badge">GitHub 763★ · PyPI 8.7k/月</span>
+  </div>
+  <h1>DeepXiv-SDK</h1>
+  <p class="subtitle">工程侧被真实使用，学术侧尚未被承认 —— 一个"基础设施论文"的典型分裂画像。</p>
+  <p class="meta">Hongjin Qian, Ziyi Xia, Ze Liu … Yingxia Shao, Defu Lian, <b>Zheng Liu</b>（BGE 系列作者）· BAAI + USTC + BUPT · cs.DL / cs.AI / cs.CL / cs.IR</p>
+  <div class="resource-row">
+    <a class="resource-link primary" href="DeepXiv-SDK_2603.00084v2.pdf">论文 PDF</a>
+    <a class="resource-link" href="assets/2603.00084_fulltext.html">全文 Markdown</a>
+    <a class="resource-link" href="https://github.com/DeepXiv/deepxiv_sdk">GitHub</a>
+    <a class="resource-link" href="assets/openapi_snapshot_2026-08-02.json">OpenAPI 快照</a>
+    <a class="resource-link" href="../../Benchmark/ScholarQuest/ScholarQuest_精读与新颖性审计.html">第三方评测：ScholarQuest</a>
+  </div>
+</header>
+
+<div class="highlight-box">
+  <p><strong>核查结论（2026-08-03）：</strong>学术引用层面认可度<b>很低</b> —— Semantic Scholar 2 次引用、OpenAlex 0 次、influential citations 0，且<b>两篇引用它的论文本身都是未评审预印本</b>，所以严格说它目前<b>零篇经同行评审的文献引用</b>。工程使用层面认可度<b>明显更高</b> —— 763 stars、月下载 8,683、conda-forge 已建、约 20 个下游仓库在用。而且两次引用<b>都不是背书</b>：一次把它当 baseline 打，一次把它当反面靶子。</p>
+</div>
+
+<nav class="toc">
+  <a href="#what">1 它是什么</a>
+  <a href="#selfeval">2 论文自评</a>
+  <a href="#recognition">3 认可度实测</a>
+  <a href="#citations">4 两次引用的真实语境</a>
+  <a href="#profile">5 关键反差：捞得到但排不出来</a>
+  <a href="#risk">6 依赖风险</a>
+</nav>
+
+<section id="what">
+  <h2>1 它是什么：三层数据接口</h2>
+  <p class="lead">论文的核心论点：LLM agent 做科研的真正瓶颈是<b>数据接入</b>，不是推理 —— agent 缺现成检索工具，被迫解析 HTML/PDF 这类给人看的格式，既烧 token 又让证据定位变脆。</p>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig1_p2.png" alt="DeepXiv-SDK 系统总览"></div>
+    <figcaption>论文 Fig. 1（系统总览）。三层结构：Data Layer 把非结构化来源规范化成 JSON 并支持"渐进式可访问性"；Service Layer 提供预置数据访问与即席检索工具，经 CLI / MCP / Python SDK 暴露；Application Layer 是内置 agent，把 service 层工具打包应对复杂需求。</figcaption>
+  </figure>
+
+  <div class="card-grid three">
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h4>覆盖范围</h4>
+      <p>arXiv 全量语料，<b>每日同步</b>新发布；计划扩展 PubMed Central、bioRxiv、medRxiv、chemRxiv。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h4>渐进式访问</h4>
+      <p>持久化多种物化视图（overview / section / evidence 三种粒度）+ provenance 字段（来源类型、抽取时间、更新时间），按需取粒度以控成本。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h4>合规声明</h4>
+      <p>仅取 arXiv 描述性元数据（标题/作者/摘要/分类/时间戳），依据 arXiv API 条款 —— e-print 元数据为 CC0 1.0。</p>
+    </article>
+  </div>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Table4_p9.png" alt="API surface"></div>
+    <figcaption>论文 Table 4（API 全表）。"Progressive access controls cost, while hybrid retrieval curates …" —— 这张表是判断它能否作为依赖使用的最直接材料，建议与本地 <code>assets/openapi_snapshot_2026-08-02.json</code> 对照，看线上实际接口是否还与论文一致。</figcaption>
+  </figure>
+</section>
+
+<section id="selfeval">
+  <h2>2 论文自评：注意它测的是什么</h2>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig2_p5.png" alt="DeepXiv 评测结果"></div>
+    <figcaption>论文 Fig. 2。(a) 50 条多约束查询上的 agentic 论文检索，报 Recall@1/10 与端到端延迟；(b) 47 条查询的 deep research QA，报工具成本与墙钟延迟。对比对象是 Google Scholar、Google Scholar Labs、PaSa agent、<b>ASTA</b> 等五个平台。</figcaption>
+  </figure>
+
+  <div class="key-insight">
+    <h3>这 50 条查询"每条只对应唯一一篇目标论文"</h3>
+    <p>论文原文：50 multi-constraint queries "each mapped to a <b>single</b> target paper (unique answer)"，指标是 <b>Recall@1/10</b>。也就是说，DeepXiv 自评的是<b>"把那一篇找出来"的导航式精度</b>任务。记住这一点 —— 第 5 节会看到，它在第三方评测里的"失败"其实主要是被换到了一个相反的任务口径上。</p>
+  </div>
+
+  <p>它自报的另一组数字是效率：相比"下载 PDF 再转 Markdown"的基线（8×A100，全流程 120m01s / 7.20s 每篇），DeepXiv 的端到端加速为 <b>54.6×（Local）/ 39.6×（Remote）</b>（warm 缓存）。deep research 侧的说法是"避免默认全文摄入、用结构化可按节寻址的接口替代脆弱的页面解析"，从而同时降工具成本与延迟。</p>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Table2_p6.png" alt="延迟表"></div>
+    <figcaption>论文 Table 2。1,000 个 arXiv ID、并发 16 下的平均延迟（Local vs Remote，cold vs warm）。这是它"近交互式"主张的依据。</figcaption>
+  </figure>
+</section>
+
+<section id="recognition">
+  <h2>3 认可度实测</h2>
+  <p class="lead">以下均为 2026-08-02/03 实测，非二手转述。</p>
+
+  <h3>学术侧：低</h3>
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <thead><tr><th>指标</th><th>数值</th><th>来源</th></tr></thead>
+    <tbody>
+      <tr><td>Semantic Scholar 引用</td><td><b>2</b></td><td>Graph API <code>paperId 6000f045…</code></td></tr>
+      <tr><td>S2 influential citations</td><td>0</td><td>同上</td></tr>
+      <tr><td>OpenAlex 引用</td><td>0（收录更滞后）</td><td><code>doi:10.48550/arXiv.2603.00084</code></td></tr>
+      <tr><td>venue</td><td><b>无</b>，OpenAlex type = preprint</td><td>同上</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="warning-note">
+    <p><strong>容易误解：</strong>DBLP 上的 <code>journals/corr/abs-2603-00084</code> 与 OpenReview 上的 "CoRR 2026" 条目<b>都不是发表记录</b>。CoRR = Computing Research Repository，即 arXiv 的 CS 分区；<code>journals</code> 只是 DBLP 的内部目录名，没有编委会、没有审稿。那个 2026 是<b>上传年份</b>。</p>
+  </div>
+
+  <h3>工程侧：明显更高</h3>
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <thead><tr><th>指标</th><th>数值</th></tr></thead>
+    <tbody>
+      <tr><td>GitHub stars / forks</td><td><b>763</b> / 42（MIT，创建 2026-02-08）</td></tr>
+      <tr><td>PyPI 下载</td><td>月 <b>8,683</b> · 周 1,893 · 日 152（v0.3.1，9 个 release）</td></tr>
+      <tr><td>分发渠道</td><td>PyPI + <b>conda-forge feedstock 已建</b></td></tr>
+      <tr><td>下游代码引用</td><td>约 20 个仓库，含 <code>ResearAI/DeepScientist</code>、多个 academic-MCP server、一批 Claude/OpenClaw skill 封装、<code>conda-forge/deepxiv-sdk-feedstock</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><span class="evidence inference">合理推断</span> 这个分裂不难解释：通讯作者 <b>Zheng Liu 是 BGE 系列作者</b>，该组开源工具自带用户基础；而工具类论文的引用天然滞后，且大量用户是直接 <code>pip install</code>，不会去引论文。</p>
+</section>
+
+<section id="citations">
+  <h2>4 两次引用的真实语境 —— 都不是背书</h2>
+  <p>两篇引用它的论文都<b>不是自引</b>，而且来自很强的组，这点是正面信号。但读了全文之后，语境是负面或中性的。</p>
+
+  <div class="card-grid">
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h3>ScholarQuest（中科大，2606.20235）→ 当 baseline 打</h3>
+      <p>§4.1 一句话把它与 Google/Google Scholar/S2 API 并列成"外部学术搜索系统"，附录 A.2 一行注释 "An external scientific literature search interface"，然后就是 Table 2 一行数字。<b>Related Work 零提及，正文没有任何一句讨论它的机制或结果。</b></p>
+      <p>成绩：R@25 <b>0.054（全表最低）</b> / R@100 0.138 / R@All 0.288。</p>
+      <p><b>最扎心的是</b>：ScholarQuest 自己造 benchmark 时用的是 arXiv API + Semantic Scholar API + serper，<b>没有用 DeepXiv</b>。一篇论文把某系统当 baseline 评测、却在需要可靠数据源时绕开它 —— 这比给个低分更能说明它在同行眼里的定位。</p>
+      <p><a href="../../Benchmark/ScholarQuest/ScholarQuest_精读与新颖性审计.html">→ 本地精读页</a></p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h3>SciAtlas（浙大，2605.22878）→ 当反面靶子</h3>
+      <p>两次引用都是裸 <code>\citep</code>，都紧跟同一句批评。Intro 原文：</p>
+      <blockquote><p>"Some deep-research-based agentic frameworks attempt to compensate for the deficiency of structured information through iterative knowledge search and integration [wispaper, <b>deepxiv</b>, alphaxiv, opensholar]."</p>
+      <p>"However, this approach not only incurs high computational costs and response latency but also, due to the absence of deterministic cognitive maps as anchors for LLMs, renders them highly susceptible to logical hallucinations…"</p></blockquote>
+      <p>§6.2 Related Work 同样结构、同样批评句。<b>不是数据源、不是对比系统、不在 pipeline 里</b> —— 纯粹是"迭代搜索路线成本高、延迟高、易幻觉"的论据支撑。</p>
+      <p><a href="../../Literature项目或者系统/简单/SciAtlas/SciAtlas_精读.html">→ 本地精读页</a></p>
+    </article>
+  </div>
+
+  <div class="critical-note">
+    <p><strong>没有任何一篇把它当基础设施依赖 ——</strong> 而这恰恰是论文自我定位（"agentic data interface"）最想要的那种认可。763 stars 和 8.7k/月下载在被下游 agent skill 生态消费，但学术论文在需要可靠数据源时选的是 arXiv API / S2 API / OpenAlex。</p>
+  </div>
+</section>
+
+<section id="profile">
+  <h2>5 关键反差：捞得到，但排不出来</h2>
+  <p>把两边的数字并排看，会得出一个两篇论文都没说的结论。</p>
+
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <thead><tr><th>评测</th><th>任务口径</th><th>金标规模</th><th>DeepXiv 表现</th></tr></thead>
+    <tbody>
+      <tr><td>论文自评（Fig. 2a）</td><td>导航式：找出<b>那一篇</b></td><td>每条查询 <b>1</b> 篇唯一答案</td><td>Recall@1/10 优于 Google Scholar / PaSa / ASTA，延迟显著更低</td></tr>
+      <tr><td>ScholarQuest（Table 2）</td><td>穷尽式：把<b>整个集合</b>找全</td><td>每条查询 <b>5–200</b> 篇</td><td>R@25 <b>0.054</b>（全表最低）、R@All <b>0.288</b>（≈ 稠密检索 0.290，是其他外部 API 的 2.5 倍）</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="key-insight">
+    <h3>它不是"检索能力差"，是被换到了相反的口径上 —— 但排序确实是真短板</h3>
+    <p><span class="evidence inference">合理推断</span> R@All 0.288 说明<b>它的 agent 确实把大量金标论文捞进了候选池</b>（召回能力接近专门的稠密检索）；R@25 0.054 说明<b>它完全没把它们排到前面</b>。这与它自评任务是"唯一答案 + Recall@1/10"高度一致：系统是为"命中那一篇"调的，不是为"枚举一个集合并排好序"调的。<br><br>但这不能全算脱罪。对一个主打"给 agent 用的数据接口"的系统，<b>排序失效是致命的</b> —— agent 的上下文装不下 300 篇，它必须依赖接口把最相关的放在前面。而且 scope-controlled（排除约束）那一档它的 R@25 是 <b>0.007</b>，接近完全失效。<br><br><span class="evidence audit">审计发现</span> ScholarQuest 对这个反差<b>一个字都没分析</b>；DeepXiv 自己的 Limitations 里也没有"排序 / 集合枚举"这一项。</p>
+  </div>
+</section>
+
+<section id="risk">
+  <h2>6 依赖风险：先验数据新鲜度</h2>
+  <div class="critical-note">
+    <p><strong>维护有放缓迹象。</strong>repo 最后一次 push 是 <b>2026-05-22</b>，PyPI 最新版 0.3.1 同日，至今约 2.5 个月无更新。而论文核心卖点之一是"arXiv 全量 + <b>每日同步</b>"以及"后续扩展 PubMed Central / bioRxiv"。一个宣称 daily sync 的托管服务停更两个多月 —— <b>如果要把它作为依赖，先自己验 <code>data.rag.ac.cn</code> 的数据新鲜度和接口可用性</b>，别信论文里的 daily。</p>
+  </div>
+
+  <div class="card-grid">
+    <article class="card">
+      <span class="evidence inference">定位建议</span>
+      <h3>不属于"包装"档</h3>
+      <p>有真服务、真 SDK、真用户，不是空仓库论文。但也不是方法创新 —— 是<b>基础设施 / 竞品交叉品</b>。</p>
+    </article>
+    <article class="card">
+      <span class="evidence inference">定位建议</span>
+      <h3>对 AutoSci 的意义</h3>
+      <p>是「文献数据接入层」的一个<b>可复用依赖</b>或需要对标的对象，而不是算法层面的对手。引用它成本很低、收益也低（引用数说明学界还没把它当必引基线）。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">注意</span>
+      <h3>真正的竞品在别处</h3>
+      <p>如果关心"给 agent 的标准化文献工具环境"这条线，参照点是 <a href="../../Benchmark/AstaBench/AstaBench_精读.html">AstaBench</a>（ICLR 2026, AI2）而不是 DeepXiv —— 不过 Asta 的语料<b>不可自托管</b>，两者各有硬约束。</p>
+    </article>
+  </div>
+
+  <div class="source-note">
+    <p><strong>证据等级说明。</strong><span class="evidence paper">论文声称</span> 来自本地 PDF 与 <code>assets/2603.00084_fulltext.md</code>；引用/下载/star 数为 2026-08-02 实测（Semantic Scholar Graph API、OpenAlex API、GitHub API、pypistats）；<span class="evidence audit">审计发现</span> 为对两篇施引论文全文（含 SciAtlas 的 LaTeX 源码，因其 arXiv HTML 参考文献渲染为空）逐句核对后的认定；<span class="evidence inference">合理推断</span> 为跨论文比较得出、两篇论文均未言明。</p>
+    <p><strong>提醒：</strong>引用数据库有 1–3 个月滞后，Google Scholar 口径通常略高于 S2（本次未能取到 GS 数据），故真实引用可能是个位数偏高一点，但不改变"引用尚未起量"的判断。</p>
+    <p><strong>归档日期</strong>：2026-08-03 · 论文版本 v2（2026-03-03）· <code>Fig*/Table*_p*.png</code> 由本地 PDF 按图注区域裁切；<code>fig1_architecture.png</code> / <code>fig2_evaluation.png</code> 为先前归档的同源图片。</p>
+  </div>
+</section>
+</main>
+
+</body>
+</html>

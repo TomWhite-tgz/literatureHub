@@ -1,0 +1,436 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>hf_aquila_mini_readme</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../../../index.html">← 返回总览</a><hr />
+<p>license: apache-2.0<br />
+base_model: Qwen/Qwen3.6-35B-A3B<br />
+pipeline_tag: text-generation<br />
+library_name: transformers<br />
+tags:<br />
+  - safetensors<br />
+  - qwen3.6<br />
+  - agentic-search</p>
+<hr />
+<div align="center">
+  <a href="https://xyz-lab.ai/">
+    <img src="../../../../../_未包含的内容.html" width="520" alt="XYZ AI Lab — We Build The Minds That Build" />
+  </a>
+</div>
+
+<h1 align="center">XYZ-Aquila-mini</h1>
+
+<p align="center"><strong>An open-weight thinking model for Deep Search.</strong></p>
+
+<p align="center">
+  <a href="https://xyz-lab.ai/"><img alt="Homepage" src="https://img.shields.io/badge/Homepage-XYZ%20AI%20Lab-111827?style=flat-square&logo=googlechrome&logoColor=white"></a>
+  <a href="https://xyz-lab.ai/demo/"><img alt="Demo AI4AI" src="https://img.shields.io/badge/Demo-AI4AI-0f766e?style=flat-square&logo=googlechrome&logoColor=white"></a>
+  <a href="https://xyz-lab.ai/try-it-out/"><img alt="Demo Search Agent" src="https://img.shields.io/badge/Demo-Search%20Agent-2563eb?style=flat-square&logo=googlechrome&logoColor=white"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/XYZ-AI-Lab"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-XYZ%20AI%20Lab-111827?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://huggingface.co/datasets/XYZAILab/XYZ-Aquila-SFT"><img alt="Data" src="https://img.shields.io/badge/Data-XYZ--Aquila--SFT-7c3aed?style=flat-square&logo=huggingface&logoColor=white"></a>
+  <a href="https://xyz-lab.ai/blogs/ai4ai-at-scale/assets/bounded-exploration-ai4ai-system-optimization.pdf"><img alt="Technical Report" src="https://img.shields.io/badge/Technical%20Report-PDF-b45309?style=flat-square&logo=readthedocs&logoColor=white"></a>
+</p>
+
+<h2>Introduction</h2>
+<p><strong>XYZ-Aquila</strong> is a family of open-weight Deep Search agents developed by <a href="https://xyz-lab.ai/">XYZ AI Lab</a>. XYZ-Aquila-mini is post-trained from <a href="https://huggingface.co/Qwen/Qwen3.6-35B-A3B">Qwen3.6-35B-A3B</a> through a bounded-exploration <strong>AI4AI</strong> pipeline: humans define the target capability, development evidence, constraints, risk boundaries, and acceptance policy, while AI agents diagnose failures and propose scoped interventions across data, post-training, runtime, context management, tools, evaluation, and infrastructure.</p>
+<p>The released checkpoint is a <strong>thinking model</strong> with Qwen-compatible reasoning and tool-call formats. It is optimized for agentic search, including long-horizon planning, English and Chinese web browsing, multi-source evidence aggregation, source verification, and recovery from failed environment interactions. The open-source <a href="https://github.com/XYZ-AI-Lab/AxisAgentic">AxisAgentic harness</a> provides the concrete <code>search</code> / <code>scrape</code> / <code>python</code> tool implementations, fixed tool contract, replayable context management, and benchmark evaluation workflow; these capabilities are supplied by the surrounding harness rather than by the checkpoint alone.</p>
+<h2>New Release</h2>
+<ul>
+<li>HuggingFace models: <a href="https://huggingface.co/XYZAILab/XYZ-Aquila-mini">XYZ-Aquila-mini</a> | <a href="https://huggingface.co/XYZAILab/XYZ-Aquila-pro">XYZ-Aquila-pro</a></li>
+<li>ModelScope models: <a href="https://modelscope.cn/models/XYZAILab/XYZ-Aquila-mini">XYZ-Aquila-mini</a> | <a href="https://modelscope.cn/models/XYZAILab/XYZ-Aquila-pro">XYZ-Aquila-pro</a></li>
+<li>Data: <a href="https://huggingface.co/datasets/XYZAILab/XYZ-Aquila-SFT">XYZ-Aquila-SFT</a></li>
+<li>Agent harness: <a href="https://github.com/XYZ-AI-Lab/AxisAgentic">AxisAgentic</a></li>
+</ul>
+<h2>Benchmark Results</h2>
+<p>The external benchmark suite was held out from routine AI4AI optimization. Following the technical report, evaluation uses a ReAct-style search harness with web search, webpage extraction, stateful Python execution, and a maximum 256K context. XYZ-Aquila-mini obtains the highest reported score in every column of the evaluated sub-40B open-weight comparison. XYZ-Aquila-pro obtains the highest reported score in every column of the evaluated sub-400B open-weight comparison.</p>
+<div align="center">
+  <img src="../../../../../_未包含的内容.html" width="100%" alt="XYZ-Aquila benchmark results across six agentic search benchmarks" />
+</div>
+
+<p>The figure provides a visual overview across six agentic search benchmarks. The tables below transpose the comparison: each row is a benchmark and each column is a model within the group.</p>
+<h3>Small-scale open-weight (&lt;40B)</h3>
+<p>Open-weight systems with fewer than 40B parameters, including XYZ-Aquila-mini.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Benchmark</th>
+<th align="right">XYZ-Aquila-mini</th>
+<th align="right">Agents-A1</th>
+<th align="right">Nex-N2-mini</th>
+<th align="right">apodex-mini</th>
+<th align="right">MiroThinker 1.7 mini</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">BrowseComp</td>
+<td align="right"><strong>78.8</strong></td>
+<td align="right">75.5</td>
+<td align="right">74.1</td>
+<td align="right">71.5</td>
+<td align="right">67.9</td>
+</tr>
+<tr>
+<td align="left">BrowseComp-ZH</td>
+<td align="right"><strong>82.9</strong></td>
+<td align="right">--</td>
+<td align="right">79.6†</td>
+<td align="right">80.6</td>
+<td align="right">--</td>
+</tr>
+<tr>
+<td align="left">DeepSearchQA</td>
+<td align="right"><strong>89.5</strong></td>
+<td align="right">--</td>
+<td align="right">87.2†</td>
+<td align="right">82.2</td>
+<td align="right">--</td>
+</tr>
+<tr>
+<td align="left">GAIA</td>
+<td align="right"><strong>97.1</strong></td>
+<td align="right">96.0</td>
+<td align="right">--</td>
+<td align="right">--</td>
+<td align="right">80.3</td>
+</tr>
+<tr>
+<td align="left">LiveBrowseComp</td>
+<td align="right"><strong>48.7</strong></td>
+<td align="right">29.6†</td>
+<td align="right">41.4†</td>
+<td align="right">32.8†</td>
+<td align="right">34.9†</td>
+</tr>
+<tr>
+<td align="left">HLE</td>
+<td align="right"><strong>51.1</strong></td>
+<td align="right">47.6</td>
+<td align="right">37.1†</td>
+<td align="right">46.8</td>
+<td align="right">36.4</td>
+</tr>
+<tr>
+<td align="left">WideSearch</td>
+<td align="right"><strong>80.8</strong></td>
+<td align="right">--</td>
+<td align="right">62.0</td>
+<td align="right">--</td>
+<td align="right">73.3†</td>
+</tr>
+</tbody>
+</table>
+<h3>Large-scale open-weight (&lt;400B)</h3>
+<p>Open-weight systems with fewer than 400B parameters, including XYZ-Aquila-pro.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Benchmark</th>
+<th align="right">XYZ-Aquila-pro</th>
+<th align="right">Nex-N2-Pro</th>
+<th align="right">MiroThinker 1.7</th>
+<th align="right">apodex-1.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">BrowseComp</td>
+<td align="right"><strong>84.8</strong></td>
+<td align="right">83.7†</td>
+<td align="right">74.0</td>
+<td align="right">75.5</td>
+</tr>
+<tr>
+<td align="left">BrowseComp-ZH</td>
+<td align="right"><strong>85.1</strong></td>
+<td align="right">79.6†</td>
+<td align="right">75.3</td>
+<td align="right">82.6</td>
+</tr>
+<tr>
+<td align="left">DeepSearchQA</td>
+<td align="right"><strong>92.5</strong></td>
+<td align="right">92.3†</td>
+<td align="right">--</td>
+<td align="right">84.6</td>
+</tr>
+<tr>
+<td align="left">LiveBrowseComp</td>
+<td align="right"><strong>53.7</strong></td>
+<td align="right">50.4†</td>
+<td align="right">34.1†</td>
+<td align="right">--</td>
+</tr>
+<tr>
+<td align="left">HLE</td>
+<td align="right"><strong>53.3</strong></td>
+<td align="right">50.0†</td>
+<td align="right">42.9</td>
+<td align="right">49.0</td>
+</tr>
+<tr>
+<td align="left">WideSearch</td>
+<td align="right"><strong>81.2</strong></td>
+<td align="right">75.6</td>
+<td align="right">--</td>
+<td align="right">--</td>
+</tr>
+</tbody>
+</table>
+<h3>XYZ-Aquila-pro vs. Larger-Scale and Closed-Source Models</h3>
+<p>XYZ-Aquila-pro compared with larger-scale open-weight and closed-source models.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Benchmark</th>
+<th align="right">XYZ-Aquila-pro</th>
+<th align="right">apodex-h1</th>
+<th align="right">DeepSeek-V4-<br>Pro-Max</th>
+<th align="right">Kimi-K2.6</th>
+<th align="right">Claude<br>Opus 4.7</th>
+<th align="right">GPT-5.5<br>xhigh</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">BrowseComp</td>
+<td align="right">84.8</td>
+<td align="right"><strong>90.3</strong></td>
+<td align="right">83.4</td>
+<td align="right">83.2</td>
+<td align="right">79.3</td>
+<td align="right">84.4</td>
+</tr>
+<tr>
+<td align="left">BrowseComp-ZH</td>
+<td align="right"><strong>85.1</strong></td>
+<td align="right">84.1</td>
+<td align="right">--</td>
+<td align="right">--</td>
+<td align="right">--</td>
+<td align="right">--</td>
+</tr>
+<tr>
+<td align="left">DeepSearchQA</td>
+<td align="right">92.5</td>
+<td align="right"><strong>94.4</strong></td>
+<td align="right">--</td>
+<td align="right">92.5</td>
+<td align="right">89.1</td>
+<td align="right">--</td>
+</tr>
+<tr>
+<td align="left">LiveBrowseComp</td>
+<td align="right"><strong>53.7</strong></td>
+<td align="right">--</td>
+<td align="right">38.3</td>
+<td align="right">31.7</td>
+<td align="right">--</td>
+<td align="right">--</td>
+</tr>
+<tr>
+<td align="left">HLE</td>
+<td align="right">53.3</td>
+<td align="right"><strong>60.8</strong></td>
+<td align="right">--</td>
+<td align="right">55.5</td>
+<td align="right">54.7</td>
+<td align="right">52.2</td>
+</tr>
+<tr>
+<td align="left">WideSearch</td>
+<td align="right"><strong>81.2</strong></td>
+<td align="right">--</td>
+<td align="right">--</td>
+<td align="right">80.8</td>
+<td align="right">--</td>
+<td align="right">--</td>
+</tr>
+</tbody>
+</table>
+<p>All values are percentages. HLE denotes Humanity's Last Exam. DeepSearchQA uses F1, WideSearch uses Item F1 Max@4, and the remaining benchmarks use accuracy. Rows with no reported result across an entire group are omitted; <code>--</code> indicates an unreported result within an otherwise populated row. <code>†</code> marks results reproduced under the common evaluation setup; other baseline values come from public reports or benchmark submissions. See the <a href="https://xyz-lab.ai/blogs/ai4ai-at-scale/assets/bounded-exploration-ai4ai-system-optimization.pdf">technical report</a> for full provenance and analysis.</p>
+<h2>Quickstart</h2>
+<h3>Install SGLang</h3>
+<p>We recommend <code>sglang&gt;=0.5.14</code> for XYZ-Aquila-mini.</p>
+<pre><code class="language-bash">uv pip install 'git+https://github.com/sgl-project/sglang.git#subdirectory=python&amp;egg=sglang[all]'
+</code></pre>
+<h3>SGLang Deployment</h3>
+<p>The example below launches an OpenAI-compatible endpoint with Qwen reasoning and tool-call parsers. It uses tensor parallelism across eight GPUs; reduce the tensor parallel size and context length if the deployment does not have enough memory.</p>
+<pre><code class="language-bash">MODEL_PATH=XYZAILab/XYZ-Aquila-mini
+SERVED_MODEL=XYZ-Aquila-mini
+
+python -m sglang.launch_server \
+  --model-path &quot;${MODEL_PATH}&quot; \
+  --served-model-name &quot;${SERVED_MODEL}&quot; \
+  --port 8000 \
+  --tp-size 8 \
+  --mem-fraction-static 0.8 \
+  --context-length 262144 \
+  --reasoning-parser qwen3 \
+  --tool-call-parser qwen3_coder
+</code></pre>
+<h3>Tool-Use Example</h3>
+<p>The following example sends a text-only research conversation with three tools to the SGLang OpenAI-compatible endpoint.</p>
+<pre><code class="language-python">import requests
+
+BASE_URL = &quot;http://localhost:8000/v1&quot;
+MODEL_NAME = &quot;XYZ-Aquila-mini&quot;
+
+SYSTEM_PROMPT = r&quot;&quot;&quot;You are a task-solving research agent with access to native structured tools.
+Use the tools step-by-step to answer the user's question accurately and completely.
+Today is: 2026-06-27
+
+# Tool-Use Rules
+
+- Use the function-calling interface to invoke tools. Do not write tool calls as plain text.
+- Call at most ONE tool per assistant turn. The next message will contain that tool's result; use it to decide your next step.
+- Only use tools declared in the provided tools schema.
+- Use web_search to discover relevant sources, verify facts, or find promising URLs.
+- Use scrape_and_extract_info to read a specific URL or extract focused facts from a page.
+- Prefer focused searches and focused extraction requests. Avoid repeating the same query or URL unless the previous result was unusable.
+- For source-grounded questions, do not rely only on search snippets when a page needs to be inspected.
+
+# Answering
+
+- When you have sufficient evidence, stop calling tools and provide the final answer wrapped in \boxed{}.
+- Follow the user's requested output format exactly.
+- Keep the boxed answer concise: a number, short phrase, or comma-separated list when appropriate.
+- Do not output a final prose response without \boxed{}.
+&quot;&quot;&quot;
+
+USER_PROMPT = r&quot;&quot;&quot;In the mythological literature of a certain northern European region, the parental figure of a specified character was joined in a legal and social union with a ruler whose title was derived from a specific tribal designation. The name of that tribe was also adopted as the identifier for a historical Continental kingdom, whose final independent sovereign fell in armed conflict against a nomadic steppe confederation in the latter half of the 5th century. The character in question administered a prepared liquid to a male subject who had, in the narrative, taken possession of a hoard of precious metal and crafted objects. The hoard's origin was a confrontation between a male figure and a winged, venomous creature that had once been a male member of a specific lineage. The administration of the liquid led to the subject developing an altered perception of a prior commitment of matrimony. The later consequence, directly flowing from this event, was the coerced marriage of the subject's sister to the leader of the aforementioned nomadic confederation. Provide the name recorded for the character who prepared and administered the liquid.
+Follow the request's format instructions strictly and wrap the final answer in \boxed{}.&quot;&quot;&quot;
+
+messages = [
+    {&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: SYSTEM_PROMPT},
+    {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: USER_PROMPT},
+]
+
+tools = [
+    {
+        &quot;type&quot;: &quot;function&quot;,
+        &quot;function&quot;: {
+            &quot;name&quot;: &quot;web_search&quot;,
+            &quot;description&quot;: &quot;Search the web using Google and return relevant results. Use this tool to find up-to-date information, verify facts, or discover URLs for further investigation.\n\nReturns structured search results including organic results, knowledge graph, and related questions.&quot;,
+            &quot;parameters&quot;: {
+                &quot;type&quot;: &quot;object&quot;,
+                &quot;properties&quot;: {
+                    &quot;query&quot;: {
+                        &quot;type&quot;: &quot;string&quot;,
+                        &quot;description&quot;: &quot;The search query string.&quot;,
+                    },
+                    &quot;num&quot;: {
+                        &quot;type&quot;: &quot;integer&quot;,
+                        &quot;description&quot;: &quot;Number of results to return (default: 10, max: 100).&quot;,
+                        &quot;default&quot;: 10,
+                    },
+                    &quot;hl&quot;: {
+                        &quot;type&quot;: &quot;string&quot;,
+                        &quot;description&quot;: &quot;Language code for results, e.g., 'en', 'zh', (ISO 639-1, default: 'en').&quot;,
+                        &quot;default&quot;: &quot;en&quot;,
+                    },
+                    &quot;gl&quot;: {
+                        &quot;type&quot;: &quot;string&quot;,
+                        &quot;description&quot;: &quot;Country code for localised results, e.g., 'us', 'gb', (ISO 3166-1 alpha-2, default: 'us').&quot;,
+                        &quot;default&quot;: &quot;us&quot;,
+                    },
+                },
+                &quot;required&quot;: [&quot;query&quot;],
+            },
+        },
+    },
+    {
+        &quot;type&quot;: &quot;function&quot;,
+        &quot;function&quot;: {
+            &quot;name&quot;: &quot;scrape_and_extract_info&quot;,
+            &quot;description&quot;: &quot;Fetch and read the contents of a web page, PDF, or other online document. Returns the page content as clean text. When 'info_to_extract' is provided, uses an LLM to extract only the relevant information from the page.\n\nUse this tool to read web pages found via web_search, examine documents, or access any URL-addressable content.&quot;,
+            &quot;parameters&quot;: {
+                &quot;type&quot;: &quot;object&quot;,
+                &quot;properties&quot;: {
+                    &quot;url&quot;: {
+                        &quot;type&quot;: &quot;string&quot;,
+                        &quot;description&quot;: &quot;The URL to scrape (web page, PDF, code file, etc.).&quot;,
+                    },
+                    &quot;info_to_extract&quot;: {
+                        &quot;type&quot;: &quot;string&quot;,
+                        &quot;description&quot;: &quot;What specific information to extract from the page. If provided, returns a focused extraction instead of the full page content. If omitted, returns the full page content.&quot;,
+                    },
+                },
+                &quot;required&quot;: [&quot;url&quot;],
+            },
+        },
+    },
+    {
+        &quot;type&quot;: &quot;function&quot;,
+        &quot;function&quot;: {
+            &quot;name&quot;: &quot;run_python_code&quot;,
+            &quot;description&quot;: &quot;Execute a self-contained snippet of Python code in a fresh, isolated sandbox and return its output.\n\nEach call runs in a brand-new sandbox with no memory of previous calls: include every import and define every variable you need inside `code`, and `print(...)` anything you want to read back. Use it for calculations, symbolic math (sympy), numeric work (numpy/scipy), data processing, and verifying intermediate results.\n\nArgs:\n    code: The complete Python source to execute.\n\nReturns:\n    The captured execution result (stdout, returned values, and any error/traceback).&quot;,
+            &quot;parameters&quot;: {
+                &quot;type&quot;: &quot;object&quot;,
+                &quot;properties&quot;: {
+                    &quot;code&quot;: {
+                        &quot;type&quot;: &quot;string&quot;,
+                        &quot;description&quot;: &quot;Self-contained Python code to execute. Print any value you want returned.&quot;,
+                    },
+                },
+                &quot;required&quot;: [&quot;code&quot;],
+            },
+        },
+    },
+]
+
+payload = {
+    &quot;model&quot;: MODEL_NAME,
+    &quot;messages&quot;: messages,
+    &quot;tools&quot;: tools,
+    &quot;temperature&quot;: 1.0,
+    &quot;top_p&quot;: 0.95,
+    &quot;repetition_penalty&quot;: 1.05,
+    &quot;max_tokens&quot;: 32768,
+    &quot;chat_template_kwargs&quot;: {
+        &quot;enable_thinking&quot;: True,
+        &quot;preserve_thinking&quot;: True,
+    },
+}
+
+response = requests.post(f&quot;{BASE_URL}/chat/completions&quot;, json=payload, timeout=1800)
+response.raise_for_status()
+result = response.json()
+</code></pre>
+<h3>Recommended Sampling Config</h3>
+<pre><code class="language-yaml">temperature: 1.0
+top_p: 0.95
+repetition_penalty: 1.05
+max_tokens: 32768
+chat_template_kwargs:
+  enable_thinking: true
+  preserve_thinking: true
+</code></pre>
+<h2>Citation</h2>
+<pre><code class="language-bibtex">@techreport{xyz_aquila_2026,
+  title       = {AI4AI at Scale: A Full-Pipeline System for Enhancing LLM Agentic Capabilities},
+  author      = {{XYZ Agentic Team}},
+  institution = {XYZ AI Lab},
+  year        = {2026},
+  url         = {https://xyz-lab.ai/blogs/ai4ai-at-scale/assets/bounded-exploration-ai4ai-system-optimization.pdf}
+}
+</code></pre><footer>由 <code>Literature项目或者系统/待归档/XYZ_AI_Lab_Aquila_研究档案_2026-07-31/sources/metadata/hf_aquila_mini_readme.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

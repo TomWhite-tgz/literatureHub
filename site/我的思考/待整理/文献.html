@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>文献</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../index.html">← 返回总览</a><h1>偏功能产品</h1>
+<ol>
+<li>
+<p>“文献综合型”工具<br />
+- OpenScholar（开源）<br />
+- Elicit <br />
+  - 目前最主流的学术 lit review 工具之一。支持自然语言提问、自动提取方法/结果/样本等结构化信息，可生成表格对比、系统综述流程<br />
+  - 商业产品，覆盖更广（含部分付费文献摘要），结构化提取更强；OpenScholar 更强调开源 + 引用准确性<br />
+- Consensus<br />
+  - 专注从同行评议论文中提取“科学共识”答案，回答偏 yes/no + 证据强度<br />
+  - 更侧重“共识判断”，回答更短，综合深度不如 OpenScholar<br />
+- PaperQA2（FutureHouse）<br />
+  - 开源 agent 系统，能自主完成文献检索、证据收集、总结，甚至找文献矛盾。曾宣称在部分任务上达到/超过人类专家水平<br />
+  - 更 agent 化（多步工具调用），开源；OpenScholar 当时在 ScholarQABench 上与它对比过<br />
+- Ai2 Asta（及 Paper Finder）<br />
+  - Allen AI 自己后续推出的 agentic 科学助手，覆盖 1 亿+ 摘要和 1200 万+ 全文<br />
+  - OpenScholar 的直接“下一代”，功能更全面，属于同一机构后续产品<br />
+- DR Tulu（Deep Research Tulu）<br />
+  - Allen AI 的开源长文深度研究模型/配方，专为多步检索 + 长报告设计<br />
+  - 也是 Ai2 体系后续工作，更强调 deep research agent</p>
+</li>
+<li>
+<p>搜索 + 可视化/网络类工具<br />
+- Semantic Scholar（Ai2）：免费学术搜索引擎，有 AI TLDR、引用上下文、Semantic Reader。是 OpenScholar 数据的重要来源之一。<br />
+- Connected Papers / ResearchRabbit / Litmaps：以可视化方式展示论文引用网络和演进关系，适合“从一篇核心论文向外扩展”。<br />
+- Scite：侧重引用意图分析（支持/反对/提及），帮助判断文献被如何引用。</p>
+</li>
+<li>
+<p>通用 AI 搜索中的学术模式<br />
+- Perplexity（Academic / Deep Research 模式）：实时搜索 + 引用，Deep Research 会多步迭代生成报告。覆盖面广，但学术深度和引用严格性通常不如专用工具。<br />
+- ChatGPT / Claude / Gemini 的 Deep Research 或学术插件：通用能力强，但引用幻觉问题更明显，需要人工严格核实。</p>
+</li>
+</ol>
+<h1>Literature论文版图</h1>
+<p>能力层              代表工作                                        核心问题<br />
+  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━<br />
+   找到相关论文        LitSearch、PaSa、SAGE、AutoResearchBench        应该检索哪些论文，是否找全<br />
+  ──────────────────  ──────────────────────────────────────────────  ────────────────────────────────────────────<br />
+   找到正确引用        CiteME / CiteAgent                              某个科学论述来自哪篇论文<br />
+  ──────────────────  ──────────────────────────────────────────────  ────────────────────────────────────────────<br />
+   读懂单篇全文        QASPER、SPIQA、LitQA3                           能否在全文、图表中定位答案<br />
+  ──────────────────  ──────────────────────────────────────────────  ────────────────────────────────────────────<br />
+   多篇综合            OpenScholar、PaperQA2、Ai2 Scholar QA、STORM    能否写出全面、有组织、有引用的报告<br />
+  ──────────────────  ──────────────────────────────────────────────  ────────────────────────────────────────────<br />
+   多工具科学 Agent    PaperArena、AstaBench、LABBench2                能否搜索、读 PDF、看图表、计算、操作数据库<br />
+  ──────────────────  ──────────────────────────────────────────────  ────────────────────────────────────────────<br />
+   理解论文关系        SciNetBench                                     支持、反驳、继承、技术演化关系<br />
+  ──────────────────  ──────────────────────────────────────────────  ────────────────────────────────────────────<br />
+   开放世界深度研究    DeepResearch Bench、AutoResearchBench           目标论文集合未知时，能否找得完整并合理停止</p>
+<h2>1. 其他相关的工作</h2>
+<ul>
+<li>STORM / Co-STORM: 长篇知识报告生成框架。</li>
+<li>LitSearch纯粹评测“能不能找对论文”，分为broad query / specific query</li>
+<li>PaSa: 通过强化学习训练“找论文”的Agent</li>
+<li>Ai2 Scholar QA / Asta : 在Openscholar之后更加工程化的开放系统</li>
+<li>PaperArena</li>
+<li>AutoResearchBench</li>
+<li>SciNetBench</li>
+</ul><footer>由 <code>我的思考/待整理/文献.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>深读评价</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../index.html">← 返回总览</a><h1>PaperPilot 深读评价（2026-08-02）</h1>
+<p><strong>分类：包装的好看（工程外壳真实，科学内核虚——三大论文卖点在代码层面全部失守）。</strong></p>
+<ul>
+<li>论文：arXiv:2607.00597v2</li>
+<li>深读方式：论文全文 + 核心代码路径（27,492 行 Python 中的方法核心 ~7.9k 行 + plot/eval 脚本）</li>
+</ul>
+<h2>三大卖点逐一失守</h2>
+<h3>1. "工作流归纳 (workflow induction)" 实为模板抄写</h3>
+<ul>
+<li>DAG 由 LLM <strong>一次 complete_json 调用</strong>直接产出（<code>core/agents/symbolic_agent/runtime/agent.py:151-296</code>），无搜索/程序合成/学习过程。</li>
+<li>System prompt 明确要求 <strong>"mirroring the reference DAG below for this direction"</strong>（<code>runtime/agent_prompt.py:97-107</code>）；参考对象是 <code>references/</code> 下 <strong>36 份人工迭代调优的 JSON 模板</strong>（meta 带十几轮手工调参记号）。</li>
+<li>多轮"自发分阶段行为"（论文 Fig.3）相当程度是 prompt 硬约束的产物（"FIRST ask MUST be about year range"、min_turns/min_asks 门控强制不许提前 finalize）。</li>
+</ul>
+<h3>2. "偏好优化"训练代码 0 行</h3>
+<ul>
+<li>论文声称 5,540 条 SFT + 1,733 偏好对 + IPO 式 DPO（附录 C.6 给了超参）；<code>training/</code> 只有 coming soon README，全库 grep 不到任何相关代码。评测 runner (<code>run_eval.py</code>)、用户模拟器、leak-checker 同样缺失；评测数据 "distribute on request"。</li>
+</ul>
+<h3>3. 主表数字三重硬伤</h3>
+<ul>
+<li><strong>两行 baseline 被外置 JSON 覆盖</strong>：<code>plot/0509_multimodel/build_main_table.py:90-109</code> 交代——本地 v8 框架重跑 Qwen3.5-397B(Workflow) 两行 Hit@1 都只有 17.0，论文用的是 v6 框架的 40.0/57.0，且 "We do not have the v6 trajectories locally"。同配置换框架版本结果崩一半 → 整表可信度存疑；Figure 4"多轮精炼提升"最大涨幅恰是这对不可复现数字。</li>
+<li><strong>旗舰 PaperPilot-9B 行是硬编码的</strong>（<code>build_main_table.py:16-18,83-88</code>，raw trajectory not locally available），且 <strong>forced_finalize = 99.5%</strong>（199/200 case 被强制终局），代码注释称 "intentional artifact, ignored per project convention"，论文只报 "err 9.5%→0%" 未披露强转机制。</li>
+<li><strong>成本 19 倍改写</strong>：实录 $0.343/case 以 "cost_tracker fallback-price bug" 为由改成 $0.018（<code>plot_paper_figures.py:126-130</code>，上文还留着 "TODO confirm" 占位）；论文"比 DeepResearch 便宜两个数量级"建立在此之上。</li>
+</ul>
+<h2>其他</h2>
+<ul>
+<li>与 PaSa <strong>没有任何实验比较</strong>（仅出现在勾叉表）；评测集自建 200-case；检索配额不对齐（自己每 case 从 S2 免费拉 4千-1万篇候选，成本只算 agent token）。</li>
+<li>operator 数量三处口径不一：论文 17 / 代码 ~25 / README "~50"。</li>
+<li>27.5k 行构成：方法核心 ~7.9k（其中 ~2k 是 prompt 文本），api/ui/clients/observability/plot 等工程外壳约 2/3。</li>
+</ul>
+<h2>唯一真实的亮点</h2>
+<p><strong>结构化 DAG 编辑机制是真实现</strong>（非重新 prompt）：<code>modify_dag</code> 输出操作列表（replace_node/add_node/set_param...），<code>apply_operations()</code> 深拷贝原子应用（<code>runtime/planner.py:103-161</code>）+ 结构/枚举校验器 + 失败带错误信号重试。加上拓扑排序并行执行器和 ~25 个类型化 operator，约 5k 行是体面的可跑工程——四篇中唯一真正的"多轮反馈结构化修改"实现。</p><footer>由 <code>Literature项目或者系统/包装的好看/PaperPilot/深读评价.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

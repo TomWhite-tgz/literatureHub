@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InternAgent 源码演化史：从 NovelSeek 到 1.5 与最新 main</title>
+  <style>
+    :root{
+      --bg:#f4f6fb;--paper:#fff;--ink:#172033;--muted:#647089;--line:#dfe5f0;
+      --blue:#3157d5;--blue2:#eaf0ff;--violet:#7653d6;--green:#16866b;
+      --orange:#c56526;--red:#b4474f;--code:#17233c;--shadow:0 12px 35px rgba(39,55,91,.09)
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.72}
+    a{color:var(--blue);text-decoration:none}
+    a:hover{text-decoration:underline}
+    code{font-family:"SFMono-Regular",Consolas,monospace;background:#edf1f8;padding:.12rem .34rem;border-radius:5px;color:#344360}
+    .top{position:sticky;top:0;z-index:20;background:rgba(244,246,251,.92);backdrop-filter:blur(14px);border-bottom:1px solid rgba(210,218,233,.9)}
+    .top-inner{max-width:1180px;margin:auto;padding:12px 28px;display:flex;gap:18px;align-items:center;overflow-x:auto;white-space:nowrap}
+    .top .brand{font-weight:800;color:var(--ink);margin-right:auto}
+    .top a{font-size:.88rem;color:#536078}
+    .wrap{max-width:1180px;margin:auto;padding:48px 28px 80px}
+    .hero{background:linear-gradient(135deg,#162443 0%,#2e4fb8 58%,#7457d5 100%);color:#fff;border-radius:24px;padding:50px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .hero:after{content:"";position:absolute;width:330px;height:330px;border-radius:50%;right:-110px;top:-140px;background:rgba(255,255,255,.1)}
+    .eyebrow{font-size:.78rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;opacity:.74}
+    h1{font-size:clamp(2.2rem,5vw,4rem);line-height:1.08;letter-spacing:-.045em;margin:14px 0 18px;max-width:900px}
+    .hero .lead{font-size:1.14rem;max-width:900px;color:#e7ecff;margin:0}
+    .hero strong{color:#fff}
+    .hero-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+    .hero-links a{padding:9px 15px;border-radius:999px;color:#fff;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.1);font-size:.88rem}
+    .verdict{margin:24px 0 0;padding:17px 20px;border-radius:13px;background:rgba(12,24,54,.32);border-left:4px solid #91ffd8;max-width:940px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:22px 0 48px}
+    .stat{background:var(--paper);border:1px solid var(--line);border-radius:15px;padding:19px;box-shadow:0 4px 16px rgba(39,55,91,.04)}
+    .stat .n{font-size:1.65rem;font-weight:850;color:var(--blue);line-height:1.15}
+    .stat .l{font-size:.82rem;color:var(--muted);margin-top:6px}
+    h2{font-size:1.85rem;letter-spacing:-.025em;margin:56px 0 20px}
+    h3{font-size:1.2rem;margin:0 0 8px}
+    .sublead{color:var(--muted);max-width:900px;margin-top:-9px}
+    .note{background:#fff8e8;border:1px solid #f0dba8;border-left:5px solid #d59825;border-radius:12px;padding:17px 20px;margin:18px 0}
+    .note.blue{background:#eef3ff;border-color:#cedaff;border-left-color:var(--blue)}
+    .note.green{background:#eaf8f3;border-color:#c8eadc;border-left-color:var(--green)}
+    .timeline{position:relative;margin:32px 0}
+    .timeline:before{content:"";position:absolute;left:20px;top:8px;bottom:8px;width:3px;background:linear-gradient(var(--blue),var(--violet))}
+    .event{position:relative;margin:0 0 18px;padding-left:62px}
+    .dot{position:absolute;left:8px;top:22px;width:27px;height:27px;border-radius:50%;background:var(--paper);border:7px solid var(--blue);box-shadow:0 0 0 5px var(--bg)}
+    .event.major .dot{border-color:var(--violet)}
+    .event.latest .dot{border-color:var(--green)}
+    .event-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:23px 25px;box-shadow:0 5px 20px rgba(39,55,91,.045)}
+    .event-head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+    .date{color:var(--blue);font-weight:800;font-size:.83rem;letter-spacing:.03em}
+    .tag{display:inline-block;padding:2px 9px;border-radius:999px;background:var(--blue2);color:var(--blue);font-size:.74rem;font-weight:750}
+    .tag.violet{background:#f0ebff;color:var(--violet)}
+    .tag.green{background:#e5f7f0;color:var(--green)}
+    .event p{margin:8px 0 0;color:#46536b}
+    .event ul{margin:10px 0 0;padding-left:20px;color:#46536b}
+    .event li{margin:4px 0}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    .card{background:var(--paper);border:1px solid var(--line);border-radius:15px;padding:22px;box-shadow:0 4px 18px rgba(39,55,91,.04)}
+    .card .k{font-size:.76rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:5px}
+    .card p{margin:0;color:#4b5870}
+    .card ul{margin:8px 0 0;padding-left:20px;color:#4b5870}
+    .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:stretch;margin:20px 0}
+    .flow .box{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:16px;text-align:center;font-size:.9rem}
+    .flow .box b{display:block;color:var(--blue);font-size:1rem;margin-bottom:4px}
+    .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--paper);box-shadow:0 4px 18px rgba(39,55,91,.04)}
+    table{width:100%;border-collapse:collapse;min-width:850px;font-size:.87rem}
+    table.rcb-table{min-width:0;table-layout:fixed}
+    .rcb-table th:nth-child(1){width:14%}
+    .rcb-table th:nth-child(2){width:52%}
+    .rcb-table th:nth-child(3){width:34%}
+    .rcb-table td{overflow-wrap:anywhere}
+    th{text-align:left;background:#eef2f9;color:#33405a;padding:12px 13px;border-bottom:1px solid var(--line)}
+    td{padding:12px 13px;border-bottom:1px solid #e8edf5;vertical-align:top;color:#46536b}
+    tr:last-child td{border-bottom:0}
+    td:first-child{font-weight:750;color:var(--ink)}
+    .scale{display:grid;grid-template-columns:190px 1fr 130px;gap:12px;align-items:center;margin:11px 0}
+    .scale .label{font-size:.88rem;font-weight:700}
+    .track{height:13px;background:#e8edf5;border-radius:999px;overflow:hidden}
+    .bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--violet));border-radius:999px;min-width:3px}
+    .value{text-align:right;font-size:.83rem;color:var(--muted);font-variant-numeric:tabular-nums}
+    .split{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin:19px 0}
+    .split .part{border-radius:14px;padding:18px;color:#fff}
+    .split .part:nth-child(1){background:#3157d5}
+    .split .part:nth-child(2){background:#7653d6}
+    .split .part:nth-child(3){background:#16866b}
+    .split .big{font-size:1.55rem;font-weight:850}
+    .split .small{font-size:.79rem;opacity:.84}
+    .commit-list{display:grid;gap:9px}
+    .commit{display:grid;grid-template-columns:110px 95px 1fr;gap:14px;align-items:start;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font-size:.85rem}
+    .commit .hash{font-family:monospace;color:var(--blue);font-weight:700}
+    .commit .when{color:var(--muted)}
+    .commit .what{color:#46536b}
+    .footer{margin-top:58px;border-top:1px solid var(--line);padding-top:24px;color:var(--muted);font-size:.84rem}
+    @media(max-width:850px){
+      .hero{padding:34px 25px}.stats,.grid,.flow,.split{grid-template-columns:1fr 1fr}
+      .scale{grid-template-columns:120px 1fr}.scale .value{grid-column:2;text-align:left}
+      .commit{grid-template-columns:90px 1fr}.commit .what{grid-column:1/-1}
+    }
+    @media(max-width:560px){
+      .wrap{padding:28px 15px 60px}.top-inner{padding:10px 15px}.stats,.grid,.flow,.split{grid-template-columns:1fr}
+      .hero{border-radius:17px}.timeline:before{left:13px}.event{padding-left:43px}.dot{left:1px}
+      table.rcb-table{min-width:700px;table-layout:auto}
+    }
+  </style>
+  <style id="warm-paper-theme">
+    /* Visual language adapted from PAPER_READING_TEMPLATE.html:
+       warm paper, restrained cards, rust accent, clear evidence hierarchy. */
+    :root{
+      --bg:#f7f4ef;
+      --paper:#fff;
+      --ink:#1f2421;
+      --muted:#5c635d;
+      --line:#e7e1d7;
+      --blue:#355f78;
+      --blue2:#edf4f7;
+      --violet:#934958;
+      --green:#315b45;
+      --orange:#c4612f;
+      --red:#934958;
+      --code:#1f2421;
+      --panel:#fbf9f5;
+      --accent:#c4612f;
+      --accent-dark:#a94e22;
+      --accent-pale:#f2e3d6;
+      --green-pale:#edf2ee;
+      --blue-pale:#edf4f7;
+      --warning:#8a641c;
+      --warning-pale:#fff7e6;
+      --danger-pale:#fff0f2;
+      --shadow:0 2px 8px rgba(31,36,33,.06)
+    }
+    body{
+      background:var(--bg);
+      color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+      font-size:16px;
+      line-height:1.72
+    }
+    a{color:var(--accent-dark)}
+    code{
+      color:var(--accent-dark);
+      background:var(--accent-pale);
+      border-radius:4px;
+      padding:2px 5px;
+      font-size:.88em
+    }
+    .top{
+      position:sticky;
+      top:0;
+      z-index:20;
+      padding:10px 14px 0;
+      border:0;
+      background:linear-gradient(var(--bg) 76%,rgba(247,244,239,0));
+      backdrop-filter:none
+    }
+    .top-inner{
+      width:min(920px,100%);
+      margin:0 auto;
+      padding:10px;
+      gap:5px;
+      justify-content:center;
+      border:1px solid rgba(231,225,215,.92);
+      border-radius:16px;
+      background:rgba(247,244,239,.94);
+      box-shadow:0 8px 24px rgba(31,36,33,.06);
+      backdrop-filter:blur(10px)
+    }
+    .top .brand{
+      margin:0 8px 0 0;
+      color:var(--accent-dark);
+      font-size:.83rem;
+      font-weight:700
+    }
+    .top a{
+      padding:6px 9px;
+      border-radius:999px;
+      color:var(--muted);
+      font-size:.79rem;
+      font-weight:620
+    }
+    .top a:hover{color:var(--accent-dark);background:var(--accent-pale);text-decoration:none}
+    .wrap{
+      width:min(920px,calc(100% - 44px));
+      max-width:none;
+      margin:0 auto;
+      padding:42px 18px 76px
+    }
+    .hero{
+      position:relative;
+      overflow:visible;
+      padding:18px 0 34px;
+      border-bottom:1px solid var(--line);
+      border-radius:0;
+      color:var(--ink);
+      background:transparent;
+      box-shadow:none;
+      text-align:center
+    }
+    .hero:after{display:none}
+    .eyebrow{
+      margin-bottom:10px;
+      color:var(--muted);
+      font-size:.75rem;
+      font-weight:720;
+      letter-spacing:.08em;
+      opacity:1
+    }
+    h1{
+      max-width:780px;
+      margin:0 auto 14px;
+      color:var(--ink);
+      font-size:clamp(2.35rem,7vw,3.25rem);
+      font-weight:670;
+      letter-spacing:-.035em;
+      line-height:1.08
+    }
+    .hero .lead{
+      max-width:760px;
+      margin:0 auto;
+      color:var(--muted);
+      font-size:1.08rem;
+      font-weight:360
+    }
+    .hero strong{color:var(--ink);font-weight:660}
+    .hero-links{justify-content:center;gap:8px;margin-top:22px}
+    .hero-links a{
+      padding:7px 13px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      color:var(--accent-dark);
+      background:var(--panel);
+      font-size:.84rem;
+      font-weight:620
+    }
+    .hero-links a:first-child{border-color:var(--accent);color:#fff;background:var(--accent)}
+    .hero-links a:hover{box-shadow:var(--shadow);transform:translateY(-1px);text-decoration:none}
+    .verdict{
+      max-width:780px;
+      margin:27px auto 0;
+      padding:20px 23px;
+      border:0;
+      border-left:4px solid var(--accent);
+      border-radius:5px;
+      color:#343b37;
+      background:var(--panel);
+      box-shadow:var(--shadow);
+      text-align:left
+    }
+    .stats{gap:12px;margin:24px 0 48px}
+    .stat{
+      padding:18px;
+      border:1px solid var(--line);
+      border-radius:8px;
+      background:var(--panel);
+      box-shadow:var(--shadow)
+    }
+    .stat .n{color:var(--accent);font-size:1.48rem;font-weight:680}
+    .stat .l{color:var(--muted);font-weight:360}
+    h2{
+      margin:56px 0 24px;
+      padding-bottom:11px;
+      border-bottom:2px solid var(--accent);
+      color:var(--ink);
+      font-size:1.78rem;
+      font-weight:630;
+      letter-spacing:-.02em;
+      line-height:1.3
+    }
+    h3{color:var(--accent);font-size:1.18rem;font-weight:630}
+    .sublead{max-width:800px;color:var(--muted);font-weight:360}
+    .note{
+      margin:22px 0;
+      padding:20px 23px;
+      border:0;
+      border-left:4px solid var(--warning);
+      border-radius:5px;
+      color:#4a4334;
+      background:var(--warning-pale);
+      box-shadow:var(--shadow)
+    }
+    .note.blue{border-color:var(--blue);background:var(--blue-pale)}
+    .note.green{border-color:var(--green);background:var(--green-pale)}
+    .timeline{margin:30px 0}
+    .timeline:before{
+      left:18px;
+      width:2px;
+      background:linear-gradient(var(--accent),#dca47d,var(--green))
+    }
+    .event{padding-left:55px;margin-bottom:16px}
+    .dot{
+      left:8px;
+      top:23px;
+      width:21px;
+      height:21px;
+      border:5px solid var(--accent);
+      background:var(--paper);
+      box-shadow:0 0 0 5px var(--bg)
+    }
+    .event.major .dot{border-color:var(--accent-dark)}
+    .event.latest .dot{border-color:var(--green)}
+    .event-card{
+      padding:22px 24px;
+      border:1px solid var(--line);
+      border-radius:8px;
+      background:var(--panel);
+      box-shadow:var(--shadow)
+    }
+    .date{color:var(--accent-dark);font-weight:700}
+    .tag{color:var(--accent-dark);background:var(--accent-pale);font-weight:650}
+    .tag.violet{color:var(--danger);background:var(--danger-pale)}
+    .tag.green{color:var(--green);background:var(--green-pale)}
+    .event p,.event ul,.card p,.card ul,.commit .what{color:#4f5752;font-weight:360}
+    .grid{gap:15px}
+    .card{
+      padding:21px 23px;
+      border:1px solid var(--line);
+      border-radius:8px;
+      background:var(--panel);
+      box-shadow:var(--shadow)
+    }
+    .card .k{color:var(--accent);font-weight:720}
+    .flow{gap:10px;margin:24px 0}
+    .flow .box{
+      padding:17px 13px;
+      border:1px solid var(--line);
+      border-radius:8px;
+      background:var(--panel);
+      box-shadow:var(--shadow)
+    }
+    .flow .box b{color:var(--accent)}
+    .table-wrap{
+      border:0;
+      border-radius:8px;
+      background:var(--panel);
+      box-shadow:var(--shadow)
+    }
+    th{
+      padding:13px 15px;
+      border:0;
+      color:#fff;
+      background:var(--accent);
+      font-size:.88rem;
+      font-weight:620
+    }
+    td{
+      padding:13px 15px;
+      border-bottom:1px solid var(--line);
+      color:#4f5752;
+      font-weight:360
+    }
+    td:first-child{color:var(--ink);font-weight:590}
+    .track{height:11px;background:#ebe5dc}
+    .bar{background:linear-gradient(90deg,var(--accent),#d79a72)}
+    .scale .label{font-weight:620}
+    .split{gap:12px;margin:22px 0}
+    .split .part{border-radius:8px;padding:19px;box-shadow:var(--shadow)}
+    .split .part:nth-child(1){background:linear-gradient(135deg,var(--accent),var(--accent-dark))}
+    .split .part:nth-child(2){background:var(--green)}
+    .split .part:nth-child(3){background:var(--blue)}
+    .split .big{font-weight:680}
+    .commit{border-color:var(--line);border-radius:7px;background:var(--panel)}
+    .commit .hash{color:var(--accent-dark)}
+    .footer{margin-top:72px;padding-top:28px;text-align:center}
+    @media(max-width:850px){
+      .top .brand{display:none}
+      .wrap{width:min(100% - 28px,920px);padding:32px 8px 56px}
+      .hero{padding-top:10px}
+      .stats{grid-template-columns:1fr 1fr}
+    }
+    @media(max-width:560px){
+      .top{position:static;padding-top:8px}
+      .top-inner{border-radius:10px;justify-content:flex-start}
+      .stats,.grid,.flow,.split{grid-template-columns:1fr}
+      .timeline:before{left:11px}
+      .event{padding-left:39px}
+      .dot{left:1px}
+      h2{margin-top:46px;font-size:1.55rem}
+    }
+    @media print{
+      .top{display:none}
+      body{background:#fff}
+      .wrap{width:100%;padding:24px}
+      .card,.event-card,.stat,.table-wrap{box-shadow:none}
+      table.rcb-table{min-width:0;table-layout:fixed}
+    }
+  </style>
+</head>
+<body>
+  <nav class="top">
+    <div class="top-inner">
+      <span class="brand">InternAgent · 源码演化史</span>
+      <a href="#timeline">时间线</a>
+      <a href="#versions">版本对照</a>
+      <a href="#v15">1.5 大改</a>
+      <a href="#rcb">ResearchClawBench</a>
+      <a href="#tags">标签陷阱</a>
+      <a href="#evidence">提交证据</a>
+      <a href="../README.html">返回总索引</a>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <header class="hero">
+      <div class="eyebrow">Git history reconstructed · 2026-07-27</div>
+      <h1>InternAgent 的源码<br>到底经历了什么？</h1>
+      <p class="lead">从 <strong>NovelSeek 的成果展示仓库</strong>，到早期 <strong>Dolphin 脚本流水线</strong>，再到 1.0 的 <strong>多 Agent 状态机</strong>，最后扩展为 1.5 的 <strong>长程科研平台</strong>。这里把“论文发布”“代码开源”和“Git 标签”拆开来看。</p>
+      <div class="hero-links">
+        <a href="../源码/InternAgent/README.html">当前源码 README</a>
+        <a href="../源码/InternAgent/INDEX.html">源码导航</a>
+        <a href="../论文/InternAgent-1.0_arXiv-2505.16938.pdf">1.0 论文</a>
+        <a href="../论文/InternAgent-1.5_arXiv-2602.08990.pdf">1.5 报告</a>
+        <a href="https://github.com/InternScience/InternAgent">官方 GitHub</a>
+      </div>
+      <div class="verdict"><strong>一句话结论：</strong>它的主轴一直是“想法 → 实验 → 反馈”，1.0 把这条线工程化为可配置 MAS；1.5 没有推翻 1.0，而是为它加上跨轮次记忆、Deep Research、论文复现、MCP、MCTS 与多种执行后端。</div>
+    </header>
+
+    <section class="stats" aria-label="仓库快照">
+      <div class="stat"><div class="n">47</div><div class="l">Git 可见提交，完整历史已补齐</div></div>
+      <div class="stat"><div class="n">2025-05-16</div><div class="l">最早可见提交：NovelSeek</div></div>
+      <div class="stat"><div class="n">v1.5.0</div><div class="l">最新正式标签，2026-05-07</div></div>
+      <div class="stat"><div class="n">b8a9e81</div><div class="l">当前 main，2026-06-10</div></div>
+    </section>
+
+    <section id="timeline">
+      <h2>一条真正可用的时间线</h2>
+      <p class="sublead">“开始、1.0、1.5、最新”并不是四个相邻 commit。中间存在改名、部分开源、报告先发而代码后发，以及标签命名不完全对应产品版本等情况。</p>
+
+      <div class="timeline">
+        <article class="event">
+          <span class="dot"></span>
+          <div class="event-card">
+            <div class="event-head"><span class="date">2025-05-16</span><span class="tag">NovelSeek 起点</span><code>4e4bb81</code></div>
+            <h3>最初是“成果与任务样例仓库”，还不是通用框架</h3>
+            <p>最早可见树只有 <code>README.md</code>、<code>images/</code> 和 <code>examples/</code>：462 个文件、268 个 Python 文件几乎全部属于具体任务样例。没有 <code>internagent/</code>，也没有统一启动入口。</p>
+            <ul>
+              <li>名称仍是 <strong>NovelSeek</strong>。</li>
+              <li>重点是展示 12 类科研任务和生成出来的模型/实验结果。</li>
+              <li>这只能视为 Git 可见的起点，不能代表团队内部开发的真正起点。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="event">
+          <span class="dot"></span>
+          <div class="event-card">
+            <div class="event-head"><span class="date">2025-05-16 → 07-22</span><span class="tag">早期可运行代码</span><code>ecc3daf / bf3ae1c</code></div>
+            <h3>加入 Dolphin 式脚本流水线，并完成 NovelSeek → InternAgent 改名</h3>
+            <p>同日后续提交新增 <code>launch_dolphin.py</code>、<code>dolphin_utils/</code>、文献 RAG、idea generation、实验执行与若干可运行任务。官方 README 记载 7 月 10 日改名、7 月 17 日部分开源；7 月 22 日的 Git 树仍把它称为“early version, Dolphin”。</p>
+            <ul>
+              <li>统一入口是 267 行的 <code>launch_dolphin.py</code>。</li>
+              <li>文献能力位于 <code>dolphin_utils/rag_tools/</code>。</li>
+              <li>8 月 6 日增加 Intern-S1 支持；9 月的 MLE-Bench、GAIA、GPQA、HLE 结果提交主要更新 README，而非主架构。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="event major">
+          <span class="dot"></span>
+          <div class="event-card">
+            <div class="event-head"><span class="date">2025-10-13</span><span class="tag violet">InternAgent 1.0 全量开源</span><code>25fa46c</code></div>
+            <h3>从“脚本 + 样例”重构为真正的多 Agent 框架</h3>
+            <p>提交名直接是 <strong>Release InternAgent1.0</strong>。这次不是增量补丁，而是一次仓库级重组：600 个文件变化，旧 <code>dolphin_utils/</code> 与 <code>examples/</code> 被移除，正式出现 <code>internagent/mas/</code>、配置目录、任务目录和统一 discovery 入口。</p>
+            <ul>
+              <li><strong>编排：</strong><code>OrchestrationAgent</code> 状态机 + <code>AgentFactory</code>。</li>
+              <li><strong>8 个注册 Agent：</strong>generation、reflection、evolution、method development、refinement、ranking、survey、scholar。</li>
+              <li><strong>执行：</strong><code>launch_discovery.py</code> 驱动 idea generation 与实验；Aider 是实际实现的主后端，CLI 同时保留 OpenHands 选项。</li>
+              <li><strong>基础设施：</strong>OpenAI / DeepSeek / Intern-S1 模型工厂，文献检索、代码检索、paper survey，以及内存/文件两种 memory manager。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="event">
+          <span class="dot"></span>
+          <div class="event-card">
+            <div class="event-head"><span class="date">2026-02-10</span><span class="tag">1.5 报告先发布</span><code>8a1ee4f</code></div>
+            <h3>论文已经叫 1.5，但仓库核心代码仍基本是 1.0</h3>
+            <p>官方发布 arXiv:2602.08990 技术报告，但当时仓库仍只有 <code>launch_discovery.py</code>；后来 1.5 代码中的 <code>launch_qa.py</code>、Deep Research、长程记忆、MCTS、论文复现和 MCP 文档均尚未进入 Git 树。</p>
+            <div class="note"><strong>因此不能把 2026-02-10 当成 1.5 源码发布日期。</strong>这一阶段主要是报告、README、science report 物料和 AutoTSF 任务更新。</div>
+          </div>
+        </article>
+
+        <article class="event">
+          <span class="dot"></span>
+          <div class="event-card">
+            <div class="event-head"><span class="date">2026-03-17</span><span class="tag">过渡维护</span><code>v1.0.1 · da12a5d</code></div>
+            <h3>加文档、任务说明和网页，但仍不是 1.5 代码</h3>
+            <p>增加各任务 README、项目网页、benchmark/capability 图片、issue template，并修正 generation agent 与部分任务。标签名是 <code>v1.0.1</code>，准确反映它仍属于 1.0 代码线。</p>
+          </div>
+        </article>
+
+        <article class="event">
+          <span class="dot"></span>
+          <div class="event-card">
+            <div class="event-head"><span class="date">2026-03-19 → 04-28</span><span class="tag">外部 Benchmark</span><code>ResearchClawBench · 9b5288e</code></div>
+            <h3>ResearchClawBench 先独立发布，随后成为 InternAgent 的固定任务依赖</h3>
+            <p>ResearchClawBench 3 月 19 日公开 40 个论文复现任务；InternAgent 后来固定到其 4 月 28 日提交。它覆盖 10 个领域，每个任务提供科研问题、数据、相关文献、目标论文与细粒度评分 checklist。</p>
+            <div class="note blue"><strong>这是外部 benchmark 的时间，不是 InternAgent 已经完成评测的时间。</strong>InternAgent 真正加入子模块与适配代码，发生在下面的 5 月 7 日源码发布。</div>
+          </div>
+        </article>
+
+        <article class="event major">
+          <span class="dot"></span>
+          <div class="event-card">
+            <div class="event-head"><span class="date">2026-05-07</span><span class="tag violet">InternAgent 1.5 源码发布</span><code>v1.5.0 · e341f8f</code></div>
+            <h3>真正的大版本跃迁：从单一 discovery 流程变成长程科研平台</h3>
+            <p>这次提交改变 1,947 个文件，增加约 50.7 万行、删除约 6.2 万行。仓库从 293 个文件 / 158 个 Python 文件跃升至 1,816 个文件 / 1,287 个 Python 文件。</p>
+            <ul>
+              <li>新增 QA、Discovery、论文复现三类使用路径。</li>
+              <li>新增 Deep Research / FlowSearch、四层记忆、离线经验导入、MCTS、报告生成、恢复与 incremental loop。</li>
+              <li>Aider 被移除；实验执行改为 Claude Code、iFlow。CLI 仍保留 OpenHands 选项，但 <code>stage.py</code> 只调用了未定义的 <code>run_openhands_experiment()</code>，不能视为可用后端。</li>
+              <li>加入 MCP、函数工具注册表与科研领域工具；同时把 ResearchClawBench 接成可运行、可评分、可反馈改进的论文复现模式。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="event latest">
+          <span class="dot"></span>
+          <div class="event-card">
+            <div class="event-head"><span class="date">2026-06-10</span><span class="tag green">当前最新 main</span><code>b8a9e81</code></div>
+            <h3>1.5 之后的两次小更新：OpenRouter + Logo</h3>
+            <p><code>4baa993</code> 增加 OpenRouter provider、专用配置和文档，并调整 OpenAI client；<code>b8a9e81</code> 只新增官方 Logo。没有改变 MAS 状态机、记忆体系、Deep Research 或实验主循环。</p>
+            <div class="note green"><strong>所以“最新源码”仍应称为 1.5 系列。</strong>它比 <code>v1.5.0</code> 多两个提交，但没有新标签，也没有证据支持称为 1.6。</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="versions">
+      <h2>四个阶段，核心机制如何变化</h2>
+      <div class="flow">
+        <div class="box"><b>NovelSeek 展示仓</b>任务样例<br>成果代码</div>
+        <div class="box"><b>Dolphin 流水线</b>单入口脚本<br>idea + RAG + 实验</div>
+        <div class="box"><b>InternAgent 1.0</b>MAS 状态机<br>配置化 discovery</div>
+        <div class="box"><b>InternAgent 1.5+</b>记忆 + DR + 复现<br>长程多模式平台</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>维度</th><th>最初 / Dolphin</th><th>InternAgent 1.0</th><th>InternAgent 1.5</th><th>最新 main</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>主要定位</td><td>成果样例与早期自动研究脚本</td><td>自动 idea → 实验的多 Agent 框架</td><td>长程、自演化、跨任务科研平台</td><td>1.5 的 provider 兼容性增强</td></tr>
+            <tr><td>入口</td><td><code>launch_dolphin.py</code></td><td><code>launch_discovery.py</code></td><td><code>launch.py</code>、<code>launch_discovery.py</code>、<code>launch_qa.py</code></td><td>与 1.5 相同</td></tr>
+            <tr><td>编排</td><td>脚本顺序控制</td><td>状态机 + 8 个注册 Agent</td><td>状态机 + 11 个注册 Agent；新增 DR、experience、prompt evolver</td><td>不变</td></tr>
+            <tr><td>文献能力</td><td><code>rag_tools/lit_review</code></td><td>Survey / Scholar Agent + 文献与论文工具</td><td>保留旧 Agent，同时嵌入 FlowSearch Deep Research 图工作流</td><td>不变</td></tr>
+            <tr><td>记忆</td><td>运行文件与 prompt 级传递</td><td>内存 / 文件 memory manager</td><td>task、online、long memory + retriever + 离线导入</td><td>不变</td></tr>
+            <tr><td>实验执行</td><td>Dolphin 实验工具</td><td>Aider；OpenHands 仅为 CLI/注释路径</td><td>Claude Code / iFlow，支持 MCTS 与 GPU 分配；OpenHands 选项仍在但实现不完整</td><td>不变</td></tr>
+            <tr><td>科研任务</td><td>具体示例目录</td><td><code>tasks/AutoXxx</code> 算法发现</td><td>算法发现 + ResearchClawBench 论文复现</td><td>不变</td></tr>
+            <tr><td>模型 provider</td><td>OpenAI 风格 + 逐步加入 Intern-S1</td><td>OpenAI、DeepSeek-R1、Intern-S1</td><td>同 1.0</td><td>增加 OpenRouter，合计 4 个</td></tr>
+            <tr><td>输出</td><td>单任务代码和结果</td><td>idea、实验目录、指标</td><td>代码、指标、报告、记忆、QA/DR 答案、复现评分</td><td>不变</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>仓库规模变化：数字很大，但要正确解释</h2>
+      <div class="scale"><div class="label">NovelSeek 起点</div><div class="track"><div class="bar" style="width:20.8%"></div></div><div class="value">268 Python</div></div>
+      <div class="scale"><div class="label">Dolphin / 部分开源</div><div class="track"><div class="bar" style="width:22.3%"></div></div><div class="value">287 Python</div></div>
+      <div class="scale"><div class="label">InternAgent 1.0</div><div class="track"><div class="bar" style="width:11.5%"></div></div><div class="value">148 Python</div></div>
+      <div class="scale"><div class="label">1.5 报告阶段</div><div class="track"><div class="bar" style="width:12.3%"></div></div><div class="value">158 Python</div></div>
+      <div class="scale"><div class="label">InternAgent 1.5</div><div class="track"><div class="bar" style="width:99.9%"></div></div><div class="value">1,287 Python</div></div>
+      <div class="scale"><div class="label">当前 main</div><div class="track"><div class="bar" style="width:100%"></div></div><div class="value">1,288 Python</div></div>
+      <div class="note blue">
+        <strong>1.0 文件数下降不是能力倒退。</strong>它删除了大量重复的任务成果与编译产物，把重点转到 38 个 <code>internagent/</code> 核心 Python 文件和 109 个任务文件。反过来，1.5 的十倍增长也不全是主框架代码。
+      </div>
+    </section>
+
+    <section id="v15">
+      <h2>1.5 的 1,287 个 Python 文件，实际由什么组成？</h2>
+      <div class="split">
+        <div class="part"><div class="big">405</div><div>Deep Research / FlowSearch</div><div class="small">位于 dr_agents，包含内嵌 CAMEL 框架</div></div>
+        <div class="part"><div class="big">809</div><div>任务与实验代码</div><div class="small">位于 tasks，包含较重的第三方/基线实现</div></div>
+        <div class="part"><div class="big">73</div><div>其余主框架与入口</div><div class="small">66 个 internagent 非 DR 文件 + 7 个顶层脚本</div></div>
+      </div>
+      <p class="sublead">因此，Git 的“50 万行新增”不能直接理解为团队新写了 50 万行核心编排逻辑。大量体积来自嵌入的 Deep Research/CAMEL 代码和任务仓库。真正重要的是下面这些结构变化。</p>
+
+      <div class="grid">
+        <div class="card"><div class="k">01 · 多模式入口</div><h3>从 discovery 单入口到统一路由</h3><p><code>launch.py</code> 在 QA 与 discovery 间转发；<code>launch_qa.py</code> 直接进入 DR；discovery 还可区分 experiment / report。</p></div>
+        <div class="card"><div class="k">02 · 长期记忆</div><h3>研究经验开始跨轮次积累</h3><p>新增 <code>task_memory.py</code>、<code>online_memory.py</code>、<code>long_memory.py</code>、retriever 和离线导入脚本，支持失败方向过滤、IdeaGraph 与 prompt evolution。</p></div>
+        <div class="card"><div class="k">03 · Deep Research</div><h3>不再只是 Survey Agent</h3><p>新增 <code>DRAgent</code> 和独立 FlowSearch 图工作流，负责问题分解、并行检索、网页/学术源调用与答案/报告合成。</p></div>
+        <div class="card"><div class="k">04 · 验证与搜索</div><h3>实验循环变成长程优化</h3><p>新增 fresh / incremental loop、resume、MCTS、GPU allocator、并行实验、最佳结果回填和独立 ReportWriter。</p></div>
+        <div class="card"><div class="k">05 · 论文复现</div><h3>加入另一类任务契约</h3><p>通过 <code>sci_tasks</code> 子模块接入 ResearchClawBench；把 <code>task_info.json + checklist.json</code> 转为任务，生成代码、图表和报告，再将评分反馈给下一轮。</p></div>
+        <div class="card"><div class="k">06 · 工具协议</div><h3>从固定函数扩展为 ToolRegistry + MCP</h3><p>加入 MCP manager、远程/本地科研工具、搜索工具和统一注册表，工具接入不再完全写死在 Agent 内。</p></div>
+        <div class="card"><div class="k">07 · 执行后端</div><h3>Aider 被替换</h3><p>1.0 的 <code>experiments_utils_aider.py</code> 被删除；1.5 加入 Claude Code、iFlow 及其 MCTS 变体。OpenHands 仍出现在参数和 dispatch 中，但对应方法缺失，属于未闭合路径。</p></div>
+        <div class="card"><div class="k">08 · Agent 角色</div><h3>8 个注册角色增加到 11 个</h3><p>在 1.0 的 generation/reflection/evolution 等角色上，增加 DR、experience、prompt evolver；另有 codeview 与 experiment analysis 旁路组件。</p></div>
+      </div>
+    </section>
+
+    <section id="rcb">
+      <h2>ResearchClawBench 的接入：做了什么，又不能说明什么？</h2>
+      <p class="sublead">最准确的表述是：InternAgent 把外部 benchmark 接成了一个 <strong>benchmark-driven 论文复现环境</strong>，而不是仅仅下载了一批任务，也不是已经取得正式榜单成绩。</p>
+
+      <div class="flow">
+        <div class="box"><b>40 个真实任务</b>10 个领域<br>数据 + 相关文献</div>
+        <div class="box"><b>InternAgent 执行</b>生成复现思路<br>写代码、运行、写报告</div>
+        <div class="box"><b>官方评分器</b>文本 / 图像 checklist<br>LLM Judge 加权打分</div>
+        <div class="box"><b>闭环改进</b>分数写入 final_info<br>低分项进入下一轮</div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="rcb-table">
+          <thead><tr><th>层面</th><th>源码中已确认的事实</th><th>应如何理解</th></tr></thead>
+          <tbody>
+            <tr><td>接入方式</td><td><code>sci_tasks</code> 是 Git 子模块，固定到 ResearchClawBench 提交 <code>9b5288e</code>；评分代码通过符号链接复用官方实现。</td><td>任务与 rubric 有明确外部版本，不是 InternAgent 自己临时拼出的案例。</td></tr>
+            <tr><td>运行方式</td><td>识别 <code>task_info.json</code>，将任务、数据清单和 checklist 转成 InternAgent prompt；默认示例由 Claude Code 编写与迭代实验。</td><td>InternAgent 提供外层研究与优化循环，具体代码执行仍依赖 coding-agent 后端。</td></tr>
+            <tr><td>评分闭环</td><td>报告按 checklist 逐项打分并写入 <code>final_info.json</code>；得分和薄弱项会进入下一轮提示。</td><td>benchmark 不只是事后测量，也成为系统搜索时使用的外部奖励信号。</td></tr>
+            <tr><td>证据状态</td><td>主仓库没有随附 InternAgent 的 40 任务完整结果，ResearchClawBench 的 agent preset 中也没有 InternAgent。</td><td><strong>“已接入”不等于“已完成正式评测”或“已经上榜”。</strong></td></tr>
+            <tr><td>与论文关系</td><td>1.5 报告于 2 月发布且没有提到 ResearchClawBench；接入代码在 5 月 7 日才公开。</td><td>这是 1.5 发布后的工程扩展，不能倒推为论文原始实验贡献。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>最重要的评测边界：</strong>ResearchClawBench 官方执行阶段只给 Agent 任务说明、数据和相关文献，目标论文与 checklist 留给评分器；InternAgent 的适配则把 <code>target_study/</code> 链接进工作区，并把 checklist 摘要直接写入任务约束，之后还根据逐项得分继续优化。因此它更像“论文复现训练场 / 开发环境”，结果不能未经控制就与官方盲测榜单横向比较。
+      </div>
+
+      <div class="note green">
+        <strong>它真正意味着什么：</strong>InternAgent 的任务边界从“在已有代码库上优化算法指标”扩展到“从科研问题和原始数据出发，生成分析代码、图表与研究报告”；但其价值目前主要是能力接口和闭环机制，而不是一份已经验证完毕的 benchmark 成绩单。
+      </div>
+
+      <p class="sublead">源码入口：
+        <a href="../../../../_未包含的内容.html">子模块定义</a> ·
+        <a href="../源码/InternAgent/docs/sci_tasks.html">论文复现说明</a> ·
+        <a href="../源码/InternAgent/launch_discovery.py">任务转换与启动</a> ·
+        <a href="../源码/InternAgent/internagent/sci_eval.py">评分适配器</a> ·
+        <a href="../源码/InternAgent/sci_tasks/README.html">ResearchClawBench</a>
+      </p>
+    </section>
+
+    <section id="tags">
+      <h2>版本标签为什么容易让人误判？</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>标记</th><th>指向</th><th>真实含义</th><th>不应如何理解</th></tr></thead>
+          <tbody>
+            <tr><td><code>v0.0.1</code></td><td><code>fe327c1</code><br>2025-10-11</td><td>1.0 正式发布前两天的清理节点，仍是早期 Dolphin/样例结构。</td><td>不是论文所谓 InternAgent 0.x 的完整产品定义。</td></tr>
+            <tr><td>Release InternAgent1.0</td><td><code>25fa46c</code><br>2025-10-13</td><td>README 明确宣布 1.0 全量开源，且发生 MAS 架构切换。</td><td>虽然没有 <code>v1.0.0</code> tag，也不能忽略它是实际 1.0 代码发布点。</td></tr>
+            <tr><td><code>v1.0.1</code></td><td><code>da12a5d</code><br>2026-03-17</td><td>1.0 代码线的文档、任务说明、网页和小修订。</td><td>README 已宣传 1.5 报告，但这不等于代码已经是 1.5。</td></tr>
+            <tr><td><code>v1.5.0</code></td><td><code>e341f8f</code><br>2026-05-07</td><td>真正的 1.5 公开源码，大规模加入 DR、memory、复现、MCP、MCTS。</td><td>不要用 2 月报告日期替代 5 月代码发布日期。</td></tr>
+            <tr><td>当前 <code>main</code></td><td><code>b8a9e81</code><br>2026-06-10</td><td><code>v1.5.0</code> + OpenRouter + Logo。</td><td>没有新 tag，不应自行称为 1.6。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>什么变了，什么其实一直没变？</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="k">持续不变的主轴</div>
+          <h3>Idea → Experiment → Feedback</h3>
+          <ul>
+            <li>从 Dolphin 到 1.5，都围绕“提出方向、改代码、跑实验、根据结果继续”的闭环。</li>
+            <li>Survey / literature 的作用始终是给 idea 和方法提供外部知识。</li>
+            <li>任务指标或实验结果仍是最强的外部反馈信号。</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="k">真正发生的升级</div>
+          <h3>控制器从单次脚本变成持久平台</h3>
+          <ul>
+            <li>1.0：角色化、状态化、配置化。</li>
+            <li>1.5：跨轮次记忆、多种任务契约、多入口、多工具协议和可恢复执行。</li>
+            <li>最新：主要扩大模型接入面，没有再次改变控制结构。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note green"><strong>最准确的理解：</strong>InternAgent 的演化不是“每一版都重写科学方法”，而是逐步把一次性的自动实验脚本，包装成能够持续运行、积累经验、调用更多工具，并支持更多科研任务形态的控制系统。</div>
+    </section>
+
+    <section id="evidence">
+      <h2>关键提交证据</h2>
+      <div class="commit-list">
+        <div class="commit"><a class="hash" href="https://github.com/InternScience/InternAgent/commit/4e4bb8158e7cef5190be13bf4eff9391d12a25f1">4e4bb81</a><span class="when">2025-05-16</span><span class="what">最早可见提交；NovelSeek 信息与任务样例，462 文件。</span></div>
+        <div class="commit"><a class="hash" href="https://github.com/InternScience/InternAgent/commit/ecc3daf">ecc3daf</a><span class="when">2025-05-16</span><span class="what">加入 idea generation、文献 RAG、Dolphin 启动器和实验工具。</span></div>
+        <div class="commit"><a class="hash" href="https://github.com/InternScience/InternAgent/commit/bf3ae1c">bf3ae1c</a><span class="when">2025-07-22</span><span class="what">改名后更新 README 与 InternAgent 图片；README 标明部分开源。</span></div>
+        <div class="commit"><a class="hash" href="https://github.com/InternScience/InternAgent/commit/7e1e3ef">7e1e3ef</a><span class="when">2025-08-06</span><span class="what">早期代码增加 Intern-S1 支持。</span></div>
+        <div class="commit"><a class="hash" href="https://github.com/InternScience/InternAgent/commit/25fa46cb20bbc08ace2c826f9c287c6021c27599">25fa46c</a><span class="when">2025-10-13</span><span class="what">InternAgent 1.0 全量开源；从 Dolphin 结构切换到 MAS。</span></div>
+        <div class="commit"><a class="hash" href="https://github.com/InternScience/InternAgent/commit/8a1ee4f25cc5a6cbd9b8abda5fd5bdf5c2fce581">8a1ee4f</a><span class="when">2026-02-10</span><span class="what">宣布 InternAgent 1.5 技术报告；尚未发布完整 1.5 代码。</span></div>
+        <div class="commit"><a class="hash" href="https://github.com/InternScience/InternAgent/commit/da12a5d6c1e1a76974aaf63fec9683f65773fb6d">da12a5d</a><span class="when">2026-03-17</span><span class="what"><code>v1.0.1</code>；任务 README 与过渡维护节点。</span></div>
+        <div class="commit"><a class="hash" href="https://github.com/InternScience/InternAgent/commit/e341f8f181e6d337317c6bc2cddae6391b1f0390">e341f8f</a><span class="when">2026-05-07</span><span class="what"><code>v1.5.0</code>；1,947 文件变化，完整 1.5 源码公开。</span></div>
+        <div class="commit"><a class="hash" href="https://github.com/InternScience/InternAgent/commit/4baa993faedf8acf821dfa2d0a07d674578ab6f9">4baa993</a><span class="when">2026-06-10</span><span class="what">增加 OpenRouter provider、配置与文档。</span></div>
+        <div class="commit"><a class="hash" href="https://github.com/InternScience/InternAgent/commit/b8a9e81642e026f5e769da52208cfa12dadcfa0c">b8a9e81</a><span class="when">2026-06-10</span><span class="what">增加官方 Logo；当前最新 main。</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>核验方法与边界</h2>
+      <div class="card">
+        <ul>
+          <li>本页基于官方仓库完整的 47 个 Git 提交、三个标签、各里程碑文件树和逐版本 diff。</li>
+          <li>“1.0 发布点”采用官方 README 与提交名均明确的 <code>25fa46c</code>，而不是机械套用 tag 名。</li>
+          <li>文件和 Python 数量来自对应 commit 的 Git tree，不含当前已初始化子模块内部的文件。</li>
+          <li>ResearchClawBench 的“接入能力”与“官方盲测成绩”分开判断；本页未把适配代码等同于榜单结果。</li>
+          <li>“最新”核验截至 2026-07-27；当前主仓库 HEAD 为 <code>b8a9e81</code>。</li>
+          <li>本页描述的是公开源码演化，不能推断未公开的内部实现、训练过程或实验基础设施。</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="footer">
+      InternAgent 源码演化史 · 公开 Git 证据梳理<br>
+      <a href="../README.html">返回 InternAgent 总索引</a> ·
+      <a href="InternAgent-1.5_源码架构导读.html">阅读当前架构导读</a> ·
+      <a href="InternAgent_Literature模块分析.html">阅读 Literature 模块分析</a>
+    </footer>
+  </main>
+</body>
+</html>

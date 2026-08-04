@@ -1,0 +1,4316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="从真实 Git 历史、当前源码、Agent 执行链与双层检索机制全面理解 PaperQA。">
+  <title>PaperQA · 源码演进与系统架构详解</title>
+  <style>
+    :root {
+      --bg: #f3f6f4;
+      --paper: #fbfdfb;
+      --panel: #ffffff;
+      --ink: #16231f;
+      --ink-2: #34443e;
+      --muted: #68766f;
+      --line: #dbe4df;
+      --line-2: #c7d4cd;
+      --teal: #087f72;
+      --teal-dark: #056359;
+      --teal-pale: #e1f4f0;
+      --amber: #b66d10;
+      --amber-pale: #fff0d8;
+      --blue: #315f8a;
+      --blue-pale: #e9f1f8;
+      --violet: #73508c;
+      --violet-pale: #f1eaf6;
+      --rose: #a54a5c;
+      --rose-pale: #f9e9ed;
+      --code-bg: #13211d;
+      --code-ink: #dbece5;
+      --shadow: 0 15px 45px rgba(27, 54, 44, .08);
+      --shadow-small: 0 4px 16px rgba(27, 54, 44, .07);
+      --radius: 18px;
+      --sidebar: 245px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0e1714;
+      --paper: #111c18;
+      --panel: #16231f;
+      --ink: #edf6f1;
+      --ink-2: #c3d2cb;
+      --muted: #91a49b;
+      --line: #263a32;
+      --line-2: #365047;
+      --teal: #4fd1c1;
+      --teal-dark: #70dfd1;
+      --teal-pale: #163a34;
+      --amber: #f0ad50;
+      --amber-pale: #3c2b17;
+      --blue: #80b8e6;
+      --blue-pale: #1c3041;
+      --violet: #c39de0;
+      --violet-pale: #33243e;
+      --rose: #eb91a4;
+      --rose-pale: #40232a;
+      --code-bg: #09100e;
+      --code-ink: #dbece5;
+      --shadow: 0 15px 45px rgba(0, 0, 0, .22);
+      --shadow-small: 0 4px 16px rgba(0, 0, 0, .18);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 28px; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 86% 4%, rgba(8,127,114,.08), transparent 25rem),
+        radial-gradient(circle at 4% 20%, rgba(182,109,16,.05), transparent 22rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.72;
+      transition: color .2s ease, background .2s ease;
+    }
+
+    a { color: var(--teal-dark); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    p { margin: 0 0 15px; }
+    strong { font-weight: 720; }
+    ul, ol { margin: 8px 0 0; padding-left: 21px; }
+    li { margin: 5px 0; }
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      color: var(--teal-dark);
+      background: var(--teal-pale);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .88em;
+      overflow-wrap: anywhere;
+    }
+    pre {
+      margin: 0;
+      padding: 17px 18px;
+      overflow: auto;
+      border-radius: 13px;
+      color: var(--code-ink);
+      background: var(--code-bg);
+      font: .84rem/1.7 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      white-space: pre;
+    }
+
+    .progress {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 100;
+      height: 3px;
+      background: transparent;
+    }
+    .progress > span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--teal), var(--amber));
+    }
+
+    .shell {
+      width: min(1480px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: var(--sidebar) minmax(0, 1fr);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 28px 20px;
+      overflow-y: auto;
+      border-right: 1px solid var(--line);
+      background: color-mix(in srgb, var(--paper) 92%, transparent);
+      backdrop-filter: blur(12px);
+    }
+    .side-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      color: var(--ink);
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      color: white;
+      background: linear-gradient(145deg, var(--teal), #145c55);
+      box-shadow: var(--shadow-small);
+      font-family: Georgia, serif;
+      font-size: 1.1rem;
+    }
+    .side-kicker {
+      display: block;
+      color: var(--muted);
+      font-size: .67rem;
+      font-weight: 650;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .nav-label {
+      margin: 18px 8px 6px;
+      color: var(--muted);
+      font-size: .67rem;
+      font-weight: 780;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .side-nav a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 9px;
+      border-radius: 9px;
+      color: var(--muted);
+      font-size: .8rem;
+      font-weight: 620;
+      text-decoration: none;
+    }
+    .side-nav a:hover,
+    .side-nav a.active {
+      color: var(--teal-dark);
+      background: var(--teal-pale);
+    }
+    .nav-num {
+      width: 19px;
+      color: var(--teal);
+      font: 700 .67rem/1 "SFMono-Regular", Consolas, monospace;
+    }
+    .side-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 25px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+    .icon-btn {
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      color: var(--ink-2);
+      background: var(--panel);
+      font: inherit;
+      font-size: .74rem;
+      cursor: pointer;
+    }
+    .icon-btn:hover { border-color: var(--teal); color: var(--teal-dark); }
+
+    main, .content, section, .tabs, .tab-panel, .card { min-width: 0; }
+    .hero {
+      position: relative;
+      min-height: 630px;
+      display: grid;
+      align-items: center;
+      padding: 74px clamp(28px, 6vw, 90px) 62px;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 470px;
+      height: 470px;
+      right: -210px;
+      top: -160px;
+      border: 1px solid color-mix(in srgb, var(--teal) 30%, transparent);
+      border-radius: 50%;
+      box-shadow:
+        0 0 0 45px color-mix(in srgb, var(--teal) 5%, transparent),
+        0 0 0 100px color-mix(in srgb, var(--amber) 3%, transparent);
+      pointer-events: none;
+    }
+    .hero-inner { position: relative; z-index: 1; max-width: 1000px; }
+    .eyebrow {
+      margin-bottom: 16px;
+      color: var(--teal);
+      font-size: .74rem;
+      font-weight: 820;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 900px;
+      margin: 0 0 22px;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      font-size: clamp(3rem, 7vw, 6.2rem);
+      font-weight: 680;
+      letter-spacing: -.065em;
+      line-height: .98;
+    }
+    .hero-lead {
+      max-width: 830px;
+      color: var(--ink-2);
+      font-size: clamp(1.05rem, 2.2vw, 1.32rem);
+      line-height: 1.65;
+    }
+    .hero-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 10px;
+      max-width: 900px;
+      margin-top: 31px;
+    }
+    .metric {
+      padding: 15px 16px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: color-mix(in srgb, var(--panel) 86%, transparent);
+      box-shadow: var(--shadow-small);
+    }
+    .metric b {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--teal-dark);
+      font-size: 1.35rem;
+      line-height: 1.25;
+    }
+    .metric span { color: var(--muted); font-size: .74rem; }
+    .hero-note {
+      max-width: 900px;
+      margin-top: 17px;
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
+    .content {
+      width: min(1140px, calc(100% - 48px));
+      margin: 0 auto;
+      padding: 12px 0 96px;
+    }
+    section { margin-top: 78px; }
+    .section-head {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: start;
+      margin-bottom: 24px;
+    }
+    .section-index {
+      margin-top: 5px;
+      color: var(--teal);
+      font: 780 .73rem/1 "SFMono-Regular", Consolas, monospace;
+    }
+    h2 {
+      margin: 0;
+      font-size: clamp(1.7rem, 3.6vw, 2.55rem);
+      font-weight: 690;
+      letter-spacing: -.035em;
+      line-height: 1.2;
+    }
+    .section-desc {
+      max-width: 820px;
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: .94rem;
+    }
+    h3 {
+      margin: 0 0 8px;
+      font-size: 1.15rem;
+      font-weight: 720;
+      line-height: 1.4;
+    }
+    h4 {
+      margin: 0 0 7px;
+      font-size: .94rem;
+      font-weight: 730;
+    }
+
+    .grid-2, .grid-3, .grid-4 {
+      display: grid;
+      gap: 13px;
+    }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow-small);
+    }
+    .card p:last-child { margin-bottom: 0; }
+    .card-number {
+      display: inline-grid;
+      width: 27px;
+      height: 27px;
+      margin-bottom: 12px;
+      place-items: center;
+      border-radius: 8px;
+      color: var(--teal-dark);
+      background: var(--teal-pale);
+      font: 780 .72rem/1 "SFMono-Regular", Consolas, monospace;
+    }
+    .mini { color: var(--muted); font-size: .83rem; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--teal-pale);
+      font-size: .68rem;
+      font-weight: 720;
+      line-height: 1.5;
+    }
+    .tag.amber { color: var(--amber); background: var(--amber-pale); }
+    .tag.blue { color: var(--blue); background: var(--blue-pale); }
+    .tag.violet { color: var(--violet); background: var(--violet-pale); }
+    .tag.rose { color: var(--rose); background: var(--rose-pale); }
+
+    .callout {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      margin: 17px 0;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--teal);
+      border-radius: 13px;
+      background: color-mix(in srgb, var(--teal-pale) 58%, var(--panel));
+    }
+    .callout.amber {
+      border-left-color: var(--amber);
+      background: color-mix(in srgb, var(--amber-pale) 58%, var(--panel));
+    }
+    .callout.rose {
+      border-left-color: var(--rose);
+      background: color-mix(in srgb, var(--rose-pale) 58%, var(--panel));
+    }
+    .callout-icon {
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--panel);
+      font-weight: 800;
+    }
+    .callout p:last-child { margin-bottom: 0; }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 22px;
+    }
+    .filter-btn, .tab-btn {
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--panel);
+      font: inherit;
+      font-size: .78rem;
+      font-weight: 680;
+      cursor: pointer;
+    }
+    .filter-btn:hover, .filter-btn.active,
+    .tab-btn:hover, .tab-btn.active {
+      color: white;
+      border-color: var(--teal);
+      background: var(--teal);
+    }
+
+    .timeline {
+      position: relative;
+      max-width: 990px;
+      margin-left: 12px;
+      padding-left: 32px;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 7px;
+      bottom: 7px;
+      width: 2px;
+      background: linear-gradient(var(--teal), var(--amber), var(--violet));
+    }
+    .timeline-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 115px 1fr;
+      gap: 18px;
+      margin: 0 0 15px;
+      padding: 18px 19px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--panel);
+      box-shadow: var(--shadow-small);
+      transition: transform .2s ease, opacity .2s ease;
+    }
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      left: -31px;
+      top: 24px;
+      border: 3px solid var(--bg);
+      border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 0 1px var(--teal);
+    }
+    .timeline-item:hover { transform: translateX(3px); }
+    .timeline-item.hidden { display: none; }
+    .time-date {
+      color: var(--teal-dark);
+      font: 760 .78rem/1.4 "SFMono-Regular", Consolas, monospace;
+    }
+    .time-date small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font: 620 .68rem/1.4 Inter, sans-serif;
+    }
+    .time-body h3 { margin-bottom: 4px; }
+    .time-body p { margin-bottom: 8px; color: var(--ink-2); font-size: .88rem; }
+    .change {
+      padding-top: 8px;
+      border-top: 1px dashed var(--line);
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
+    .growth {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow-small);
+    }
+    .growth-row {
+      display: grid;
+      grid-template-columns: 105px 1fr 85px;
+      gap: 12px;
+      align-items: center;
+      margin: 10px 0;
+    }
+    .growth-label {
+      color: var(--ink-2);
+      font: 680 .75rem/1.3 "SFMono-Regular", Consolas, monospace;
+    }
+    .bar-track {
+      height: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--teal-pale);
+    }
+    .bar {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--teal), #53b6aa);
+    }
+    .growth-value { color: var(--muted); font-size: .72rem; text-align: right; }
+
+    .era-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow-small);
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 780px; }
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+      font-size: .82rem;
+    }
+    th {
+      color: var(--muted);
+      background: color-mix(in srgb, var(--teal-pale) 45%, var(--panel));
+      font-size: .7rem;
+      font-weight: 780;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    tr:last-child td { border-bottom: 0; }
+    td:first-child { color: var(--teal-dark); font-weight: 720; white-space: nowrap; }
+
+    .architecture {
+      padding: 22px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(color-mix(in srgb, var(--teal-pale) 20%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--teal-pale) 20%, transparent) 1px, transparent 1px),
+        var(--panel);
+      background-size: 28px 28px;
+      box-shadow: var(--shadow);
+    }
+    .arch-grid {
+      min-width: 880px;
+      display: grid;
+      grid-template-columns: 150px 1fr 48px 1fr 48px 1fr;
+      gap: 11px;
+      align-items: stretch;
+    }
+    .arch-label {
+      display: flex;
+      align-items: center;
+      color: var(--muted);
+      font-size: .73rem;
+      font-weight: 760;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .arch-box {
+      min-height: 92px;
+      padding: 15px;
+      border: 1px solid var(--line-2);
+      border-radius: 13px;
+      background: var(--panel);
+      box-shadow: var(--shadow-small);
+    }
+    .arch-box.control { border-top: 4px solid var(--teal); }
+    .arch-box.data { border-top: 4px solid var(--blue); }
+    .arch-box.model { border-top: 4px solid var(--violet); }
+    .arch-box.external { border-top: 4px solid var(--amber); }
+    .arch-box h4 { margin-bottom: 5px; }
+    .arch-box p { margin: 0; color: var(--muted); font-size: .75rem; }
+    .arrow {
+      display: grid;
+      place-items: center;
+      color: var(--teal);
+      font-size: 1.3rem;
+    }
+    .arch-span { grid-column: 2 / -1; }
+
+    .tabs {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow-small);
+    }
+    .tab-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 13px;
+      border-bottom: 1px solid var(--line);
+    }
+    .tab-panel { display: none; padding: 22px; }
+    .tab-panel.active { display: block; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(105px, 1fr));
+      gap: 8px;
+      margin: 17px 0;
+      overflow-x: auto;
+    }
+    .flow-step {
+      position: relative;
+      min-width: 110px;
+      padding: 14px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      text-align: center;
+    }
+    .flow-step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      z-index: 2;
+      right: -10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--teal);
+      font-weight: 800;
+    }
+    .flow-step b { display: block; margin-bottom: 4px; font-size: .8rem; }
+    .flow-step span { display: block; color: var(--muted); font-size: .68rem; line-height: 1.45; }
+    .flow-step em {
+      display: inline-block;
+      margin-bottom: 7px;
+      color: var(--teal);
+      font: normal 760 .65rem/1 "SFMono-Regular", Consolas, monospace;
+    }
+
+    .tool-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .tool-card::after {
+      content: attr(data-tool);
+      position: absolute;
+      right: -7px;
+      bottom: -12px;
+      color: color-mix(in srgb, var(--teal) 8%, transparent);
+      font: 800 2.4rem/1 "SFMono-Regular", Consolas, monospace;
+      pointer-events: none;
+    }
+    .io {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .io > div {
+      padding: 9px;
+      border-radius: 9px;
+      background: var(--bg);
+      color: var(--muted);
+      font-size: .7rem;
+    }
+    .io b { display: block; margin-bottom: 2px; color: var(--ink-2); font-size: .68rem; }
+
+    .retrieval-stack {
+      display: grid;
+      gap: 9px;
+      max-width: 930px;
+      margin: 0 auto;
+    }
+    .retrieval-stage {
+      display: grid;
+      grid-template-columns: 90px 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--panel);
+      box-shadow: var(--shadow-small);
+    }
+    .retrieval-stage .stage-num {
+      color: var(--teal);
+      font: 760 .7rem/1 "SFMono-Regular", Consolas, monospace;
+    }
+    .retrieval-stage p { margin: 2px 0 0; color: var(--muted); font-size: .78rem; }
+    .stage-kind {
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: var(--blue);
+      background: var(--blue-pale);
+      font-size: .65rem;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+
+    .object-map {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 9px;
+      overflow-x: auto;
+    }
+    .object {
+      position: relative;
+      min-width: 145px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+    .object:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -9px;
+      top: 26px;
+      z-index: 2;
+      color: var(--teal);
+    }
+    .object b {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--teal-dark);
+      font: 740 .8rem/1.25 "SFMono-Regular", Consolas, monospace;
+    }
+    .object span { display: block; margin: 3px 0; color: var(--muted); font-size: .69rem; }
+
+    details {
+      margin: 9px 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+    summary {
+      padding: 13px 15px;
+      color: var(--ink-2);
+      font-size: .85rem;
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: "+";
+      float: right;
+      color: var(--teal);
+      font-size: 1rem;
+    }
+    details[open] summary::after { content: "−"; }
+    .details-body {
+      padding: 0 15px 15px;
+      color: var(--ink-2);
+      font-size: .83rem;
+    }
+
+    .model-role {
+      border-top: 4px solid var(--violet);
+    }
+    .model-role .role-call {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: var(--violet);
+      background: var(--violet-pale);
+      font-size: .72rem;
+      font-weight: 680;
+    }
+
+    .file-tree {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+    .file-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 9px;
+      align-items: center;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--panel);
+    }
+    .file-row a {
+      display: block;
+      color: var(--teal-dark);
+      font: 700 .76rem/1.4 "SFMono-Regular", Consolas, monospace;
+    }
+    .file-row p { margin: 3px 0 0; color: var(--muted); font-size: .7rem; }
+    .copy {
+      padding: 5px 7px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: var(--muted);
+      background: var(--bg);
+      font-size: .65rem;
+      cursor: pointer;
+    }
+
+    .checklist {
+      counter-reset: step;
+      display: grid;
+      gap: 9px;
+    }
+    .check {
+      position: relative;
+      padding: 15px 17px 15px 52px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+    .check::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 15px;
+      top: 14px;
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      color: white;
+      background: var(--teal);
+      font: 740 .68rem/1 "SFMono-Regular", Consolas, monospace;
+    }
+    .check b { display: block; font-size: .84rem; }
+    .check span { color: var(--muted); font-size: .75rem; }
+
+    .footer {
+      margin-top: 82px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .75rem;
+    }
+
+    .mobile-top { display: none; }
+
+    @media (max-width: 1050px) {
+      .shell { display: block; }
+      .sidebar { display: none; }
+      .mobile-top {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--line);
+        background: color-mix(in srgb, var(--paper) 92%, transparent);
+        backdrop-filter: blur(12px);
+      }
+      .mobile-top strong { font-size: .82rem; }
+      .mobile-links {
+        min-width: 0;
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+      }
+      .mobile-links a {
+        flex: 0 0 auto;
+        padding: 5px 8px;
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: .69rem;
+      }
+      .hero { min-height: auto; padding-top: 70px; }
+    }
+    @media (max-width: 780px) {
+      .shell, main, .hero, .hero-inner, .hero-metrics {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+      .content { width: calc(100% - 28px); max-width: calc(100% - 28px); }
+      .hero { padding: 55px 20px 45px; overflow: hidden; }
+      .hero-inner { overflow: hidden; }
+      h1 {
+        width: calc(100vw - 40px);
+        max-width: calc(100vw - 40px);
+        font-size: clamp(2.35rem, 12vw, 3.4rem);
+      }
+      .hero-lead, .hero-note { max-width: calc(100vw - 40px); overflow-wrap: anywhere; }
+      .hero-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-width: calc(100vw - 40px);
+      }
+      .metric { min-width: 0; padding: 13px 12px; overflow: hidden; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .timeline { margin-left: 0; padding-left: 24px; }
+      .timeline::before { left: 3px; }
+      .timeline-item { grid-template-columns: 1fr; gap: 5px; }
+      .timeline-item::before { left: -27px; }
+      .growth-row { grid-template-columns: 84px 1fr 68px; }
+      .file-tree { grid-template-columns: 1fr; }
+      .retrieval-stage { grid-template-columns: 64px 1fr; }
+      .stage-kind { grid-column: 2; justify-self: start; }
+      .section-head { grid-template-columns: 1fr; gap: 6px; }
+      .section-index { margin-top: 0; }
+    }
+
+    /* ================================================================
+       PAPER_READING_TEMPLATE visual language
+       The page keeps its project-specific narrative, while matching the
+       research-folder template's warm paper, typography and components.
+       ================================================================ */
+    :root,
+    [data-theme="dark"] {
+      --bg: #f7f4ef;
+      --paper: #f7f4ef;
+      --panel: #fbf9f5;
+      --white: #ffffff;
+      --ink: #1f2421;
+      --ink-2: #343b37;
+      --muted: #5c635d;
+      --line: #e7e1d7;
+      --line-2: #ddd4c7;
+      --teal: #c4612f;
+      --teal-dark: #a94e22;
+      --teal-pale: #f2e3d6;
+      --amber: #8a641c;
+      --amber-pale: #fff7e6;
+      --blue: #355f78;
+      --blue-pale: #edf4f7;
+      --violet: #315b45;
+      --violet-pale: #edf2ee;
+      --rose: #934958;
+      --rose-pale: #fff0f2;
+      --code-bg: #1f2421;
+      --code-ink: #edf2ee;
+      --shadow: 0 2px 8px rgba(31, 36, 33, .06);
+      --shadow-small: 0 2px 8px rgba(31, 36, 33, .06);
+      --radius: 8px;
+    }
+
+    body {
+      color: var(--ink);
+      background: var(--paper);
+      font-size: 16px;
+      line-height: 1.72;
+    }
+
+    .progress,
+    .sidebar,
+    .mobile-top {
+      display: none !important;
+    }
+
+    .shell {
+      display: block;
+      width: 100%;
+      max-width: none;
+      margin: 0;
+    }
+
+    main {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .hero {
+      width: min(920px, calc(100% - 44px));
+      min-height: 0;
+      margin: 0 auto;
+      padding: 52px 18px 34px;
+      display: block;
+      overflow: visible;
+      border-bottom: 1px solid var(--line);
+      text-align: center;
+    }
+
+    .hero::after { display: none; }
+
+    .hero-inner {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      overflow: visible;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      width: fit-content;
+      margin: 0 auto 18px;
+      padding: 4px 11px;
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--teal-pale);
+      font-size: .79rem;
+      font-weight: 650;
+      letter-spacing: .02em;
+      text-transform: none;
+    }
+
+    h1 {
+      width: auto;
+      max-width: 820px;
+      margin: 0 auto 12px;
+      color: var(--ink);
+      font-size: clamp(2.35rem, 7vw, 3.25rem);
+      font-weight: 670;
+      letter-spacing: -.035em;
+      line-height: 1.08;
+      overflow-wrap: normal;
+    }
+
+    .hero-lead {
+      max-width: 760px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 1.08rem;
+      font-weight: 360;
+      line-height: 1.72;
+    }
+
+    .resource-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 22px;
+    }
+
+    .resource-link {
+      display: inline-block;
+      padding: 7px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--panel);
+      font-size: .84rem;
+      font-weight: 620;
+      text-decoration: none;
+      transition: box-shadow .2s ease, transform .2s ease;
+    }
+
+    .resource-link.primary {
+      border-color: var(--teal);
+      color: var(--white);
+      background: var(--teal);
+    }
+
+    .resource-link:hover {
+      box-shadow: var(--shadow);
+      transform: translateY(-1px);
+      text-decoration: none;
+    }
+
+    .hero-metrics {
+      max-width: 820px;
+      margin: 24px auto 0;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 14px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      text-align: left;
+    }
+
+    .metric b {
+      color: var(--teal-dark);
+      font-size: 1.12rem;
+      font-weight: 660;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 360;
+    }
+
+    .hero-note {
+      max-width: 760px;
+      margin: 14px auto 0;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 360;
+    }
+
+    .main-toc {
+      position: sticky;
+      top: 10px;
+      z-index: 20;
+      width: min(920px, calc(100% - 44px));
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 7px;
+      margin: 24px auto 34px;
+      padding: 10px;
+      border: 1px solid rgba(231, 225, 215, .9);
+      border-radius: 16px;
+      background: rgba(247, 244, 239, .93);
+      box-shadow: 0 8px 24px rgba(31, 36, 33, .06);
+      backdrop-filter: blur(10px);
+    }
+
+    .main-toc a {
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: .8rem;
+      font-weight: 620;
+      text-decoration: none;
+    }
+
+    .main-toc a:hover,
+    .main-toc a.active {
+      color: var(--teal-dark);
+      background: var(--teal-pale);
+    }
+
+    .content {
+      width: min(920px, calc(100% - 44px));
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 18px 76px;
+    }
+
+    section {
+      margin-top: 0;
+      min-width: 0;
+    }
+
+    .section-head {
+      display: block;
+      margin: 0;
+    }
+
+    .section-index { display: none; }
+
+    h2 {
+      margin: 56px 0 24px;
+      padding-bottom: 11px;
+      border-bottom: 2px solid var(--teal);
+      color: var(--ink);
+      font-size: 1.78rem;
+      font-weight: 630;
+      letter-spacing: normal;
+      line-height: 1.3;
+    }
+
+    .section-desc {
+      max-width: none;
+      margin: -10px 0 24px;
+      color: var(--ink-2);
+      font-size: 1.02rem;
+      font-weight: 360;
+    }
+
+    h3 {
+      margin: 30px 0 14px;
+      color: var(--teal);
+      font-size: 1.25rem;
+      font-weight: 630;
+    }
+
+    h4 {
+      margin-bottom: 8px;
+      color: var(--teal-dark);
+      font-size: 1.01rem;
+      font-weight: 650;
+    }
+
+    p { margin-bottom: 17px; font-weight: 360; }
+    strong { font-weight: 660; }
+
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+      gap: 15px;
+      margin: 24px 0;
+    }
+
+    .grid-2,
+    .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .card {
+      padding: 21px 23px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: var(--teal);
+      font-size: 1.08rem;
+    }
+
+    .card-number {
+      width: auto;
+      height: auto;
+      margin-bottom: 10px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--teal-pale);
+      font-size: .72rem;
+    }
+
+    .mini {
+      color: var(--muted);
+      font-size: .86rem;
+      font-weight: 360;
+    }
+
+    .tag {
+      padding: 3px 9px;
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--teal-pale);
+      font-size: .72rem;
+      font-weight: 700;
+    }
+
+    .tag.amber { color: var(--amber); background: var(--amber-pale); }
+    .tag.blue { color: var(--blue); background: var(--blue-pale); }
+    .tag.violet { color: var(--violet); background: var(--violet-pale); }
+    .tag.rose { color: var(--rose); background: var(--rose-pale); }
+
+    .callout {
+      grid-template-columns: 1fr;
+      gap: 0;
+      margin: 26px 0;
+      padding: 21px 25px;
+      border: 0;
+      border-left: 4px solid var(--violet);
+      border-radius: 5px;
+      color: var(--ink);
+      background: var(--violet-pale);
+      box-shadow: var(--shadow);
+    }
+
+    .callout.amber {
+      border-left-color: var(--amber);
+      background: var(--amber-pale);
+    }
+
+    .callout.rose {
+      border-left-color: var(--rose);
+      background: var(--rose-pale);
+    }
+
+    .callout-icon { display: none; }
+    .callout p:last-child { margin-bottom: 0; }
+
+    .filters {
+      gap: 7px;
+      margin: 0 0 22px;
+    }
+
+    .filter-btn,
+    .tab-btn {
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--panel);
+      font-size: .8rem;
+      font-weight: 620;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active,
+    .tab-btn:hover,
+    .tab-btn.active {
+      border-color: var(--teal);
+      color: var(--white);
+      background: var(--teal);
+    }
+
+    .timeline {
+      margin: 0 0 28px 8px;
+      padding-left: 28px;
+    }
+
+    .timeline::before {
+      left: 7px;
+      width: 2px;
+      background: var(--teal);
+    }
+
+    .timeline-item {
+      grid-template-columns: 116px 1fr;
+      gap: 18px;
+      margin-bottom: 14px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .timeline-item::before {
+      left: -29px;
+      top: 24px;
+      border-color: var(--paper);
+      background: var(--teal);
+      box-shadow: 0 0 0 1px var(--teal);
+    }
+
+    .timeline-item:hover { transform: none; }
+    .time-date { color: var(--teal-dark); }
+    .time-body h3 { margin: 0 0 4px; color: var(--teal); font-size: 1.08rem; }
+    .time-body p { color: var(--ink-2); font-size: .89rem; }
+
+    .growth,
+    .architecture,
+    .tabs {
+      padding: 25px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .growth h3 { margin-top: 0; }
+    .bar-track { background: var(--teal-pale); }
+    .bar { background: var(--teal); }
+
+    .era-table-wrap {
+      margin: 26px 0;
+      border: 0;
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    th {
+      padding: 13px 15px;
+      color: var(--white);
+      background: var(--teal);
+      font-size: .88rem;
+      font-weight: 620;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+    td {
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--line);
+      font-size: .89rem;
+      font-weight: 360;
+    }
+
+    td:first-child { color: var(--teal-dark); }
+
+    .architecture {
+      overflow-x: auto;
+      background: var(--panel);
+    }
+
+    .arch-box {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--white);
+      box-shadow: none;
+    }
+
+    .arch-box.control { border-top: 4px solid var(--teal); }
+    .arch-box.data { border-top: 4px solid var(--blue); }
+    .arch-box.model { border-top: 4px solid var(--violet); }
+    .arch-box.external { border-top: 4px solid var(--amber); }
+    .arrow { color: var(--teal); }
+
+    .tabs { padding: 0; overflow: hidden; }
+
+    .tab-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    .tab-panel { padding: 22px; }
+    .tab-panel h3 { margin-top: 0; }
+
+    .flow {
+      display: block;
+      margin: 29px 0;
+      padding: 27px 31px;
+      overflow: visible;
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .flow-step {
+      position: relative;
+      min-width: 0;
+      margin: 16px 0;
+      padding: 18px 22px;
+      border: 0;
+      border-left: 4px solid var(--teal);
+      border-radius: 4px;
+      background: var(--white);
+      text-align: left;
+    }
+
+    .flow-step:not(:last-child)::after {
+      content: "▼";
+      position: absolute;
+      right: auto;
+      bottom: -29px;
+      left: 50%;
+      top: auto;
+      color: var(--teal);
+      font-size: 18px;
+      transform: translateX(-50%);
+    }
+
+    .flow-step em {
+      display: inline-block;
+      margin: 0 8px 0 0;
+      color: var(--teal);
+    }
+
+    .flow-step b {
+      display: inline;
+      color: var(--teal-dark);
+      font-size: 1rem;
+    }
+
+    .flow-step span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: .84rem;
+      text-align: left;
+    }
+
+    .tool-card::after { color: rgba(196, 97, 47, .06); }
+
+    .io > div {
+      border-radius: 5px;
+      background: var(--paper);
+    }
+
+    .retrieval-stage {
+      padding: 17px 19px;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--teal);
+      border-radius: 5px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .retrieval-stage .stage-num { color: var(--teal-dark); }
+
+    .stage-kind {
+      color: var(--blue);
+      background: var(--blue-pale);
+    }
+
+    .object {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .object b { color: var(--teal-dark); }
+    .object:not(:last-child)::after { color: var(--teal); }
+
+    details {
+      margin: 16px 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    summary {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 17px 20px;
+      color: var(--ink);
+      font-size: .9rem;
+      font-weight: 630;
+    }
+
+    summary::after {
+      content: "＋";
+      margin-left: auto;
+      color: var(--teal);
+    }
+
+    details[open] summary::after { content: "−"; }
+
+    .details-body {
+      padding: 18px 22px 22px;
+      border-top: 1px solid var(--line);
+      color: var(--ink-2);
+      font-size: .88rem;
+    }
+
+    .v1-definition {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 15px;
+      align-items: center;
+      margin: 20px 0;
+      padding: 18px 20px;
+      border: 1px solid rgba(196, 97, 47, .28);
+      border-radius: 8px;
+      background:
+        linear-gradient(110deg, rgba(196, 97, 47, .1), transparent 58%),
+        var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .v1-definition-mark {
+      display: grid;
+      width: 52px;
+      height: 52px;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--white);
+      background: var(--teal);
+      font-family: var(--serif);
+      font-size: 1.08rem;
+      font-weight: 760;
+    }
+
+    .v1-definition strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--teal-dark);
+      font-family: var(--serif);
+      font-size: 1.02rem;
+    }
+
+    .v1-definition p { margin: 0; }
+
+    .paper-figure {
+      margin: 24px 0;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--white);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .paper-figure-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 17px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .paper-figure-head b {
+      color: var(--teal-dark);
+      font-family: var(--serif);
+      font-size: .91rem;
+    }
+
+    .paper-figure-head a {
+      flex: 0 0 auto;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--paper);
+      font-size: .7rem;
+      font-weight: 680;
+      text-decoration: none;
+    }
+
+    .paper-figure-head a:hover {
+      border-color: var(--teal);
+      background: var(--teal-pale);
+    }
+
+    .paper-figure-scroll {
+      padding: 15px;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scrollbar-color: var(--teal) var(--paper);
+      scrollbar-width: thin;
+    }
+
+    .paper-figure-scroll a { display: block; }
+
+    .paper-figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 0;
+      background: white;
+    }
+
+    .paper-figure figcaption {
+      padding: 13px 17px 15px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .76rem;
+      line-height: 1.62;
+    }
+
+    .paper-figure figcaption strong { color: var(--ink-2); }
+
+    .v1-diagram {
+      margin: 22px 0;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .v1-question {
+      width: min(620px, 100%);
+      margin: 0 auto 14px;
+      padding: 11px 16px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--ink-2);
+      background: var(--paper);
+      text-align: center;
+      font-size: .79rem;
+    }
+
+    .v1-down {
+      margin: -6px auto 8px;
+      color: var(--teal);
+      text-align: center;
+      font-size: 1.1rem;
+    }
+
+    .v1-agent {
+      width: min(560px, 100%);
+      margin: 0 auto 18px;
+      padding: 16px 18px;
+      border: 2px solid var(--teal);
+      border-radius: 8px;
+      background: var(--teal-pale);
+      text-align: center;
+    }
+
+    .v1-agent b {
+      display: block;
+      color: var(--teal-dark);
+      font-family: var(--serif);
+      font-size: 1rem;
+    }
+
+    .v1-agent span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .75rem;
+    }
+
+    .v1-tool-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      position: relative;
+    }
+
+    .v1-tool {
+      min-height: 210px;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--blue);
+      border-radius: 7px;
+      background: var(--white);
+    }
+
+    .v1-tool:nth-child(2) { border-top-color: var(--violet); }
+    .v1-tool:nth-child(3) { border-top-color: var(--amber); }
+
+    .v1-tool-num {
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 750;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .v1-tool h3 {
+      margin: 6px 0 8px;
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 1rem;
+    }
+
+    .v1-tool ol {
+      margin: 0;
+      padding-left: 17px;
+    }
+
+    .v1-tool li {
+      margin: 5px 0;
+      color: var(--ink-2);
+      font-size: .76rem;
+      line-height: 1.5;
+    }
+
+    .v1-state {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 13px;
+      align-items: center;
+      margin-top: 14px;
+      padding: 14px 17px;
+      border: 1px dashed var(--teal);
+      border-radius: 7px;
+      background: var(--paper);
+      text-align: center;
+    }
+
+    .v1-state div {
+      color: var(--ink-2);
+      font-size: .76rem;
+    }
+
+    .v1-state b {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--teal-dark);
+      font-size: .79rem;
+    }
+
+    .v1-state-arrow {
+      color: var(--teal);
+      font-size: 1.1rem;
+    }
+
+    .v1-loop {
+      margin-top: 14px;
+      padding: 11px 15px;
+      border-left: 4px solid var(--amber);
+      background: var(--amber-pale);
+      color: var(--ink-2);
+      font-size: .79rem;
+      line-height: 1.6;
+    }
+
+    .v1-loop b { color: var(--ink); }
+
+    .v1-role-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .v1-role {
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--white);
+    }
+
+    .v1-role b {
+      display: block;
+      color: var(--teal-dark);
+      font-size: .82rem;
+    }
+
+    .v1-role code {
+      display: inline-block;
+      margin: 5px 0 7px;
+      font-size: .67rem;
+    }
+
+    .v1-role span {
+      display: block;
+      color: var(--muted);
+      font-size: .75rem;
+      line-height: 1.52;
+    }
+
+    .v1-boundary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .v1-boundary > div {
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel);
+    }
+
+    .v1-boundary b {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--teal-dark);
+      font-size: .82rem;
+    }
+
+    .v1-boundary p {
+      margin: 0;
+      color: var(--ink-2);
+      font-size: .79rem;
+      line-height: 1.62;
+    }
+
+    .peer-review {
+      margin-top: 24px;
+      border-color: rgba(196, 97, 47, .35);
+    }
+
+    .peer-review > summary {
+      padding: 20px 22px;
+      background:
+        linear-gradient(105deg, rgba(196, 97, 47, .11), transparent 56%),
+        var(--panel);
+    }
+
+    .peer-review > summary strong {
+      display: block;
+      color: var(--teal-dark);
+      font-family: var(--serif);
+      font-size: 1.05rem;
+    }
+
+    .peer-review > summary span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 500;
+    }
+
+    .review-intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    .review-intro p {
+      max-width: 690px;
+      margin: 0;
+    }
+
+    .review-verdict {
+      padding: 8px 12px;
+      border: 1px solid rgba(179, 68, 54, .25);
+      border-radius: 999px;
+      color: #9f4338;
+      background: rgba(179, 68, 54, .08);
+      font-size: .76rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .review-rail-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 8px 0 12px;
+    }
+
+    .review-counter {
+      color: var(--muted);
+      font-size: .76rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .review-controls {
+      display: flex;
+      gap: 7px;
+    }
+
+    .review-arrow {
+      width: 34px;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--paper);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 750;
+    }
+
+    .review-arrow:hover {
+      border-color: var(--teal);
+      background: var(--teal-pale);
+    }
+
+    .review-rail {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(300px, 43%);
+      gap: 14px;
+      padding: 2px 2px 14px;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scroll-behavior: smooth;
+      scroll-snap-type: inline mandatory;
+      scrollbar-color: var(--teal) var(--paper);
+      scrollbar-width: thin;
+    }
+
+    .review-card {
+      position: relative;
+      min-height: 390px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--teal);
+      border-radius: 8px;
+      background: var(--white);
+      box-shadow: var(--shadow);
+      scroll-snap-align: start;
+    }
+
+    .review-card.ac { border-top-color: #a54b42; }
+    .review-card.positive { border-top-color: var(--blue); }
+    .review-card.synthesis {
+      border-top-color: var(--amber);
+      background:
+        linear-gradient(145deg, rgba(211, 139, 56, .09), transparent 52%),
+        var(--white);
+    }
+
+    .review-role {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: .69rem;
+      font-weight: 750;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .review-score {
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--teal-pale);
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .review-card h3 {
+      margin: 0 0 13px;
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 1.22rem;
+    }
+
+    .review-card h4 {
+      margin: 14px 0 5px;
+      color: var(--teal-dark);
+      font-size: .78rem;
+    }
+
+    .review-card p {
+      margin: 0;
+      color: var(--ink-2);
+      font-size: .82rem;
+      line-height: 1.72;
+    }
+
+    .review-card ul {
+      margin: 6px 0 0;
+      padding-left: 18px;
+    }
+
+    .review-card li {
+      margin: 5px 0;
+      color: var(--ink-2);
+      font-size: .81rem;
+      line-height: 1.62;
+    }
+
+    .review-takeaway {
+      margin-top: 15px !important;
+      padding: 10px 12px;
+      border-left: 3px solid var(--amber);
+      background: var(--paper);
+      color: var(--ink) !important;
+      font-weight: 620;
+    }
+
+    .review-synthesis-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 13px;
+    }
+
+    .review-synthesis-grid div {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+    }
+
+    .review-synthesis-grid b {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--teal-dark);
+      font-size: .76rem;
+    }
+
+    .review-synthesis-grid span {
+      color: var(--ink-2);
+      font-size: .76rem;
+      line-height: 1.55;
+    }
+
+    .review-scope-note {
+      margin-top: 16px;
+      padding-top: 13px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .76rem;
+    }
+
+    .pqa2-definition {
+      margin: 20px 0;
+      padding: 18px 20px;
+      border: 1px solid rgba(61, 102, 132, .3);
+      border-left: 5px solid var(--blue);
+      border-radius: 7px;
+      background:
+        linear-gradient(110deg, rgba(61, 102, 132, .1), transparent 60%),
+        var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .pqa2-definition strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--blue);
+      font-family: var(--serif);
+      font-size: 1.02rem;
+    }
+
+    .pqa2-definition p { margin: 0; }
+
+    .pqa2-architecture {
+      margin: 22px 0;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .pqa2-query {
+      width: min(620px, 100%);
+      margin: 0 auto 10px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--paper);
+      font-size: .76rem;
+      text-align: center;
+    }
+
+    .pqa2-agent {
+      width: min(620px, 100%);
+      margin: 0 auto 18px;
+      padding: 15px 18px;
+      border: 2px solid var(--blue);
+      border-radius: 8px;
+      color: var(--ink-2);
+      background: var(--blue-pale);
+      text-align: center;
+    }
+
+    .pqa2-agent b {
+      display: block;
+      color: var(--blue);
+      font-family: var(--serif);
+      font-size: .98rem;
+    }
+
+    .pqa2-agent span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .73rem;
+    }
+
+    .pqa2-tool-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .pqa2-tool {
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--blue);
+      border-radius: 7px;
+      background: var(--white);
+    }
+
+    .pqa2-tool:nth-child(2) { border-top-color: var(--violet); }
+    .pqa2-tool:nth-child(3) { border-top-color: var(--amber); }
+    .pqa2-tool:nth-child(4) { border-top-color: var(--teal); }
+
+    .pqa2-tool small {
+      color: var(--muted);
+      font-size: .64rem;
+      font-weight: 750;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .pqa2-tool h3 {
+      margin: 6px 0 7px;
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: .91rem;
+    }
+
+    .pqa2-tool p {
+      margin: 0;
+      color: var(--ink-2);
+      font-size: .72rem;
+      line-height: 1.55;
+    }
+
+    .pqa2-state {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 7px;
+      margin-top: 13px;
+      padding: 12px;
+      border: 1px dashed var(--blue);
+      border-radius: 7px;
+      background: var(--paper);
+    }
+
+    .pqa2-state span {
+      padding: 5px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--ink-2);
+      background: var(--panel);
+      font-size: .69rem;
+    }
+
+    .pqa2-state b { color: var(--blue); }
+
+    .pqa2-pipeline {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      margin: 16px 0 22px;
+    }
+
+    .pqa2-stage {
+      position: relative;
+      min-height: 112px;
+      padding: 13px 11px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--white);
+    }
+
+    .pqa2-stage:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 50%;
+      right: -10px;
+      z-index: 2;
+      color: var(--blue);
+      transform: translateY(-50%);
+    }
+
+    .pqa2-stage b {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--blue);
+      font-size: .73rem;
+    }
+
+    .pqa2-stage span {
+      display: block;
+      color: var(--muted);
+      font-size: .69rem;
+      line-height: 1.5;
+    }
+
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 11px;
+      margin: 17px 0;
+    }
+
+    .insight-card {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel);
+    }
+
+    .insight-num {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--white);
+      background: var(--blue);
+      font-size: .74rem;
+      font-weight: 760;
+    }
+
+    .insight-card b {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: .88rem;
+    }
+
+    .insight-card p {
+      margin: 0;
+      color: var(--ink-2);
+      font-size: .76rem;
+      line-height: 1.62;
+    }
+
+    .pqa2-outer {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .pqa2-outer div {
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--white);
+    }
+
+    .pqa2-outer b {
+      display: block;
+      color: var(--teal-dark);
+      font-size: .8rem;
+    }
+
+    .pqa2-outer span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: .73rem;
+      line-height: 1.55;
+    }
+
+    .current-thesis {
+      margin: 20px 0;
+      padding: 18px 20px;
+      border: 1px solid rgba(46, 104, 85, .28);
+      border-left: 5px solid var(--teal);
+      border-radius: 7px;
+      background:
+        linear-gradient(110deg, rgba(46, 104, 85, .1), transparent 62%),
+        var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .current-thesis strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--teal-dark);
+      font-family: var(--serif);
+      font-size: 1.02rem;
+    }
+
+    .current-thesis p { margin: 0; }
+
+    .scope-map {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 58px minmax(0, 1fr) 58px minmax(0, 1fr);
+      gap: 9px;
+      align-items: stretch;
+      margin: 19px 0;
+    }
+
+    .scope-node {
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--blue);
+      border-radius: 7px;
+      background: var(--white);
+      box-shadow: var(--shadow);
+    }
+
+    .scope-node.working { border-top-color: var(--teal); }
+    .scope-node.session { border-top-color: var(--violet); }
+
+    .scope-node small {
+      color: var(--muted);
+      font-size: .64rem;
+      font-weight: 760;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .scope-node h3 {
+      margin: 6px 0 8px;
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: .98rem;
+    }
+
+    .scope-node p {
+      margin: 0;
+      color: var(--ink-2);
+      font-size: .76rem;
+      line-height: 1.58;
+    }
+
+    .scope-node code {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: .67rem;
+    }
+
+    .scope-arrow {
+      display: grid;
+      place-content: center;
+      color: var(--teal);
+      text-align: center;
+      font-size: 1.15rem;
+    }
+
+    .scope-arrow span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .6rem;
+      line-height: 1.3;
+    }
+
+    .scope-equation {
+      margin: 10px 0 22px;
+      padding: 12px 15px;
+      border: 1px dashed var(--teal);
+      border-radius: 7px;
+      color: var(--ink-2);
+      background: var(--paper);
+      font-size: .78rem;
+      text-align: center;
+    }
+
+    .scope-equation b { color: var(--teal-dark); }
+
+    .state-bridge {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+
+    .state-bridge div {
+      padding: 13px;
+      border-radius: 6px;
+      background: var(--panel);
+    }
+
+    .state-bridge b {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--teal-dark);
+      font-size: .76rem;
+    }
+
+    .state-bridge span {
+      color: var(--muted);
+      font-size: .72rem;
+      line-height: 1.5;
+    }
+
+    .mode-axis {
+      display: grid;
+      grid-template-columns: 1.35fr .65fr;
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .mode-family {
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .mode-family > b {
+      display: block;
+      color: var(--teal-dark);
+      font-family: var(--serif);
+      font-size: .91rem;
+    }
+
+    .mode-family > p {
+      margin: 5px 0 11px;
+      color: var(--muted);
+      font-size: .73rem;
+    }
+
+    .runner-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .runner-chip {
+      flex: 1 1 120px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--ink-2);
+      background: var(--white);
+      font-size: .71rem;
+      line-height: 1.45;
+    }
+
+    .runner-chip strong {
+      display: block;
+      color: var(--blue);
+      font-size: .74rem;
+    }
+
+    .tool-state-flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 9px;
+      margin: 16px 0;
+    }
+
+    .tool-state-step {
+      position: relative;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--paper);
+    }
+
+    .tool-state-step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 50%;
+      right: -10px;
+      z-index: 2;
+      color: var(--teal);
+      transform: translateY(-50%);
+    }
+
+    .tool-state-step code {
+      display: inline-block;
+      margin-bottom: 7px;
+    }
+
+    .tool-state-step b {
+      display: block;
+      color: var(--ink);
+      font-size: .75rem;
+    }
+
+    .tool-state-step span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .69rem;
+      line-height: 1.48;
+    }
+
+    .model-role { border-top: 1px solid var(--line); }
+
+    .model-role .role-call {
+      color: var(--violet);
+      background: var(--violet-pale);
+    }
+
+    .file-tree {
+      gap: 12px;
+      margin: 22px 0;
+    }
+
+    .file-row {
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--white);
+    }
+
+    .file-row a {
+      color: var(--blue);
+      font-weight: 660;
+    }
+
+    .copy {
+      border-color: var(--line);
+      color: var(--muted);
+      background: var(--paper);
+    }
+
+    .check {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .check::before { background: var(--teal); }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: var(--teal-dark);
+      background: var(--teal-pale);
+      font-size: .88em;
+    }
+
+    pre {
+      margin: 22px 0;
+      padding: 20px 22px;
+      border: 1px solid #343b37;
+      border-radius: 8px;
+      color: #edf2ee;
+      background: var(--ink);
+      font-size: .84rem;
+      line-height: 1.65;
+    }
+
+    .footer {
+      margin-top: 72px;
+      padding-top: 28px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .86rem;
+      font-weight: 360;
+      text-align: center;
+    }
+
+    @media (max-width: 760px) {
+      .hero,
+      .main-toc,
+      .content {
+        width: min(100% - 28px, 920px);
+        max-width: none;
+      }
+
+      .hero {
+        padding: 34px 8px 30px;
+        overflow: visible;
+      }
+
+      .hero-inner { overflow: visible; }
+
+      h1 {
+        width: auto;
+        max-width: none;
+        font-size: clamp(2.15rem, 11vw, 3rem);
+      }
+
+      .hero-lead,
+      .hero-note {
+        max-width: none;
+      }
+
+      .resource-row { margin-top: 18px; }
+
+      .hero-metrics {
+        width: 100%;
+        max-width: none;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .main-toc {
+        position: static;
+        margin-top: 18px;
+      }
+
+      .content { padding: 0 8px 56px; }
+
+      h2 {
+        margin-top: 46px;
+        font-size: 1.55rem;
+      }
+
+      .grid-2,
+      .grid-3,
+      .grid-4,
+      .file-tree {
+        grid-template-columns: 1fr;
+      }
+
+      .timeline {
+        margin-left: 0;
+        padding-left: 23px;
+      }
+
+      .timeline::before { left: 3px; }
+
+      .timeline-item {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+
+      .timeline-item::before { left: -27px; }
+
+      .growth,
+      .architecture,
+      .flow {
+        padding: 20px 16px;
+      }
+
+      .object-map { grid-template-columns: repeat(5, 145px); }
+
+      .retrieval-stage {
+        grid-template-columns: 62px 1fr;
+      }
+
+      .stage-kind {
+        grid-column: 2;
+        justify-self: start;
+      }
+
+      .v1-definition { grid-template-columns: 1fr; }
+      .v1-definition-mark { width: 44px; height: 44px; }
+      .v1-tool-grid, .v1-role-grid, .v1-boundary { grid-template-columns: 1fr; }
+      .v1-tool { min-height: 0; }
+      .v1-state { grid-template-columns: 1fr; }
+      .v1-state-arrow { transform: rotate(90deg); }
+      .v1-diagram { padding: 16px; }
+      .paper-figure-head { align-items: flex-start; }
+      .paper-figure-scroll { padding: 10px; }
+      .paper-figure img { width: 980px; max-width: none; }
+      .pqa2-tool-grid, .pqa2-pipeline, .pqa2-outer { grid-template-columns: 1fr; }
+      .pqa2-stage { min-height: 0; }
+      .pqa2-stage:not(:last-child)::after {
+        content: "↓";
+        top: auto;
+        right: 50%;
+        bottom: -12px;
+        transform: translateX(50%);
+      }
+      .pqa2-architecture { padding: 16px; }
+      .insight-grid { grid-template-columns: 1fr; }
+      .scope-map {
+        grid-template-columns: 1fr;
+      }
+      .scope-arrow { min-height: 36px; }
+      .scope-arrow > b { transform: rotate(90deg); }
+      .state-bridge, .mode-axis, .tool-state-flow { grid-template-columns: 1fr; }
+      .tool-state-step:not(:last-child)::after {
+        content: "↓";
+        top: auto;
+        right: 50%;
+        bottom: -12px;
+        transform: translateX(50%);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero-metrics { grid-template-columns: 1fr; }
+      .metric { text-align: center; }
+      .resource-link { width: 100%; }
+      .review-intro { grid-template-columns: 1fr; }
+      .review-verdict { justify-self: start; }
+      .review-rail { grid-auto-columns: 88%; }
+      .review-card { min-height: 0; padding: 17px; }
+      .review-synthesis-grid { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      :root {
+        --bg: white;
+        --paper: white;
+        --panel: white;
+        --ink: #111;
+        --ink-2: #222;
+        --muted: #555;
+        --line: #ccc;
+      }
+      .sidebar, .mobile-top, .progress, .filters, .side-actions { display: none !important; }
+      .shell { display: block; }
+      .hero { min-height: auto; padding: 30px 0; }
+      .content { width: 100%; padding: 0; }
+      section { break-inside: avoid; margin-top: 40px; }
+      .timeline-item, .card, .architecture, .tabs, .review-card, .v1-diagram, .paper-figure, .pqa2-architecture, .current-thesis, .scope-node, .mode-family { box-shadow: none; }
+      .paper-figure-scroll { overflow: visible; }
+      .paper-figure img { width: 100%; max-width: 100%; }
+      .timeline-item.hidden { display: grid; }
+      .tab-panel { display: block !important; }
+      .peer-review { break-inside: auto; }
+      .peer-review > .details-body { display: block; }
+      .review-rail { display: block; overflow: visible; }
+      .review-card { min-height: 0; margin: 12px 0; break-inside: avoid; }
+      .review-controls { display: none; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+
+  <div class="mobile-top">
+    <strong>PaperQA 源码详解</strong>
+    <div class="mobile-links">
+      <a href="#timeline">时间线</a>
+      <a href="#architecture">架构</a>
+      <a href="#runtime">运行链</a>
+      <a href="#code-map">源码地图</a>
+    </div>
+    <button class="icon-btn theme-toggle" aria-label="切换主题">◐</button>
+  </div>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="side-brand">
+        <span class="brand-mark">P</span>
+        <span>PaperQA <small class="side-kicker">Source-level guide</small></span>
+      </div>
+
+      <div class="nav-label">快速理解</div>
+      <nav class="side-nav">
+        <a href="#overview"><span class="nav-num">01</span>系统定位</a>
+        <a href="#timeline"><span class="nav-num">02</span>代码时间线</a>
+        <a href="#eras"><span class="nav-num">03</span>代际对比</a>
+        <a href="#v1-architecture"><span class="nav-num">03A</span>PaperQA v1 架构</a>
+        <a href="#peer-review"><span class="nav-num">03B</span>ICLR 同行评审</a>
+        <a href="#v2-architecture"><span class="nav-num">03C</span>PaperQA2 架构</a>
+      </nav>
+
+      <div class="nav-label">当前实现</div>
+      <nav class="side-nav">
+        <a href="#architecture"><span class="nav-num">04</span>总体架构</a>
+        <a href="#indexing"><span class="nav-num">05</span>离线索引</a>
+        <a href="#runtime"><span class="nav-num">06</span>Agent 运行链</a>
+        <a href="#tools"><span class="nav-num">07</span>工具与状态</a>
+        <a href="#retrieval"><span class="nav-num">08</span>双层检索</a>
+        <a href="#objects"><span class="nav-num">09</span>数据对象</a>
+        <a href="#models"><span class="nav-num">10</span>模型与服务</a>
+      </nav>
+
+      <div class="nav-label">使用与审计</div>
+      <nav class="side-nav">
+        <a href="#modes"><span class="nav-num">11</span>配置模式</a>
+        <a href="#failure"><span class="nav-num">12</span>失败与边界</a>
+        <a href="#code-map"><span class="nav-num">13</span>源码地图</a>
+        <a href="#reading"><span class="nav-num">14</span>阅读路线</a>
+      </nav>
+
+      <div class="side-actions">
+        <button class="icon-btn theme-toggle">◐ 主题</button>
+        <button class="icon-btn" onclick="window.print()">⌘ 打印</button>
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="hero-inner">
+          <div class="eyebrow">Repository archaeology · architecture · execution trace</div>
+          <h1>PaperQA<br>源码演进与系统架构</h1>
+          <p class="hero-lead">
+            这不是一张来自论文的抽象框图，而是沿着官方仓库的真实 Git 历史，
+            解释 PaperQA 如何从 300 行左右的 PDF 问答链，经历早期 Agent 试验、核心链重构，
+            再演变成今天的 <strong>Agent + Environment + Tools + 双层检索</strong> 系统。
+          </p>
+          <div class="resource-row">
+            <a class="resource-link primary" href="code/Future-House_paper-qa/README.html">官方源码归档</a>
+            <a class="resource-link" href="papers/2023_PaperQA_2312.07559v2.pdf">PaperQA 论文</a>
+            <a class="resource-link" href="papers/2024_PaperQA2_2409.13740v2.pdf">PaperQA2 论文</a>
+            <a class="resource-link" href="README_先看这里.html">资料总索引</a>
+          </div>
+          <div class="hero-metrics">
+            <div class="metric"><b>2023 → 2026</b><span>本地仓库覆盖时间</span></div>
+            <div class="metric"><b>924</b><span>v0.0.1 至归档 HEAD 的提交</span></div>
+            <div class="metric"><b>23,189</b><span>当前追踪的 Python 行数</span></div>
+            <div class="metric"><b>5 + 1</b><span>默认工具 + 可选临床试验搜索</span></div>
+          </div>
+          <p class="hero-note">
+            分析快照：官方仓库 <code>Future-House/paper-qa</code>，本地 HEAD
+            <code>d7675d7</code>（2026-06-05），最近标签 <code>v2026.03.18</code>。
+            页面生成于 2026-07-30；未把本地 HEAD 之后的分支提交当作当前实现。
+          </p>
+        </div>
+      </header>
+
+      <nav class="toc main-toc" aria-label="页面导航">
+        <a href="#overview">系统定位</a>
+        <a href="#timeline">代码时间线</a>
+        <a href="#eras">代际对比</a>
+        <a href="#v1-architecture">PaperQA v1 架构</a>
+        <a href="#peer-review">ICLR 同行评审</a>
+        <a href="#v2-architecture">PaperQA2 架构</a>
+        <a href="#architecture">总体架构</a>
+        <a href="#indexing">离线索引</a>
+        <a href="#runtime">Agent 运行链</a>
+        <a href="#tools">工具与状态</a>
+        <a href="#retrieval">双层检索</a>
+        <a href="#objects">数据对象</a>
+        <a href="#models">模型与服务</a>
+        <a href="#modes">配置模式</a>
+        <a href="#failure">失败与边界</a>
+        <a href="#code-map">源码地图</a>
+        <a href="#reading">阅读路线</a>
+      </nav>
+
+      <div class="content">
+        <section id="overview">
+          <div class="section-head">
+            <span class="section-index">01</span>
+            <div>
+              <h2>先建立正确的系统心智模型</h2>
+              <p class="section-desc">PaperQA 同时是一条文档处理管线、一个高精度 RAG 内核，以及一个让 LLM 决定检索步骤的 Agent harness。</p>
+            </div>
+          </div>
+
+          <div class="grid-4">
+            <article class="card">
+              <span class="card-number">A</span>
+              <h3>它处理什么</h3>
+              <p class="mini">PDF、文本、HTML、Office 文档、源码，以及新版本中的图、表、公式和页面图像。</p>
+            </article>
+            <article class="card">
+              <span class="card-number">B</span>
+              <h3>它检索什么</h3>
+              <p class="mini">默认搜索用户预先准备的本地语料库。先选论文，再从入选论文中选片段。</p>
+            </article>
+            <article class="card">
+              <span class="card-number">C</span>
+              <h3>Agent 决定什么</h3>
+              <p class="mini">选择搜索词、何时重新搜索、用什么问题取证、何时生成答案、是否重置或结束。</p>
+            </article>
+            <article class="card">
+              <span class="card-number">D</span>
+              <h3>Harness 决定什么</h3>
+              <p class="mini">可用工具、状态更新、执行并发、超时、步数、失败回退、引用格式和答案持久化。</p>
+            </article>
+          </div>
+
+          <div class="callout">
+            <div class="callout-icon">✓</div>
+            <div>
+              <strong>一句话定义</strong>
+              <p>当前开源 PaperQA 是“在本地科学文献库上运行的、证据摘要驱动的 Agentic RAG”。它不是单次 LLM 调用，也不是默认拥有开放互联网浏览器的通用研究 Agent。</p>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <article class="card">
+              <h3>控制面：谁决定下一步</h3>
+              <p class="mini"><code>run_agent</code>、<code>PaperQAEnvironment</code> 和 Aviary/LDP Agent 组成循环。LLM 只能通过工具改变研究状态，不能直接绕过 Environment 完成任务。</p>
+            </article>
+            <article class="card">
+              <h3>数据面：证据怎样流动</h3>
+              <p class="mini"><code>Docs</code>、<code>DocDetails</code>、<code>Text</code>、<code>Context</code> 与 <code>PQASession</code> 承载论文、切块、证据摘要、引用和最终答案。</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="timeline">
+          <div class="section-head">
+            <span class="section-index">02</span>
+            <div>
+              <h2>从 Git 历史看代码怎样变化</h2>
+              <p class="section-desc">选择筛选器可只看某类变化。主线不是持续单向“加功能”，而是经历了 Agent 原型、删除、重新工程化三个阶段。</p>
+            </div>
+          </div>
+
+          <div class="filters" aria-label="时间线筛选">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="rag">RAG 内核</button>
+            <button class="filter-btn" data-filter="agent">Agent / Harness</button>
+            <button class="filter-btn" data-filter="infra">工程与元数据</button>
+            <button class="filter-btn" data-filter="multimodal">多模态</button>
+          </div>
+
+          <div class="timeline">
+            <article class="timeline-item" data-category="rag">
+              <div class="time-date">2023-02<small>v0.0.1 · c6a864c</small></div>
+              <div class="time-body">
+                <h3>最初版本：每篇文档一个向量索引</h3>
+                <p><code>Docs.add()</code> 用 GPT Index 解析文件，为每篇文档建立独立向量索引；<code>get_evidence()</code> 遍历所有论文取相似片段，LLM 将片段压缩后，<code>query()</code> 生成答案和参考文献。</p>
+                <div class="change">规模：7 个 Python 文件、约 308 行。尚无可调用工具、Environment、统一配置或元数据服务。</div>
+              </div>
+            </article>
+
+            <article class="timeline-item" data-category="agent">
+              <div class="time-date">2023-04<small>v1.0.0 · 861f805</small></div>
+              <div class="time-body">
+                <h3>第一次 Agent 化：LangChain ReAct + 在线 paper scraper</h3>
+                <p><code>paperqa/agent.py</code> 提供 <em>Paper Search</em>、<em>Gather Evidence</em>、<em>Propose Answer</em> 三个工具；LangChain 的 <code>chat-zero-shot-react-description</code> Agent 循环调用它们。搜索工具当时通过可选的 <code>paperscraper</code> 在线找论文。</p>
+                <div class="change">这是 PaperQA 早期真正的多步 Agent，但工具是同步的，状态通过共享 <code>Docs/Answer</code> 对象维护，工程隔离较弱。</div>
+              </div>
+            </article>
+
+            <article class="timeline-item" data-category="rag infra">
+              <div class="time-date">2023-06<small>v3 refactor · 1f60272</small></div>
+              <div class="time-body">
+                <h3>一次重要折返：删除旧 Agent，重做核心对象</h3>
+                <p>v3 重构删除了 <code>paperqa/agent.py</code>，用 Pydantic 模型重组 <code>Doc → Text → Context → Answer</code>，加强异步、缓存、文件读取、提示词和类型系统。仓库主线暂时回到“可编程的高质量问答链”。</p>
+                <div class="change">这一步说明：今天的 Agent 架构不是 2023 原型的简单延续，而是在更稳定的 RAG 内核上重新搭建。</div>
+              </div>
+            </article>
+
+            <article class="timeline-item" data-category="rag infra">
+              <div class="time-date">2023-12<small>v3.13.4 · 97a99b7</small></div>
+              <div class="time-body">
+                <h3>PaperQA v1 论文时期：RCS 与引用回答逐渐稳定</h3>
+                <p>核心形态已经是：向量取片段 → 针对问题写 contextual summary → LLM 相关性打分 → 高分 Context 进入最终回答。引用清理、Markdown 输出、异步并发和可配置 prompt 在这一时期持续增强。</p>
+                <div class="change">规模约 2,781 行 Python；代码重点仍在 <code>Docs.get_evidence/query</code>，而不是通用 Agent 环境。</div>
+              </div>
+            </article>
+
+            <article class="timeline-item" data-category="rag infra">
+              <div class="time-date">2024-03→06<small>v4.0.0 → v4.9.0</small></div>
+              <div class="time-body">
+                <h3>模型与向量层抽象：为多供应商和大改版铺路</h3>
+                <p>加入 JSON 模式、callbacks、Anthropic 支持、稀疏/混合向量库、批量 embedding、独立的 <code>LLMModel</code>/<code>EmbeddingModel</code>/<code>VectorStore</code> 抽象，并迁移到 <code>pyproject.toml</code>。</p>
+                <div class="change">到 v4.9.0 约 4,917 行 Python；仍是以 <code>Docs.aquery()</code> 为中心的库式调用。</div>
+              </div>
+            </article>
+
+            <article class="timeline-item" data-category="agent infra">
+              <div class="time-date">2024-08→09<small>v5.0.0 · 45b206d</small></div>
+              <div class="time-body">
+                <h3>PaperQA2 的结构性升级：Agent、全文索引与 CLI 回归</h3>
+                <p>一次性加入 <code>agents/</code>、Tantivy 本地全文索引、CLI、配置预设、元数据 clients、Agent runner 和工具层。随后从 LangChain runner 切换为 Aviary ToolSelector 与 LDP Agent，使 Environment 可以用于训练、评测和轨迹回放。</p>
+                <div class="change">v5.0.0 达到 33 个 Python 文件、约 9,555 行；单次 PR “Agentic workflows...” 增加约 3,777 行。</div>
+              </div>
+            </article>
+
+            <article class="timeline-item" data-category="agent">
+              <div class="time-date">2024-11<small>#684 · #698 · #726</small></div>
+              <div class="time-body">
+                <h3>Agent harness 成熟：complete、reset 与失败回退</h3>
+                <p>新增 <code>complete(has_successful_answer)</code>，区分“有答案”和“确信答案”；新增 <code>reset</code> 清空不合适证据；补上超时/截断时强制 <code>gen_answer</code>、工具历史、无效工具处理和空工具调用处理。</p>
+                <div class="change">这批提交把“模型会调用工具”升级为“有终止语义、状态语义和故障语义的 Agent harness”。</div>
+              </div>
+            </article>
+
+            <article class="timeline-item" data-category="agent infra">
+              <div class="time-date">2025-01→03<small>v5.9 → v5.20</small></div>
+              <div class="time-body">
+                <h3>任务扩展：临床试验、答案迭代和轨迹接口</h3>
+                <p>加入 ClinicalTrials.gov 搜索工具；允许在已有回答基础上换证据迭代；只把当前子问题的最佳证据反馈给 Agent；增强 callbacks、LDP Memory/ReAct Agent 与外部评测集接入。</p>
+                <div class="change">PaperQA 不再只对应一个固定 QA 工作流，而开始成为可更换 Agent 策略和工具集合的环境。</div>
+              </div>
+            </article>
+
+            <article class="timeline-item" data-category="multimodal rag">
+              <div class="time-date">2025-08<small>c9fd25f · multimodal</small></div>
+              <div class="time-body">
+                <h3>多模态证据进入 RCS</h3>
+                <p>PDF reader 可以产出图片和表格；媒体经过 enrichment 后参与 embedding；创建 Context 时，文本、Markdown 表格及相关图像可以一起送入 <code>summary_llm</code>。失败时可退回纯文本摘要。</p>
+                <div class="change">多模态不是“最终模型看整篇 PDF”，而是嵌入检索与证据摘要阶段的受控扩展。</div>
+              </div>
+            </article>
+
+            <article class="timeline-item" data-category="multimodal infra">
+              <div class="time-date">2025-10→11<small>Docling · Nemotron Parse</small></div>
+              <div class="time-body">
+                <h3>解析器变成插件化子包</h3>
+                <p>仓库转向 <code>src/</code> + workspace packages，增加 <code>paper-qa-docling</code>、<code>paper-qa-nemotron</code>，原有 PyPDF/PyMuPDF 也成为独立 reader 包。表格、公式、bbox、页面图像和 Office 文档支持显著加强。</p>
+                <div class="change">到 2025-12，追踪 Python 行数约 21,485；大量新增来自解析插件和测试，而不是 Agent 循环本身。</div>
+              </div>
+            </article>
+
+            <article class="timeline-item" data-category="infra">
+              <div class="time-date">2025-12<small>v2025.12.17</small></div>
+              <div class="time-body">
+                <h3>从 SemVer 切换为 CalVer</h3>
+                <p>版本从 <code>v5.x</code> 切换为日期形式。官方约定：论文代际“PaperQA2”仍指 <code>paper-qa ≥ 5</code>；日期标签只是软件快照，不代表新的论文代际。</p>
+                <div class="change">阅读论文、PyPI 版本和 Git tag 时必须分开理解“算法名字”和“软件发行号”。</div>
+              </div>
+            </article>
+
+            <article class="timeline-item" data-category="multimodal agent infra">
+              <div class="time-date">2026-02→06<small>v2026.02.16 → d7675d7</small></div>
+              <div class="time-body">
+                <h3>面向现代推理模型与 PaperQA3 产品场景的底层增强</h3>
+                <p>继续修正 Docling/Nemotron、媒体坐标、GCS 签名链接、推理内容和新模型兼容性。开源仓库仍保留 PaperQA2 式 Environment；Edison Literature/PaperQA3 的生产索引、授权全文和更自由的视觉检查 harness 并未作为同等代码完整开源。</p>
+                <div class="change">本页分析 HEAD：183 个追踪文件、58 个 Python 文件、约 23,189 行 Python。</div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="eras">
+          <div class="section-head">
+            <span class="section-index">03</span>
+            <div>
+              <h2>代际对比：变化的不是只有模型</h2>
+              <p class="section-desc">从数据组织、搜索范围、控制逻辑和依赖框架四个维度看，v5 是最大分界线。</p>
+            </div>
+          </div>
+
+          <div class="growth">
+            <h3>追踪 Python 代码规模</h3>
+            <p class="mini">统计各 tag 中所有 <code>.py</code> 文件，仅用于观察工程规模，不等同于算法复杂度。</p>
+            <div class="growth-row"><span class="growth-label">v0.0.1</span><div class="bar-track"><div class="bar" style="width:1.3%"></div></div><span class="growth-value">308 行</span></div>
+            <div class="growth-row"><span class="growth-label">v1.0.0</span><div class="bar-track"><div class="bar" style="width:6.6%"></div></div><span class="growth-value">1,540 行</span></div>
+            <div class="growth-row"><span class="growth-label">v3.13.4</span><div class="bar-track"><div class="bar" style="width:12%"></div></div><span class="growth-value">2,781 行</span></div>
+            <div class="growth-row"><span class="growth-label">v4.9.0</span><div class="bar-track"><div class="bar" style="width:21.2%"></div></div><span class="growth-value">4,917 行</span></div>
+            <div class="growth-row"><span class="growth-label">v5.0.0</span><div class="bar-track"><div class="bar" style="width:41.2%"></div></div><span class="growth-value">9,555 行</span></div>
+            <div class="growth-row"><span class="growth-label">v5.29.1</span><div class="bar-track"><div class="bar" style="width:67.7%"></div></div><span class="growth-value">15,690 行</span></div>
+            <div class="growth-row"><span class="growth-label">v2025.12.17</span><div class="bar-track"><div class="bar" style="width:92.7%"></div></div><span class="growth-value">21,485 行</span></div>
+            <div class="growth-row"><span class="growth-label">归档 HEAD</span><div class="bar-track"><div class="bar" style="width:100%"></div></div><span class="growth-value">23,189 行</span></div>
+          </div>
+
+          <div class="era-table-wrap" style="margin-top:16px">
+            <table>
+              <thead>
+                <tr><th>时期</th><th>控制方式</th><th>论文发现</th><th>片段检索</th><th>关键对象/框架</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>v0 · 2023-02</td><td>固定链</td><td>用户手动添加文件</td><td>每篇论文独立 GPT Index</td><td><code>Docs</code>、dataclass <code>Answer</code></td></tr>
+                <tr><td>v1 · 2023-04</td><td>LangChain ReAct</td><td><code>paperscraper</code> 在线搜索</td><td>Docs 内部向量搜索</td><td>3 个 BaseTool，共享可变状态</td></tr>
+                <tr><td>v3/v4</td><td>以固定链为主</td><td>本地文件/URL/Zotero</td><td>向量/稀疏/混合 + RCS</td><td>Pydantic 类型、异步模型抽象</td></tr>
+                <tr><td>v5 / PaperQA2</td><td>Aviary ToolSelector 或 LDP</td><td>本地 Tantivy 论文索引</td><td>embedding + MMR + LLM 摘要打分</td><td>Environment、Tools、PQASession、Settings</td></tr>
+                <tr><td>2025-2026</td><td>同一 harness 持续增强</td><td>本地语料；可选临床试验 API</td><td>多模态 chunk + enrichment + RCS</td><td>reader 子包、媒体对象、Office/图表/公式</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout amber">
+            <div class="callout-icon">!</div>
+            <div>
+              <strong>不要把“PaperQA v1 论文”与“Python 包 v1.0.0”机械等同</strong>
+              <p>论文代际、Git tag 和 Python 包大版本在这个项目里长期不是同一套编号。最稳妥的方法是同时记录论文名称、Git commit 和配置文件。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="v1-architecture">
+          <div class="section-head">
+            <span class="section-index">03A</span>
+            <div>
+              <h2>PaperQA v1：LangChain Agent 包裹的非线性 RAG</h2>
+              <p class="section-desc">以下只还原 2023 年论文实验中的架构，不混入当前版本的 Environment、Tantivy、Aviary/LDP、多模态 reader 或临床试验工具。</p>
+            </div>
+          </div>
+
+          <div class="v1-definition">
+            <span class="v1-definition-mark">v1</span>
+            <div>
+              <strong>一句话定义</strong>
+              <p>一个 GPT-4 Agent 控制 <code>search</code>、<code>gather evidence</code>、<code>answer question</code> 三种 RAG 工具，在共享论文库和证据库上反复执行，直到它认为答案足够完整。</p>
+            </div>
+          </div>
+
+          <figure class="paper-figure">
+            <div class="paper-figure-head">
+              <b>论文原图 · Figure 1: PaperQA Workflow Diagram</b>
+              <a href="assets/paperqa_v1_figure1_workflow.png" target="_blank" rel="noopener">打开高清原图 ↗</a>
+            </div>
+            <div class="paper-figure-scroll">
+              <a href="assets/paperqa_v1_figure1_workflow.png" target="_blank" rel="noopener" aria-label="打开 PaperQA Workflow Diagram 高清原图">
+                <img src="assets/paperqa_v1_figure1_workflow.png" width="3765" height="1355" loading="lazy" alt="PaperQA v1 workflow diagram：Agent LLM 在 Search、Gather Evidence 与 Answer Question 三种工具之间循环，证据充分时输出 Query Answer。">
+              </a>
+            </div>
+            <figcaption>
+              <strong>怎样读这张图：</strong>蓝色是论文搜索，紫色是证据收集，粉色是回答生成；中央灰色的 Agent LLM 决定调用顺序。Answer LLM 产生的答案会先返回 Agent，证据不足则继续工作，充分时才输出。下方的中文结构图进一步展开了原图没有写出的模型版本、共享状态和每个工具的内部步骤。窄屏可横向滑动，点击图片可查看 3765×1355 原图。
+            </figcaption>
+          </figure>
+
+          <div class="v1-diagram">
+            <div class="v1-question">用户科学问题 · 系统先用完整问题自动执行一次论文搜索</div>
+            <div class="v1-down">↓</div>
+            <div class="v1-agent">
+              <b>Agent LLM · GPT-4-0613</b>
+              <span>LangChain OpenAIFunctionsAgent · 改写问题、选择工具、判断证据是否足够、接受或拒绝候选答案</span>
+            </div>
+
+            <div class="v1-tool-grid">
+              <article class="v1-tool">
+                <span class="v1-tool-num">Tool 01</span>
+                <h3>Search · 论文级检索</h3>
+                <ol>
+                  <li>Agent 给出关键词与可选年份</li>
+                  <li>Google Scholar 检索可访问论文</li>
+                  <li>经 arXiv、PMC、PubMed 等取得全文</li>
+                  <li>PDF 解析并切成重叠的 4,000 字符 chunk</li>
+                  <li><code>text-embedding-ada-002</code> 向量化入库</li>
+                </ol>
+              </article>
+
+              <article class="v1-tool">
+                <span class="v1-tool-num">Tool 02</span>
+                <h3>Gather Evidence · 片段取证</h3>
+                <ol>
+                  <li>Agent 提交一个具体问题或子问题</li>
+                  <li>向量搜索召回候选 chunk</li>
+                  <li>MMR 增加来源与内容多样性</li>
+                  <li>GPT-3.5 针对问题摘要每段</li>
+                  <li>输出 1–10 relevance score，高分证据入库</li>
+                </ol>
+              </article>
+
+              <article class="v1-tool">
+                <span class="v1-tool-num">Tool 03</span>
+                <h3>Answer Question · 引用回答</h3>
+                <ol>
+                  <li>Ask LLM 先给约 50 字参数知识</li>
+                  <li>从证据库选最高分的 8 条 Context</li>
+                  <li>GPT-4 Answer LLM 综合回答</li>
+                  <li>每项主张附论文 citation marker</li>
+                  <li>证据不足时应输出 “I cannot answer”</li>
+                </ol>
+              </article>
+            </div>
+
+            <div class="v1-state">
+              <div><b>共享论文库 / Bibliography</b>已经找到的论文、元数据、全文 chunk 与 embedding</div>
+              <span class="v1-state-arrow">⇄</span>
+              <div><b>共享证据库 / Context Library</b>面向问题生成的摘要、出处与相关性分数</div>
+            </div>
+
+            <div class="v1-loop">
+              <b>关键控制回路：</b>候选答案会先返回 Agent，而不是直接交付用户。Agent 可以接受并结束，也可以认为答案不完整，再次搜索、换一种问法收集证据，然后重新生成答案。这是 v1 所说的 <em>a posteriori</em> 判断。
+            </div>
+          </div>
+
+          <h3>三层检索，而不只是“embedding 找相似文本”</h3>
+          <div class="flow" aria-label="PaperQA v1 三层检索">
+            <div class="flow-step"><em>01</em><b>论文搜索</b><span>Google Scholar + 全文获取 API，先决定读哪些论文</span></div>
+            <div class="flow-step"><em>02</em><b>向量召回</b><span>问题 embedding + MMR，从论文全文中找候选 chunk</span></div>
+            <div class="flow-step"><em>03</em><b>LLM 重排</b><span>Summary LLM 将 chunk 改写成问题相关证据并给 1–10 分</span></div>
+            <div class="flow-step"><em>04</em><b>证据归约</b><span>最高分的 8 条 Context 进入最终回答 prompt</span></div>
+          </div>
+
+          <h3>一次回答中的四个 LLM 角色</h3>
+          <div class="v1-role-grid">
+            <div class="v1-role"><b>Agent LLM</b><code>GPT-4-0613</code><span>规划、选工具、改写检索、判断是否继续；temperature 0.5。</span></div>
+            <div class="v1-role"><b>Summary LLM</b><code>GPT-3.5-turbo-0613</code><span>并行摘要候选 chunk 并评分；temperature 0.2，是调用量最大的模型。</span></div>
+            <div class="v1-role"><b>Ask LLM</b><code>GPT-4-0613</code><span>提供预训练参数知识，作为最终回答的额外背景；temperature 0.5。</span></div>
+            <div class="v1-role"><b>Answer LLM</b><code>GPT-4-0613</code><span>根据证据和背景生成带引用的候选答案；temperature 0.5。</span></div>
+          </div>
+
+          <div class="callout amber">
+            <div class="callout-icon">!</div>
+            <div>
+              <strong>RCS 分数的正确理解</strong>
+              <p>1–10 分是 Summary LLM 为候选证据生成的工程排序信号，与 embedding 距离共同完成第二次筛选；它不是经过专家标定的科学相关性尺度，也没有在论文中证明跨问题可比较。</p>
+            </div>
+          </div>
+
+          <div class="v1-boundary">
+            <div>
+              <b>v1 已经是什么</b>
+              <p>它已经是会多步执行的 Agent：可以重复搜索、分解问题、换关键词取证、生成候选答案，再决定是否继续。它不是“一次检索 + 一次 LLM”的固定 RAG。</p>
+            </div>
+            <div>
+              <b>v1 还不是什么</b>
+              <p>它不是新的通用 Agent 算法，也没有当前版本正式的 Environment、ToolRequest、PQASession、Tantivy 本地索引、明确终止工具与失败状态；更接近 LangChain Agent 加共享可变状态的科学 RAG 系统。</p>
+            </div>
+          </div>
+
+          <p class="source-note">架构依据：<a href="papers/2023_PaperQA_2312.07559v2.pdf">PaperQA v1 论文</a> §3.1–3.2、§5.1 与附录 A.2–A.4。论文实验每轮 Gather Evidence 考虑 20 个候选来源，最终回答使用 8 条证据 Context。</p>
+        </section>
+
+        <section id="peer-review">
+          <div class="section-head">
+            <span class="section-index">03B</span>
+            <div>
+              <h2>从 ICLR 2024 同行评审反看 PaperQA v1</h2>
+              <p class="section-desc">这组评审最有价值的地方，不是“论文被拒”本身，而是它清楚暴露了 PaperQA v1 的贡献边界、评测薄弱处，以及后来 PaperQA2 为什么必须把系统和 benchmark 都做得更完整。</p>
+            </div>
+          </div>
+
+          <details class="peer-review">
+            <summary>
+              <span>
+                <strong>展开 ICLR Submission 8010 评审档案</strong>
+                <span>横向滑动阅读：Area Chair → 4 位审稿人 → 作者总体立场 → 综合分析</span>
+              </span>
+            </summary>
+            <div class="details-body">
+              <div class="review-intro">
+                <p>投稿时间为 2023-09-24，最终决定为拒稿。四位审稿人的分数并不一致：两位明确拒绝，一位略低于接收线，一位略高于接收线；Area Chair 最终认为“创新性有限 + LitQA 规模过小”没有在 rebuttal 中得到实质解决。</p>
+                <span class="review-verdict">Decision · Reject</span>
+              </div>
+
+              <div class="review-rail-head">
+                <span class="review-counter"><b data-review-current>1</b> / <span data-review-total>7</span> · 可拖动或横向滚动</span>
+                <div class="review-controls" aria-label="切换评审卡片">
+                  <button class="review-arrow" type="button" data-review-prev aria-label="上一张">←</button>
+                  <button class="review-arrow" type="button" data-review-next aria-label="下一张">→</button>
+                </div>
+              </div>
+
+              <div class="review-rail" data-review-rail tabindex="0" aria-label="ICLR 评审卡片">
+                <article class="review-card ac">
+                  <div class="review-role"><span>Area Chair · CTzJ</span><span class="review-score">Meta-review</span></div>
+                  <h3>决定者：问题不在结果，而在贡献是否足够</h3>
+                  <h4>核心判断</h4>
+                  <ul>
+                    <li>方法仍像常见 RAG 框架，论文没有证明足够强的方法创新。</li>
+                    <li>LitQA 只有 50 题，难以承担“新 benchmark”的主贡献。</li>
+                    <li>剩余贡献主要是实验评估，但评测细节本身也存在争议。</li>
+                  </ul>
+                  <h4>为何 rebuttal 没扭转决定</h4>
+                  <p>作者解释了标注昂贵，却没有在投稿后扩大数据集；AC 因而看不到 camera-ready 阶段能出现实质改善的证据。</p>
+                  <p class="review-takeaway">理解要点：高性能不自动等于论文贡献强。AC 把“系统效果”与“方法/benchmark 贡献”分开评价。</p>
+                </article>
+
+                <article class="review-card">
+                  <div class="review-role"><span>Reviewer · 1BNP</span><span class="review-score">3 / Reject</span></div>
+                  <h3>可复现性审查者：概念有前景，技术说明不够</h3>
+                  <h4>认可</h4>
+                  <p>认可“找论文—抽取证据—综合回答”的完整科学检索流程，也认可 LitQA 尝试逼近真实文献研究。</p>
+                  <h4>主要质疑</h4>
+                  <ul>
+                    <li>pipeline 与已有 retrieval–reading–answering 工作差异不足。</li>
+                    <li>50 题无法充分检验泛化。</li>
+                    <li>1–10 relevance score 缺乏标定；模型版本、竞品配置与实验细节缺失。</li>
+                  </ul>
+                  <h4>作者回应</h4>
+                  <p>强调 Agent 可任意次、任意顺序调用 RAG 工具；补充模型为 <code>gpt-3.5-turbo-0613</code> 和 <code>gpt-4-0613</code>，并说明分数只用于把 20 个候选压到 8 个。</p>
+                  <p class="review-takeaway">理解要点：RCS 的数字是工程排序信号，不是经专家标定、可解释的“科学相关性测量”。</p>
+                </article>
+
+                <article class="review-card">
+                  <div class="review-role"><span>Reviewer · afKA</span><span class="review-score">3 / Reject</span></div>
+                  <h3>研究问题审查者：更像产品，论证有过度延伸</h3>
+                  <h4>主要质疑</h4>
+                  <ul>
+                    <li>论文没有一开始明确提出要回答的研究问题。</li>
+                    <li>参数知识与检索证据冲突时怎么办，没有系统研究。</li>
+                    <li>“错误率低”不能推出“模型更确定”；API 用时与人类判断时间也不可直接类比。</li>
+                    <li>要求 summary LLM 给分却“不解释分数”，所谓 reasoning 缺少可检查依据。</li>
+                  </ul>
+                  <h4>作者回应</h4>
+                  <p>后补三个问题：非线性 Agent RAG 是否优于线性 RAG、RAG 工具是否改善科学 QA、全文分层 RAG 是否减少虚假引用；并把“更确定”改成“更愿意在不确定时表达不确定”。</p>
+                  <p class="review-takeaway">理解要点：这是对 claim discipline 的批评——实验支持“答对得更多”，却未必支持校准、推理或类人研究效率。</p>
+                </article>
+
+                <article class="review-card positive">
+                  <div class="review-role"><span>Reviewer · CSpW</span><span class="review-score">5 / Borderline reject</span></div>
+                  <h3>Agent 视角审查者：看到了模块化价值，但不认为框架新</h3>
+                  <h4>认可</h4>
+                  <p>准确抓住 PaperQA 的技术特点：把 search、gather evidence、answer 拆成工具，允许系统改写检索词、重复取证，并判断答案是否完整。</p>
+                  <h4>主要质疑</h4>
+                  <ul>
+                    <li>动态工具调用与 ReAct 很接近，缺少 ReAct、Reflexion 等 Agent 框架对照。</li>
+                    <li>50 道选择题与真实科学研究、长答案生成仍有明显距离。</li>
+                    <li>“零引用幻觉”的长文本实验细节交代不足。</li>
+                  </ul>
+                  <h4>作者回应</h4>
+                  <p>明确 PaperQA 不是新 Agent 框架，而是搭在任意 Agent 框架之上的科学 QA 系统；当时实际使用 LangChain <code>OpenAIFunctionsAgent</code>，ReAct 测试差异不大。</p>
+                  <p class="review-takeaway">理解要点：PaperQA 的原创单元更适合说成“科学 RAG 工具与 workflow 设计”，而不是新的通用 Agent 算法。</p>
+                </article>
+
+                <article class="review-card positive">
+                  <div class="review-role"><span>Reviewer · vdwn</span><span class="review-score">6 / Weak accept</span></div>
+                  <h3>评测设计审查者：效果认可，但担心过拟合与选择题捷径</h3>
+                  <h4>认可</h4>
+                  <p>认为写作清晰、消融充分、LitQA 上表现很好；阅读 rebuttal 后还将分数上调 1 分。</p>
+                  <h4>主要质疑</h4>
+                  <ul>
+                    <li>50 题是否事实上成了开发集？缺少 dev/test 划分。</li>
+                    <li>选择项给了额外线索；真正重要的应是去掉选项后的开放回答结果。</li>
+                    <li>长文本零幻觉很难置信，需要解释评估方法与搜索工具条件。</li>
+                    <li>Perplexity、Scite、Elicit 并非为选择题设计，比较是否公平？</li>
+                  </ul>
+                  <h4>作者回应</h4>
+                  <p>称 LitQA 在系统完成后才引入、未用于调参；无选项答案由 GPT-4 判定并人工抽查一轮；引用幻觉实验本来就是无选项长答案。</p>
+                  <p class="review-takeaway">理解要点：这是最支持论文的审稿人，但他依然认为开放式评测才更接近 PaperQA 的真实用途。</p>
+                </article>
+
+                <article class="review-card">
+                  <div class="review-role"><span>Authors · Rebuttal</span><span class="review-score">总体立场</span></div>
+                  <h3>作者怎样定义自己的贡献</h3>
+                  <h4>他们坚持的三点</h4>
+                  <ul>
+                    <li>把 RAG 步骤暴露为工具，让 Agent 非线性地重复、改写和组合步骤。</li>
+                    <li>检索范围覆盖广泛科学文献，并深入全文，而非只看摘要或单一数据库。</li>
+                    <li>证明通用 LLM 配合合适工具，可以优于单纯调用 LLM，未必需要任务微调。</li>
+                  </ul>
+                  <h4>他们承认的边界</h4>
+                  <p>LitQA 规模小；开放式 QA 尚需更好的评估；相关性分数未经标定；工业竞品内部配置不可知；早期文字中关于“确定性”和 GPT-4 summary 的部分表述不严谨。</p>
+                  <p class="review-takeaway">理解要点：作者最强的答辩是系统工程与实证效果；最弱的答辩是用“数据昂贵”回应 benchmark 规模与统计可靠性。</p>
+                </article>
+
+                <article class="review-card synthesis">
+                  <div class="review-role"><span>Synthesis · 我们的判断</span><span class="review-score">如何利用评审</span></div>
+                  <h3>拒稿没有否定系统价值，但限定了应如何描述它</h3>
+                  <div class="review-synthesis-grid">
+                    <div><b>真正站得住的贡献</b><span>全文科学文献检索、证据压缩与引用回答被组织成可迭代工具链；系统效果具有吸引力。</span></div>
+                    <div><b>不能夸大的贡献</b><span>它不是新的通用 Agent 框架；1–10 RCS 也不是经过校准的相关性理论。</span></div>
+                    <div><b>最大评测弱点</b><span>LitQA v1 仅 50 道选择题，缺少独立划分，开放式现实任务的证据不足。</span></div>
+                    <div><b>最关键的方法风险</b><span>参数知识、选择项和检索证据可能共同提供捷径；引用正确也不等于结论完整或科学上可靠。</span></div>
+                  </div>
+                  <h4>把它放回项目演进中</h4>
+                  <p>这批意见解释了后续工作的方向：PaperQA2 更强调可复现的 Agent harness、完整轨迹和更严格的 LitQA2；当前代码则进一步把 Environment、Tools、索引、模型角色和失败状态工程化。换言之，v1 的拒稿问题并未让 PaperQA 消失，而是推动它从“效果很好的 RAG 应用论文”转向更可测、更可审计的研究系统。</p>
+                  <p class="review-takeaway">最终定位：把 PaperQA v1 看作一个有价值的科学文献 Agent 原型与系统实证，而不是已被充分验证的新 Agent 方法或成熟 benchmark。</p>
+                </article>
+              </div>
+
+              <p class="review-scope-note"><strong>范围提醒：</strong>上述批评针对 2023 年投稿的 PaperQA v1 与 LitQA v1，不能原样套用到 PaperQA2、LitQA2 或 2026 年的当前代码；后续章节描述的是显著扩展后的系统。</p>
+            </div>
+          </details>
+        </section>
+
+        <section id="v2-architecture">
+          <div class="section-head">
+            <span class="section-index">03C</span>
+            <div>
+              <h2>PaperQA2：围绕召回、证据质量与可归因性重构</h2>
+              <p class="section-desc">PaperQA2 没有推翻 v1 的 Agentic RAG，而是把“Agent 为什么有用、检索在哪一层失败、怎样更可靠地筛证据”变成可消融、可度量的工程问题。</p>
+            </div>
+          </div>
+
+          <div class="pqa2-definition">
+            <strong>一句话定义</strong>
+            <p>一个读取显式状态的 GPT-4-Turbo Agent，动态控制论文搜索、全文取证、引用图遍历和引用回答；它用 hybrid retrieval 扩大召回，用深层 RCS 压缩并重排证据，再让生成模型只基于最高质量 Context 作答。</p>
+          </div>
+
+          <figure class="paper-figure">
+            <div class="paper-figure-head">
+              <b>论文原图 · Figure 1A: PaperQA2 Agentic Toolset</b>
+              <a href="assets/paperqa2_figure1a_agentic_toolset.png" target="_blank" rel="noopener">打开高清原图 ↗</a>
+            </div>
+            <div class="paper-figure-scroll">
+              <a href="assets/paperqa2_figure1a_agentic_toolset.png" target="_blank" rel="noopener" aria-label="打开 PaperQA2 Figure 1A 高清原图">
+                <img src="assets/paperqa2_figure1a_agentic_toolset.png" width="1350" height="930" loading="lazy" alt="PaperQA2 Figure 1A：Paper Search、Gather Evidence、Citations Traversal、Generate Answer 四种工具围绕带有 Artifact state 和 History state 的 PaperQA2 Agent 工作，每个工具执行后更新状态。">
+              </a>
+            </div>
+            <figcaption>
+              <strong>怎样读这张图：</strong>中央 Agent 同时维护两类状态：<em>Artifact state</em> 保存论文、片段、证据摘要和答案等任务产物；<em>History state</em> 保存用户提示、工具请求与工具响应轨迹。四个工具都不是固定流水线节点，而是可被 Agent 反复选择的状态变换操作，每次执行后通过 <em>State update</em> 把结果写回。下方中文图进一步补充具体模型、数据表示和调用条件。
+            </figcaption>
+          </figure>
+
+          <div class="pqa2-architecture">
+            <div class="pqa2-query">用户任务 · LitQA2 问答 / WikiCrow 综述子任务 / ContraCrow 证据核查</div>
+            <div class="v1-down">↓</div>
+            <div class="pqa2-agent">
+              <b>Agent LLM · GPT-4-Turbo-2024-04-09</b>
+              <span>观察 papers / evidence / cost 状态，修改关键词、决定是否沿引用图扩展、何时重新取证与生成答案</span>
+            </div>
+
+            <div class="pqa2-tool-grid">
+              <article class="pqa2-tool">
+                <small>Tool 01</small>
+                <h3>Paper Search</h3>
+                <p>把任务改写为关键词与年份查询；经 Semantic Scholar 等取得候选论文，匹配可访问全文并加入状态。</p>
+              </article>
+              <article class="pqa2-tool">
+                <small>Tool 02</small>
+                <h3>Gather Evidence</h3>
+                <p>hybrid embedding 召回 Top-k chunk；高能力 Summary LLM 生成结构化摘要和 relevance score。</p>
+              </article>
+              <article class="pqa2-tool">
+                <small>Tool 03 · New</small>
+                <h3>Citation Traversal</h3>
+                <p>从高分证据所属论文出发，向后查参考文献、向前查 citers；新增论文后重新 Gather。</p>
+              </article>
+              <article class="pqa2-tool">
+                <small>Tool 04</small>
+                <h3>Generate Answer</h3>
+                <p>选择最高分 Context，要求 Answer LLM 只使用有效 citation keys，证据不足则拒答。</p>
+              </article>
+            </div>
+
+            <div class="pqa2-state">
+              <span><b>Agent State</b></span>
+              <span>论文与元数据</span>
+              <span>全文 chunks</span>
+              <span>Context summaries</span>
+              <span>relevance scores</span>
+              <span>paper / evidence / cost status</span>
+            </div>
+          </div>
+
+          <h3>PaperQA2 的检索数据面</h3>
+          <div class="pqa2-pipeline">
+            <div class="pqa2-stage"><b>论文发现</b><span>Semantic Scholar 等返回默认约 12 篇候选论文</span></div>
+            <div class="pqa2-stage"><b>全文解析</b><span>PyMuPDF 或 GROBID；按滑窗或章节切块</span></div>
+            <div class="pqa2-stage"><b>Hybrid 表示</b><span><code>text-embedding-3-large</code> + 256 维稀疏关键词向量</span></div>
+            <div class="pqa2-stage"><b>Top-k 召回</b><span>对问题做 cosine similarity，LitQA2 默认取 30 个 chunk</span></div>
+            <div class="pqa2-stage"><b>深层 RCS</b><span>并行生成 200–400 token 摘要、分数与可选元数据</span></div>
+            <div class="pqa2-stage"><b>最终归约</b><span>默认 15 条 Context；5 条偏 accuracy，15 条偏 precision</span></div>
+          </div>
+
+          <div class="grid-2">
+            <article class="card">
+              <span class="tag blue">检索表示</span>
+              <h3 style="margin-top:10px">为什么从纯 dense 变成 hybrid</h3>
+              <p class="mini">语义 embedding 擅长找概念相似内容，稀疏关键词向量擅长保留基因名、化合物、变异编号和缩写等精确符号。科学检索同时需要两种能力。</p>
+            </article>
+            <article class="card">
+              <span class="tag violet">结构化 RCS</span>
+              <h3 style="margin-top:10px">为什么摘要不只是文本</h3>
+              <p class="mini">RCS 改为可解析的 JSON/XML，可同时保留摘要、相关性分数、来源元数据或任务字段。原始约 2,250-token chunk 被压缩成 200–400-token Context，扩大最终可读证据量。</p>
+            </article>
+          </div>
+
+          <h3>v1 → PaperQA2：改变了什么</h3>
+          <div class="era-table-wrap">
+            <table>
+              <thead>
+                <tr><th>维度</th><th>PaperQA v1</th><th>PaperQA2</th><th>变化的含义</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Agent 控制</td><td>LangChain Functions Agent，共享状态较隐式</td><td>Agent prompt 显式注入论文数、证据数和成本状态</td><td>让下一步搜索建立在可观察结果上</td></tr>
+                <tr><td>工具</td><td>Search / Gather / Answer</td><td>新增 Citation Traversal</td><td>从关键词空间进入科学引用网络</td></tr>
+                <tr><td>论文表示</td><td><code>ada-002</code> dense embedding</td><td><code>embedding-3-large</code> + sparse keyword</td><td>兼顾语义相似与术语精确命中</td></tr>
+                <tr><td>全文结构</td><td>普通 PDF 文本与重叠字符块</td><td>PyMuPDF / GROBID；可按章节切块</td><td>支持表格、章节和引用结构更复杂的任务</td></tr>
+                <tr><td>RCS</td><td>GPT-3.5；约 20 个候选；文本 + 分数</td><td>强模型；默认 30 个候选；结构化 JSON + 元数据</td><td>把证据判断提升为关键模型能力</td></tr>
+                <tr><td>回答 Context</td><td>约 8 条</td><td>默认 15 条，另测 5 条</td><td>明确研究覆盖率与噪声之间的权衡</td></tr>
+                <tr><td>模型参数知识</td><td>独立 Ask LLM 提供背景</td><td>核心流程不再暴露独立 Ask LLM</td><td>更强调答案由检索证据归因</td></tr>
+                <tr><td>评测</td><td>LitQA 50 题，侧重最终答对率</td><td>LitQA2 共 248 题，其中 101 题在主要工程改动后新建；分阶段 DOI recall</td><td>区分搜索、排序、RCS 与引用各层失败</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>真正驱动变化的六个 insight</h3>
+          <div class="insight-grid">
+            <article class="insight-card">
+              <span class="insight-num">01</span>
+              <div><b>首要瓶颈常在召回，而不是写答案</b><p>目标论文没进入状态，Answer LLM 再强也无从回答。因此 v2 测量 Search → Top-k → RCS → Attribution 每一阶段是否仍保留正确 DOI。</p></div>
+            </article>
+            <article class="insight-card">
+              <span class="insight-num">02</span>
+              <div><b>Agent 的价值是“修复检索失败”</b><p>No Agent 固定管线显著更差。动态系统的优势来自看到低召回后改关键词、再次搜索或沿引用图扩展，而不是抽象的“思维链更长”。</p></div>
+            </article>
+            <article class="insight-card">
+              <span class="insight-num">03</span>
+              <div><b>引用网络本身就是科学检索索引</b><p>高相关论文的 references 与 citers 往往比表面关键词更接近目标证据。Citation Traversal 模拟研究者顺藤摸瓜，并提高 DOI recall。</p></div>
+            </article>
+            <article class="insight-card">
+              <span class="insight-num">04</span>
+              <div><b>RCS 存在模型能力门槛</b><p>GPT-3.5 和 Llama 3 70B 做 RCS 有时比不做更差；错误摘要或评分会提前丢掉正确证据。GPT-4-Turbo RCS 显著更强。</p></div>
+            </article>
+            <article class="insight-card">
+              <span class="insight-num">05</span>
+              <div><b>检索要看得宽，生成要喂得精</b><p>RCS 深度从 1 增至 10 明显提高准确率，10–30 仍有递减收益；先并行审查更多 chunk，再只把最高质量摘要交给 Answer LLM。</p></div>
+            </article>
+            <article class="insight-card">
+              <span class="insight-num">06</span>
+              <div><b>Context 不是越多越好</b><p>更多证据提高覆盖率，也带来干扰与冲突。5 条 Context 偏向 accuracy，15 条偏向 precision，因此 cutoff 是任务相关参数。</p></div>
+            </article>
+          </div>
+
+          <h3>PaperQA2 核心之外的两个外层系统</h3>
+          <div class="pqa2-outer">
+            <div><b>PaperQA2 Core</b><span>一次任务中的搜索、取证、引用遍历与回答 Agent；它才是本节的核心架构。</span></div>
+            <div><b>WikiCrow</b><span>围绕基因的结构、功能、互作和临床意义，编排多个 PaperQA2 调用后合成长篇 Wikipedia 风格文章。</span></div>
+            <div><b>ContraCrow</b><span>先从论文抽取 claim，再让 PaperQA2 跨文献寻找支持、反驳或无证据，完成矛盾检测。</span></div>
+          </div>
+
+          <div class="callout rose">
+            <div class="callout-icon">!</div>
+            <div>
+              <strong>论文系统不等于当时开源仓库的开箱能力</strong>
+              <p>论文实验运行在作者机构更完整的 HTTP 与数据基础设施上，包含非本地全文访问、缓存、数据库、任务编排和云存储。论文明确说明：当时开源包不包含完整的非本地全文检索、GROBID 服务代码和 Citation Traversal 工具。算法与配置公开，不代表外部用户无需补基础设施就能逐项复现。</p>
+            </div>
+          </div>
+
+          <p class="source-note">架构依据：<a href="papers/2024_PaperQA2_2409.13740v2.pdf">PaperQA2 论文</a> §2–3、§8.1–8.1.1。LitQA2 运行平均每题使用 14.5 篇论文、调用 1.26 次搜索和 0.46 次引用遍历，说明工具轨迹确实随问题动态变化。</p>
+        </section>
+
+        <section id="architecture">
+          <div class="section-head">
+            <span class="section-index">04</span>
+            <div>
+              <h2>当前总体架构：控制面与数据面分离</h2>
+              <p class="section-desc">Agent 不负责解析 PDF 或实现检索；它只选择工具。Environment 把工具调用作用到状态，底层 RAG 内核完成真正的数据处理。</p>
+            </div>
+          </div>
+
+          <div class="current-thesis">
+            <strong>先抓住这一句，再看组件图</strong>
+            <p>当前 PaperQA 是“持久化本地语料库 → 每个问题的临时候选论文集 → 本次会话的证据与答案”三层状态，再由 Agent 通过 Environment 和工具推动状态逐步变化。</p>
+          </div>
+
+          <h3>三个范围不同的“库”</h3>
+          <div class="scope-map">
+            <article class="scope-node">
+              <small>Persistent · 跨问题复用</small>
+              <h3>本地语料库</h3>
+              <p>用户论文目录建立出的完整 corpus。Tantivy 保存文档级全文索引，<code>docs/</code> 保存逐篇解析、切块和 embedding 结果。</p>
+              <code>SearchIndex + serialized Docs</code>
+            </article>
+            <div class="scope-arrow"><b>→</b><span>paper_search<br>选择并载入</span></div>
+            <article class="scope-node working">
+              <small>Per-query · 本轮工作集</small>
+              <h3>候选论文集</h3>
+              <p>只包含当前问题已经搜索命中的论文。后续向量检索和 RCS 不会扫描整个 corpus，而是在这个工作集中进行。</p>
+              <code>EnvironmentState.docs</code>
+            </article>
+            <div class="scope-arrow"><b>→</b><span>gather_evidence<br>形成证据</span></div>
+            <article class="scope-node session">
+              <small>Per-run · 本次会话</small>
+              <h3>证据与答案</h3>
+              <p>保存问题相关 Context、当前答案、引用、费用、token 和工具轨迹；它描述这一次 Agent 运行发生了什么。</p>
+              <code>PQASession</code>
+            </article>
+          </div>
+
+          <div class="scope-equation">
+            <b>EnvironmentState = Docs + PQASession + status_fn</b> · 其中 Docs 是当前问题的工作集，不是磁盘上的全部论文库。
+          </div>
+
+          <h3>组件怎样围绕这三层状态协作</h3>
+          <div class="architecture">
+            <div class="arch-grid">
+              <div class="arch-label">用户入口</div>
+              <div class="arch-box control"><h4>CLI</h4><p><code>pqa ask/index/search/view</code></p></div>
+              <div class="arrow">→</div>
+              <div class="arch-box control"><h4>Python API</h4><p><code>ask()</code> / <code>agent_query()</code></p></div>
+              <div class="arrow">→</div>
+              <div class="arch-box control"><h4>run_agent</h4><p>选择 fake、Aviary 或 LDP runner</p></div>
+
+              <div class="arch-label">控制面</div>
+              <div class="arch-box control"><h4>Agent LLM</h4><p>根据观察与工具 schema 选择下一步</p></div>
+              <div class="arrow">⇄</div>
+              <div class="arch-box control"><h4>PaperQAEnvironment</h4><p>reset / step / done / timeout / tool execution</p></div>
+              <div class="arrow">⇄</div>
+              <div class="arch-box control"><h4>EnvironmentState</h4><p><code>Docs + PQASession + status</code></p></div>
+
+              <div class="arch-label">工具层</div>
+              <div class="arch-box data"><h4>paper_search</h4><p>从本地 Tantivy 索引载入候选论文</p></div>
+              <div class="arrow">·</div>
+              <div class="arch-box data"><h4>gather_evidence</h4><p>chunk 检索、RCS 摘要、相关性评分</p></div>
+              <div class="arrow">·</div>
+              <div class="arch-box data"><h4>gen_answer / complete</h4><p>回答、引用格式化与终止语义</p></div>
+
+              <div class="arch-label">RAG 数据面</div>
+              <div class="arch-box data"><h4>SearchIndex</h4><p>Tantivy 文档级全文索引 + 序列化 Docs</p></div>
+              <div class="arrow">→</div>
+              <div class="arch-box data"><h4>Docs / VectorStore</h4><p>候选论文、Text chunks、embedding/MMR</p></div>
+              <div class="arrow">→</div>
+              <div class="arch-box data"><h4>Context / PQASession</h4><p>证据摘要、分数、答案、引用、成本</p></div>
+
+              <div class="arch-label">模型与外部服务</div>
+              <div class="arch-box model"><h4>LLM / Summary LLM</h4><p>元数据推断、证据摘要、最终回答</p></div>
+              <div class="arrow">+</div>
+              <div class="arch-box model"><h4>Embedding</h4><p>chunk 与查询向量；本地或 API 模型</p></div>
+              <div class="arrow">+</div>
+              <div class="arch-box external"><h4>Metadata Providers</h4><p>Crossref、Semantic Scholar；可选 OpenAlex 等</p></div>
+            </div>
+          </div>
+
+          <div class="grid-3" style="margin-top:14px">
+            <article class="card">
+              <span class="tag">编排层</span>
+              <h3 style="margin-top:10px">Agent ≠ RAG 内核</h3>
+              <p class="mini">更换 Agent 策略不会自动改变 chunking、embedding、RCS 或答案 prompt；这些由 Settings 和 Docs 实现。</p>
+            </article>
+            <article class="card">
+              <span class="tag blue">状态层</span>
+              <h3 style="margin-top:10px">Environment 是边界</h3>
+              <p class="mini">模型发出的普通文字不会推进任务；<code>step()</code> 要求 <code>ToolRequestMessage</code>，并统一记录工具历史和 token。</p>
+            </article>
+            <article class="card">
+              <span class="tag amber">持久化层</span>
+              <h3 style="margin-top:10px">索引与会话分开</h3>
+              <p class="mini">语料索引保存解析后的单篇 Docs；答案另存进 <code>answers</code> 索引，可搜索历史问题与回答。</p>
+            </article>
+          </div>
+
+          <div class="state-bridge">
+            <div><b>PaperQA2 图中的 Artifact state</b><span>在当前实现中主要落到 <code>Docs</code> 与 <code>PQASession</code>：论文、Text、Context、答案和引用。</span></div>
+            <div><b>PaperQA2 图中的 History state</b><span>分布在 Agent runner 的 message ledger 与 <code>PQASession.tool_history</code>：请求、观察和工具轨迹。</span></div>
+            <div><b>PaperQA2 图中的 State update</b><span>由 <code>PaperQAEnvironment.step()</code> 统一执行；Agent 只能通过合法 ToolRequest 推动状态。</span></div>
+          </div>
+        </section>
+
+        <section id="indexing">
+          <div class="section-head">
+            <span class="section-index">05</span>
+            <div>
+              <h2>离线阶段：论文怎样进入系统</h2>
+              <p class="section-desc">第一次 <code>pqa ask</code> 默认会同步语料目录并建立索引。这可能是整个流程中最耗时、最依赖外部服务的一步。</p>
+            </div>
+          </div>
+
+          <div class="flow">
+            <div class="flow-step"><em>01</em><b>扫描目录</b><span>递归发现 PDF/TXT/HTML/Office</span></div>
+            <div class="flow-step"><em>02</em><b>读取文档</b><span>按扩展名选择 reader</span></div>
+            <div class="flow-step"><em>03</em><b>推断引用</b><span>首 1–3 页交给 LLM</span></div>
+            <div class="flow-step"><em>04</em><b>补全元数据</b><span>DOI、标题、作者、期刊质量</span></div>
+            <div class="flow-step"><em>05</em><b>解析与切块</b><span>文本、页码、图表和重叠</span></div>
+            <div class="flow-step"><em>06</em><b>向量化</b><span>可立即或延迟 embedding</span></div>
+            <div class="flow-step"><em>07</em><b>保存双索引</b><span>Tantivy + 压缩 Docs 对象</span></div>
+          </div>
+
+          <div class="grid-2">
+            <article class="card">
+              <h3>Tantivy 中保存什么</h3>
+              <p class="mini"><code>file_location</code>、完整正文 <code>body</code>、标题和年份。它用于快速选出“哪几篇论文可能相关”，是关键词/BM25 风格的文档级全文检索。</p>
+            </article>
+            <article class="card">
+              <h3>docs/ 目录保存什么</h3>
+              <p class="mini">每篇论文对应一个压缩 pickled <code>Docs</code> 对象，其中包含 <code>DocDetails</code>、所有 Text chunks、媒体对象以及可能已经计算好的 embedding。</p>
+            </article>
+          </div>
+
+          <details>
+            <summary>Reader 如何选择？</summary>
+            <div class="details-body">
+              <ul>
+                <li>PDF：默认 reader 或可选 PyPDF、PyMuPDF、Docling、Nemotron Parse。</li>
+                <li>TXT/HTML/源码：文本 reader，支持按字符数与行切块。</li>
+                <li>DOCX/XLSX/PPTX：Office reader；图表可进入多模态流程。</li>
+                <li>图像：解析为带媒体内容的 <code>ParsedText</code>。</li>
+              </ul>
+            </div>
+          </details>
+          <details>
+            <summary>Manifest 为什么重要？</summary>
+            <div class="details-body">
+              Manifest CSV 可直接提供 <code>file_location</code>、DOI、标题、引用等元数据，避免逐篇调用 LLM 推断引用并查询在线元数据服务。做 benchmark 时，它还能固定 corpus identity，减少网络波动和错误元数据造成的变量。
+            </div>
+          </details>
+          <details>
+            <summary>索引何时重建？</summary>
+            <div class="details-body">
+              <code>AgentSettings.rebuild_index</code> 默认是 <code>true</code>。构建时使用文件清单和正文 hash 跳过未变化文件；如果 <code>sync_with_paper_directory</code> 开启，语料目录里消失的文件也会从索引移除。实验时应固定独立的 <code>paper_directory</code> 和 <code>index_directory</code>。
+            </div>
+          </details>
+
+          <div class="callout amber">
+            <div class="callout-icon">!</div>
+            <div>
+              <strong>常见误区：<code>paper_search</code> 不是联网搜论文</strong>
+              <p>当前默认工具只是搜索已建立的本地 Tantivy 索引。Crossref、Semantic Scholar 等默认用于元数据补全，而不是让 Agent 任意搜索和下载论文。早期 v1 的 <code>paperscraper</code> 在线搜索并没有原样保留到当前默认工具。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="runtime">
+          <div class="section-head">
+            <span class="section-index">06</span>
+            <div>
+              <h2>在线阶段：一次问题如何跑完</h2>
+              <p class="section-desc">先区分“是否经过 Agent Environment”，再区分 Environment 内使用哪种 runner。Manual Docs API 不属于 run_agent 的一种 Agent。</p>
+            </div>
+          </div>
+
+          <div class="mode-axis">
+            <div class="mode-family">
+              <b>经过 Agent harness</b>
+              <p><code>run_agent()</code> 创建同一个 PaperQAEnvironment，再选择三种 runner 之一。</p>
+              <div class="runner-chips">
+                <div class="runner-chip"><strong>Aviary ToolSelector</strong>默认动态 Agent，根据观察逐步选择工具。</div>
+                <div class="runner-chip"><strong>LDP Agent</strong>可学习或自定义 policy，复用同一 Environment。</div>
+                <div class="runner-chip"><strong>fake</strong>确定性工具链，用于基线和组件消融。</div>
+              </div>
+            </div>
+            <div class="mode-family">
+              <b>绕过 Agent harness</b>
+              <p>用户直接调用 <code>Docs</code> 的取证与回答方法。</p>
+              <div class="runner-chips">
+                <div class="runner-chip"><strong>Manual Docs API</strong>没有 Agent policy，也没有 Environment 的 complete/timeout 语义。</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabs" data-tabs>
+            <div class="tab-head">
+              <button class="tab-btn active" data-tab="agent">默认 Agent</button>
+              <button class="tab-btn" data-tab="ldp">LDP Agent</button>
+              <button class="tab-btn" data-tab="fake">fake 固定流程</button>
+              <button class="tab-btn" data-tab="manual">Manual Docs API</button>
+            </div>
+
+            <div class="tab-panel active" data-panel="agent">
+              <h3>Aviary ToolSelector：真正的动态多步执行</h3>
+              <pre>obs, tools = await env.reset()
+while not done:
+    action = await agent(messages + obs, tools)
+    obs, reward, done, truncated = await env.step(action)</pre>
+              <ol>
+                <li><code>run_agent()</code> 先确保本地语料索引存在。</li>
+                <li>Environment 清空本轮工作集，创建新的 <code>PQASession</code> 和工具。</li>
+                <li>Agent LLM 接收问题、当前论文数、证据数、成本以及工具 schema。</li>
+                <li>LLM 可多次换关键词调用 <code>paper_search</code>，也可一次并行发出多个安全工具调用。</li>
+                <li>有论文后调用 <code>gather_evidence</code>；可用原问题，也可用更窄的子问题。</li>
+                <li>调用 <code>gen_answer</code> 后，Agent 可以继续搜索和迭代答案，而非强制结束。</li>
+                <li>只有调用 <code>complete</code> 才正常结束；它同时声明 Agent 对答案是否确信。</li>
+              </ol>
+            </div>
+
+            <div class="tab-panel" data-panel="ldp">
+              <h3>LDP：更换 policy，不更换 PaperQA 数据面</h3>
+              <pre>env = PaperQAEnvironment(query, settings, docs)
+manager = RolloutManager(agent, callbacks=[...])
+trajectories = await manager.sample_trajectories(
+    environments=[env],
+    max_steps=settings.agent.max_timesteps,
+)</pre>
+              <p>LDP runner 使用同一组 Environment、Tools、Docs、RCS 和 PQASession。它改变的是怎样根据历史与观察产生下一步 action，可接入不同 memory 或经过优化的 policy。</p>
+              <p class="mini">因此比较 ToolSelector 与 LDP 时，主要测 Agent policy；只有同时修改 Settings、工具或模型，才把 RAG 变量也带入比较。</p>
+            </div>
+
+            <div class="tab-panel" data-panel="fake">
+              <h3>fake：没有选择策略的确定性 harness</h3>
+              <pre>3 × LLM-proposed search query
+→ gather_evidence(original_question)
+→ gen_answer()
+→ LLM fills complete(has_successful_answer)</pre>
+              <p>“fake”并不意味着不用 LLM：搜索词、证据摘要、最终回答和 complete 参数仍可能由 LLM 产生。它只是没有逐步观察状态并自由选择工具的 Agent policy。</p>
+              <p class="mini">内置 <code>fast.json</code> 使用该模式。因此比较模型时，如果一个实验使用 ToolSelector、另一个使用 fast/fake，比较结果同时包含 harness 差异。</p>
+            </div>
+
+            <div class="tab-panel" data-panel="manual">
+              <h3>Manual：直接调用 RAG 内核，不使用 Agent</h3>
+              <pre>docs = Docs()
+await docs.aadd(path, settings=settings)
+session = await docs.aget_evidence(question, settings=settings)
+session = await docs.aquery(session, settings=settings)</pre>
+              <p>这条路径适合组件消融、固定 corpus QA、调试 reader/embedding/prompt，以及构建自己的 Agent harness。它不会自动改写查询或决定何时再次检索。</p>
+            </div>
+          </div>
+
+          <div class="callout">
+            <div class="callout-icon">i</div>
+            <div>
+              <strong>PaperQA 可以评测“模型”，也可以评测“Agent 系统”</strong>
+              <p>固定 fake/manual 流程、更换 LLM，接近模型能力对比；固定模型、更换 ToolSelector/ReAct/Memory Agent，则是在评测 policy；同时更换模型、prompt、工具和语料，测到的是整个系统。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="tools">
+          <div class="section-head">
+            <span class="section-index">07</span>
+            <div>
+              <h2>工具是 Agent 与 PaperQA 内核的契约</h2>
+              <p class="section-desc">每个工具都有清晰输入、状态副作用和返回观察。默认工具列表来自当前源码，而不是旧配置文件中的文字说明。</p>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <article class="card tool-card" data-tool="search">
+              <span class="tag">默认 · 可并发</span>
+              <h3 style="margin-top:10px">paper_search</h3>
+              <p class="mini">用 query 在本地全文索引中选论文，将返回论文的 chunks 和元数据载入本轮 <code>state.docs</code>。</p>
+              <div class="io"><div><b>输入</b>query, min_year, max_year</div><div><b>副作用</b>paper count 增加</div></div>
+            </article>
+            <article class="card tool-card" data-tool="evidence">
+              <span class="tag blue">默认</span>
+              <h3 style="margin-top:10px">gather_evidence</h3>
+              <p class="mini">对已有论文执行 chunk 检索和 RCS，将高分 <code>Context</code> 累积进 session，并向 Agent 展示当前子问题的最佳证据。</p>
+              <div class="io"><div><b>输入</b>question</div><div><b>副作用</b>contexts 增加</div></div>
+            </article>
+            <article class="card tool-card" data-tool="answer">
+              <span class="tag violet">默认</span>
+              <h3 style="margin-top:10px">gen_answer</h3>
+              <p class="mini">筛选最高分 Context，构造答案 prompt，生成含内部 citation IDs 的回答，再格式化引用。</p>
+              <div class="io"><div><b>输入</b>无显式参数</div><div><b>副作用</b>answer 更新</div></div>
+            </article>
+            <article class="card tool-card" data-tool="reset">
+              <span class="tag rose">默认</span>
+              <h3 style="margin-top:10px">reset</h3>
+              <p class="mini">清空 Context 和已序列化 context string，但不删除已经载入的论文。用于证据方向错误、反复无法回答时重来。</p>
+              <div class="io"><div><b>输入</b>无</div><div><b>副作用</b>evidence 归零</div></div>
+            </article>
+            <article class="card tool-card" data-tool="complete">
+              <span class="tag amber">默认 · 终止</span>
+              <h3 style="margin-top:10px">complete</h3>
+              <p class="mini">声明最后答案是否成功，并让 Environment 的 <code>done=True</code>。它本身不生成新答案。</p>
+              <div class="io"><div><b>输入</b>has_successful_answer</div><div><b>副作用</b>终止 rollout</div></div>
+            </article>
+            <article class="card tool-card" data-tool="trial">
+              <span class="tag violet">可选 · 可并发</span>
+              <h3 style="margin-top:10px">clinical_trials_search</h3>
+              <p class="mini">查询 ClinicalTrials.gov，并把试验记录转换为可检索文档；同时改变 status，使论文与临床试验分别计数。</p>
+              <div class="io"><div><b>输入</b>结构化 query</div><div><b>副作用</b>trial count 增加</div></div>
+            </article>
+          </div>
+
+          <h3>按“状态副作用”记工具，比记名字更容易</h3>
+          <div class="tool-state-flow">
+            <div class="tool-state-step"><code>paper_search</code><b>本地 corpus → 当前 Docs</b><span>增加本轮候选论文与 Text chunks。</span></div>
+            <div class="tool-state-step"><code>gather_evidence</code><b>Text → Context</b><span>在 PQASession 中累积摘要、分数和引用键。</span></div>
+            <div class="tool-state-step"><code>gen_answer</code><b>Context → Answer</b><span>更新回答、格式化引用与 bibliography；不会自动结束。</span></div>
+            <div class="tool-state-step"><code>complete</code><b>Answer → AgentStatus</b><span>声明成功与否并结束 rollout；本身不生成答案。</span></div>
+          </div>
+
+          <div class="callout">
+            <div class="callout-icon">↺</div>
+            <div>
+              <strong><code>reset</code> 是旁路控制，不是“清空一切”</strong>
+              <p>它清空当前 Context 与序列化 context string，但保留已经载入 <code>state.docs</code> 的论文。其语义是“基于相同候选论文重新取证”，而不是重建 corpus 或彻底重新开始搜索。</p>
+            </div>
+          </div>
+
+          <div class="callout rose">
+            <div class="callout-icon">!</div>
+            <div>
+              <strong>源码审计发现：年份参数目前没有实际过滤搜索结果</strong>
+              <p><code>paper_search</code> 会清洗 <code>min_year/max_year</code> 并把年份范围用于搜索分页键，但调用 <code>SearchIndex.query()</code> 时没有传入过滤条件，而且查询字段明确排除了 <code>year</code>。因此不能仅凭工具 schema 假定年份约束已生效。</p>
+            </div>
+          </div>
+
+          <div class="callout amber">
+            <div class="callout-icon">!</div>
+            <div>
+              <strong>旧 prompt 与当前工具列表存在实现漂移</strong>
+              <p><code>wikicrow.json</code> 和 <code>contracrow.json</code> 的 Agent prompt 仍提到“collect papers cited in evidence”，但当前默认工具列表没有 citation traversal 工具。实验应以运行时生成的工具 schema 为准。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="retrieval">
+          <div class="section-head">
+            <span class="section-index">08</span>
+            <div>
+              <h2>核心算法：两层检索 + RCS</h2>
+              <p class="section-desc">PaperQA 的高成本和高精度都主要来自第三层——它不是只依赖 embedding 分数，而让 LLM 针对问题重新表述并评分每段证据。</p>
+            </div>
+          </div>
+
+          <div class="retrieval-stack">
+            <div class="retrieval-stage">
+              <span class="stage-num">LEVEL 0</span>
+              <div><strong>Agent 查询规划</strong><p>根据问题与已有状态产生关键词或更窄的取证问题。</p></div>
+              <span class="stage-kind">LLM policy</span>
+            </div>
+            <div class="retrieval-stage">
+              <span class="stage-num">LEVEL 1</span>
+              <div><strong>Tantivy 论文级全文检索</strong><p>在标题、正文、路径等文本字段上召回整篇论文，默认每次 8 篇。</p></div>
+              <span class="stage-kind">lexical retrieval</span>
+            </div>
+            <div class="retrieval-stage">
+              <span class="stage-num">LEVEL 2</span>
+              <div><strong>Embedding / MMR 片段级检索</strong><p>在已载入论文的 Text chunks 中选出 top-k；MMR 可抑制重复证据。</p></div>
+              <span class="stage-kind">dense / hybrid</span>
+            </div>
+            <div class="retrieval-stage">
+              <span class="stage-num">LEVEL 3</span>
+              <div><strong>Contextual summarization + relevance scoring</strong><p>summary LLM 将每个 chunk 压缩成针对问题的 Context，并输出 0–10 相关性分数。</p></div>
+              <span class="stage-kind">LLM re-rank</span>
+            </div>
+            <div class="retrieval-stage">
+              <span class="stage-num">LEVEL 4</span>
+              <div><strong>Context serialization</strong><p>按分数排序、截断到 <code>answer_max_sources</code>、移除低于阈值的 Context，生成带合法 key 的上下文。</p></div>
+              <span class="stage-kind">deterministic</span>
+            </div>
+            <div class="retrieval-stage">
+              <span class="stage-num">LEVEL 5</span>
+              <div><strong>Grounded answer generation</strong><p>answer LLM 只能引用本次 context 提供的 <code>pqac-*</code> keys；之后系统清理幻觉 key 并生成 bibliography。</p></div>
+              <span class="stage-kind">LLM synthesis</span>
+            </div>
+          </div>
+
+          <div class="grid-3" style="margin-top:16px">
+            <article class="card">
+              <h3>为什么先选论文？</h3>
+              <p class="mini">避免把整个大型语料库的所有 chunk 都放入内存和向量搜索；Tantivy 便于增量索引、缓存和全文关键词召回。</p>
+            </article>
+            <article class="card">
+              <h3>为什么还要 RCS？</h3>
+              <p class="mini">原始 chunk 可能长且夹杂无关信息。RCS 将其转换为“回答当前问题所需的证据”，同时保留数字、公式和直接引语。</p>
+            </article>
+            <article class="card">
+              <h3>为什么成本高？</h3>
+              <p class="mini">一次 <code>gather_evidence</code> 会对 top-k chunks 并发发起多个 summary LLM 请求；Agent 又可能多轮搜索和取证。</p>
+            </article>
+          </div>
+
+          <details>
+            <summary>多模态如何进入这条链？</summary>
+            <div class="details-body">
+              Reader 将图片、表格或页面截图挂在 <code>Text.media</code>。可选 enrichment LLM 先描述媒体，使描述参与 embedding；RCS 阶段再把原始图像 URL、文本和 Markdown 表格一起发送给 summary LLM。也就是说，视觉内容主要在“检索增强”和“证据形成”阶段进入，而不是把整篇 PDF 无差别塞给最终回答模型。
+            </div>
+          </details>
+          <details>
+            <summary>引用 grounding 能保证什么，不能保证什么？</summary>
+            <div class="details-body">
+              系统能够限制并清理 citation ID：不存在于 Context 的 ID 会被移除，合法 ID 会映射回文献名和 citation。但它不能程序化证明“每个主张确实被对应 Context 支持”；证据摘要错误、相关性误判和最终模型的语义外推仍可能发生。
+            </div>
+          </details>
+        </section>
+
+        <section id="objects">
+          <div class="section-head">
+            <span class="section-index">09</span>
+            <div>
+              <h2>数据对象：从论文到最终会话</h2>
+              <p class="section-desc">对象边界解释了缓存位置、状态在哪里变化，以及 benchmark 应记录哪些中间量。</p>
+            </div>
+          </div>
+
+          <div class="object-map">
+            <div class="object"><b>DocDetails</b><span>title / authors / DOI</span><span>year / journal / citations</span><span>source quality / retraction</span></div>
+            <div class="object"><b>Text</b><span>chunk text</span><span>page/name/embedding</span><span>media[]</span></div>
+            <div class="object"><b>Context</b><span>RCS summary</span><span>relevance score</span><span>pqac-* id</span></div>
+            <div class="object"><b>Docs</b><span>docs{} + texts[]</span><span>VectorStore</span><span>current working corpus</span></div>
+            <div class="object"><b>PQASession</b><span>question / answer</span><span>contexts / references</span><span>cost / tokens / history</span></div>
+          </div>
+
+          <div class="grid-2" style="margin-top:14px">
+            <article class="card">
+              <h3>EnvironmentState</h3>
+              <p class="mini">只是 <code>Docs + PQASession + status_fn</code> 的封装。工具收到隐藏注入的 <code>state</code>，直接修改这两个核心对象；Agent 只看到工具返回的观察文本。</p>
+            </article>
+            <article class="card">
+              <h3>AnswerResponse</h3>
+              <p class="mini">runner 最终返回 <code>session + AgentStatus</code>。状态可为 SUCCESS、UNSURE、TRUNCATED、FAIL；不应只用非空 answer 判断运行是否成功。</p>
+            </article>
+          </div>
+
+          <div class="callout">
+            <div class="callout-icon">◎</div>
+            <div>
+              <strong>做 Agent benchmark 时，建议保存完整 PQASession</strong>
+              <p>除了 final answer，还应记录 <code>tool_history</code>、contexts、每模型 token_counts、cost、config_md5、has_successful_answer 和 runner status。否则无法区分“检索失败”“证据形成失败”“回答失败”和“Agent 过早结束”。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="models">
+          <div class="section-head">
+            <span class="section-index">10</span>
+            <div>
+              <h2>三个模型角色与外部服务</h2>
+              <p class="section-desc">默认三种 LLM 角色可以指向同一模型，但实验上最好把它们当成独立变量。</p>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <article class="card model-role">
+              <span class="tag violet">agent_llm</span>
+              <h3 style="margin-top:10px">工具选择模型</h3>
+              <p class="mini">阅读观察和工具 schema，生成 ToolRequestMessage。决定搜索深度、查询改写、何时回答和结束。</p>
+              <div class="role-call">调用次数 ≈ Agent steps</div>
+            </article>
+            <article class="card model-role">
+              <span class="tag violet">summary_llm</span>
+              <h3 style="margin-top:10px">证据形成模型</h3>
+              <p class="mini">对每个召回 chunk 生成 Context 和相关性分数；启用多模态时也查看相关图表。</p>
+              <div class="role-call">调用次数 ≈ 每轮 evidence_k</div>
+            </article>
+            <article class="card model-role">
+              <span class="tag violet">llm</span>
+              <h3 style="margin-top:10px">回答与辅助模型</h3>
+              <p class="mini">生成最终答案；添加无 manifest 文献时也可能推断 citation、标题和 DOI；fake 模式还用它提出搜索词。</p>
+              <div class="role-call">调用次数 = 回答 + 元数据辅助</div>
+            </article>
+          </div>
+
+          <div class="grid-2" style="margin-top:14px">
+            <article class="card">
+              <h3>Embedding model</h3>
+              <p class="mini">当前默认 <code>text-embedding-3-small</code>；可使用 Sentence Transformers、本地模型、稀疏或 hybrid embedding。它影响片段召回，不直接选择论文级 Tantivy 结果。</p>
+            </article>
+            <article class="card">
+              <h3>Metadata clients</h3>
+              <p class="mini">默认顺序为 Crossref、Semantic Scholar、Journal Quality 后处理。OpenAlex、Unpaywall 和 RetractionData 属于可选的 ALL_CLIENTS，并非默认全部调用。</p>
+            </article>
+          </div>
+
+          <div class="era-table-wrap" style="margin-top:14px">
+            <table>
+              <thead><tr><th>外部能力</th><th>默认用途</th><th>它不等于什么</th></tr></thead>
+              <tbody>
+                <tr><td>Crossref</td><td>DOI、BibTeX、标题、作者、引用数等元数据</td><td>全文论文搜索器</td></tr>
+                <tr><td>Semantic Scholar</td><td>元数据、引用数、论文匹配；代码支持更多搜索类型</td><td>默认 Agent 的网络搜索工具</td></tr>
+                <tr><td>Journal Quality</td><td>本地表格推断 venue/source quality</td><td>自动证明论文可信</td></tr>
+                <tr><td>ClinicalTrials.gov</td><td>仅在配置工具时搜索试验记录</td><td>默认 QA 流程的一部分</td></tr>
+                <tr><td>LiteLLM/LMI</td><td>统一不同供应商的 LLM、embedding、token 与 cost</td><td>Agent policy 本身</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="modes">
+          <div class="section-head">
+            <span class="section-index">11</span>
+            <div>
+              <h2>配置决定“同一个 PaperQA”实际是什么</h2>
+              <p class="section-desc">模型、检索深度、工具、prompt、reader 和 agent_type 都由 Settings 控制。报告结果时仅写“用了 PaperQA”是不充分的。</p>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <article class="card">
+              <span class="tag">high_quality</span>
+              <h3 style="margin-top:10px">默认高质量</h3>
+              <p class="mini">20 个候选证据、最多 5 个回答来源、10 路证据摘要并发、7,000 字符 chunk、启用详细文献元数据。</p>
+            </article>
+            <article class="card">
+              <span class="tag amber">fast</span>
+              <h3 style="margin-top:10px">低成本固定链</h3>
+              <p class="mini">5 个证据、3 个来源、短摘要和短答案、不查详细元数据，并把 <code>agent_type</code> 设为 <code>fake</code>。</p>
+            </article>
+            <article class="card">
+              <span class="tag rose">debug</span>
+              <h3 style="margin-top:10px">快速调试</h3>
+              <p class="mini">小模型、2 个证据、延迟 embedding、短答案；适合检查链路，不代表论文级性能。</p>
+            </article>
+            <article class="card">
+              <span class="tag blue">wikicrow</span>
+              <h3 style="margin-top:10px">长证据综述</h3>
+              <p class="mini">hybrid embedding、25 个证据、最多 12 个来源、约 300 字证据摘要，并使用 Wikipedia 风格回答 prompt。</p>
+            </article>
+            <article class="card">
+              <span class="tag violet">contracrow</span>
+              <h3 style="margin-top:10px">矛盾检测</h3>
+              <p class="mini">30 个证据、最多 15 个来源；最终输出从 explicit contradiction 到 explicit agreement 的等级。</p>
+            </article>
+            <article class="card">
+              <span class="tag violet">clinical_trials</span>
+              <h3 style="margin-top:10px">论文 + 试验</h3>
+              <p class="mini">显式加入临床试验搜索工具；也有只搜临床试验、不提供 paper_search 的变体。</p>
+            </article>
+          </div>
+
+          <div class="callout">
+            <div class="callout-icon">≡</div>
+            <div>
+              <strong>最小可复现实验配置</strong>
+              <p>至少固定：Git commit、完整 Settings JSON、三个 LLM 角色、embedding、语料 manifest、索引 hash、reader 及版本、agent_type、max_timesteps、timeout、随机种子与并发限制。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="failure">
+          <div class="section-head">
+            <span class="section-index">12</span>
+            <div>
+              <h2>失败路径、保护机制与产品边界</h2>
+              <p class="section-desc">PaperQA 有工程化保护，但这些保护可能掩盖 Agent policy 的失败；评测时需要单独统计。</p>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <article class="card">
+              <h3>超时或步数耗尽</h3>
+              <p class="mini">runner 标为 <code>TRUNCATED</code>。如果尚未调用 <code>gen_answer</code>，harness 会强制生成一次答案。因此“有 final answer”不代表 Agent 正常完成。</p>
+            </article>
+            <article class="card">
+              <h3>Agent 调错工具或输出普通文字</h3>
+              <p class="mini">Environment 返回错误观察但不立即终止；ToolSelector malformed message 最多重试 5 次，工具异常可转换成响应交还 Agent。</p>
+            </article>
+            <article class="card">
+              <h3>没有论文或没有证据</h3>
+              <p class="mini"><code>gather_evidence</code> 对空 Docs 抛出明确错误；<code>gen_answer</code> 可以懒加载 evidence，仍无 Context 时输出固定的 “I cannot answer...” 句式。</p>
+            </article>
+            <article class="card">
+              <h3>多模态请求失败</h3>
+              <p class="mini">可配置只用文本重试 Context 创建；系统会记录 <code>used_images=false</code>，但视觉任务上这可能形成隐性能力降级。</p>
+            </article>
+            <article class="card">
+              <h3>索引构建中断</h3>
+              <p class="mini">按文件 hash 和批次提交，可从已有 <code>files.zip</code> 继续；失败文件会标记为 <code>ERROR</code>，避免每次全量重做。</p>
+            </article>
+            <article class="card">
+              <h3>引用幻觉</h3>
+              <p class="mini">后处理移除不存在的 context ID；但语义上错误归因仍需 citation correctness evaluator 或人工复核。</p>
+            </article>
+          </div>
+
+          <div class="callout rose">
+            <div class="callout-icon">≠</div>
+            <div>
+              <strong>开源 PaperQA 包 ≠ Edison Literature / PaperQA3 完整生产系统</strong>
+              <p>开源包提供算法框架、reader、元数据接口、本地索引和 Agent environment；生产产品还可能依赖大规模论文/专利/临床试验索引、授权全文、内部检索服务和不同的现代 reasoning harness。不能用本地包的语料覆盖率推断产品能力，也不能把产品成绩直接当成开源仓库可复现成绩。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="code-map">
+          <div class="section-head">
+            <span class="section-index">13</span>
+            <div>
+              <h2>当前源码地图</h2>
+              <p class="section-desc">点击文件名可从本 HTML 的相对路径打开本地源文件；“复制”按钮复制仓库内路径。</p>
+            </div>
+          </div>
+
+          <div class="file-tree">
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/src/paperqa/agents/main.py">agents/main.py</a><p>runner 选择、Agent 循环、fake 路径、失败回退</p></div><button class="copy" data-copy="src/paperqa/agents/main.py">复制</button></div>
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/src/paperqa/agents/env.py">agents/env.py</a><p>Settings → Tools、Environment reset/step/done</p></div><button class="copy" data-copy="src/paperqa/agents/env.py">复制</button></div>
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/src/paperqa/agents/tools.py">agents/tools.py</a><p>工具实现、EnvironmentState、默认工具列表</p></div><button class="copy" data-copy="src/paperqa/agents/tools.py">复制</button></div>
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/src/paperqa/agents/search.py">agents/search.py</a><p>Tantivy 索引、语料同步、序列化 Docs</p></div><button class="copy" data-copy="src/paperqa/agents/search.py">复制</button></div>
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/src/paperqa/docs.py">docs.py</a><p>文档添加、chunk 检索、aget_evidence、aquery</p></div><button class="copy" data-copy="src/paperqa/docs.py">复制</button></div>
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/src/paperqa/core.py">core.py</a><p>RCS：chunk → Context、JSON/分数解析与重试</p></div><button class="copy" data-copy="src/paperqa/core.py">复制</button></div>
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/src/paperqa/types.py">types.py</a><p>Doc/Text/Context/PQASession/ParsedMedia/DocDetails</p></div><button class="copy" data-copy="src/paperqa/types.py">复制</button></div>
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/src/paperqa/settings.py">settings.py</a><p>模型、检索、解析、prompt、agent 和索引配置</p></div><button class="copy" data-copy="src/paperqa/settings.py">复制</button></div>
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/src/paperqa/readers.py">readers.py</a><p>按文件类型解析、媒体 enrichment 和切块</p></div><button class="copy" data-copy="src/paperqa/readers.py">复制</button></div>
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/src/paperqa/llms.py">llms.py</a><p>VectorStore、Numpy/Qdrant、相似度与 MMR</p></div><button class="copy" data-copy="src/paperqa/llms.py">复制</button></div>
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/src/paperqa/prompts.py">prompts.py</a><p>证据摘要、回答、引用约束与 Agent 初始 prompt</p></div><button class="copy" data-copy="src/paperqa/prompts.py">复制</button></div>
+            <div class="file-row"><div><a href="code/Future-House_paper-qa/tests/test_agents.py">tests/test_agents.py</a><p>最接近可执行规范：索引、runner、工具和失败行为</p></div><button class="copy" data-copy="tests/test_agents.py">复制</button></div>
+          </div>
+
+          <div class="grid-2" style="margin-top:15px">
+            <article class="card">
+              <h3>Reader 插件</h3>
+              <p class="mini"><code>packages/paper-qa-pypdf</code>、<code>paper-qa-pymupdf</code>、<code>paper-qa-docling</code>、<code>paper-qa-nemotron</code>。阅读多模态实现时，不要只看顶层 <code>readers.py</code>。</p>
+            </article>
+            <article class="card">
+              <h3>元数据客户端</h3>
+              <p class="mini"><code>clients/</code> 包含 Crossref、Semantic Scholar、OpenAlex、Unpaywall、期刊质量和撤稿数据；<code>DocMetadataClient</code> 负责合并结果。</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="reading">
+          <div class="section-head">
+            <span class="section-index">14</span>
+            <div>
+              <h2>建议的源码阅读与实测路线</h2>
+              <p class="section-desc">不要从 1,000 多行的 Settings 或 Types 开始硬读。沿一次真实状态变化阅读最容易建立整体理解。</p>
+            </div>
+          </div>
+
+          <div class="checklist">
+            <div class="check"><b>先看入口和分流</b><span><code>agents/__init__.py: ask()</code> → <code>agents/main.py: run_agent()</code>，弄清 fake/Aviary/LDP 三条路径。</span></div>
+            <div class="check"><b>再看 Environment 的一步</b><span>阅读 <code>reset()</code>、<code>step()</code> 和 <code>settings_to_tools()</code>，理解 Agent 能看见什么、怎样结束。</span></div>
+            <div class="check"><b>逐个追工具的状态副作用</b><span>从 <code>paper_search</code> 进入 SearchIndex，再从 <code>gather_evidence</code> 进入 Docs 和 core。</span></div>
+            <div class="check"><b>完整追一次证据形成</b><span><code>Docs.retrieve_texts()</code> → <code>aget_evidence()</code> → <code>map_fxn_summary()</code> → <code>Context</code>。</span></div>
+            <div class="check"><b>追最终引用后处理</b><span><code>Docs.aquery()</code> → <code>context_serializer()</code> → <code>PQASession.populate_formatted_answers_and_bib...</code>。</span></div>
+            <div class="check"><b>最后用测试校验理解</b><span>重点读 <code>test_agent_types</code>、<code>test_timeout</code>、<code>test_agent_sharing_state</code>、<code>test_search_pagination</code>。</span></div>
+          </div>
+
+          <div class="grid-2" style="margin-top:15px">
+            <article class="card">
+              <h3>最小实测</h3>
+              <p class="mini">用 3–5 篇本地论文建立独立 corpus；开启 verbosity 和 callbacks；保存每一步 observation、tool request、Context、answer 与费用。</p>
+            </article>
+            <article class="card">
+              <h3>最有价值的对照实验</h3>
+              <p class="mini">同一模型和语料下比较 <code>fake</code> 与 ToolSelector；再固定 Agent policy，分别更换 summary_llm 与 answer llm，观察瓶颈到底在规划、取证还是综合。</p>
+            </article>
+          </div>
+
+          <details open>
+            <summary>阅读完本页后，应该能回答的十个问题</summary>
+            <div class="details-body">
+              <ol>
+                <li>PaperQA 的“论文级搜索”和“片段级搜索”分别在哪里发生？</li>
+                <li>Agent LLM、summary LLM、answer LLM 分别控制什么？</li>
+                <li>默认 <code>paper_search</code> 为什么不等于联网搜索？</li>
+                <li>为什么一个问题会产生远多于一次的 LLM API 调用？</li>
+                <li><code>Context</code> 与原始 <code>Text</code> chunk 有什么区别？</li>
+                <li>调用 <code>gen_answer</code> 后为什么 Agent 还可能继续搜索？</li>
+                <li><code>complete(false)</code> 和运行失败有什么区别？</li>
+                <li>fake Agent 为什么仍然会调用 LLM？</li>
+                <li>多模态图表在哪个阶段进入系统？</li>
+                <li>怎样区分开源 PaperQA 与 Edison Literature 的生产能力？</li>
+              </ol>
+            </div>
+          </details>
+        </section>
+
+        <footer class="footer">
+          <p><strong>取证范围：</strong>本页基于本地官方仓库完整 Git 历史、当前源码、内置配置、测试与已归档论文/博客整理。代码规模通过各 tag 的 Git tree 统计；架构行为以归档 HEAD <code>d7675d7</code> 为准。</p>
+          <p>
+            本地延伸阅读：
+            <a href="README_先看这里.html">资料总索引</a> ·
+            <a href="papers/2023_PaperQA_2312.07559v2.pdf">PaperQA v1 论文</a> ·
+            <a href="papers/2024_PaperQA2_2409.13740v2.pdf">PaperQA2 论文</a> ·
+            <a href="blogs/2024_PaperQA2_Engineering_Journey.html">PaperQA2 工程博客</a> ·
+            <a href="blogs/2026_PaperQA3_Edison_Literature.html">PaperQA3 / Edison Literature</a>
+          </p>
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const savedTheme = localStorage.getItem("paperqa-theme");
+      if (savedTheme) root.dataset.theme = savedTheme;
+
+      document.querySelectorAll(".theme-toggle").forEach((button) => {
+        button.addEventListener("click", () => {
+          const next = root.dataset.theme === "dark" ? "light" : "dark";
+          root.dataset.theme = next;
+          localStorage.setItem("paperqa-theme", next);
+        });
+      });
+
+      const progress = document.getElementById("progressBar");
+      const updateProgress = () => {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        progress.style.width = `${max > 0 ? (window.scrollY / max) * 100 : 0}%`;
+      };
+      window.addEventListener("scroll", updateProgress, { passive: true });
+      updateProgress();
+
+      const sections = [...document.querySelectorAll("main section[id]")];
+      const navLinks = [...document.querySelectorAll(".side-nav a")];
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          navLinks.forEach((link) => {
+            link.classList.toggle("active", link.getAttribute("href") === `#${entry.target.id}`);
+          });
+        });
+      }, { rootMargin: "-18% 0px -72% 0px", threshold: 0 });
+      sections.forEach((section) => observer.observe(section));
+
+      const filterButtons = document.querySelectorAll(".filter-btn");
+      const timelineItems = document.querySelectorAll(".timeline-item");
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          filterButtons.forEach((b) => b.classList.remove("active"));
+          button.classList.add("active");
+          const filter = button.dataset.filter;
+          timelineItems.forEach((item) => {
+            const categories = (item.dataset.category || "").split(" ");
+            item.classList.toggle("hidden", filter !== "all" && !categories.includes(filter));
+          });
+        });
+      });
+
+      document.querySelectorAll("[data-tabs]").forEach((tabs) => {
+        const buttons = tabs.querySelectorAll("[data-tab]");
+        const panels = tabs.querySelectorAll("[data-panel]");
+        buttons.forEach((button) => {
+          button.addEventListener("click", () => {
+            buttons.forEach((b) => b.classList.toggle("active", b === button));
+            panels.forEach((panel) => {
+              panel.classList.toggle("active", panel.dataset.panel === button.dataset.tab);
+            });
+          });
+        });
+      });
+
+      document.querySelectorAll("[data-copy]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const original = button.textContent;
+          try {
+            await navigator.clipboard.writeText(button.dataset.copy);
+            button.textContent = "已复制";
+          } catch {
+            button.textContent = "复制失败";
+          }
+          setTimeout(() => { button.textContent = original; }, 1200);
+        });
+      });
+
+      document.querySelectorAll(".peer-review").forEach((review) => {
+        const rail = review.querySelector("[data-review-rail]");
+        const cards = [...review.querySelectorAll(".review-card")];
+        const current = review.querySelector("[data-review-current]");
+        const total = review.querySelector("[data-review-total]");
+        const move = (direction) => {
+          const cardWidth = cards[0]?.getBoundingClientRect().width || 320;
+          rail.scrollBy({ left: direction * (cardWidth + 14), behavior: "smooth" });
+        };
+        total.textContent = cards.length;
+        review.querySelector("[data-review-prev]").addEventListener("click", () => move(-1));
+        review.querySelector("[data-review-next]").addEventListener("click", () => move(1));
+        rail.addEventListener("scroll", () => {
+          const railLeft = rail.getBoundingClientRect().left;
+          let nearest = 0;
+          let distance = Infinity;
+          cards.forEach((card, index) => {
+            const nextDistance = Math.abs(card.getBoundingClientRect().left - railLeft);
+            if (nextDistance < distance) {
+              distance = nextDistance;
+              nearest = index;
+            }
+          });
+          current.textContent = nearest + 1;
+        }, { passive: true });
+      });
+    })();
+  </script>
+</body>
+</html>

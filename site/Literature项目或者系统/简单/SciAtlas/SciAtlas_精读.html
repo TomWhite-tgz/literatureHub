@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SciAtlas 精读</title>
+<style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: min(920px, calc(100% - 44px));
+            margin: 0 auto;
+            padding: 52px 18px 76px;
+        }
+
+        header {
+            margin-bottom: 34px;
+            padding-bottom: 34px;
+            border-bottom: 1px solid var(--line);
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-size: 0.93rem;
+            font-weight: 650;
+            text-decoration: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--accent-dark);
+            transform: translateX(-2px);
+        }
+
+        .status-row,
+        .resource-row,
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-row,
+        .resource-row {
+            justify-content: center;
+        }
+
+        .status-row {
+            margin-bottom: 18px;
+        }
+
+        .resource-row {
+            margin-top: 22px;
+        }
+
+        .badge,
+        .tag,
+        .evidence {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .badge {
+            padding: 4px 11px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.79rem;
+            font-weight: 650;
+        }
+
+        .resource-link {
+            display: inline-block;
+            padding: 7px 13px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent-dark);
+            background: var(--panel);
+            font-size: 0.84rem;
+            font-weight: 620;
+            text-decoration: none;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .resource-link.primary {
+            border-color: var(--accent);
+            color: var(--white);
+            background: var(--accent);
+        }
+
+        .resource-link:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        h1 {
+            margin-bottom: 12px;
+            font-size: clamp(2.35rem, 7vw, 3.25rem);
+            font-weight: 670;
+            letter-spacing: -0.035em;
+            line-height: 1.08;
+        }
+
+        .subtitle {
+            max-width: 720px;
+            margin: 0 auto;
+            color: var(--muted);
+            font-size: 1.08rem;
+            font-weight: 360;
+        }
+
+        .meta {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.91rem;
+            font-weight: 360;
+        }
+
+        h2 {
+            margin: 56px 0 24px;
+            padding-bottom: 11px;
+            border-bottom: 2px solid var(--accent);
+            font-size: 1.78rem;
+            font-weight: 630;
+            line-height: 1.3;
+        }
+
+        h3 {
+            margin: 30px 0 14px;
+            color: var(--accent);
+            font-size: 1.25rem;
+            font-weight: 630;
+        }
+
+        h4 {
+            margin-bottom: 8px;
+            color: var(--accent-dark);
+            font-size: 1.01rem;
+            font-weight: 650;
+        }
+
+        p {
+            margin-bottom: 17px;
+            font-weight: 360;
+        }
+
+        strong {
+            font-weight: 660;
+        }
+
+        a {
+            color: var(--accent-dark);
+        }
+
+        .lead {
+            color: #343b37;
+            font-size: 1.02rem;
+        }
+
+        .eyebrow {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 720;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .toc {
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 7px;
+            margin: 24px 0 34px;
+            padding: 10px;
+            border: 1px solid rgba(231, 225, 215, 0.9);
+            border-radius: 16px;
+            background: rgba(247, 244, 239, 0.93);
+            box-shadow: 0 8px 24px rgba(31, 36, 33, 0.06);
+            backdrop-filter: blur(10px);
+        }
+
+        .toc a {
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 620;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .highlight-box,
+        .source-note,
+        .warning-note,
+        .critical-note,
+        .code-note,
+
+        .source-note {
+            border-left-color: var(--green);
+            background: var(--green-pale);
+        }
+
+        .code-note {
+            border-left-color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .warning-note,
+
+        .critical-note {
+            border-left-color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .highlight-box p:last-child,
+        .source-note p:last-child,
+        .warning-note p:last-child,
+        .critical-note p:last-child,
+        .code-note p:last-child,
+
+        .key-insight {
+            margin: 32px 0;
+            padding: 28px 31px;
+            border-radius: 8px;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 4px 12px rgba(196, 97, 47, 0.22);
+        }
+
+        .key-insight h3,
+        .key-insight p {
+            color: var(--white);
+        }
+
+        .key-insight h3 {
+            margin-top: 0;
+        }
+
+        .key-insight p:last-child {
+            margin-bottom: 0;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            margin: 24px 0;
+        }
+
+        .card-grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            padding: 21px 23px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1.08rem;
+        }
+
+        .card p:last-child,
+        .card ul:last-child {
+            margin-bottom: 0;
+        }
+
+        .evidence {
+            margin-bottom: 10px;
+            padding: 3px 9px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .evidence.paper {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .evidence.code {
+            color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .evidence.inference {
+            color: var(--warning);
+            background: var(--warning-pale);
+        }
+
+        .evidence.audit {
+            color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .figure,
+        .figure-grid {
+            margin: 30px 0;
+        }
+
+        .figure {
+            text-align: center;
+        }
+
+        .figure-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .figure-grid .figure {
+            margin: 0;
+        }
+
+        .figure a,
+        .figure-frame {
+            display: block;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: var(--figure-shadow);
+        }
+
+        .figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .figure figcaption {
+            max-width: 760px;
+            margin: 11px auto 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-style: italic;
+            line-height: 1.55;
+        }
+
+        .figure-placeholder {
+            display: grid;
+            min-height: 250px;
+            padding: 28px;
+            place-items: center;
+            color: var(--muted);
+            background:
+                linear-gradient(135deg, rgba(196, 97, 47, 0.08), transparent 48%),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 31px,
+                    rgba(231, 225, 215, 0.48) 32px
+                ),
+                var(--white);
+            text-align: center;
+        }
+
+        .figure-placeholder.compact {
+            min-height: 205px;
+        }
+
+        .figure-placeholder strong {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--accent);
+            font-size: 1.08rem;
+        }
+
+        .figure-placeholder span {
+            display: block;
+            max-width: 520px;
+            font-size: 0.88rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin: 26px 0;
+            border-collapse: collapse;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            padding: 13px 15px;
+            color: var(--white);
+            background: var(--accent);
+            font-size: 0.88rem;
+            font-weight: 620;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 13px 15px;
+            border-bottom: 1px solid var(--line);
+            font-size: 0.89rem;
+            font-weight: 360;
+            vertical-align: top;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .comparison-table .focus-row td {
+            background: #f8ede4;
+            font-weight: 590;
+        }
+
+        .table-scroll {
+            width: 100%;
+            margin: 26px 0;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .table-scroll .comparison-table {
+            min-width: 680px;
+            margin: 0;
+        }
+
+        .flow-diagram {
+            margin: 29px 0;
+            padding: 27px 31px;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .flow-step {
+            position: relative;
+            margin: 16px 0;
+            padding: 18px 22px;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            background: var(--white);
+        }
+
+        .flow-step::before {
+            content: "▼";
+            position: absolute;
+            bottom: -28px;
+            left: 50%;
+            color: var(--accent);
+            font-size: 18px;
+            transform: translateX(-50%);
+        }
+
+        .flow-step:last-child::before {
+            content: "";
+        }
+
+        .flow-step p {
+            margin-bottom: 0;
+        }
+
+        .formula {
+            margin: 25px 0;
+            padding: 21px 23px;
+            border-radius: 7px;
+            color: var(--paper);
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.96rem;
+            overflow-x: auto;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        ul {
+            margin: 15px 0 19px 2px;
+            list-style: none;
+        }
+
+        li {
+            position: relative;
+            margin-bottom: 9px;
+            padding-left: 22px;
+            font-weight: 360;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 2px;
+            color: var(--accent);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        details {
+            margin: 16px 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 17px 20px;
+            cursor: pointer;
+            font-weight: 630;
+            list-style: none;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: "＋";
+            margin-left: auto;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        details[open] summary::after {
+            content: "−";
+        }
+
+        .details-body {
+            padding: 18px 22px 22px;
+            border-top: 1px solid var(--line);
+        }
+
+        code {
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.88em;
+        }
+
+        pre {
+            margin: 22px 0;
+            padding: 20px 22px;
+            border: 1px solid #343b37;
+            border-radius: 8px;
+            color: #edf2ee;
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.84rem;
+            line-height: 1.65;
+            overflow-x: auto;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+        }
+
+        .code-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 22px 0;
+        }
+
+        .code-item {
+            padding: 16px 18px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: var(--white);
+        }
+
+        .code-item code {
+            display: inline-block;
+            margin-bottom: 7px;
+            color: var(--blue);
+            background: var(--blue-pale);
+            font-weight: 660;
+        }
+
+        .code-item p {
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .tag-list {
+            margin: 13px 0 22px;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            color: var(--green);
+            background: var(--green-pale);
+            font-size: 0.78rem;
+            font-weight: 630;
+        }
+
+        footer {
+            margin-top: 72px;
+            padding-top: 28px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-weight: 360;
+            text-align: center;
+        }
+
+        @media (max-width: 760px) {
+            .container {
+                width: min(100% - 28px, 920px);
+                padding: 34px 8px 56px;
+            }
+
+            .card-grid,
+            .card-grid.three,
+            .figure-grid,
+            .code-list {
+                grid-template-columns: 1fr;
+            }
+
+            .toc {
+                position: static;
+            }
+
+            .flow-diagram {
+                padding: 20px 16px;
+            }
+
+            h2 {
+                margin-top: 46px;
+                font-size: 1.55rem;
+            }
+
+            .highlight-box,
+            .key-insight {
+                padding: 22px;
+            }
+
+            .subtitle,
+            .meta {
+                overflow-wrap: anywhere;
+            }
+        }
+
+        @media print {
+            .toc,
+            .back-link,
+
+            body {
+                background: white;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 24px;
+            }
+
+            .figure a,
+            .card,
+            details {
+                box-shadow: none;
+            }
+        }
+    
+        blockquote {
+            margin: 16px 0;
+            padding: 13px 18px;
+            border-left: 3px solid var(--accent);
+            border-radius: 0 7px 7px 0;
+            background: var(--panel);
+            color: var(--ink);
+            font-size: 0.94rem;
+        }
+
+        blockquote p { margin-bottom: 9px; }
+        blockquote p:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+<main class="container">
+<header>
+  <a class="back-link" href="../../../index.html">← 返回 Literature 总览</a>
+  <div class="status-row">
+    <span class="badge">arXiv:2605.22878v1</span>
+    <span class="badge">2026-05-20</span>
+    <span class="badge">comments: "Ongoing Work"</span>
+    <span class="badge">零定量实验</span>
+  </div>
+  <h1>SciAtlas</h1>
+  <p class="subtitle">43.30M 论文 / 157M 实体 / 3B 关系的科研知识图谱 —— 工程规模是真的，科学性论证是缺的。</p>
+  <p class="meta">Shuofei Qiao, Yunxiang Wei, Jiazheng Fan, Bin Wu (UCL), … Ningyu Zhang, Keyan Ding, Qiang Zhang, Huajun Chen · 浙江大学 ZJUNLP · SciGraph 项目下的 "SciGraph-Scholar"</p>
+  <div class="resource-row">
+    <a class="resource-link primary" href="SciAtlas_2605.22878v1.pdf">论文 PDF</a>
+    <a class="resource-link" href="https://arxiv.org/abs/2605.22878">arXiv</a>
+    <a class="resource-link" href="https://github.com/zjunlp/SciAtlas">GitHub (~137★, MIT)</a>
+    <a class="resource-link" href="http://sciatlas.openkg.cn">托管 API（需 token）</a>
+  </div>
+</header>
+
+<div class="highlight-box">
+  <p><strong>定位：简单档（有实质但贡献有限）。</strong>规模、schema、检索算法的细节都写得很具体，是真做了工程；但<b>没有 baseline、没有指标、没有 benchmark、没有人工验证</b>，六个下游应用全是单例截图。论文 §5 自己承认："we merely present running examples of downstream tasks, remaining at the qualitative analysis level."</p>
+  <p><strong>对 AutoSci 而言这篇比 DeepXiv 更值得关注</strong> —— 它是"KG 优先"路线对"deep research agent"路线的公开开火，而 AutoSci 的 SciDAG/SciMem 正站在被开火的那一侧。</p>
+</div>
+
+<nav class="toc">
+  <a href="#attack">1 它在攻击谁</a>
+  <a href="#schema">2 图谱内容与规模</a>
+  <a href="#source">3 数据源：只有 OpenAlex</a>
+  <a href="#pipeline">4 构建管线与三处硬伤</a>
+  <a href="#retrieval">5 检索算法（真正的贡献）</a>
+  <a href="#eval">6 "实验"部分</a>
+  <a href="#counter">7 反制点 & 怎么用</a>
+</nav>
+
+<section id="attack">
+  <h2>1 它在攻击谁</h2>
+  <p class="lead">这篇的立论方式是：结构化认知地图 vs 迭代搜索。它把 deep research agent 整类当作靶子。</p>
+  <blockquote>
+    <p>Intro："Some deep-research-based agentic frameworks attempt to compensate for the deficiency of structured information through iterative knowledge search and integration [wispaper, <b>deepxiv</b>, alphaxiv, opensholar]."</p>
+    <p>紧接一句（§6.2 Related Work 处逐字重复）："However, this approach not only incurs high computational costs and response latency but also, due to the absence of deterministic cognitive maps as anchors for LLMs, renders them highly susceptible to <b>logical hallucinations</b> within complex exploratory trajectories."</p>
+  </blockquote>
+  <p><a href="../../../文献库/DeepXiv/DeepXiv_认可度与被引分析.html">DeepXiv</a> 在这篇里就是这样被引用的 —— 两次，都是裸 <code>\citep</code>，都在这句批评里，<b>不是数据源、不是对比系统、不在 pipeline 里</b>。</p>
+  <p>唯一被正面交手的系统是 <b>OmniScientist</b>（arXiv:2511.16931）：</p>
+  <blockquote><p>"However, it lacks the integration of core keywords for paper interconnection and semantic vectors. Furthermore, its Elasticsearch-based search algorithm merely relies on simple propagation through citation and reference relationships, without performing structured traversal and deep topological reasoning over heterogeneous subgraphs."</p></blockquote>
+  <div class="warning-note">
+    <p><strong>要设防的是这句批评本身。</strong>"成本高、延迟高、缺确定性锚点导致幻觉"是对 agentic 文献路线的标准质疑，会出现在审稿意见里。但注意：<b>它这句话没有任何实验支撑</b> —— 全文唯一的性能类陈述是"The entire retrieval process can be completed within 2 minutes, significantly shorter than LLM-based deep research frameworks"，<b>是断言，没有对照实验</b>。</p>
+  </div>
+</section>
+
+<section id="schema">
+  <h2>2 图谱内容与规模</h2>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig2_p3.png" alt="SciAtlas schema"></div>
+    <figcaption>论文 Fig. 2（Schema）。9 类实体节点 + 12 类关系边，以 Paper 为核心，分四个组织层次：<b>语义层</b>（CITES / RELATED_TO）、<b>概念层</b>（关键词 + COOCCUR）、<b>方向层</b>（Domain→Field→Subfield→Topic）、<b>社交层</b>（AUTHORED / COAUTHOR / AFFILIATED_WITH）。</figcaption>
+  </figure>
+
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <thead><tr><th>实体（总 157M）</th><th>数量</th><th>关系（总 3B）</th><th>数量</th></tr></thead>
+    <tbody>
+      <tr><td>Author</td><td>109.70M</td><td>COAUTHOR</td><td>2.06B</td></tr>
+      <tr><td>Paper</td><td>43.30M</td><td>CITES</td><td>213.88M</td></tr>
+      <tr><td>Keyword</td><td>3.76M</td><td>AFFILIATED_WITH</td><td>195.94M</td></tr>
+      <tr><td>Topic</td><td>4.52K</td><td>AUTHORED</td><td>149.00M</td></tr>
+      <tr><td>Source</td><td>0.28M</td><td>HAS_TOPIC</td><td>105.89M</td></tr>
+      <tr><td>Institution</td><td>0.12M</td><td>HAS_KEYWORD</td><td>101.38M</td></tr>
+      <tr><td>Subfield / Field / Domain</td><td>252 / 26 / 4</td><td>RELATED_TO / COOCCUR / PUBLISH_IN</td><td>68.38M / 60.37M / 40.90M</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig1_p1.png" alt="学科分布"></div>
+    <figcaption>论文 Fig. 1（学科分布）。26 个 field：Medicine 18.56%、Social Sciences 10.70%、Engineering 9.43%、Biochem/Genetics 6.44%、<b>CS 仅 6.29%</b> —— 前五占 51.43%。尾部从 Arts &amp; Humanities 3.33% 到 Veterinary 0.16%。<b>这是它相对 CS-only 工作的真实优势：跨学科覆盖。</b></figcaption>
+  </figure>
+</section>
+
+<section id="source">
+  <h2>3 数据源：只有 OpenAlex</h2>
+  <blockquote><p>"The primary data source for our knowledge graph is from OpenAlex, a fully open-source library of scholarly resources encompassing over <b>480 million</b> academic publications."</p></blockquote>
+  <p>摄入的全貌就是这一句：OpenAlex 批量数据 + 每日 API + 两月一次 changefile。GROBID 只是"论文缺失的罕见情况"下的 PDF 元数据兜底。arXiv / ChemRxiv / PubMed / Google Scholar / Semantic Scholar <b>只在 §6.2 作为"人类科学家会去搜的地方"出现，不是数据源</b>。无 Crossref、无 Unpaywall、无 S2ORC。存储用 Neo4j。</p>
+  <div class="critical-note">
+    <p><strong>重要问题：480M → 43.30M，砍掉约 91%，论文从未量化或解释。</strong>你只能从两个数字自己推。<span class="evidence inference">合理推断</span> 主因大概是过滤规则里那条"丢弃缺少关键属性（e.g. paper PDF URLs）的实体"—— 即要求开放获取 PDF。<br><br>而且<b>43.30M 篇论文的时间跨度全程未给</b>：没有起止年份，没有快照日期，没有 dump 版本号。对一个要做"研究趋势预测"下游任务的图谱，这是硬缺陷。</p>
+  </div>
+</section>
+
+<section id="pipeline">
+  <h2>4 构建管线与三处硬伤</h2>
+  <h3>做法</h3>
+  <ul>
+    <li><b>过滤 / 归一</b>：只保留关键属性；论文标题与机构名做归一去重；丢弃缺关键属性者；过滤非英文论文与"摘要过短"的论文（<b>阈值未给</b>）。</li>
+    <li><b>链接</b>：纯粹基于 <b>OpenAlex ID 的 ID 匹配</b> —— 无概率型实体消歧，无 ORCID 合并，无跨源对齐。</li>
+    <li><b>关键词抽取</b>：<b>Qwen3-30B-A3B-Instruct-2507</b> 跑摘要，每篇 3–8 个关键词 + 1–10 重要度分（存为 <code>relevance_score</code>）。明确拒绝了 OpenAlex 自带的 Concept："excessively sparse (only 65K entries…)" 且 "macroscopic and superficial (e.g., 'artificial intelligence')"。Prompt 刻意压制品牌名（好例："protein structure prediction"；坏例："AlphaEvolve"）。</li>
+    <li><b>向量</b>：<b>bge-large-en-v1.5</b>，1024 维余弦，覆盖论文标题、摘要、关键词文本；查询期用 <code>bge-reranker-large</code>。</li>
+  </ul>
+
+  <h3>三处硬伤</h3>
+  <div class="card-grid three">
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>作者故意不去重</h4>
+      <p>原文："we do not deduplicate authors due to the prevalence of name duplication and ambiguity"。<b>109.70M 作者节点 + 2.06B 合著边全建在这个基础上</b> —— 而"相关作者检索""研究者背景综述"两个下游任务直接依赖它。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>质量控制为零</h4>
+      <p>关键词抽取、过滤、归一，<b>全文没有任何 precision / recall / accuracy / 人工验证 / 标注者一致性</b>。质量保证完全停在 prompt 层面。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>改名没改干净</h4>
+      <p>§2.1 正文说 <b>11</b> 类关系，摘要/图/结论/Table 4 都说 <b>12</b>；Table 1 的 caption 和整个 §2.3 还叫 <b>SciMap</b>（源文件就是 <code>scimap.tex</code>）；还有一行写成 <code>SUBFILED_OF</code>。</p>
+    </article>
+  </div>
+</section>
+
+<section id="retrieval">
+  <h2>5 检索算法：这是真正的贡献</h2>
+  <p class="lead">§3 是全文最有实质的一节。三路召回 → 节点合并 → 2 跳子图 → 带重启随机游走 → 打分取 top-20。参数给得很全，可复现性上是加分项。</p>
+
+  <div class="flow-diagram">
+    <div class="flow-step"><b>三路召回</b><br><small>关键词精确+向量 θ<sub>kw</sub>=0.7 取 top-3；语义双向量 top-60 → reranker → top-15（0.4 标题 / 0.6 摘要）；GROBID 标题匹配 θ<sub>title</sub>=0.88，模糊 = 0.65·LCS + 0.35·Jaccard</small></div>
+    <div class="flow-step"><b>节点合并</b><br><small>λ<sub>emb</sub>=0.3, λ<sub>title</sub>=0.8；精确命中 +0.35 / 模糊 +0.10</small></div>
+    <div class="flow-step"><b>2 跳子图</b><br><small>每跳每类型上限 500 节点</small></div>
+    <div class="flow-step"><b>RWR</b><br><small>ε=10⁻⁶, T<sub>max</sub>=50<br><b>重启概率 α 未给默认值</b></small></div>
+    <div class="flow-step"><b>打分 top-20</b><br><small>min(1, 0.35·s̃<sub>pre</sub> + 0.45·s̃<sub>graph</sub>·g<sub>p</sub> + 0.20·imp<sub>final</sub>)，门控 g<sub>p</sub> = max(0.25, s̃<sub>pre</sub>)</small></div>
+  </div>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Table2_p9.png" alt="边权定义"></div>
+    <figcaption>论文 Table 2（未归一化边权 ω(u,v) 的定义）。权重序：β<sub>hk</sub> 1.20 &gt; β<sub>cite</sub> 1.00 &gt; β<sub>rel</sub> 0.90 &gt; β<sub>auth</sub> 0.80 &gt; β<sub>coauth</sub> = β<sub>cooc</sub> 0.60 —— 即<b>共享关键词的权重高于引用关系</b>，这是它区别于纯引文图方法的核心设计选择。</figcaption>
+  </figure>
+
+  <p><span class="evidence inference">合理推断</span> 下游六个应用（文献综述、想法接地、想法评估、想法生成、趋势预测、相关作者检索、研究者背景）本质上都是<b>同一套检索的旋钮调法</b>：想法生成放松 g<sub>p</sub>、趋势预测提高引用权重、作者检索把 Eq.16 换到 Author 节点。这算诚实的工程复用，但不构成六个独立贡献。</p>
+</section>
+
+<section id="eval">
+  <h2>6 "实验"部分：六个案例，零个数字</h2>
+  <div class="critical-note">
+    <p><strong>没有 baseline、没有指标、没有结果表。</strong>论文里的六张表分别是：Table 1 统计量、Table 2 边权超参、Table 3–6 Neo4j schema/索引。§4 的六个应用各是一段旋钮配方 + 一个 LLM 输出截图（4.1 文献综述和 4.5 相关作者检索<b>连例子都没有</b>）。§4 里<b>没有点名任何一个 LLM</b>，只说 "an LLM"。</p>
+  </div>
+  <p>几个例子的内容：想法接地用 InnoEval 对上一篇发散思维论文；想法生成从 "Knowledge Editing" 查询产出"联邦隐私保护知识编辑"；趋势叙事把脉冲神经网络分成 2006–2014 / 2015–2019 / 2020–2022 / 2023–2025 四段；研究者画像是一份匿名档案（透明地就是 Ningyu Zhang 的轨迹）。</p>
+  <h3>Limitations / 未来工作（§5）</h3>
+  <ul>
+    <li><b>CLI 与 Skills</b>：目前只能走 Neo4j 查询，计划包成 CLI + agentic skills。</li>
+    <li><b>更多知识形态</b>：目前以论文为中心，想加原子知识、定理/标准、实验经验、数据集与代码。</li>
+    <li><b>Benchmark 与评测</b>：计划基于 SciAtlas 建专门 benchmark 来定量评估 agent 科学家 —— <b>即承认现在没有</b>。</li>
+    <li><b>动态更新</b>：现在"primarily rely on periodic manual execution of fixed scripts"，想做每日自动更新。</li>
+  </ul>
+  <div class="warning-note">
+    <p><strong>可用性要看清：</strong>摘要原话是 "We have released the <b>interfaces</b> for KG retrieval and various downstream tasks in our GitHub repo" —— <b>是接口，不是数据</b>。<b>图谱不可下载</b>：没有 Neo4j dump、没有 HuggingFace 数据集、没有数据许可。实际是一个 pip 客户端 + CLI，打到托管 API <code>sciatlas.openkg.cn</code>，需邮箱注册换个人 token，带用量统计（<code>/v1/auth/usage</code>）。构建代码是"We <b>will</b> open"（将来时）。</p>
+  </div>
+</section>
+
+<section id="counter">
+  <h2>7 反制点 &amp; 怎么用</h2>
+  <div class="card-grid">
+    <article class="card">
+      <span class="evidence audit">反制点</span>
+      <h3>它批你"缺确定性锚点"，但它自己零验证</h3>
+      <p>成本/延迟/幻觉三项批评<b>没有一个有实验</b>；"2 分钟内完成"是断言无对照。要回应这类质疑时，这是最直接的不对称：它没有资格用未验证的断言去否定一整条路线。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">反制点</span>
+      <h3>图谱不开放 + 作者不去重</h3>
+      <p>"确定性认知地图"的确定性建立在<b>ID 匹配 + 不做作者消歧</b>之上，且外部无法核验（不可下载）。所谓"确定性"是<b>可用性上的确定</b>，不是<b>正确性上的确定</b>。</p>
+    </article>
+    <article class="card">
+      <span class="evidence code">可借鉴</span>
+      <h3>检索算法值得抄</h3>
+      <p>三路召回 + 关键词权重高于引用 + RWR + 门控打分，参数完整。如果 AutoSci 要做文献子图检索，这是现成的强 baseline 设计。</p>
+    </article>
+    <article class="card">
+      <span class="evidence inference">定位</span>
+      <h3>跨学科是它的真优势</h3>
+      <p>CS 只占 6.29%，Medicine 18.56% —— 与 <a href="../../../Benchmark/ScholarQuest/ScholarQuest_精读与新颖性审计.html">ScholarQuest</a>（CS-only）、<a href="../../../Benchmark/AstaBench/AstaBench_精读.html">AstaBench</a>（偏 CS）形成互补。契合"KernelMaster / AutoSci 必须跨领域泛化"的取向。</p>
+    </article>
+  </div>
+
+  <div class="source-note">
+    <p><strong>证据等级说明。</strong>本页基于 arXiv HTML v1 全文 <b>及 LaTeX 源码</b> —— 后者是必需的，因为该论文的 arXiv HTML 渲染<b>参考文献列表为空</b>（LaTeXML 未能输出 bibitem），只有源码能解出 <code>\citep</code> 的 bib key，从而确认 DeepXiv 被引用的确切位置。<span class="evidence audit">审计发现</span> 项为逐句核对后的缺失/矛盾认定；<span class="evidence inference">合理推断</span> 项论文未言明。</p>
+    <p><strong>归档日期</strong>：2026-08-03 · 论文版本 v1（2026-05-20，comments 为 "Ongoing Work"）· 图片由本地 PDF 按图注区域裁切。</p>
+  </div>
+</section>
+</main>
+
+</body>
+</html>

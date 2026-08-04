@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>实证性论文的写法</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../index.html">← 返回总览</a><h1>文献 Agent 实证性论文的写作框架</h1>
+<blockquote>
+<p>核心思路：以社区公认的基线为起点，在严格控制变量的前提下进行多次重复实验，并通过跨任务验证和归因分析，判断性能提升究竟来自方法本身，还是来自语料、检索预算等外部因素。</p>
+</blockquote>
+<h2>一、参考论文与文献 Agent 研究的对应关系</h2>
+<table>
+<thead>
+<tr>
+<th align="center">编号</th>
+<th>参考论文中的实证动作</th>
+<th>在文献 Agent 研究中的对应做法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">1</td>
+<td>选择一个社区共识的 baseline，例如 vanilla Transformer、pre-LN 和相对注意力</td>
+<td>建立一个朴素的 RAG 管线：使用固定的 retriever、固定的 LLM 和单轮检索</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td>固定任务、超参数和优化器，并对齐参数量或 FLOPs</td>
+<td>固定语料快照、底座模型和检索预算（token 数或调用次数）</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td>每个变体运行 5 次，报告均值和标准差</td>
+<td>这一点对 Agent 尤其重要：Agent 的 run-to-run 方差可能远大于架构差异，而多数论文只报告单次结果</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td>联系 12 位原作者核验实现，其中 6 位确认</td>
+<td>将复现配置发给 PaperQA2、OpenScholar 或 PaSa 的作者，请其核验</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td>在两个截然不同的设定中实验，例如迁移学习与纯监督翻译</td>
+<td>至少覆盖两类任务：文献检索（recall 型）和引用型长答案生成（faithfulness 型）</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td>使用三个桶进行结果归因</td>
+<td>可分为三个桶：仅在自家语料上有效、只是增加了检索预算、真正的方法改进</td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td>使用第 4 节的五点排除法</td>
+<td>沿用这一结构，逐项排除替代解释</td>
+</tr>
+<tr>
+<td align="center">8</td>
+<td>在结论中给出四条可执行建议</td>
+<td>给出一份“文献 Agent 论文报告规范”的 checklist</td>
+</tr>
+</tbody>
+</table>
+<h2>二、其他注意事项</h2>
+<ol>
+<li>判官最好用开源模型</li>
+<li>被测系统的 backbone最好用API</li>
+</ol>
+<h2>三、建议重点报告的指标</h2>
+<ul>
+<li><strong>检索任务：</strong> Recall@K、Precision@K、MRR、nDCG。</li>
+<li><strong>引用型长答案：</strong> 引用正确性、引用完整性、答案忠实度和覆盖率。</li>
+<li><strong>稳定性：</strong> 多次运行的均值、标准差和失败率。</li>
+<li><strong>效率：</strong> 检索文档数、输入/输出 token 数、调用次数、时延和成本。</li>
+</ul><footer>由 <code>我的思考/实证性论文的写法.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

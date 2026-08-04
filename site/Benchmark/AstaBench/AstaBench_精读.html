@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AstaBench 精读</title>
+<style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: min(920px, calc(100% - 44px));
+            margin: 0 auto;
+            padding: 52px 18px 76px;
+        }
+
+        header {
+            margin-bottom: 34px;
+            padding-bottom: 34px;
+            border-bottom: 1px solid var(--line);
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-size: 0.93rem;
+            font-weight: 650;
+            text-decoration: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--accent-dark);
+            transform: translateX(-2px);
+        }
+
+        .status-row,
+        .resource-row,
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-row,
+        .resource-row {
+            justify-content: center;
+        }
+
+        .status-row {
+            margin-bottom: 18px;
+        }
+
+        .resource-row {
+            margin-top: 22px;
+        }
+
+        .badge,
+        .tag,
+        .evidence {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .badge {
+            padding: 4px 11px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.79rem;
+            font-weight: 650;
+        }
+
+        .resource-link {
+            display: inline-block;
+            padding: 7px 13px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent-dark);
+            background: var(--panel);
+            font-size: 0.84rem;
+            font-weight: 620;
+            text-decoration: none;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .resource-link.primary {
+            border-color: var(--accent);
+            color: var(--white);
+            background: var(--accent);
+        }
+
+        .resource-link:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        h1 {
+            margin-bottom: 12px;
+            font-size: clamp(2.35rem, 7vw, 3.25rem);
+            font-weight: 670;
+            letter-spacing: -0.035em;
+            line-height: 1.08;
+        }
+
+        .subtitle {
+            max-width: 720px;
+            margin: 0 auto;
+            color: var(--muted);
+            font-size: 1.08rem;
+            font-weight: 360;
+        }
+
+        .meta {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.91rem;
+            font-weight: 360;
+        }
+
+        h2 {
+            margin: 56px 0 24px;
+            padding-bottom: 11px;
+            border-bottom: 2px solid var(--accent);
+            font-size: 1.78rem;
+            font-weight: 630;
+            line-height: 1.3;
+        }
+
+        h3 {
+            margin: 30px 0 14px;
+            color: var(--accent);
+            font-size: 1.25rem;
+            font-weight: 630;
+        }
+
+        h4 {
+            margin-bottom: 8px;
+            color: var(--accent-dark);
+            font-size: 1.01rem;
+            font-weight: 650;
+        }
+
+        p {
+            margin-bottom: 17px;
+            font-weight: 360;
+        }
+
+        strong {
+            font-weight: 660;
+        }
+
+        a {
+            color: var(--accent-dark);
+        }
+
+        .lead {
+            color: #343b37;
+            font-size: 1.02rem;
+        }
+
+        .eyebrow {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 720;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .toc {
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 7px;
+            margin: 24px 0 34px;
+            padding: 10px;
+            border: 1px solid rgba(231, 225, 215, 0.9);
+            border-radius: 16px;
+            background: rgba(247, 244, 239, 0.93);
+            box-shadow: 0 8px 24px rgba(31, 36, 33, 0.06);
+            backdrop-filter: blur(10px);
+        }
+
+        .toc a {
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 620;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .highlight-box,
+        .source-note,
+        .warning-note,
+        .critical-note,
+        .code-note,
+
+        .source-note {
+            border-left-color: var(--green);
+            background: var(--green-pale);
+        }
+
+        .code-note {
+            border-left-color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .warning-note,
+
+        .critical-note {
+            border-left-color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .highlight-box p:last-child,
+        .source-note p:last-child,
+        .warning-note p:last-child,
+        .critical-note p:last-child,
+        .code-note p:last-child,
+
+        .key-insight {
+            margin: 32px 0;
+            padding: 28px 31px;
+            border-radius: 8px;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 4px 12px rgba(196, 97, 47, 0.22);
+        }
+
+        .key-insight h3,
+        .key-insight p {
+            color: var(--white);
+        }
+
+        .key-insight h3 {
+            margin-top: 0;
+        }
+
+        .key-insight p:last-child {
+            margin-bottom: 0;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            margin: 24px 0;
+        }
+
+        .card-grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            padding: 21px 23px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1.08rem;
+        }
+
+        .card p:last-child,
+        .card ul:last-child {
+            margin-bottom: 0;
+        }
+
+        .evidence {
+            margin-bottom: 10px;
+            padding: 3px 9px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .evidence.paper {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .evidence.code {
+            color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .evidence.inference {
+            color: var(--warning);
+            background: var(--warning-pale);
+        }
+
+        .evidence.audit {
+            color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .figure,
+        .figure-grid {
+            margin: 30px 0;
+        }
+
+        .figure {
+            text-align: center;
+        }
+
+        .figure-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .figure-grid .figure {
+            margin: 0;
+        }
+
+        .figure a,
+        .figure-frame {
+            display: block;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: var(--figure-shadow);
+        }
+
+        .figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .figure figcaption {
+            max-width: 760px;
+            margin: 11px auto 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-style: italic;
+            line-height: 1.55;
+        }
+
+        .figure-placeholder {
+            display: grid;
+            min-height: 250px;
+            padding: 28px;
+            place-items: center;
+            color: var(--muted);
+            background:
+                linear-gradient(135deg, rgba(196, 97, 47, 0.08), transparent 48%),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 31px,
+                    rgba(231, 225, 215, 0.48) 32px
+                ),
+                var(--white);
+            text-align: center;
+        }
+
+        .figure-placeholder.compact {
+            min-height: 205px;
+        }
+
+        .figure-placeholder strong {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--accent);
+            font-size: 1.08rem;
+        }
+
+        .figure-placeholder span {
+            display: block;
+            max-width: 520px;
+            font-size: 0.88rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin: 26px 0;
+            border-collapse: collapse;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            padding: 13px 15px;
+            color: var(--white);
+            background: var(--accent);
+            font-size: 0.88rem;
+            font-weight: 620;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 13px 15px;
+            border-bottom: 1px solid var(--line);
+            font-size: 0.89rem;
+            font-weight: 360;
+            vertical-align: top;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .comparison-table .focus-row td {
+            background: #f8ede4;
+            font-weight: 590;
+        }
+
+        .table-scroll {
+            width: 100%;
+            margin: 26px 0;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .table-scroll .comparison-table {
+            min-width: 680px;
+            margin: 0;
+        }
+
+        .flow-diagram {
+            margin: 29px 0;
+            padding: 27px 31px;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .flow-step {
+            position: relative;
+            margin: 16px 0;
+            padding: 18px 22px;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            background: var(--white);
+        }
+
+        .flow-step::before {
+            content: "▼";
+            position: absolute;
+            bottom: -28px;
+            left: 50%;
+            color: var(--accent);
+            font-size: 18px;
+            transform: translateX(-50%);
+        }
+
+        .flow-step:last-child::before {
+            content: "";
+        }
+
+        .flow-step p {
+            margin-bottom: 0;
+        }
+
+        .formula {
+            margin: 25px 0;
+            padding: 21px 23px;
+            border-radius: 7px;
+            color: var(--paper);
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.96rem;
+            overflow-x: auto;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        ul {
+            margin: 15px 0 19px 2px;
+            list-style: none;
+        }
+
+        li {
+            position: relative;
+            margin-bottom: 9px;
+            padding-left: 22px;
+            font-weight: 360;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 2px;
+            color: var(--accent);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        details {
+            margin: 16px 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 17px 20px;
+            cursor: pointer;
+            font-weight: 630;
+            list-style: none;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: "＋";
+            margin-left: auto;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        details[open] summary::after {
+            content: "−";
+        }
+
+        .details-body {
+            padding: 18px 22px 22px;
+            border-top: 1px solid var(--line);
+        }
+
+        code {
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.88em;
+        }
+
+        pre {
+            margin: 22px 0;
+            padding: 20px 22px;
+            border: 1px solid #343b37;
+            border-radius: 8px;
+            color: #edf2ee;
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.84rem;
+            line-height: 1.65;
+            overflow-x: auto;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+        }
+
+        .code-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 22px 0;
+        }
+
+        .code-item {
+            padding: 16px 18px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: var(--white);
+        }
+
+        .code-item code {
+            display: inline-block;
+            margin-bottom: 7px;
+            color: var(--blue);
+            background: var(--blue-pale);
+            font-weight: 660;
+        }
+
+        .code-item p {
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .tag-list {
+            margin: 13px 0 22px;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            color: var(--green);
+            background: var(--green-pale);
+            font-size: 0.78rem;
+            font-weight: 630;
+        }
+
+        footer {
+            margin-top: 72px;
+            padding-top: 28px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-weight: 360;
+            text-align: center;
+        }
+
+        @media (max-width: 760px) {
+            .container {
+                width: min(100% - 28px, 920px);
+                padding: 34px 8px 56px;
+            }
+
+            .card-grid,
+            .card-grid.three,
+            .figure-grid,
+            .code-list {
+                grid-template-columns: 1fr;
+            }
+
+            .toc {
+                position: static;
+            }
+
+            .flow-diagram {
+                padding: 20px 16px;
+            }
+
+            h2 {
+                margin-top: 46px;
+                font-size: 1.55rem;
+            }
+
+            .highlight-box,
+            .key-insight {
+                padding: 22px;
+            }
+
+            .subtitle,
+            .meta {
+                overflow-wrap: anywhere;
+            }
+        }
+
+        @media print {
+            .toc,
+            .back-link,
+
+            body {
+                background: white;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 24px;
+            }
+
+            .figure a,
+            .card,
+            details {
+                box-shadow: none;
+            }
+        }
+    
+        blockquote {
+            margin: 16px 0;
+            padding: 13px 18px;
+            border-left: 3px solid var(--accent);
+            border-radius: 0 7px 7px 0;
+            background: var(--panel);
+            color: var(--ink);
+            font-size: 0.94rem;
+        }
+
+        blockquote p { margin-bottom: 9px; }
+        blockquote p:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+<main class="container">
+<header>
+  <a class="back-link" href="../../index.html">← 返回 Literature 总览</a>
+  <div class="status-row">
+    <span class="badge">arXiv:2510.21652v2</span>
+    <span class="badge">ICLR 2026 已录用</span>
+    <span class="badge">代码 Apache-2.0</span>
+    <span class="badge">语料不可自托管</span>
+  </div>
+  <h1>AstaBench</h1>
+  <p class="subtitle">11 个 benchmark、2,404 道题、57 个 agent、成本作为一等指标 —— 这条线上真正的参照点，也是 ScholarQuest 漏掉的那一篇。</p>
+  <p class="meta">Jonathan Bragg, Mike D'Arcy 等 39 位作者 · Asta Team @ Allen Institute for AI (Ai2) · v1 2025-10-24 / v2 2026-04-21 · 论文 CC BY 4.0</p>
+  <div class="resource-row">
+    <a class="resource-link primary" href="AstaBench_2510.21652v2.pdf">论文 PDF</a>
+    <a class="resource-link" href="https://arxiv.org/abs/2510.21652">arXiv</a>
+    <a class="resource-link" href="https://github.com/allenai/asta-bench">asta-bench</a>
+    <a class="resource-link" href="https://allenai.org/asta/leaderboard">Leaderboard</a>
+    <a class="resource-link" href="../ScholarQuest/ScholarQuest_精读与新颖性审计.html">对照：ScholarQuest</a>
+  </div>
+</header>
+
+<div class="highlight-box">
+  <p><strong>为什么这篇要单独归档：</strong>它 2025-10 上 arXiv、已被 ICLR 2026 接收，做的正是 <a href="../ScholarQuest/ScholarQuest_精读与新颖性审计.html">ScholarQuest</a> 声称"不存在"的东西 —— 标准化 agent 工具环境 + 日期截断防污染 + leaderboard + 统一评测。<b>ScholarQuest 全文 19 条参考文献里没有它。</b>要引"agentic 文献检索的评测现状"，参照点应该是这篇。</p>
+  <p><strong>但它有一个硬约束：语料是托管服务，不可下载、不可自托管、可随时撤销。</strong>它的"可复现"是<b>时间意义上的</b>，不是<b>基础设施意义上的</b>。</p>
+</div>
+
+<nav class="toc">
+  <a href="#suite">1 套件构成</a>
+  <a href="#pfb">2 PaperFindingBench</a>
+  <a href="#scoring">3 打分机制与循环性</a>
+  <a href="#corpus">4 语料与工具环境（关键约束）</a>
+  <a href="#harness">5 评测框架与成本轴</a>
+  <a href="#results">6 结果：远未解决</a>
+  <a href="#prior">7 它怎么批评已有 benchmark</a>
+  <a href="#gaps">8 它自己的问题</a>
+</nav>
+
+<section id="suite">
+  <h2>1 套件构成：11 个 benchmark，4 个任务族</h2>
+  <p class="lead">论文只说 "over 2400 problems"。<span class="evidence inference">合理推断</span> 按 Table 2 逐行相加是 <b>2,404 = 1,918 test + 486 validation</b> —— 注意这个数<b>含验证集</b>，引用时别当成测试规模。</p>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Table2_p6.png" alt="AstaBench 套件构成表"></div>
+    <figcaption>论文 Table 2 —— 全文信息密度最高的一张表。11 个 benchmark × 类别 / 领域 / test / val / 所需工具 / <b>日期截断</b>。PaperFindingBench 截断在 2025-06-01，ScholarQA-CS2 在 2025-05-01，两个 LitQA2 任务在 2024-10-17；ArxivDIGESTables-Clean 改为按题限制 <code>snippet_search</code> 的论文 ID 白名单。</figcaption>
+  </figure>
+
+  <div class="card-grid">
+    <article class="card">
+      <span class="evidence paper">Literature Understanding</span>
+      <h4>5 个</h4>
+      <p><b>PaperFindingBench</b>（267+66，CS，检索）、LitQA2-FullText-Search（75+10，生物，recall@30）、ScholarQA-CS2（100+100，长文带引用回答）、LitQA2-FullText（选择题）、ArxivDIGESTables-Clean（生成综述对比表）。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">Code &amp; Execution</span>
+      <h4>3 个</h4>
+      <p>SUPER-Expert（45+50，跑通研究仓库实验）、CORE-Bench-Hard⁻（37+35，<b>移除 GPU 任务后 45→37</b>）、DS-1000（900+100，单元测试）。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">Data Analysis / End-to-End</span>
+      <h4>3 个</h4>
+      <p>DiscoveryBench（239+25，假设匹配分）、E2E-Bench（40+10）、E2E-Bench-Hard（40+10，HypER 生成、无简化步骤）。</p>
+    </article>
+  </div>
+  <p><span class="evidence paper">论文声称</span> LitQA2 的双重计数做了修正：LitQA2-FullText 与 LitQA2-FullText-Search 在 Literature Understanding 宏平均里各占权重 0.5。原始 LitQA2 有 199 道选择题，筛到<b>目标论文在截断日期内且在 Asta 索引中</b>的 85 道。</p>
+</section>
+
+<section id="pfb">
+  <h2>2 PaperFindingBench：查询怎么来的</h2>
+  <p><b>333 条 = 48 navigational + 43 metadata + 242 semantic</b>。<span class="evidence audit">审计发现</span> 这个分型是 test+val 合计口径，<b>论文没给分 split 的拆分</b>。</p>
+
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <thead><tr><th>类型</th><th>数量</th><th>来源</th><th>金标怎么定</th></tr></thead>
+    <tbody>
+      <tr><td>Navigational<br><small>找那一篇已知论文</small></td><td>48</td><td>PaperFinder 产品日志，<b>刻意挑 PaperFinder 曾经失败的</b></td><td>金标集已知</td></tr>
+      <tr><td>Metadata<br><small>元数据约束，含否定</small></td><td>43</td><td><b>手工编写</b>，覆盖 Semantic Scholar API 用法，含"not citing the transformers paper"这类否定、嵌套、递归</td><td>每条配一段调 API 完整求解的 Python 代码，其结果即金标</td></tr>
+      <tr><td>Semantic<br><small>按内容描述找一组论文</small></td><td>242</td><td>PaperFinder + OpenSciLM 日志，<b>加上 LitSearch 与 PaSa 数据集</b></td><td>无全覆盖金标：一个可能为空的已知匹配小集 + 一组<b>LLM 生成的加权相关性标准</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><b>挑选程序</b>：找 PaperFinder 返回很少/没有"完全相关"结果、但已知存在相关论文的查询 → 人工检查归纳<b>挑战类型</b> → 构造覆盖全部挑战类型的集合，优先选 PaperFinder 组件消融会显著减少命中的查询。挑战类型（脚注 19）："multiple criteria, complex relations between criteria, use of uncommon terms, use of incorrect jargon, seeking details that are not part of the main claim of the paper, query providing unnecessary or even distracting background information."</p>
+
+  <div class="key-insight">
+    <h3>一个反直觉的设计：查询类型故意不标注</h3>
+    <p>原文："The dataset mixes the different categories, and doesn't clearly indicate which query belongs to which category (even though a human will very easily tell)." —— 逼 agent 自己判断该走哪条路径。目前 metadata 与 semantic 严格互斥（"which may change in future versions"）。<br><br>另一个关键设计：判官<b>拿不到论文全文</b>。agent 必须为每条结果提交 <code>markdown_evidence</code>（论文原文或施引论文里的逐字片段），判的是这段证据。原文："As we aim to assess retrieval and not the judging-LLM's ability to handle long-contexts…"。提交上限 <b>250 篇</b>，按相关性降序。</p>
+  </div>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig9_p47.png" alt="PaperFinder 语义查询工作流"></div>
+    <figcaption>论文 Fig. 9（p.47）—— 全文唯一一张检索 agent 的架构图：initial-search（片段级）→ 聚合到论文级 → cited papers 扩展 → 相关性判断 → 后续追问。想理解"最好的系统是怎么工作的"，只有这张。</figcaption>
+  </figure>
+</section>
+
+<section id="scoring">
+  <h2>3 打分机制与一处循环性</h2>
+  <p>两套指标，最后<b>不分类型直接按查询取平均</b>：</p>
+  <ul>
+    <li><b>navigational + metadata</b>（金标已知）：结果集上的 <b>F1</b>。</li>
+    <li><b>semantic</b>：<b>estimated-recall@estimated-set-size 与 nDCG 的调和平均</b>。</li>
+  </ul>
+  <p>关于那个"估计的集合大小"，原文：</p>
+  <blockquote><p>"The estimated set size is determined by running <b>multiple variations of PaperFinder with very lenient threshold</b>, taking the union of the resulting set, and then multiplying it by a factor that ranges from <b>2 to 10</b> to estimate an upper bound… (smaller initial sets are less reliable and are multiplied by a larger number)."</p></blockquote>
+  <p>用 nDCG 而不是 precision 来平衡召回的理由："it provides a more relevant signal (favoring ranking relevant documents over irrelevant ones). The combination of nDCG and recall@estimated makes precision mostly redundant."</p>
+
+  <div class="critical-note">
+    <p><strong>重要问题 —— 循环性。</strong>召回的<b>分母来自对自家 PaperFinder 做宽松消融跑出来的并集</b>，而挑战类型的筛选也是<b>针对 PaperFinder 的失败案例</b>；论文也承认这套评测是 Ai2 内部 PaperFinder 回归测试集的子集。而榜首正是 Asta Paper Finder。<br><br>另外 <span class="evidence audit">审计发现</span> 那个 <b>2–10 的倍数规则没有给公式或阈值</b>，nDCG 的增益函数与截断也没说 —— 这是整个打分里最大的黑箱。人工校验只覆盖 <b>1/5 的查询</b>（原文 "For a fifth of the queries, the relevance criteria were manually verified and corrected or tweaked"，且"the queries"指 242 条 semantic 还是全部 333 条<b>有歧义</b>）。</p>
+  </div>
+</section>
+
+<section id="corpus">
+  <h2>4 语料与工具环境 —— 本页最重要的一节</h2>
+  <p>经 MCP 暴露两套工具。<b>Asta Scientific Corpus</b> 8 个：<code>snippet_search</code>、<code>search_papers_by_relevance</code>、<code>get_paper</code>、<code>get_paper_batch</code>、<code>get_citations</code>、<code>search_authors_by_name</code>、<code>get_author_papers</code>、<code>search_paper_by_title</code>。另一套是 <b>Computational Notebook</b>：有状态 Jupyter 沙箱，支持 <code>%%writefile</code> 与 <code>!shell</code>，单 cell 5 分钟超时，沙箱内代码可反调宿主工具（支持 CodeAct 风格 agent）。</p>
+  <p><b>防污染机制</b>："These tools can restrict outputs to papers preceeding a date; AstaBench uses this feature to limit results to the date of benchmark creation so that new papers do not contaminate results."（截断为<b>不含</b>当日）</p>
+
+  <div class="critical-note">
+    <p><strong>关键约束：索引只是托管服务，不可下载、不可自托管，论文从未披露语料规模。</strong>88 页里<b>没有任何论文数 / token 数 / 索引大小 / 快照版本号</b>。实际约束在仓库与许可里：</p>
+    <ul>
+      <li>端点 <code>https://asta-tools.allen.ai/mcp/v1</code>，需申请 <code>ASTA_TOOL_KEY</code>（<code>allenai.org/asta/resources/mcp</code>），以 <code>x-api-key</code> 传入。</li>
+      <li>仓库文档：默认 key 限流"roughly <b>4 requests per second</b>"，建议 <code>--max-samples=8</code>，429 即超限。</li>
+      <li>benchmark 数据是 <b>gated</b> HuggingFace 数据集 <code>allenai/asta-bench</code>，需接受协议的 <code>HF_TOKEN</code>。</li>
+      <li>Corpus Tool License（2025-08-26）：仅限"academic and non-commercial research and benchmarking"；禁止转授/售卖 key；<b>禁止 "copy, adapt, reformat, reverse-engineer, disassemble, decompile, or otherwise modify the Tools or Asta, <i>including its corpus and underlying contents therein</i>"</b>；Ai2 可"at any time in Ai2's sole discretion without notice or liability"撤销；责任上限 100 美元。</li>
+    </ul>
+  </div>
+
+  <div class="key-insight">
+    <h3>论文把自己的托管索引当成"无人解决过的问题"的答案，却没有把索引公开</h3>
+    <p>Appendix A 原则 2 原文："It is particularly important that benchmark suites provide standard search tools with reproducible test-time access to the same document corpus, yet large-scale, optimized search indexes are costly to create and public search tools are not reproducible; <b>we are unaware of any such public, reproducible, large-scale search tools.</b>"<br><br>Reproducibility Statement 说的是 <b>code 与 logs 开源</b>，语料不在其中。<span class="evidence inference">合理推断</span> 结论：它的可复现性是<b>时间维度</b>的（日期截断使结果不随新论文漂移），不是<b>基础设施维度</b>的 —— Ai2 关端点或换索引，历史数字即无法复核，而且<b>没有索引快照版本号</b>可锚定。这比 BEIR 式可下载语料是严格更弱的保证。<br><br>反过来说，这正是 <a href="../ScholarQuest/ScholarQuest_精读与新颖性审计.html">ScholarQuest</a> 的 Lewen API（SQLite FTS5 + Qdrant，约 3M 论文，可本地起）留下的<b>唯一真实差异</b> —— 很窄，但真实。</p>
+  </div>
+</section>
+
+<section id="harness">
+  <h2>5 评测框架：成本被抬成一等指标</h2>
+  <p><b>57 个 agent / 22 个 agent class</b>（Table 3 列了 22：9 个 Asta + 13 个 baseline）。<code>agent-baselines</code> 只开源了其中 <b>16</b> 个 class —— 脚注 13："some are closed source and thus not usable on new inputs; however, we provide ways to reproducing those results based on cached answers"。框架建在 <b>Inspect</b>（UK AISI）上，<code>agent-eval</code> 补的是套件 / leaderboard / 成本层。</p>
+  <p><b>成本口径</b>："we use a <b>frozen snapshot of the litellm cost map</b>" —— 冻结价格表保证跨时间可比，计入缓存折扣，<b>不计</b>延迟类折扣（service tier、batching）。按<b>每题美元</b>报。只有 UI、无 token 日志的系统（You.com / Elicit / SciSpace）成本记为 "–"。</p>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Table3_p8.png" alt="agent 类别与工具规范"></div>
+    <figcaption>论文 Table 3。两个混淆轴：<b>agent 开放度</b>（开源开权重 ✓ / 开源闭权重 ∼ / 闭源有 API / 仅 UI ×）与 <b>工具规范</b>（Standard ✓ = 只用评测环境预置工具；Custom interface ∼ = 走日期受限的 Asta 语料但可加自定义工具；Fully custom ×）。</figcaption>
+  </figure>
+
+  <div class="warning-note">
+    <p><strong>值得点出来：只有 ReAct 和 Faker 属于 <code>Standard</code>。</strong>9 个 Asta agent 全是 ∼ 或 ×，而头名 <b>Asta v0 是 Fully custom（×）</b> —— <b>论文自己最好的 agent 不满足自己定的最严格工具档</b>。这与 ScholarQuest 未披露自引夺冠是同类问题：自建 benchmark 自家夺冠是这个子领域的通病。</p>
+  </div>
+</section>
+
+<section id="results">
+  <h2>6 结果：远未解决</h2>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig2_p8.png" alt="score vs cost"></div>
+    <figcaption>论文 Fig. 2 —— 全文最好的一张图。五个面板（Overall / Lit. Und. / Code &amp; Exec. / Data Analysis / End-to-End）的分数 vs 成本，<b>x 轴对数刻度</b>，虚线连 Pareto 前沿。这张图就是论文的论点本身：成本必须和分数一起看。</figcaption>
+  </figure>
+
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <thead><tr><th>Agent</th><th>模型</th><th>Overall</th><th>每题成本</th><th>LitUnd</th><th>E2E</th></tr></thead>
+    <tbody>
+      <tr><td><b>Asta v0</b></td><td>mixture</td><td><b>53.0</b></td><td>$3.40</td><td>62.2</td><td>68.8</td></tr>
+      <tr><td>ReAct</td><td>gpt-5</td><td>44.0</td><td><b>$0.31</b></td><td>54.6</td><td>36.1</td></tr>
+      <tr><td>ReAct</td><td>claude-sonnet-4</td><td>40.1</td><td>$0.40</td><td>45.4</td><td>45.7</td></tr>
+      <tr><td>ReAct</td><td>o3</td><td>39.4</td><td>$0.16</td><td>46.8</td><td>28.0</td></tr>
+      <tr><td>ReAct</td><td>gpt-5-mini</td><td>31.6</td><td><b>$0.04</b></td><td>36.5</td><td>12.6</td></tr>
+      <tr><td>Smolagents Coder</td><td>llama-4-scout</td><td><b>11.1</b>（最佳开权重）</td><td>$0.11</td><td>20.0</td><td>0.5</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="card-grid">
+    <article class="card">
+      <span class="evidence paper">论文结论</span>
+      <h4>天花板远未触及</h4>
+      <p>最高 53.0%。"Science research assistance is still far from solved." 最佳<b>开权重</b> agent 只有"a terrible 11.1%"。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文结论</span>
+      <h4>专用工具有效但很贵</h4>
+      <p>Asta v0 比次席 ReAct+gpt-5 高 9 个点（53.0 vs 44.0），<b>成本是 11 倍</b>（$3.40 vs $0.31），主要被 E2E 拖累（Asta Panda E2E 每题 $12.57）。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文结论</span>
+      <h4>便宜模型可能更贵</h4>
+      <p>"the per-token cost is 3 to 25 times lower for gemini-flash and llama-scout compared to o3 or sonnet, [但] the weaker models often take more steps or get stuck in loops, causing a ReAct agent to end up being <b>twice as expensive</b>"。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文结论</span>
+      <h4>可能不再需要专用工作流</h4>
+      <p>gpt-5 换掉 o3 后在 ReAct 上大涨（ScholarQA-CS2 +13.4、SUPER-Expert +24.8、LitQA2-Search +25.3），但在 Asta Scholar QA / DataVoyager / Code 上<b>反而变差</b>。论文推测 gpt-5 是对 ReAct 式工作流调过的，进而 "there may be <b>diminishing value in application-specific workflows</b>"。</p>
+    </article>
+  </div>
+
+  <h3>PaperFindingBench 单项</h3>
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Table5_p18.png" alt="文献检索类结果"></div>
+    <figcaption>论文 Table 5。PaperFindingBench：<b>Asta Paper Finder 39.7±3.1（$0.063）</b> &gt; Asta v0 37.6 &gt; ReAct gpt-5 26.4（$0.428，成本高 7 倍）&gt; … &gt; <b>You.com Search API 7.2</b>。论文自己的判断："it is clear that the paper-finding task is far from 'solved'"。另一侧 LitQA2-FullText-Search 上 Asta Paper Finder 达 <b>90.7 recall@30</b>，vs ReAct gpt-5 82.7、You.com 36.0。</figcaption>
+  </figure>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Table20_p41.png" alt="端到端完成率"></div>
+    <figcaption>论文 Table 20（p.41）。五个数字，比全文任何论证都更能击穿"AI 科学家"叙事：<b>完整端到端任务完成率 0.00–0.05</b>。论文的算术解释："given ∼10 steps per experiment, and a success rate of 70% per step, the success rate to complete all steps will be ≈ 0.7¹⁰ ≈ 3%"。分步完成率看着有 ~70%，全任务完成率近零 —— 复合衰减。</figcaption>
+  </figure>
+</section>
+
+<section id="prior">
+  <h2>7 它怎么批评已有 benchmark</h2>
+  <p>这段是<b>本地档案里最该记住的一段</b> —— 它已经把 ScholarQuest 的立论说过了，早八个月。</p>
+  <blockquote>
+    <p>（E.2, p.34）"However, current paper finding benchmarks largely confine themselves to a small subset of search query kinds (e.g. <b>LitSearch</b> (Ajith et al., 2024), <b>PaSa</b> (He et al., 2025) and <b>LitQA2</b> dataset (Skarlinski et al., 2024)). They focus on purely semantic criteria, not covering metadata or navigational queries, and they are <b>missing a methodological process to cover the different within-semantic challenging types</b>."</p>
+  </blockquote>
+  <p>对通用 agent benchmark 套件的批评（§1）也很有用：</p>
+  <blockquote>
+    <p>"no large-scale, controlled document retrieval tools exist, making it unclear whether a 'winning' agent has superior AI capabilities or <b>merely access to a more relevant information source</b>."</p>
+    <p>"we are unaware of agent benchmarks that account for variations in tool usage, and only a few like HAL measure cost, which is critical since even simplistic strategies (e.g., taking a majority vote over repeated invocation) can boost accuracy by spending more."</p>
+    <p>"most published evaluations only compare to a small number of other agents or ablations, making it difficult to assess whether claimed improvements represent genuine advances."</p>
+  </blockquote>
+  <div class="warning-note">
+    <p><strong>它自己也有同样的张力：</strong>LitSearch 和 PaSa <b>一边被批评，一边被当作 semantic 子集的查询来源</b>挖用。跟 ScholarQuest 批引文偏置却自己用引文扩展是同一类毛病。</p>
+  </div>
+</section>
+
+<section id="gaps">
+  <h2>8 它自己的问题</h2>
+  <div class="critical-note">
+    <p><strong>没有 Limitations 章节。</strong><span class="evidence audit">审计发现</span> 检索全部 88 页，"limitation" 只出现在讲<b>别人</b>的局限、ScholarQA-CS 讨论和 prompt 文本里。对一篇 ICLR 论文是个显眼的缺失，最接近的只有 §6 "Conclusion and Future Work" 加零散的逐 benchmark 注意事项。</p>
+  </div>
+  <div class="card-grid">
+    <article class="card">
+      <span class="evidence paper">自承（未来工作）</span>
+      <h4>污染其实没解决</h4>
+      <p>"We plan to develop fresh benchmark problems that use the latest scientific knowledge, which is contamination-resistant and past the training cut-off date of models." —— 日期截断只防<b>检索</b>污染，不防<b>预训练</b>污染。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>缓存结果混在榜里</h4>
+      <p>Asta Panda、Asta CodeScientist 因"源码尚未整合"用<b>缓存结果</b>计分；Elicit / SciSpace / OpenSciLM / OpenAI DR 同样。UI-only 系统完全没有成本数，Pareto 结论因此不完整。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>个别系统被系统性压分</h4>
+      <p>Perplexity 的 <code>search_mode=academic</code> 在评测窗口（2025-08-03～07）是坏的，只能跑网页搜索，且无法抽引文，最终按"仅标题+URL"计分。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>领域偏斜</h4>
+      <p>整套"weighted towards CS"，只有两个 LitQA2 任务是生物；ArxivDIGESTables-Clean 94.3% 是 CS。自承要"deepen coverage of … biomedicine"。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">自承</span>
+      <h4>E2E 只弱测了 ideation</h4>
+      <p>"the problems are specified in considerable detail and hence only weakly test the ideation and planning steps."</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">自承</span>
+      <h4>榜单数字低估了产品</h4>
+      <p>Asta Paper Finder 是"a frozen-in-time and simplified version of our live paper-finding agent"，单轮、不能追问。</p>
+    </article>
+  </div>
+
+  <h3>判官的验证（这部分做得比同类扎实）</h3>
+  <p>E2E rubric 打分在 50 项开发集样本上"judged 92% correct"；ScholarQA-CS2 判官用 gemini-2.5-flash（与 gemini-2.5-pro 的 Pearson 0.995），系统级 Kendall τ = 0.467 vs 专家，<b>排除 Elicit 后升到 0.800</b>；实例级一致 68.1%。留出 rubric 偏置也量化了：5 个系统里 3 个在被排除出 ingredient 池后显著掉分（平均 2.5 点，p ≤ 0.01）。</p>
+
+  <div class="source-note">
+    <p><strong>证据等级说明。</strong>本页基于本地 PDF 全 88 页（<code>pdftotext -layout</code> 全文通读，含附录 A–H）。<span class="evidence paper">论文声称</span> 为原文引述或表格数据；<span class="evidence audit">审计发现</span> 为全文检索后的缺失认定；<span class="evidence inference">合理推断</span> 项论文未言明（含 2,404 这个由 Table 2 相加得出的总题数）。许可与限流细节来自 <code>github.com/allenai/asta-bench</code> 文档与 <code>allenai.org/asta-corpus-license</code>（2025-08-26 版）。<br><b>未能确定</b>：语料规模（论文与 Ai2 文档均未披露，勿自行断言数量级）、索引是否有版本/快照标识、<code>ASTA_TOOL_KEY</code> 是否免费、live leaderboard 当前排名（HF Space 抓取为空）。</p>
+    <p><strong>归档日期</strong>：2026-08-03 · 论文版本 v2（2026-04-21）· 图片由本地 PDF 按图注区域裁切；Table 20 因图注在表下方，为定点重裁。</p>
+  </div>
+</section>
+</main>
+
+</body>
+</html>

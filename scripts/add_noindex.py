@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 
-DEFAULT_SITE = Path("Literature_文献调研档案_2026-08-03")
+DEFAULT_SITE = Path("site")
 NOINDEX_META = '<meta name="robots" content="noindex, nofollow, noarchive">'
 HEAD_RE = re.compile(r"<head\b[^>]*>", re.IGNORECASE)
 ROBOTS_META_RE = re.compile(
@@ -29,7 +29,8 @@ def update_page(path: Path) -> bool:
             count=1,
         )
         if replacements == 0:
-            raise ValueError(f"missing <head> element: {path}")
+            print(f"WARN: missing <head> element, skipped: {path}")
+            return False
 
     if updated == content:
         return False

@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RollingEval-Jun25 归档说明</title>
+<style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: min(920px, calc(100% - 44px));
+            margin: 0 auto;
+            padding: 52px 18px 76px;
+        }
+
+        header {
+            margin-bottom: 34px;
+            padding-bottom: 34px;
+            border-bottom: 1px solid var(--line);
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-size: 0.93rem;
+            font-weight: 650;
+            text-decoration: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--accent-dark);
+            transform: translateX(-2px);
+        }
+
+        .status-row,
+        .resource-row,
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-row,
+        .resource-row {
+            justify-content: center;
+        }
+
+        .status-row {
+            margin-bottom: 18px;
+        }
+
+        .resource-row {
+            margin-top: 22px;
+        }
+
+        .badge,
+        .tag,
+        .evidence {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .badge {
+            padding: 4px 11px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.79rem;
+            font-weight: 650;
+        }
+
+        .resource-link {
+            display: inline-block;
+            padding: 7px 13px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent-dark);
+            background: var(--panel);
+            font-size: 0.84rem;
+            font-weight: 620;
+            text-decoration: none;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .resource-link.primary {
+            border-color: var(--accent);
+            color: var(--white);
+            background: var(--accent);
+        }
+
+        .resource-link:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        h1 {
+            margin-bottom: 12px;
+            font-size: clamp(2.35rem, 7vw, 3.25rem);
+            font-weight: 670;
+            letter-spacing: -0.035em;
+            line-height: 1.08;
+        }
+
+        .subtitle {
+            max-width: 720px;
+            margin: 0 auto;
+            color: var(--muted);
+            font-size: 1.08rem;
+            font-weight: 360;
+        }
+
+        .meta {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.91rem;
+            font-weight: 360;
+        }
+
+        h2 {
+            margin: 56px 0 24px;
+            padding-bottom: 11px;
+            border-bottom: 2px solid var(--accent);
+            font-size: 1.78rem;
+            font-weight: 630;
+            line-height: 1.3;
+        }
+
+        h3 {
+            margin: 30px 0 14px;
+            color: var(--accent);
+            font-size: 1.25rem;
+            font-weight: 630;
+        }
+
+        h4 {
+            margin-bottom: 8px;
+            color: var(--accent-dark);
+            font-size: 1.01rem;
+            font-weight: 650;
+        }
+
+        p {
+            margin-bottom: 17px;
+            font-weight: 360;
+        }
+
+        strong {
+            font-weight: 660;
+        }
+
+        a {
+            color: var(--accent-dark);
+        }
+
+        .lead {
+            color: #343b37;
+            font-size: 1.02rem;
+        }
+
+        .eyebrow {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 720;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .toc {
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 7px;
+            margin: 24px 0 34px;
+            padding: 10px;
+            border: 1px solid rgba(231, 225, 215, 0.9);
+            border-radius: 16px;
+            background: rgba(247, 244, 239, 0.93);
+            box-shadow: 0 8px 24px rgba(31, 36, 33, 0.06);
+            backdrop-filter: blur(10px);
+        }
+
+        .toc a {
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 620;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .highlight-box,
+        .source-note,
+        .warning-note,
+        .critical-note,
+        .code-note,
+
+        .source-note {
+            border-left-color: var(--green);
+            background: var(--green-pale);
+        }
+
+        .code-note {
+            border-left-color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .warning-note,
+
+        .critical-note {
+            border-left-color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .highlight-box p:last-child,
+        .source-note p:last-child,
+        .warning-note p:last-child,
+        .critical-note p:last-child,
+        .code-note p:last-child,
+
+        .key-insight {
+            margin: 32px 0;
+            padding: 28px 31px;
+            border-radius: 8px;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 4px 12px rgba(196, 97, 47, 0.22);
+        }
+
+        .key-insight h3,
+        .key-insight p {
+            color: var(--white);
+        }
+
+        .key-insight h3 {
+            margin-top: 0;
+        }
+
+        .key-insight p:last-child {
+            margin-bottom: 0;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            margin: 24px 0;
+        }
+
+        .card-grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            padding: 21px 23px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1.08rem;
+        }
+
+        .card p:last-child,
+        .card ul:last-child {
+            margin-bottom: 0;
+        }
+
+        .evidence {
+            margin-bottom: 10px;
+            padding: 3px 9px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .evidence.paper {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .evidence.code {
+            color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .evidence.inference {
+            color: var(--warning);
+            background: var(--warning-pale);
+        }
+
+        .evidence.audit {
+            color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .figure,
+        .figure-grid {
+            margin: 30px 0;
+        }
+
+        .figure {
+            text-align: center;
+        }
+
+        .figure-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .figure-grid .figure {
+            margin: 0;
+        }
+
+        .figure a,
+        .figure-frame {
+            display: block;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: var(--figure-shadow);
+        }
+
+        .figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .figure figcaption {
+            max-width: 760px;
+            margin: 11px auto 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-style: italic;
+            line-height: 1.55;
+        }
+
+        .figure-placeholder {
+            display: grid;
+            min-height: 250px;
+            padding: 28px;
+            place-items: center;
+            color: var(--muted);
+            background:
+                linear-gradient(135deg, rgba(196, 97, 47, 0.08), transparent 48%),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 31px,
+                    rgba(231, 225, 215, 0.48) 32px
+                ),
+                var(--white);
+            text-align: center;
+        }
+
+        .figure-placeholder.compact {
+            min-height: 205px;
+        }
+
+        .figure-placeholder strong {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--accent);
+            font-size: 1.08rem;
+        }
+
+        .figure-placeholder span {
+            display: block;
+            max-width: 520px;
+            font-size: 0.88rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin: 26px 0;
+            border-collapse: collapse;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            padding: 13px 15px;
+            color: var(--white);
+            background: var(--accent);
+            font-size: 0.88rem;
+            font-weight: 620;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 13px 15px;
+            border-bottom: 1px solid var(--line);
+            font-size: 0.89rem;
+            font-weight: 360;
+            vertical-align: top;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .comparison-table .focus-row td {
+            background: #f8ede4;
+            font-weight: 590;
+        }
+
+        .table-scroll {
+            width: 100%;
+            margin: 26px 0;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .table-scroll .comparison-table {
+            min-width: 680px;
+            margin: 0;
+        }
+
+        .flow-diagram {
+            margin: 29px 0;
+            padding: 27px 31px;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .flow-step {
+            position: relative;
+            margin: 16px 0;
+            padding: 18px 22px;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            background: var(--white);
+        }
+
+        .flow-step::before {
+            content: "▼";
+            position: absolute;
+            bottom: -28px;
+            left: 50%;
+            color: var(--accent);
+            font-size: 18px;
+            transform: translateX(-50%);
+        }
+
+        .flow-step:last-child::before {
+            content: "";
+        }
+
+        .flow-step p {
+            margin-bottom: 0;
+        }
+
+        .formula {
+            margin: 25px 0;
+            padding: 21px 23px;
+            border-radius: 7px;
+            color: var(--paper);
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.96rem;
+            overflow-x: auto;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        ul {
+            margin: 15px 0 19px 2px;
+            list-style: none;
+        }
+
+        li {
+            position: relative;
+            margin-bottom: 9px;
+            padding-left: 22px;
+            font-weight: 360;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 2px;
+            color: var(--accent);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        details {
+            margin: 16px 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 17px 20px;
+            cursor: pointer;
+            font-weight: 630;
+            list-style: none;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: "＋";
+            margin-left: auto;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        details[open] summary::after {
+            content: "−";
+        }
+
+        .details-body {
+            padding: 18px 22px 22px;
+            border-top: 1px solid var(--line);
+        }
+
+        code {
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.88em;
+        }
+
+        pre {
+            margin: 22px 0;
+            padding: 20px 22px;
+            border: 1px solid #343b37;
+            border-radius: 8px;
+            color: #edf2ee;
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.84rem;
+            line-height: 1.65;
+            overflow-x: auto;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+        }
+
+        .code-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 22px 0;
+        }
+
+        .code-item {
+            padding: 16px 18px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: var(--white);
+        }
+
+        .code-item code {
+            display: inline-block;
+            margin-bottom: 7px;
+            color: var(--blue);
+            background: var(--blue-pale);
+            font-weight: 660;
+        }
+
+        .code-item p {
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .tag-list {
+            margin: 13px 0 22px;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            color: var(--green);
+            background: var(--green-pale);
+            font-size: 0.78rem;
+            font-weight: 630;
+        }
+
+        footer {
+            margin-top: 72px;
+            padding-top: 28px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-weight: 360;
+            text-align: center;
+        }
+
+        @media (max-width: 760px) {
+            .container {
+                width: min(100% - 28px, 920px);
+                padding: 34px 8px 56px;
+            }
+
+            .card-grid,
+            .card-grid.three,
+            .figure-grid,
+            .code-list {
+                grid-template-columns: 1fr;
+            }
+
+            .toc {
+                position: static;
+            }
+
+            .flow-diagram {
+                padding: 20px 16px;
+            }
+
+            h2 {
+                margin-top: 46px;
+                font-size: 1.55rem;
+            }
+
+            .highlight-box,
+            .key-insight {
+                padding: 22px;
+            }
+
+            .subtitle,
+            .meta {
+                overflow-wrap: anywhere;
+            }
+        }
+
+        @media print {
+            .toc,
+            .back-link,
+
+            body {
+                background: white;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 24px;
+            }
+
+            .figure a,
+            .card,
+            details {
+                box-shadow: none;
+            }
+        }
+    
+        blockquote {
+            margin: 16px 0;
+            padding: 13px 18px;
+            border-left: 3px solid var(--accent);
+            border-radius: 0 7px 7px 0;
+            background: var(--panel);
+            color: var(--ink);
+            font-size: 0.94rem;
+        }
+
+        blockquote p { margin-bottom: 9px; }
+        blockquote p:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+<main class="container">
+<header>
+  <a class="back-link" href="../../index.html">← 返回 Literature 总览</a>
+  <div class="status-row">
+    <span class="badge">arXiv:2605.29234v1</span>
+    <span class="badge">2026-05-28</span>
+    <span class="badge">无 venue</span>
+    <span class="badge">归档级 · 未逐页深读</span>
+  </div>
+  <h1>RollingEval-Jun25</h1>
+  <p class="subtitle">"人类的参考文献列表不是金标" —— 一篇直接攻击整条评测范式的论文，比 ScholarQuest 早一个月。</p>
+  <p class="meta">Gaurav Sahu, Laurent Charlin, Christopher Pal · Mila / 蒙特利尔 · 原标题：Rethinking Literature Search Evaluation: Deep Research Helps, and Human Citation Lists Are Not a Ground Truth</p>
+  <div class="resource-row">
+    <a class="resource-link primary" href="RollingEval-Jun25_2605.29234v1.pdf">论文 PDF</a>
+    <a class="resource-link" href="https://arxiv.org/abs/2605.29234">arXiv</a>
+    <a class="resource-link" href="../ScholarQuest/ScholarQuest_精读与新颖性审计.html">受影响：ScholarQuest</a>
+    <a class="resource-link" href="../../Literature项目或者系统/复杂/PaSa/深读评价.html">受影响：PaSa</a>
+  </div>
+</header>
+
+<div class="highlight-box">
+  <p><strong>为什么必须归档：</strong>PaSa / LitSearch / ResearchArena / ScholarQuest 这一整条线的金标都建立在<b>"论文的参考文献列表 = 该找到的论文集合"</b>这个假设上。这篇论文用中立 LLM 判官量化了这个假设的失效程度：<b>人类引用里只有 51% 被判为中度以上相关，而最强 AI reranker 是 86–88%</b>。<br><br>如果 AutoSci 的评测里有"用参考文献列表当检索金标"的设计，这是审稿人会拿来打你的那篇论文。<b>提前知道。</b></p>
+</div>
+
+<section id="two">
+  <h2>1 两个互补的角度</h2>
+  <div class="card-grid">
+    <article class="card">
+      <span class="evidence paper">角度一：改进检索</span>
+      <h3>Deep Research pipeline</h3>
+      <p>吃进<b>整篇查询论文</b>（不是一句 query），生成 LLM 构造的关键词，再沿检索结果的参考文献<b>广度优先扩展</b>。效果：RollingEval-Jun25 上的召回从 <b>&lt;20% 提到 &gt;80%</b>。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">角度二：压力测试金标</span>
+      <h3>人类引用列表靠不住</h3>
+      <p>用中立 LLM-as-judge 判断人类参考文献是否真的相关：<b>仅 51%</b> 达到中度相关以上；最强 AI reranker 是 <b>86–88%</b>。在 OpenAlex 合著图上进一步发现：<b>人类引用直接合作者的概率比最佳 AI reranker 高 2.5 倍</b>。</p>
+    </article>
+  </div>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig1_p1.png" alt="Deep Research pipeline"></div>
+    <figcaption>论文 Fig. 1：pipeline 结构。整篇论文输入 → LLM 关键词 → 检索 → 沿参考文献广度优先扩展。与 PaSa 的 <code>[Expand]</code>、SPAR 的 RefChain 同族，但输入粒度是<b>整篇论文</b>。</figcaption>
+  </figure>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig2_p2.png" alt="Precision@K 与 Recall@K"></div>
+    <figcaption>论文 Fig. 2：Precision@K（左）/ Recall@K（右），K 为对数轴。"Deep Research raises recall by an order of magnitude" —— 但注意左图，精度是同时下降的，这是召回导向系统的必然代价。</figcaption>
+  </figure>
+
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/Fig3_p4.png" alt="累积语义相关性"></div>
+    <figcaption>论文 Fig. 3：top-K 上的累积语义相关性（SR 判官）。这张图是"人类引用不如 AI 排序相关"这一主张的核心证据。</figcaption>
+  </figure>
+</section>
+
+<section id="use">
+  <h2>2 对本地档案的三个影响</h2>
+  <div class="card-grid three">
+    <article class="card">
+      <span class="evidence audit">影响 1</span>
+      <h4>ScholarQuest 的规模论证被削弱</h4>
+      <p>它主打"自动化答案集 → 规模更大"。但如果单轴 recall-vs-参考列表本身有系统偏置，<b>把有偏的金标做大并不等于做好</b>。ScholarQuest 全文未引这篇。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">影响 2</span>
+      <h4>PaSa 的引文可达偏置有了外部佐证</h4>
+      <p>本地 <code>复杂/PaSa/深读评价.md</code> 已指出其 GT 来自顶会引文、恰是 <code>[Expand]</code> 的优势区。这篇给出了该偏置的独立量化。</p>
+    </article>
+    <article class="card">
+      <span class="evidence inference">影响 3</span>
+      <h4>AstaBench 的设计选择被侧面支持</h4>
+      <p>AstaBench 不用参考列表当金标，改用<b>LLM 生成的加权相关性标准 + 强制提交证据片段</b>。在这篇的论证下，那是更稳的方向 —— 尽管它自己也有循环性问题。</p>
+    </article>
+  </div>
+
+  <div class="warning-note">
+    <p><strong>不要过度推论。</strong>它的判官本身也是 LLM，"AI reranker 比人类更相关"这个结论有<b>同源偏好</b>的风险（判官与 reranker 都是语义模型，天然偏好语义匹配紧密的文档；而人类引用包含致谢式引用、背景引用、方法出处等非语义相关动机）。这不否定它的核心警示，但"51% vs 86–88%"不能直接读成"AI 比人做得好"。</p>
+  </div>
+
+  <div class="source-note">
+    <p><strong>深读程度说明。</strong>本页为<b>归档级</b>：摘要、主图表与核心数字经本地 PDF 核对，<b>未做逐页全文通读</b>。若要正式引用其结论（尤其 51% / 86–88% / 2.5× 三个数字），建议先核对论文 §3–§4 的判官设定与相关性档位定义。</p>
+    <p><strong>归档日期</strong>：2026-08-03 · 论文版本 v1（2026-05-28）· 图片由本地 PDF 按图注区域裁切。</p>
+  </div>
+</section>
+</main>
+
+</body>
+</html>

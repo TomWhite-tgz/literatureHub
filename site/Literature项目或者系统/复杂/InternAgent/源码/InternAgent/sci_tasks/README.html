@@ -1,0 +1,624 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>README</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../../../../index.html">← 返回总览</a><div align="center">
+  <h1>ResearchClawBench</h1>
+</div>
+
+<div align="center">
+
+[![Official Site](https://img.shields.io/badge/Official%20Site-333399.svg?logo=homepage)](https://InternScience.github.io/ResearchClawBench-Home/)&#160;
+[![GitHub](https://img.shields.io/badge/GitHub-000000?logo=github&logoColor=white)](https://github.com/InternScience/ResearchClawBench)&#160;
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-gray)](https://huggingface.co/datasets/InternScience/ResearchClawBench)&#160;
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Domains](https://img.shields.io/badge/Domains-10-green.svg)](#-scientific-domains)
+[![Tasks](https://img.shields.io/badge/Tasks-40-orange.svg)](#-scientific-domains)
+[![GitHub](https://img.shields.io/github/stars/InternScience/ResearchClawBench?style=social)](https://github.com/InternScience/ResearchClawBench)
+
+**Evaluating AI Agents for Automated Research from Re-Discovery to New-Discovery**
+
+
+[Quick Start](#-quick-start) | [Submit Tasks](#-submit-new-tasks) | [How It Works](#%EF%B8%8F-how-it-works) | [Domains](#-scientific-domains) | [Leaderboard](#-leaderboard) | [Add Your Agent](#-add-your-own-agent)
+
+</div>
+
+<p align="center">
+  <img src="../../../../../../_未包含的内容.html" alt="SGI Overview" width="600">
+</p>
+
+<hr />
+<p>ResearchClawBench is a benchmark that measures whether AI coding agents can <strong>independently conduct scientific research</strong> — from reading raw data to producing publication-quality reports — and then rigorously evaluates the results against <strong>real human-authored papers</strong>.</p>
+<p>Unlike benchmarks that test coding ability or factual recall, ResearchClawBench asks: <em>given a curated scientific workspace and the same research goal, can an AI agent arrive at the same (or better) scientific conclusions?</em></p>
+<h2>Overview</h2>
+<h3>✨ Highlights</h3>
+<table>
+<tr>
+<td align="center" width="25%">🔄<br/><b>Two-Stage Pipeline</b><br/><sub>Autonomous research + rigorous peer-review-style evaluation</sub></td>
+<td align="center" width="25%">🧪<br/><b>40 Real-Science Tasks</b><br/><sub>10 disciplines, curated datasets from published papers</sub></td>
+<td align="center" width="25%">👁️<br/><b>Expert-Annotated Data</b><br/><sub>Tasks, checklists & datasets curated by domain experts</sub></td>
+<td align="center" width="25%">🤖<br/><b>Multi-Agent Support</b><br/><sub>Claude Code, Codex CLI, OpenClaw, ResearchClaw, ... & custom agents</sub></td>
+</tr>
+<tr>
+<td align="center">🚀<br/><b>Re-Discovery to New-Discovery</b><br/><sub>50 = match the paper, 70+ = surpass it</sub></td>
+<td align="center">📋<br/><b>Fine-Grained Checklist</b><br/><sub>Per-item keywords, weights & reasoning</sub></td>
+<td align="center">📡<br/><b>Live Streaming UI</b><br/><sub>Watch agents code, plot & write in real-time</sub></td>
+<td align="center">🍃<br/><b>Lightweight Dependencies</b><br/><sub>Pure Flask + vanilla JS, no heavy frameworks</sub></td>
+</tr>
+</table>
+
+<h3>🎬 Demo</h3>
+<p>https://github.com/user-attachments/assets/94829265-80a8-4d61-a744-3800603de6d9</p>
+<h3>💡 Why ResearchClawBench?</h3>
+<p>Most AI benchmarks evaluate what models <strong>know</strong>. We evaluate what agents can <strong>do</strong>.</p>
+<ul>
+<li><strong>Real science, not toy problems.</strong> 40 tasks sourced from published papers across 10 disciplines, each with curated experimental datasets.</li>
+<li><strong>Two-stage pipeline.</strong> Autonomous research first, rigorous evaluation second — just like peer review.</li>
+<li><strong>Fine-grained, multimodal scoring.</strong> A weighted checklist with text and image criteria, judged by an LLM acting as a strict peer reviewer.</li>
+<li><strong>Agent-agnostic.</strong> Ships with built-in support for Claude Code, Codex CLI, ARIS Codex, OpenClaw, Nanobot, EvoScientist, ResearchClaw, and a lightweight ResearchHarness baseline. Bring your own agent in one line.</li>
+<li><strong>From Re-Discovery to New-Discovery.</strong> Scoring above 50 means matching the original paper; above 70 means <em>surpassing</em> it. The frontier is wide open.</li>
+</ul>
+<h3>📢 News</h3>
+<ul>
+<li><strong>2026-04-13</strong> 🧭 Added built-in <a href="https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep">ARIS Codex</a> UI support and documentation. Imported benchmark runs are supported in the leaderboard and run browser; one-click launch is not yet supported in the public preset.</li>
+<li><strong>2026-04-10</strong> 🔬 Added built-in <a href="https://github.com/ymx10086/ResearchClaw">ResearchClaw</a> support — an intelligent agent-powered research assistant with built-in skills for paper search, literature review, and data analysis.</li>
+<li><strong>2026-04-07</strong> 🧪 Added built-in <a href="https://github.com/black-yt/ResearchHarness">ResearchHarness</a> support as a lightweight baseline agent for testing different LLMs under the same ResearchClawBench workflow.</li>
+<li><strong>2026-03-30</strong> 🧬 Added built-in <a href="https://github.com/EvoScientist/EvoScientist">EvoScientist</a> support and clarified multimodal judge prompting so the first attached image is explicitly treated as the ground-truth figure.</li>
+<li><strong>2026-03-27</strong> 🤗 Released a Hugging Face dataset mirror at <a href="https://huggingface.co/datasets/InternScience/ResearchClawBench">InternScience/ResearchClawBench</a>, including 10 additional tasks from ResearchClawBench-Self and a task downloader script.</li>
+<li><strong>2026-03-27</strong> 📨 Opened the <a href="https://huggingface.co/spaces/InternScience/ResearchClawBench-Task-Submit">ResearchClawBench submission Space</a> for community task uploads. New tasks are validated there and reviewed through Hugging Face dataset PRs instead of being added to this GitHub repository.</li>
+<li><strong>2026-03-20</strong> 🐈 Added <a href="https://github.com/HKUDS/nanobot">Nanobot</a> as a new agent — ultra-lightweight OpenClaw alternative with reliable multi-step tool execution. Agent config moved to <code>agents.json</code> for easy customization.</li>
+<li><strong>2026-03-19</strong> 🚀 Initial release with Claude Code, Codex CLI, and OpenClaw support. 40 tasks across 10 scientific domains.</li>
+</ul>
+<hr />
+<h2>Understanding The Benchmark</h2>
+<h3>🏗️ Data Construction</h3>
+<p>Every task in ResearchClawBench is built through a rigorous, expert-driven pipeline to ensure scientific validity and reproducibility:</p>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;📄 High-Quality Paper Collection\n(Target Paper)&quot;] --&gt; B[&quot;🧑‍🔬 Human Expert Extraction\n(Core Task Instructions)&quot;]
+    B --&gt; C[&quot;📋 Evaluation Checklist\n(Criteria + Keywords + Weights)&quot;]
+    B --&gt; D[&quot;📂 Data &amp; Related Work Collection\n(Datasets + Reference Papers)&quot;]
+    C --&gt; E[&quot;✅ Human Reproduction &amp; Validation\n(Verify checklist is reproducible)&quot;]
+    D --&gt; E
+
+    style A fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
+    style B fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
+    style C fill:#fce7f3,stroke:#ec4899,stroke-width:2px
+    style D fill:#f0fdf4,stroke:#22c55e,stroke-width:2px
+    style E fill:#f5f3ff,stroke:#8b5cf6,stroke-width:2px
+</code></pre>
+<ol>
+<li>
+<p><strong>High-Quality Paper Collection</strong> — Domain experts select recent, high-impact publications with clear methodology and reproducible results across 10 scientific disciplines.</p>
+</li>
+<li>
+<p><strong>Expert Task Extraction</strong> — Human experts read each paper and distill the core research task into structured instructions, identifying the key scientific question, input data, and expected outputs.</p>
+</li>
+<li>
+<p><strong>Checklist Design</strong> — Experts create a fine-grained evaluation checklist with weighted criteria (text and image items), each with specific technical keywords that a judge must verify.</p>
+</li>
+<li>
+<p><strong>Data &amp; Related Work Collection</strong> — The datasets and related reference materials are curated to form a research workspace for the task.</p>
+</li>
+<li>
+<p><strong>Human Reproduction &amp; Validation</strong> — Human researchers independently reproduce the paper's results from the provided workspace and instructions, verifying that every checklist item is achievable. This ensures the benchmark is fair and the checklist is grounded in reality.</p>
+</li>
+</ol>
+<h3>⚙️ How It Works</h3>
+<p>ResearchClawBench operates in two distinct stages:</p>
+<pre><code class="language-mermaid">flowchart LR
+    subgraph Stage1[&quot;Stage 1 &amp;mdash; Auto Research&quot;]
+        A[&quot;Raw Data\n+ Instructions&quot;] --&gt; B[&quot;AI Agent\n(autonomous)&quot;]
+        B --&gt; C[&quot;Code\n+ Figures\n+ Report&quot;]
+    end
+
+    subgraph Stage2[&quot;Stage 2 &amp;mdash; Evaluation&quot;]
+        C --&gt; D[&quot;LLM Judge&quot;]
+        E[&quot;Target Paper\n+ Checklist&quot;] --&gt; D
+        D --&gt; F[&quot;Per-Item Scores\n+ Reasoning&quot;]
+    end
+
+    style Stage1 fill:#f0f4ff,stroke:#3b82f6,stroke-width:2px
+    style Stage2 fill:#fff7ed,stroke:#f59e0b,stroke-width:2px
+</code></pre>
+<h4>Stage 1: Autonomous Research</h4>
+<div align="center">
+<img src="../../../../../../_未包含的内容.html" width="90%" />
+<p><em>Auto Research view — file explorer, live code output, and real-time agent conversation</em></p>
+</div>
+
+<p>The AI agent receives a workspace containing raw datasets, reference materials, and task instructions. It must independently:</p>
+<ol>
+<li><strong>Explore</strong> the data and understand the research question</li>
+<li><strong>Write code</strong> to analyze, model, and visualize the data</li>
+<li><strong>Produce a research report</strong> (<code>report/report.md</code>) with figures, methodology, results, and discussion</li>
+</ol>
+<p>No hand-holding. No chain-of-thought hints. The agent works in its own sandboxed workspace with full tool access — just like a real researcher.</p>
+<h4>Stage 2: Reference-Based Evaluation</h4>
+<div align="center">
+<img src="../../../../../../_未包含的内容.html" width="90%" />
+<p><em>Evaluation view — target paper (left), AI report (center), scored checklist (right)</em></p>
+</div>
+
+<p>Once the agent finishes, its report is evaluated against the <strong>original published paper</strong> using a fine-grained checklist. The judge receives the task instructions, the AI report, and the checklist criteria — then scores each item using a <strong>dual-mode rubric</strong>:</p>
+<pre><code class="language-mermaid">flowchart TD
+    subgraph Inputs
+        I[&quot;INSTRUCTIONS.md\n(task background)&quot;]
+        R[&quot;Agent Report\n(text + figures)&quot;]
+        CL[&quot;Checklist\n(from target paper)&quot;]
+    end
+
+    I &amp; R &amp; CL --&gt; J[&quot;Multimodal LLM Judge&quot;]
+
+    J --&gt; DET{&quot;Determine\nEvaluation Mode&quot;}
+
+    DET --&gt;|&quot;Quantitative\nresults&quot;| OBJ[&quot;Mode A: Objective\n(Metric Optimization)&quot;]
+    DET --&gt;|&quot;Qualitative\nreasoning&quot;| SUB[&quot;Mode B: Subjective\n(Mechanism Analysis)&quot;]
+
+    OBJ --&gt; SO[&quot;Score by metric\naccuracy vs paper&quot;]
+    SUB --&gt; SS[&quot;Score by evidence\nstrength vs paper&quot;]
+
+    SO &amp; SS --&gt; T[&quot;Per-Item Scores\n+ Reasoning\n→ Weighted Total&quot;]
+
+    style Inputs fill:#f0f4ff,stroke:#3b82f6,stroke-width:2px
+    style J fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
+    style OBJ fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+    style SUB fill:#fce7f3,stroke:#ec4899,stroke-width:2px
+    style T fill:#f0fdf4,stroke:#22c55e,stroke-width:2px
+</code></pre>
+<p>Each checklist item includes:<br />
+- <strong>Specific criteria</strong> extracted from the paper's key contributions<br />
+- <strong>Technical keywords</strong> the judge must verify (e.g., <em>"ROC-AUC improvement"</em>, <em>"Monte Carlo integration"</em>)<br />
+- <strong>Weight</strong> reflecting the item's importance<br />
+- <strong>Type</strong> — <code>text</code> for methodology/findings, <code>image</code> for figure comparison (multimodal vision)</p>
+<p>The judge automatically determines which evaluation mode applies to each item, then scores it with the corresponding rubric (see below).</p>
+<h5>Mode A: Objective Evaluation (Metric Optimization)</h5>
+<p>For checklist items involving specific numerical results, metrics, or quantitative outcomes:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Score</th>
+<th align="left">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><strong>0</strong></td>
+<td align="left">Criterion completely absent</td>
+</tr>
+<tr>
+<td align="left"><strong>1–10</strong></td>
+<td align="left">Mentioned but no quantitative results provided</td>
+</tr>
+<tr>
+<td align="left"><strong>11–20</strong></td>
+<td align="left">Results given but methodology has fundamental errors</td>
+</tr>
+<tr>
+<td align="left"><strong>21–30</strong></td>
+<td align="left">Significant methodological flaws; metrics deviate severely</td>
+</tr>
+<tr>
+<td align="left"><strong>31–40</strong></td>
+<td align="left">Methodology mostly correct but metrics notably worse than the paper</td>
+</tr>
+<tr>
+<td align="left"><strong>41–50</strong></td>
+<td align="left"><strong>Metrics roughly comparable to the paper</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>51–60</strong></td>
+<td align="left">Metrics slightly better than the paper</td>
+</tr>
+<tr>
+<td align="left"><strong>61–70</strong></td>
+<td align="left">Metrics clearly better than the paper</td>
+</tr>
+<tr>
+<td align="left"><strong>71–80</strong></td>
+<td align="left">Methodology and metrics both substantially improved</td>
+</tr>
+<tr>
+<td align="left"><strong>81–90</strong></td>
+<td align="left">Metrics dramatically surpass the paper</td>
+</tr>
+<tr>
+<td align="left"><strong>91–100</strong></td>
+<td align="left">Breakthrough results far exceeding the paper</td>
+</tr>
+</tbody>
+</table>
+<h5>Mode B: Subjective Evaluation (Mechanism Analysis)</h5>
+<p>For checklist items involving theoretical explanations, mechanistic insights, or interpretive analysis:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Score</th>
+<th align="left">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><strong>0</strong></td>
+<td align="left">Criterion completely absent</td>
+</tr>
+<tr>
+<td align="left"><strong>1–10</strong></td>
+<td align="left">Mentioned only with vague, generic statements</td>
+</tr>
+<tr>
+<td align="left"><strong>11–20</strong></td>
+<td align="left">Some description but no substantive analysis</td>
+</tr>
+<tr>
+<td align="left"><strong>21–30</strong></td>
+<td align="left">Analysis attempted but evidence insufficient or logic has gaps</td>
+</tr>
+<tr>
+<td align="left"><strong>31–40</strong></td>
+<td align="left">Correct direction but lacks depth; key arguments missing</td>
+</tr>
+<tr>
+<td align="left"><strong>41–50</strong></td>
+<td align="left"><strong>Analysis depth and rigor comparable to the paper</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>51–60</strong></td>
+<td align="left">More supporting evidence provided than the paper</td>
+</tr>
+<tr>
+<td align="left"><strong>61–70</strong></td>
+<td align="left">More complete logical chain and more rigorous argumentation</td>
+</tr>
+<tr>
+<td align="left"><strong>71–80</strong></td>
+<td align="left">Significantly deeper analysis with novel insights</td>
+</tr>
+<tr>
+<td align="left"><strong>81–90</strong></td>
+<td align="left">Analysis depth far exceeds the paper</td>
+</tr>
+<tr>
+<td align="left"><strong>91–100</strong></td>
+<td align="left">Original contributions with breakthrough insights</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Strict by design.</strong> The judge is highly skeptical of AI-generated content — plausible-sounding claims must be backed by concrete evidence. Longer reports do not score higher. Substance over style.</p>
+</blockquote>
+<h3>🔬 Scientific Domains</h3>
+<p>Each domain contains <strong>4 carefully curated tasks</strong> with complete experimental data from real published research:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Domain</th>
+<th align="left">Example Topics</th>
+<th align="left">Data Types</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><strong>Astronomy</strong></td>
+<td align="left">Black hole superradiance, Bayesian stellar inference</td>
+<td align="left"><code>.dat</code>, <code>.csv</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Chemistry</strong></td>
+<td align="left">GNN molecular prediction, protein-ligand docking</td>
+<td align="left"><code>.pdb</code>, <code>.sdf</code>, <code>.csv</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Earth</strong></td>
+<td align="left">Glacier mass balance, climate datasets</td>
+<td align="left"><code>.csv</code>, multi-region series</td>
+</tr>
+<tr>
+<td align="left"><strong>Energy</strong></td>
+<td align="left">Battery degradation, renewable energy modeling</td>
+<td align="left"><code>.xlsx</code>, time series</td>
+</tr>
+<tr>
+<td align="left"><strong>Information</strong></td>
+<td align="left">NLP benchmarks, deep learning analysis</td>
+<td align="left"><code>.pdf</code>, <code>.tex</code>, <code>.ipynb</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Life</strong></td>
+<td align="left">Nanopore sequencing, genomic analysis</td>
+<td align="left"><code>.csv</code>, <code>.xlsx</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Material</strong></td>
+<td align="left">Materials property prediction, pretrained models</td>
+<td align="left"><code>.pt</code>, <code>.csv</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Math</strong></td>
+<td align="left">Multi-agent pathfinding, optimization</td>
+<td align="left"><code>.json</code>, <code>.npy</code>, grid maps</td>
+</tr>
+<tr>
+<td align="left"><strong>Neuroscience</strong></td>
+<td align="left">Neural decoding, brain signal processing</td>
+<td align="left"><code>.csv</code>, <code>.h5</code>, <code>.yaml</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Physics</strong></td>
+<td align="left">Quantum geometry, superfluid stiffness</td>
+<td align="left"><code>.h5</code>, <code>.json</code>, <code>.csv</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>40 tasks total</strong> — each a curated research challenge selected from high-quality human-authored publications, spanning the full spectrum from data analysis to novel scientific insight.</p>
+<h3>🏆 Leaderboard</h3>
+<p>You can view the leaderboard on our <a href="https://internscience.github.io/ResearchClawBench-Home/">Website</a>, which is <strong>updated in real time</strong>.</p>
+<div align="center">
+<img src="../../../../../../_未包含的内容.html" width="90%" />
+<p><em>Leaderboard</em></p>
+</div>
+
+<p>The built-in dashboard aggregates the best score per (task, agent) pair and displays:</p>
+<ul>
+<li><strong>Frontier chart</strong> — best score per task across all agents</li>
+<li><strong>Leaderboard table</strong> — clickable cells linking to individual runs</li>
+<li><strong>Per-task breakdown</strong> — view any agent's report, code, and score reasoning</li>
+</ul>
+<p>The frontier represents the <strong>state of the art</strong> — every point above 50 is uncharted territory where AI surpasses human researchers on that specific task.</p>
+<h3>📁 Project Structure</h3>
+<pre><code>ResearchClawBench/
+├── evaluation/                 # Core evaluation framework
+│   ├── server.py               # Flask API + SSE streaming
+│   ├── run_task.py             # Workspace setup + agent subprocess
+│   ├── score.py                # Multimodal LLM scoring engine
+│   ├── config.py               # Paths, constants, loads agents.json
+│   ├── agents.json             # Agent presets (add your own here)
+│   ├── instructions_tmpl.py    # Unified prompt template for all agents
+│   ├── utils.py                # File tree, path safety, discovery
+│   ├── static/app.js           # Single-file frontend
+│   └── templates/index.html    # Entry point
+├── tasks/                      # 40 research tasks
+│   ├── Astronomy_000/
+│   │   ├── task_info.json      # Task description + data manifest
+│   │   ├── data/               # Raw experimental datasets
+│   │   ├── related_work/       # Reference papers
+│   │   └── target_study/       # Paper + checklist + images
+│   ├── Chemistry_000/
+│   └── ...                     # 10 domains x 4 tasks
+└── workspaces/                 # Generated at runtime (gitignored)
+</code></pre>
+<hr />
+<h2>Using ResearchClawBench</h2>
+<h3>🚀 Quick Start</h3>
+<h4>1. Install</h4>
+<pre><code class="language-bash">git clone https://github.com/InternScience/ResearchClawBench.git
+# If you only need to run evaluations, you can instead use:
+# git clone --depth 1 https://github.com/InternScience/ResearchClawBench.git
+cd ResearchClawBench
+pip install -r evaluation/requirements.txt
+</code></pre>
+<h4>2. Download Additional Hugging Face Tasks (Optional)</h4>
+<p>The Hugging Face dataset mirror at <a href="https://huggingface.co/datasets/InternScience/ResearchClawBench">InternScience/ResearchClawBench</a> currently includes <strong>16 community-contributed tasks beyond the 40 tasks in this repository</strong>, all packaged in the same <code>tasks/&lt;TaskID&gt;/...</code> layout.</p>
+<p>If you want to use these extra tasks directly in this repository, set <code>--output-dir</code> to your local <code>tasks/</code> directory.</p>
+<p>Download the helper script:</p>
+<pre><code class="language-bash">pip install huggingface_hub
+curl -L -o download_tasks.py https://huggingface.co/datasets/InternScience/ResearchClawBench/resolve/main/download_tasks.py
+</code></pre>
+<p>Download all mirrored Hugging Face tasks:</p>
+<pre><code class="language-bash">python download_tasks.py --all --output-dir /path/to/ResearchClawBench/tasks
+</code></pre>
+<p>Download one or more specific tasks:</p>
+<pre><code class="language-bash">python download_tasks.py --task Astronomy_005 --task Physics_005 --output-dir /path/to/ResearchClawBench/tasks
+</code></pre>
+<p>The downloaded files are placed directly under that tasks directory, for example <code>/path/to/ResearchClawBench/tasks/Astronomy_005/...</code>.</p>
+<p>Any task directory placed under <code>tasks/</code> with a valid <code>task_info.json</code> will be discovered automatically by the evaluation UI/API.</p>
+<h4>3. Configure</h4>
+<p>Create <code>evaluation/.env</code> with your scoring model credentials:</p>
+<pre><code class="language-env">OPENAI_API_KEY=sk-xxx
+OPENAI_BASE_URL=https://api.openai.com/v1
+SCORER_MODEL=gpt-5.1
+</code></pre>
+<h4>4. Install Agents</h4>
+<p>Install whichever agent(s) you plan to benchmark. You do not need every built-in preset.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Agent</th>
+<th align="left">Official installation guide</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><strong>Claude Code</strong></td>
+<td align="left"><a href="https://code.claude.com/docs/en/overview">Claude Code overview</a></td>
+<td align="left">Anthropic official docs</td>
+</tr>
+<tr>
+<td align="left"><strong>Codex CLI</strong></td>
+<td align="left"><a href="https://developers.openai.com/codex/cli">Codex CLI</a></td>
+<td align="left">OpenAI official docs</td>
+</tr>
+<tr>
+<td align="left"><strong>ARIS Codex</strong></td>
+<td align="left"><a href="https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep">Auto-claude-code-research-in-sleep</a></td>
+<td align="left">Imported runs are supported in the UI. The public preset is documentation-only for now; one-click launch is not yet supported.</td>
+</tr>
+<tr>
+<td align="left"><strong>OpenClaw</strong></td>
+<td align="left"><a href="https://openclaw.ai/">OpenClaw</a></td>
+<td align="left">Official website and setup entry</td>
+</tr>
+<tr>
+<td align="left"><strong>Nanobot</strong></td>
+<td align="left"><a href="https://github.com/HKUDS/nanobot">HKUDS/nanobot</a></td>
+<td align="left">Official GitHub repository</td>
+</tr>
+<tr>
+<td align="left"><strong>EvoScientist</strong></td>
+<td align="left"><a href="https://github.com/EvoScientist/EvoScientist">EvoScientist/EvoScientist</a></td>
+<td align="left">Official GitHub repository</td>
+</tr>
+<tr>
+<td align="left"><strong>ResearchClaw</strong></td>
+<td align="left"><a href="https://github.com/ymx10086/ResearchClaw">ymx10086/ResearchClaw</a></td>
+<td align="left"><code>pip install researchclaw</code></td>
+</tr>
+<tr>
+<td align="left"><strong>ResearchHarness</strong></td>
+<td align="left"><a href="https://github.com/black-yt/ResearchHarness/blob/main/benchmarks/ResearchClawBench/README.md">black-yt/ResearchHarness benchmark README</a></td>
+<td align="left">Lightweight baseline harness for testing different LLMs; replace <code>/abs/path/to/ResearchHarness</code> in <code>agents.json</code></td>
+</tr>
+</tbody>
+</table>
+<h4>5. Launch</h4>
+<pre><code class="language-bash">python -m evaluation
+</code></pre>
+<p>Open <strong>http://localhost:5000</strong> — browse tasks, pick an agent, hit <strong>Start Run</strong>, and watch the research happen live.</p>
+<h4>6. Score</h4>
+<p>After a run completes, switch to the <strong>Evaluation</strong> tab and click <strong>Score</strong>. The multimodal LLM judge evaluates each checklist item and returns per-item scores with reasoning.</p>
+<h3>🤖 Supported Agents</h3>
+<p>ResearchClawBench ships with built-in support for Claude Code, Codex CLI, ARIS Codex, OpenClaw, Nanobot, EvoScientist, ResearchClaw, plus a lightweight ResearchHarness baseline:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Agent</th>
+<th align="left">Command</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><img src="../../../../../../_未包含的内容.html" width="16" /> <strong>Claude Code</strong></td>
+<td align="left"><code>claude -p ...</code></td>
+<td align="left">Anthropic, stream-JSON output</td>
+</tr>
+<tr>
+<td align="left"><img src="../../../../../../_未包含的内容.html" width="16" /> <strong>Codex CLI</strong></td>
+<td align="left"><code>codex exec --full-auto ...</code></td>
+<td align="left">OpenAI, full-auto mode</td>
+</tr>
+<tr>
+<td align="left"><img src="../../../../../../_未包含的内容.html" width="16" /> <strong>ARIS Codex</strong></td>
+<td align="left"><code>One-click launch is not yet supported.</code></td>
+<td align="left">Historical imported runs are supported in the UI; add your own local wrapper if you want to benchmark it interactively.</td>
+</tr>
+<tr>
+<td align="left"><img src="../../../../../../_未包含的内容.html" width="16" /> <strong>OpenClaw</strong></td>
+<td align="left"><code>openclaw agent ...</code></td>
+<td align="left">Self-hosted gateway, 3600s timeout</td>
+</tr>
+<tr>
+<td align="left"><img src="../../../../../../_未包含的内容.html" width="16" /> <strong>Nanobot</strong></td>
+<td align="left"><code>nanobot agent -m ...</code></td>
+<td align="left">Ultra-lightweight, reliable tool execution</td>
+</tr>
+<tr>
+<td align="left"><img src="../../../../../../_未包含的内容.html" width="16" /> <strong>EvoScientist</strong></td>
+<td align="left"><code>evosci --ui cli ...</code></td>
+<td align="left">Self-evolving AI Scientists</td>
+</tr>
+<tr>
+<td align="left"><img src="../../../../../../_未包含的内容.html" width="16" /> <strong>ResearchClaw</strong></td>
+<td align="left"><code>researchclaw agent -m ...</code></td>
+<td align="left">AI research assistant with built-in skills</td>
+</tr>
+<tr>
+<td align="left"><img src="../../../../../../_未包含的内容.html" width="16" /> <strong>ResearchHarness</strong></td>
+<td align="left"><code>python3 /abs/path/to/ResearchHarness/run_agent.py ...</code></td>
+<td align="left">Lightweight baseline harness for testing different LLMs</td>
+</tr>
+</tbody>
+</table>
+<h4>🔧 Add Your Own Agent</h4>
+<p>Agent configuration is stored in <code>evaluation/agents.json</code>. To add a new agent, simply append an entry:</p>
+<pre><code class="language-json">{
+  &quot;my_agent&quot;: {
+    &quot;label&quot;: &quot;My Agent&quot;,
+    &quot;icon&quot;: &quot;M&quot;,
+    &quot;logo&quot;: &quot;/static/logos/my_agent.svg&quot;,
+    &quot;cmd&quot;: &quot;my-agent run -m &lt;PROMPT&gt; -w &lt;WORKSPACE&gt;&quot;
+  }
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th align="left">Placeholder</th>
+<th align="left">Replaced With</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code>&lt;PROMPT&gt;</code></td>
+<td align="left">Prompt content (via file path or <code>$(cat ...)</code>)</td>
+<td align="left">Required. For <code>-p</code> style flags, replaced with file path; otherwise replaced with <code>"$(cat 'path')"</code> to pass content</td>
+</tr>
+<tr>
+<td align="left"><code>&lt;WORKSPACE&gt;</code></td>
+<td align="left">Absolute path to the workspace directory</td>
+<td align="left">Optional. Only replaced if present in cmd</td>
+</tr>
+</tbody>
+</table>
+<p>The prompt injected into <code>&lt;PROMPT&gt;</code> is auto-generated from <code>evaluation/instructions_tmpl.py</code>, which combines a unified agent persona (autonomous execution guidelines, workspace sandbox rules) with task-specific instructions (description, data files, deliverables). All agents receive the exact same prompt — no code changes required, just edit the JSON file and restart the server.</p>
+<h3>📨 Submit New Tasks</h3>
+<p>The GitHub benchmark repository stays focused on the base 40 tasks. New task submissions should go through the <a href="https://huggingface.co/spaces/InternScience/ResearchClawBench-Task-Submit">ResearchClawBench submission Space</a>, which validates the uploaded zip and opens a PR against the <a href="https://huggingface.co/datasets/InternScience/ResearchClawBench">Hugging Face dataset repository</a> for maintainer review.</p>
+<ul>
+<li>Submission Space: <a href="https://huggingface.co/spaces/InternScience/ResearchClawBench-Task-Submit">InternScience/ResearchClawBench-Task-Submit</a></li>
+<li>Dataset destination: <a href="https://huggingface.co/datasets/InternScience/ResearchClawBench">InternScience/ResearchClawBench</a></li>
+<li>Example task format: <a href="https://github.com/InternScience/ResearchClawBench/tree/main/tasks/Astronomy_000">tasks/Astronomy_000</a></li>
+</ul>
+<p>After a submission is merged into the dataset repository, you can download it into your local <code>tasks/</code> directory with <code>download_tasks.py</code>, and the evaluation UI/API will discover it automatically.</p>
+<hr />
+<h2>Community</h2>
+<h3>🤝 Contributing</h3>
+<p>We welcome contributions in several forms — see <a href="../../../../../../_未包含的内容.html">CONTRIBUTING.md</a> for detailed guidelines.</p>
+<ul>
+<li><strong>New tasks</strong> — Add research challenges in existing or new domains</li>
+<li><strong>New agents</strong> — Add presets for emerging coding agents</li>
+<li><strong>Bug reports</strong> — Open an issue</li>
+</ul>
+<p>📧 <strong>Email</strong>: <a href="https://black-yt.github.io/">xu_wanghan@sjtu.edu.cn</a></p>
+<p>📬 <strong>Community</strong>:</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/InternScience/ResearchClawBench/main/assets/wechat.jpg" alt="WeChat" width="200">
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="https://raw.githubusercontent.com/InternScience/ResearchClawBench/main/assets/whatsappjpg.jpg" alt="WhatsApp" width="200">
+</p>
+
+<h3>📜 Citation</h3>
+<p>If you would like to cite our work, please use the following BibTeX.</p>
+<pre><code class="language-bib">@article{xu2025probing,
+  title={Probing Scientific General Intelligence of LLMs with Scientist-Aligned Workflows},
+  author={Xu, Wanghan and Zhou, Yuhao and Zhou, Yifan and Cao, Qinglong and Li, Shuo and Bu, Jia and Liu, Bo and Chen, Yixin and He, Xuming and Zhao, Xiangyu and others},
+  journal={arXiv preprint arXiv:2512.16969},
+  year={2025}
+}
+</code></pre>
+<h3>⭐ Star History</h3>
+<p><a href="https://www.star-history.com/?repos=InternScience%2FResearchClawBench&type=date&legend=top-left"><br />
+ <picture><br />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=InternScience/ResearchClawBench&type=date&theme=dark&legend=top-left" /><br />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=InternScience/ResearchClawBench&type=date&legend=top-left" /><br />
+   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=InternScience/ResearchClawBench&type=date&legend=top-left" /><br />
+ </picture><br />
+</a></p>
+<p align="right"><a href="#top">🔝Back to top</a></p><footer>由 <code>Literature项目或者系统/复杂/InternAgent/源码/InternAgent/sci_tasks/README.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

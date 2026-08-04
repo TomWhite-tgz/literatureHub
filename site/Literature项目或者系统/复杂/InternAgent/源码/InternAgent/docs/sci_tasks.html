@@ -1,0 +1,124 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>sci_tasks</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../../../../index.html">← 返回总览</a><h2>Scientific Paper Reproduction Tasks</h2>
+<p>InternAgent can take a published scientific paper, the data it used, and attempt to reproduce its key findings autonomously — writing the analysis code, running it, iterating on errors, and producing a written report. This is what a <em>sci_task</em> is.</p>
+<p>You do not need to know anything about AI or machine learning to run one. You provide the scientific materials; InternAgent does the coding and analysis.</p>
+<hr />
+<h3>What the agent does</h3>
+<p>Given a task, InternAgent will:</p>
+<ol>
+<li>Read the task description and understand what findings need to be reproduced</li>
+<li>Write analysis code from scratch, informed by the provided data and any related literature</li>
+<li>Run the code, debug failures, and revise iteratively</li>
+<li>Produce a written research report summarising the methods and results</li>
+<li>Score the report automatically against the original paper's findings</li>
+</ol>
+<p>This process typically takes 30–90 minutes depending on the complexity of the analysis and the number of iterations allowed.</p>
+<hr />
+<h3>Task structure</h3>
+<p>Each task is a folder under <code>sci_tasks/tasks/</code> with the following layout:</p>
+<pre><code>sci_tasks/tasks/Astronomy_000/
+├── task_info.json        # Task description and list of input data files
+├── data/                 # Input data files (measurements, samples, tables, etc.)
+├── target_study/
+│   ├── paper.pdf         # The paper being reproduced
+│   ├── checklist.json    # Evaluation criteria derived from the paper
+│   └── images/           # Reference figures from the paper
+└── related_work/         # Background papers for context (PDFs)
+</code></pre>
+<p><code>task_info.json</code> describes the scientific goal and each data file. The agent reads this at the start and uses it to plan its approach.</p>
+<p><code>checklist.json</code> is used for automated scoring after the run. It contains a list of specific findings from the paper (quantitative results, figures, analytical conclusions) that the agent's output is judged against.</p>
+<hr />
+<h3>Running a task</h3>
+<p>Initialize the submodule if you have not already (needed after a fresh clone):</p>
+<pre><code class="language-bash">git submodule update --init
+</code></pre>
+<p>Then run with the default task (<code>Astronomy_000</code>):</p>
+<pre><code class="language-bash">bash scripts/run_sci.sh
+</code></pre>
+<p>Or specify a different task by name:</p>
+<pre><code class="language-bash">bash scripts/run_sci.sh Chemistry_001
+</code></pre>
+<p>The full list of available tasks is under <code>sci_tasks/tasks/</code>. Task names follow the pattern <code>&lt;Domain&gt;_&lt;index&gt;</code>, covering Astronomy, Chemistry, Earth, Energy, Information, and more.</p>
+<hr />
+<h3>What to expect during the run</h3>
+<p>The agent runs as a loop: it generates hypotheses about how to approach the reproduction, writes code, executes it, and refines based on the output. You will see log output in the terminal and a live log file under <code>logs/</code>.</p>
+<p>Results are saved under <code>results/</code> in a timestamped folder. Inside you will find:</p>
+<pre><code>results/&lt;timestamp&gt;_&lt;run_name&gt;/
+├── run_0/               # Baseline (empty — the agent starts from scratch)
+├── run_1/               # First attempt
+│   ├── code/            # Code written by the agent
+│   ├── outputs/         # Output files and figures produced
+│   ├── report/
+│   │   └── report.md    # Written research report
+│   └── final_info.json  # Scores for this run
+└── ...
+</code></pre>
+<p>Each <code>run_N/</code> folder represents one iteration. The agent builds on the best result from the previous run.</p>
+<p><strong>Expected runtime:</strong> a full run with default settings can take several hours, since <code>default_config.yaml</code> runs 10 discovery rounds with up to 5 ideas per round. For a quick first test, reduce these in <code>config/default_config.yaml</code>:</p>
+<pre><code class="language-yaml">workflow:
+  loop_rounds: 1       # default: 10 — number of full idea→experiment cycles
+  top_ideas_count: 2   # default: 5  — ideas generated and run per round
+
+experiment:
+  max_runs: 2          # default: 2  — experiment iterations per idea (fine as-is)
+</code></pre>
+<p>With <code>loop_rounds: 1</code> and <code>top_ideas_count: 2</code>, a sci_task typically completes in 30–60 minutes.</p>
+<hr />
+<h3>How scoring works</h3>
+<p>After each run, an LLM judge reads the agent's <code>report.md</code> alongside the paper's <code>checklist.json</code> and scores each criterion on a 0–100 scale:</p>
+<ul>
+<li><strong>50</strong> means the result is roughly comparable to what the published paper reports</li>
+<li><strong>Above 50</strong> means the agent's result is stronger than the paper on that criterion</li>
+<li><strong>Below 50</strong> means the result is weaker or incomplete</li>
+</ul>
+<p>Criteria are weighted (as defined in <code>checklist.json</code>) and combined into a single <code>total_score</code>. Both quantitative results (specific numbers, metrics, plots) and qualitative analysis (interpretation, mechanistic reasoning) are evaluated.</p>
+<p>The scores appear in <code>final_info.json</code> inside each run folder and are summarised in the terminal at the end of the run.</p>
+<hr />
+<h3>Adding your own task</h3>
+<p>To reproduce a paper of your own, create a folder under <code>sci_tasks/tasks/</code> with:</p>
+<ul>
+<li><code>task_info.json</code> — describe the scientific goal and list each data file with its name, path, and a one-sentence description</li>
+<li><code>data/</code> — place the actual data files here</li>
+<li><code>target_study/paper.pdf</code> — the paper to reproduce</li>
+<li><code>target_study/checklist.json</code> — a list of findings to evaluate against (see any existing task for the format)</li>
+<li><code>target_study/images/</code> — reference figures from the paper (for image-based checklist items)</li>
+<li><code>related_work/</code> — optional background PDFs</li>
+</ul>
+<p>Once the folder is in place, run it with:</p>
+<pre><code class="language-bash">bash scripts/run_sci.sh &lt;your_task_name&gt;
+</code></pre>
+<h2>📝 Citation</h2>
+<pre><code class="language-bibtex">@article{team2025internagent,
+  title={InternAgent: When Agent Becomes the Scientist--Building Closed-Loop System from Hypothesis to Verification},
+  author={Team, InternAgent and Zhang, Bo and Feng, Shiyang and Yan, Xiangchao and Yuan, Jiakang and Ma, Runmin and Hu, Yusong and Yu, Zhiyin and He, Xiaohan and Huang, Songtao and others},
+  journal={arXiv e-prints},
+  pages={arXiv--2505},
+  year={2025}
+}
+</code></pre>
+<pre><code class="language-bibtex">@article{du2025automlgen,
+  title={AutoMLGen: Navigating Fine-Grained Optimization for Coding Agents},
+  author={Shangheng Du and Xiangchao Yan and Dengyang Jiang and Jiakang Yuan and Yusong Hu and Xin Li and Liang He and Bo Zhang and Lei Bai},
+  journal={arXiv preprint arXiv:2510.08521},
+  year={2025}
+}
+</code></pre><footer>由 <code>Literature项目或者系统/复杂/InternAgent/源码/InternAgent/docs/sci_tasks.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

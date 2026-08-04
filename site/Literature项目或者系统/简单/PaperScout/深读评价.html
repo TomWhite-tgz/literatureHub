@@ -1,0 +1,47 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>深读评价</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../index.html">← 返回总览</a><h1>PaperScout 深读评价（2026-08-02）</h1>
+<p><strong>分类：简单（真做了训练，但"PSPO 新算法"是 GSPO + turn 级 GAE 的组合重命名；复现性为零）。</strong></p>
+<ul>
+<li>论文：arXiv:2601.10029v2，USTC，18 页</li>
+<li>深读方式：论文全文 + arft（~3.35k 行）+ recipe/paper_search（~1k 行）全部代码，抽查 vendored verl 关键实现</li>
+</ul>
+<h2>核心红旗：论文公式与实现不符</h2>
+<ul>
+<li>论文式(5) 写 PSPO 序列重要性比是 token 比值<strong>普通连乘</strong>（无长度归一化）。</li>
+<li>代码里<strong>没有任何名为 pspo 的 policy loss</strong>；唯一训练脚本 <code>examples/run_qwen3-4b-mlflow-dbs.sh:42</code> 白纸黑字 <code>loss_mode=gspo</code>，直接调 verl 现成的 GSPO 损失（长度归一化几何平均）。</li>
+<li>旁证：clip 超参 ε=3e-4/4e-4 正是 GSPO 的典型量级，用论文的连乘比会把一切剪掉。<strong>论文公式是对实际所用 GSPO 的美化转写。</strong></li>
+<li>脚本里内部项目名是 FALCON / AgentRFT-PaperSearch；PSPO/PaperScout 是投稿包装。</li>
+</ul>
+<h2>真实自研的部分</h2>
+<ul>
+<li>turn 级 GAE（<code>arft/core_algos.py:29-108</code>）：每个 response 折叠为一个动作，step 奖励=token 奖励求和，critic 只在动作起点训练，(trajectory, step) 网格上标准 GAE 递归。合理的多轮 agent RL 工程适配，但社区已有大量类似做法，非新数学。</li>
+<li>训练主循环（<code>ray_agent_trainer.py</code> 954 行）、异步 rollout（<code>agent_flow.py</code> 1044 行）、检索环境客户端+奖励逻辑是真实工程。</li>
+</ul>
+<h2>其他问题</h2>
+<ol>
+<li><strong>未披露的奖励整形</strong>：代码默认 0.4 阈值二值化（论文式(2)写的是连续分数求和）+ 工具成本项 0.1/0.05（论文未提）。</li>
+<li><strong>POMDP 建模是话术</strong>：无任何利用部分可观测性的机制；观测还被本地 zip 缓存悄悄过滤（<code>utils.py:236-238</code>）。</li>
+<li><strong>评测弱</strong>：RL 算法对比只在 50 条 RealScholarQuery 上做，PSPO 比 GSPO 只高 1.7pt，无方差无显著性；AutoScholarQuery 测试集筛到 112 条。scaffold 本身贡献大头（未训练 Qwen3-Max 已接近训练后 4B）。</li>
+<li><strong>循环依赖 PaSa 生态</strong>：benchmark、reward model（pasa-7b-selector）、对比基线全来自 PaSa，却宣称 "first autonomous paper search agent"（PaSa crawler 本身就是自主 RL agent，站不住）。</li>
+<li><strong>复现性为零</strong>：检索环境服务端（localhost:8765 Milvus/ar5iv 服务）缺失；硬编码私有路径 <code>/data/tingyue/...</code> import 即崩；示例脚本自身跑不通（未启用 reward model）；无数据、无权重、无评测脚本；单 squash commit。</li>
+<li>论文若干组件在代码中缺席或默认关闭：token 级 PPO 基线定义后从未调用（Table 3 的 PPO 行无法复现）；return normalization 默认关闭且实现与论文表述不符；"pool 三轮不变即终止"不存在（实际 max_steps=5）。</li>
+</ol><footer>由 <code>Literature项目或者系统/简单/PaperScout/深读评价.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

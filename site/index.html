@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Literature 模块 · 总览</title>
+<style>
+  :root {
+    --paper: #faf5ec;
+    --card: #fffdf8;
+    --ink: #3b2f23;
+    --ink-soft: #6f5f4d;
+    --line: #e8dcc8;
+    --accent: #b4530a;        /* 赭石 */
+    --accent-soft: #f3e3d0;
+    --amber: #92600a;
+    --amber-bg: #f6ead2;
+    --sage: #5a6b3a;
+    --sage-bg: #eaeddc;
+    --rose: #9c3d3d;
+    --rose-bg: #f4e0dc;
+    --slate: #5b5544;
+    --slate-bg: #ece7da;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    line-height: 1.65;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 28px 80px; }
+
+  /* ---------- 头部 ---------- */
+  header { border-bottom: 3px double var(--line); padding-bottom: 26px; margin-bottom: 14px; }
+  header h1 { font-size: 30px; letter-spacing: 1px; }
+  header h1 span { color: var(--accent); }
+  header p.sub { color: var(--ink-soft); margin-top: 8px; font-size: 14.5px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .toc a {
+    text-decoration: none; font-size: 13.5px; color: var(--accent);
+    background: var(--accent-soft); border: 1px solid #e6cdb2;
+    padding: 5px 14px; border-radius: 999px; transition: all .15s;
+  }
+  .toc a:hover { background: var(--accent); color: #fff; }
+
+  /* ---------- 分区 ---------- */
+  section { margin-top: 46px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; border-left: 5px solid var(--accent); padding-left: 14px; margin-bottom: 6px; }
+  .sec-head h2 { font-size: 21px; }
+  .sec-head .count { color: var(--ink-soft); font-size: 13px; }
+  .sec-note { color: var(--ink-soft); font-size: 13.5px; margin: 2px 0 16px 19px; }
+
+  /* 子分组标题（复杂/简单/包装） */
+  .group { margin: 20px 0 10px 19px; display: flex; align-items: center; gap: 10px; }
+  .group h3 { font-size: 15.5px; }
+  .group .desc { font-size: 12.5px; color: var(--ink-soft); }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 10px; border-radius: 4px; font-weight: 600; letter-spacing: 1px; }
+  .tag.complex { background: var(--amber-bg); color: var(--amber); border: 1px solid #e3cfa3; }
+  .tag.simple  { background: var(--sage-bg);  color: var(--sage);  border: 1px solid #ccd3ae; }
+  .tag.fancy   { background: var(--rose-bg);  color: var(--rose);  border: 1px solid #e5c2ba; }
+  .tag.deep    { background: var(--slate-bg); color: var(--slate); border: 1px solid #d4cdb8; }
+
+  /* ---------- 卡片 ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 14px; margin-left: 19px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px 18px 14px; position: relative;
+    box-shadow: 0 1px 3px rgba(120, 90, 50, .06);
+    transition: box-shadow .15s, transform .15s;
+  }
+  .card:hover { box-shadow: 0 4px 14px rgba(120, 90, 50, .14); transform: translateY(-2px); }
+  .card h4 { font-size: 16px; margin-bottom: 4px; }
+  .card .meta { font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; }
+  .card p.blurb { font-size: 13px; color: var(--ink-soft); margin-bottom: 10px; }
+  .links { display: flex; flex-wrap: wrap; gap: 7px; }
+  .links a {
+    font-size: 12.5px; text-decoration: none; color: var(--accent);
+    border: 1px solid #ddb894; background: #fdf3e7;
+    padding: 3px 10px; border-radius: 5px; transition: all .12s;
+  }
+  .links a:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .links a.md { color: var(--slate); border-color: #cfc7ae; background: #f4f0e4; }
+  .links a.md:hover { background: var(--slate); color: #fff; border-color: var(--slate); }
+  .links a.dir { color: var(--sage); border-color: #c3cba4; background: #f0f2e3; }
+  .links a.dir:hover { background: var(--sage); color: #fff; border-color: var(--sage); }
+
+  /* 卡片角标（结论徽章） */
+  .verdict { position: absolute; top: 14px; right: 14px; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+  .v-real  { background: var(--amber-bg); color: var(--amber); }
+  .v-ok    { background: var(--sage-bg);  color: var(--sage); }
+  .v-hollow{ background: var(--rose-bg);  color: var(--rose); }
+
+  /* 特色大卡（横向比较入口） */
+  .feature {
+    margin-left: 19px; background: linear-gradient(135deg, #fdf6ea, #f8e9d4);
+    border: 1px solid #e6cdaa; border-radius: 12px; padding: 20px 24px; margin-bottom: 14px;
+  }
+  .feature h4 { font-size: 17px; color: var(--accent); margin-bottom: 6px; }
+  .feature p { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 12px; }
+
+  /* ---------- 选题讨论：折叠模块 ---------- */
+  .key {
+    margin-left: 19px; background: linear-gradient(135deg, #fdf6ea, #f8e9d4);
+    border: 1px solid #e6cdaa; border-radius: 12px; padding: 16px 22px; margin-bottom: 16px; font-size: 13.5px;
+  }
+  .key b.hl { color: var(--accent); }
+  .key ul { margin: 8px 0 2px 20px; }
+  .key li { margin: 3px 0; }
+  details.fold {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    margin: 10px 0 10px 19px; box-shadow: 0 1px 3px rgba(120,90,50,.06); overflow: hidden;
+  }
+  details.fold > summary {
+    cursor: pointer; padding: 13px 18px; font-size: 15px; font-weight: 600;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  details.fold > summary::-webkit-details-marker { display: none; }
+  details.fold > summary::before { content: "▸"; color: var(--accent); font-size: 13px; transition: transform .15s; }
+  details.fold[open] > summary::before { transform: rotate(90deg); }
+  details.fold > summary:hover { background: #fbf3e6; }
+  details.fold > summary .hint { font-size: 12px; color: var(--ink-soft); font-weight: 400; }
+  .fold-body { padding: 6px 24px 18px; border-top: 1px dashed var(--line); font-size: 13.5px; }
+  .fold-body p { margin: 9px 0; }
+  .fold-body ul, .fold-body ol { margin: 6px 0 10px 22px; }
+  .fold-body li { margin: 3px 0; }
+  .fold-body h5 { font-size: 14px; color: var(--accent); margin: 16px 0 4px; }
+  details.fold2 {
+    border: 1px solid var(--line); border-radius: 8px; margin: 10px 0; background: #fdfaf3; overflow: hidden;
+  }
+  details.fold2 > summary {
+    cursor: pointer; padding: 9px 14px; font-size: 13.8px; font-weight: 600;
+    list-style: none; display: flex; align-items: center; gap: 8px; user-select: none;
+  }
+  details.fold2 > summary::-webkit-details-marker { display: none; }
+  details.fold2 > summary::before { content: "▸"; color: var(--amber); font-size: 12px; transition: transform .15s; }
+  details.fold2[open] > summary::before { transform: rotate(90deg); }
+  details.fold2 > summary:hover { background: #f6ecd9; }
+  .fold2-body { padding: 2px 18px 14px; border-top: 1px dashed var(--line); font-size: 13.3px; }
+  .fold2-body p { margin: 8px 0; }
+  .fold2-body ul, .fold2-body ol { margin: 5px 0 9px 20px; }
+  .fold2-body li { margin: 2px 0; }
+  .rate { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; margin-left: 4px; }
+  .rate-hi  { background: var(--amber-bg); color: var(--amber); }
+  .rate-mid { background: var(--sage-bg);  color: var(--sage); }
+  .rate-lo  { background: var(--rose-bg);  color: var(--rose); }
+  .tbl { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 12.8px; }
+  .tbl th, .tbl td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+  .tbl th { background: var(--accent-soft); font-size: 12.5px; }
+  .tbl tr:nth-child(even) td { background: #fbf7ee; }
+  .formula {
+    background: #f6efe0; border-left: 3px solid var(--accent); padding: 8px 14px; margin: 8px 0;
+    font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 13px; border-radius: 0 6px 6px 0;
+  }
+  .codeblock {
+    background: #40352a; color: #f3e9d8; padding: 12px 16px; border-radius: 8px;
+    font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 12.3px;
+    white-space: pre; overflow-x: auto; margin: 8px 0; line-height: 1.55;
+  }
+  .flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; }
+  .flow .step { background: var(--accent-soft); border: 1px solid #e6cdb2; border-radius: 6px; padding: 3px 10px; font-size: 12.3px; }
+  .flow .step.loop { background: var(--sage-bg); border-color: #ccd3ae; }
+  .flow .arr { color: var(--accent); font-weight: 700; font-size: 12px; }
+  .note-inline { font-size: 12.3px; color: var(--ink-soft); background: #f4f0e4; border-radius: 5px; padding: 1px 7px; }
+  .tbl a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted #d3ab7e; }
+  .tbl a:hover { background: var(--accent-soft); }
+  .fold-body a, .fold2-body a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted #d3ab7e; }
+  .tbl td.w { width: 26%; }
+  .tbl.dense th, .tbl.dense td { padding: 4px 8px; font-size: 12.4px; }
+  .todo {
+    background: #f7ece0; border: 1px dashed #d9ab7c; border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 13.2px;
+  }
+  .todo b { color: var(--accent); }
+  .src { font-size: 12.2px; color: var(--ink-soft); margin: 4px 0 12px; }
+  .src a { color: var(--slate); }
+  .pill { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 999px; background: var(--slate-bg); color: var(--slate); margin-left: 6px; }
+  .pill.oss { background: var(--sage-bg); color: var(--sage); }
+  .pill.biz { background: var(--rose-bg); color: var(--rose); }
+  .pill.mix { background: var(--amber-bg); color: var(--amber); }
+
+  footer { margin-top: 60px; border-top: 1px solid var(--line); padding-top: 16px; color: var(--ink-soft); font-size: 12.5px; }
+  footer code { background: #f1e9d8; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Literature <span>·</span> 自动化科研文献模块 总览</h1>
+  <p class="sub">文献搜索 / 文献问答 / 深度研究系统的调研档案入口。按「复杂 — 简单 — 包装的好看」三档可信度分类；点击卡片内链接进入各精读 / 分析子页面。</p>
+  <div style="background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:14px 20px;margin-top:20px;font-size:13.6px;line-height:1.7">
+    <b style="color:#b4530a">📦 这是 Literature 调研档案的分享站 · 持续更新</b><br>
+    所有<b>精读页面、审计结论、配图、笔记、论文 PDF</b> 都已包含，论文链接点开即可阅读原文。<br>
+    源码仓库与数据集未打包（原始档案 107 GB）：相应链接指向官方仓库，或跳到 <a href="_未包含的内容.html" style="color:#b4530a">未包含内容说明</a>。
+  </div>
+  <div class="toc">
+    <a href="#survey-plan">🧭 选题讨论</a>
+    <a href="#landscape">🗺 领域版图</a>
+    <a href="#systems">项目与系统</a>
+    <a href="#compare">横向对比</a>
+    <a href="#benchmark">Benchmark</a>
+    <a href="#datalib">文献库 · 数据接口</a>
+    <a href="#sources">🔌 数据源 · 基础设施</a>
+    <a href="#products">🏢 商业产品</a>
+    <a href="#empirical">实证论文</a>
+    <a href="#thoughts">我的思考</a>
+    <a href="#misc">其他 · 待归档</a>
+  </div>
+</header>
+
+<!-- ==================== 选题讨论 ==================== -->
+<section id="survey-plan">
+  <div class="sec-head"><h2>🧭 选题讨论 · Agentic Literature Search 综述可行性</h2><span class="count">与 alphaXiv 的交流 · 2026-08-03</span></div>
+  <p class="sec-note">问题：写一篇 agentic literature search 的综述，能不能发顶会？下面按讨论脉络折叠存档，含四类做法的具体实现步骤。</p>
+
+  <div class="key">
+    <b class="hl">总判断：</b>单纯"工作汇总"式综述发顶会概率不高；做成 <b>统一问题定义 + 系统分类 + 可复现实验 + 新 benchmark/评测协议</b>，机会明显提高。
+    <ul>
+      <li><b>领域最突出的事实</b>：专门的科学文献搜索 benchmark 上顶级模型表现仍然很低 —— AutoResearchBench 最佳 Deep Research 准确率仅 <b>9.39%</b>，Wide Research 最佳 IoU 仅 <b>9.31%</b>。</li>
+      <li><b>竞争力排序</b>：普通综述 <span class="rate rate-lo">较低</span> → 综述+统一复现 <span class="rate rate-mid">中等</span> → 综述+新 benchmark <span class="rate rate-hi">高</span> → 综述+benchmark+新方法 <span class="rate rate-hi">最高（工作量最大）</span></li>
+      <li><b>推荐路线</b>：benchmark-driven survey；切入点 <b class="hl">Evidence-grounded &amp; completeness-aware agentic literature search</b>（找对、找全、找到精确证据、明确无法确认之处）。</li>
+    </ul>
+  </div>
+
+  <details class="fold">
+    <summary>① 这个方向目前有哪些工作 —— 四条线，不要混在一起<span class="hint">Agentic RAG / Survey 生成 / ResearchArena / 专门 benchmark</span></summary>
+    <div class="fold-body">
+      <h5>线 1 · 通用 Agentic RAG / Deep Research 框架</h5>
+      <p>讨论 agent 如何动态决定：要不要检索、去哪个数据库/网页检索、如何改写 query、是否继续搜索、如何验证证据、如何综合多来源、是否多 agent 协作。代表：<b>Agentic Retrieval-Augmented Generation: A Survey on Agentic RAG</b> —— 从 agent 数量、控制结构、自主性、知识表示等维度整理，并明确指出传统 output-level 指标不足以评估 agentic 系统，还需考察<b>搜索轨迹、规划深度、工具调用、适应性和成本</b>。但范围较宽（覆盖医疗/金融/企业文档），不专门聚焦学术文献搜索。</p>
+      <h5>线 2 · 自动文献综述与 survey generation</h5>
+      <p>目标：给定主题，自动找论文、构造 taxonomy/outline、生成带引用的 survey。代表工作：<b>AutoSurvey</b>；<b>SurveyForge</b>（用已有 survey 结构 + outline database 生成层级大纲，Scholar Navigation Agent 做 query decomposition、memory-based retrieval、temporal-aware reranking，并行生成各小节）；<b>SurveyBench</b>（从"生成流畅长文"转向评估 coverage、structure、depth、citation、quiz answerability）；<b>Agentic AutoSurvey</b>；<b>Agentic AI-Empowered Dynamic Survey Framework</b>。</p>
+      <p>局限：它们把搜索当作写作流水线中的一个模块，指标是最终 survey 质量，<b>不独立评估</b>：搜索是否全面、是否找到关键论文、条件判断是否正确、何时可以停止、是否遗漏反例或相邻方向、搜索是否高效。</p>
+      <h5>线 3 · 学术研究 agent 的搜索、筛选和组织能力</h5>
+      <p><b>ResearchArena</b>（较早且重要）：把研究前期拆成 information discovery / selection / organization 三步，基于约 1,200 万篇全文论文和约 7,900 篇 survey 构建离线环境。<b>重要结论</b>：在文献发现和筛选任务上，LLM agent 并没有稳定超过简单的 keyword/title retrieval —— STORM、SELF-RAG 等 agent baseline 在 discovery/selection 上表现反而较弱。"能做多轮推理"并不自动意味着"能做高质量文献搜索"。</p>
+      <h5>线 4 · 专门的 scientific literature discovery benchmark</h5>
+      <p><b>AutoResearchBench</b>（当前特别值得关注）定义两类任务：<b>Deep Research</b> —— 根据分散在全文、附录、图表、引用关系中的线索找到唯一目标论文，或判断不存在；<b>Wide Research</b> —— 找出满足一组复杂科学约束的完整论文集合。要求处理隐藏合取条件、全文证据、citation chain、集合完整性和 abstention，不是普通 topic retrieval。</p>
+      <p>它揭示的失败模式：找到候选后<b>无法精确验证约束</b>、无法排除边界案例、不能综合分散在全文中的证据、Wide Research 中无法保证召回完整、搜索过早停止或反复搜索相同内容。</p>
+      <p>同线近期工作：<b>ScholarQuest</b>（taxonomy-guided academic paper search，<span class="note-inline">本页 Benchmark 板块已深读归档</span>）、<b>Multi-Turn Agentic Scientific Literature Search via Workflow Induction</b>（<span class="note-inline">即本页已深读的 PaperPilot</span>）、<b>S1-DeepResearch</b>、<b>SciResearcher</b>。研究重点正在从"LLM 能不能写出一篇 survey"转向"agent 能不能在大型、动态、全文级科学语料库中，可靠、完整、可验证地完成研究搜索"。</p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>② 研究版图 —— 搜索流水线各阶段与代表工作对照</summary>
+    <div class="fold-body">
+      <div class="flow">
+        <span class="step">用户研究问题</span><span class="arr">→</span>
+        <span class="step">问题澄清与分解</span><span class="arr">→</span>
+        <span class="step">检索策略规划</span><span class="arr">→</span>
+        <span class="step">多源搜索</span><span class="arr">→</span>
+        <span class="step">候选论文发现</span><span class="arr">→</span>
+        <span class="step">全文阅读与证据抽取</span><span class="arr">→</span>
+        <span class="step">相关性与质量判断</span><span class="arr">→</span>
+        <span class="step">引用图与主题图扩展</span><span class="arr">→</span>
+        <span class="step loop">是否足够完整？否 → 回到「检索策略规划」</span><span class="arr">是 →</span>
+        <span class="step">综合回答或生成综述</span><span class="arr">→</span>
+        <span class="step">引用验证与不确定性说明</span>
+      </div>
+      <table class="tbl">
+        <tr><th>阶段</th><th>典型研究问题</th><th>当前代表工作</th></tr>
+        <tr><td>Query planning</td><td>如何拆解复杂研究问题</td><td>ResearchArena、AutoResearchBench</td></tr>
+        <tr><td>Paper discovery</td><td>如何提高相关性和召回率</td><td>ResearchArena、ScholarQuest</td></tr>
+        <tr><td>Full-text verification</td><td>如何验证方法、实验和细节</td><td>AutoResearchBench</td></tr>
+        <tr><td>Citation traversal</td><td>如何利用引用链发现文献</td><td>AutoResearchBench</td></tr>
+        <tr><td>Organization</td><td>如何构建 taxonomy、mind map 和 outline</td><td>ResearchArena、SurveyForge</td></tr>
+        <tr><td>Survey generation</td><td>如何从检索结果写出综述</td><td>SurveyForge、SurveyBench</td></tr>
+        <tr><td>Evaluation</td><td>如何评价搜索过程和最终回答</td><td>SurveyBench、AutoResearchBench</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>③ 纯综述为什么难发顶会 + 三个更有机会的形态（A 复现 / B benchmark / C taxonomy）</summary>
+    <div class="fold-body">
+      <p><b>纯综述</b>（搜集已有工作、按单 agent/多 agent/tool use 分类、总结优缺点和未来方向）很可能被评为：taxonomy 主观、文献边界不清、与已有 Agentic RAG survey / Agentic LLM survey / 自动 survey generation 工作重叠、缺少新的 empirical insight、缺少可复现实验或数据资源。已有 <i>Agentic Large Language Models, a survey</i>（Reasoning–Acting–Interacting 视角）和 Agentic RAG Survey（架构分类）——换一种方式重新整理，创新性不足。</p>
+
+      <h5>方向 A · 系统综述 + 大规模实证复现 <span class="rate rate-mid">中等潜力</span></h5>
+      <p>不只总结别人做了什么，而是<b>统一复现一批系统</b>：keyword/BM25、dense retrieval、citation graph traversal、query decomposition、ReAct agent、Self-RAG、multi-agent search、Deep Research 类系统、survey-generation pipeline。在同一 corpus、同一组 topic、同一套预算下比较：Recall@k、Precision@k、nDCG、citation coverage、evidence correctness、answer completeness、search cost、latency、tool-call efficiency、stopping quality、calibration、abstention quality。这就不再只是 survey，而是 systematic empirical study —— 对 SIGIR、ACL、EMNLP、NeurIPS D&amp;B、COLM 比纯 narrative survey 更有说服力。</p>
+
+      <h5>方向 B · 提出新的 benchmark <span class="rate rate-hi">最有机会</span></h5>
+      <p>现有 benchmark 的空缺：ResearchArena 不重点评估最终 QA 和全文证据链；SurveyBench 不完全等于动态 search agent benchmark；AutoResearchBench 主要覆盖 CS 和固定语料库，作者自己指出跨学科、动态语料、多模态证据、calibration、abstention 仍待研究。</p>
+      <p>一个更完整的 benchmark 可以同时评估：single-hop QA（一篇论文找事实）、multi-hop QA（跨论文比较方法和结果）、literature discovery、systematic filtering（按方法/数据集/年份/实验条件筛选）、citation verification（claim 是否被论文支持）、contradiction detection（论文间冲突）、evidence sufficiency、completeness（是否漏掉关键工作）、temporal robustness（面对新论文是否仍有效）、interactive search（用户逐轮澄清意图）、stop/abstain（何时说"目前无法确认"）。若有高质量人工标注、开放 corpus、统一 tool interface、可复现 baseline 和误差分析，本身就是很强的贡献。</p>
+
+      <h5>方向 C · 统一 taxonomy <span class="rate rate-mid">可行但门槛高</span></h5>
+      <p>taxonomy 必须能<b>解释实验现象</b>，不能只罗列模块。七个正交维度：</p>
+      <ul>
+        <li><b>Search control</b>：fixed pipeline / single-agent adaptive / planner–executor / multi-agent / human-in-the-loop</li>
+        <li><b>Search space</b>：keyword / dense vector / citation graph / author graph / web / full-text corpus / multimodal paper content</li>
+        <li><b>Evidence granularity</b>：title-abstract / passage / section / table-figure / appendix / citation context</li>
+        <li><b>Search objective</b>：relevance / recall / completeness / novelty / evidence verification / synthesis quality</li>
+        <li><b>Stopping policy</b>：固定步数 / confidence threshold / marginal utility / coverage estimate / user-defined / no-answer detection</li>
+        <li><b>Memory</b>：query / paper / evidence / citation graph / user preference / episodic search memory</li>
+        <li><b>Evaluation</b>：output quality / evidence quality / trajectory quality / cost / robustness / calibration / reproducibility</li>
+      </ul>
+      <p>有价值的 taxonomy 应能回答：什么情况下 query decomposition 有效？什么时候 citation traversal 比 dense retrieval 好？多 agent 是真提升 recall 还是只增加成本？更长的 reasoning trajectory 是否带来更多有效证据？agent 如何判断搜索已经足够？AutoResearchBench 已给出初步结论：<b>增加搜索轮数和 tool calls 并不必然提升性能，关键是有效利用信息</b>。</p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>④ 题目与核心主张 —— 不要定成普通 survey</summary>
+    <div class="fold-body">
+      <p>不建议用 <i>A Survey of Agentic Literature Search</i>（太宽，易与 Agentic RAG / Agentic LLM / Deep Research survey 重叠）。更有辨识度的题目：</p>
+      <ul>
+        <li><b><i>Agentic Scientific Literature Search: Tasks, Evidence-Centric Architectures, Benchmarks, and Open Problems</i></b></li>
+        <li><b><i>From Retrieval to Research: A Systematic Study of Agentic Literature Search and Scientific QA</i></b></li>
+      </ul>
+      <p><b>核心主张</b>：agentic literature search 不是普通 web search 加一个 LLM，而是同时要求<b>检索、全文证据验证、科学推理、集合完整性和停止决策</b>的独立问题。支撑证据：普通 web benchmark 的高分不能代表 scientific literature search 能力 —— AutoResearchBench 中通用 web agent 与学术搜索表现存在明显差距。</p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>⑤ 文章设计 —— 8 个研究问题 + 7 节结构 + failure taxonomy</summary>
+    <div class="fold-body">
+      <h5>研究问题</h5>
+      <ol>
+        <li><b>RQ1</b>：agentic literature search 与传统 academic retrieval、RAG、Deep Research 的边界？</li>
+        <li><b>RQ2</b>：现有系统实际执行了哪些搜索动作？</li>
+        <li><b>RQ3</b>：不同搜索策略在 recall / precision / completeness / evidence grounding 上的 trade-off？</li>
+        <li><b>RQ4</b>：agent 的推理、检索和 citation traversal 分别贡献多少？</li>
+        <li><b>RQ5</b>：多 agent 是否优于单 agent？</li>
+        <li><b>RQ6</b>：如何评价搜索<b>过程</b>，而不只是最终答案？</li>
+        <li><b>RQ7</b>：当前系统在哪些领域、任务和语料类型上失败？</li>
+        <li><b>RQ8</b>：如何设计可靠的 stopping、abstention 和 uncertainty estimation？</li>
+      </ol>
+      <h5>文章结构</h5>
+      <ol>
+        <li><b>Problem formulation</b>：topic search / paper identification / evidence retrieval / systematic filtering / comparative scientific QA / survey generation</li>
+        <li><b>Taxonomy</b>：planning / retrieval / browsing / evidence extraction / verification / synthesis / stopping</li>
+        <li><b>Corpus and tool environment</b>：arXiv / Semantic Scholar / OpenAlex / PubMed / citation graph / 全文 PDF-HTML / 表格图注抽取</li>
+        <li><b>Systematic comparison</b>：统一模型、统一检索库、统一 token/tool budget、统一 evidence format</li>
+        <li><b>Benchmark analysis</b>：ResearchArena / SurveyBench / AutoResearchBench / ScholarQuest / 其他 Deep Research 与学术搜索 benchmark</li>
+        <li><b>Failure taxonomy</b>：query underspecification / vocabulary mismatch / citation bias / abstract-only failure / false positive / missed key paper / unsupported synthesis / premature stopping / redundant search / temporal contamination / benchmark leakage</li>
+        <li><b>Research agenda</b>：evidence graph / interactive user modeling / dynamic corpus / multimodal paper search / process-level evaluation / cost-aware search / calibrated abstention / reproducible agent traces</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>⑥ 四类工作详解 —— 分别是什么意思、需要做什么<span class="hint">含具体实现步骤（追问的完整回答）</span></summary>
+    <div class="fold-body">
+      <p>核心区别：论文贡献从"总结已有工作"逐步升级到"验证已有结论、建立评测标准、提出新方法"。</p>
+
+      <details class="fold2">
+        <summary>类型 1 · 普通文献综述 —— 总结领域已有工作 <span class="rate rate-lo">顶会潜力较低</span></summary>
+        <div class="fold2-body">
+          <p>回答"这个领域有哪些问题、方法、系统和未来方向"。需要做：收集相关论文；明确研究范围（是否包括 Deep Research、academic search、scientific QA、automatic survey generation）；对现有工作分类；总结每类方法的流程与优缺点；整理数据集、benchmark 和评价指标；讨论挑战和未来方向。</p>
+          <div class="flow">
+            <span class="step">确定范围</span><span class="arr">→</span><span class="step">检索论文</span><span class="arr">→</span><span class="step">筛选与去重</span><span class="arr">→</span><span class="step">建立分类体系</span><span class="arr">→</span><span class="step">比较方法与任务</span><span class="arr">→</span><span class="step">总结挑战与趋势</span>
+          </div>
+          <p>可分类为：agentic RAG / academic paper retrieval / citation graph search / automatic survey generation / scientific QA / Deep Research / research-agent benchmark。主要产出：一套 taxonomy、一张代表性工作表、一份 benchmark-dataset 汇总、一份开放问题列表。</p>
+          <p><b>优点</b>：工作量可控；适合快速进入新方向；不需要训练模型或搭建复杂系统。<b>缺点</b>：创新性容易不足；分类体系可能被认为主观；易与 Agentic RAG Survey、Agentic LLM survey、自动 survey 生成综述重复；顶会不满足于"整理得更全面"。更适合：arXiv survey、期刊综述、tutorial、workshop、领域尚无系统梳理时的早期工作。</p>
+        </div>
+      </details>
+
+      <details class="fold2">
+        <summary>类型 2 · 系统综述 + 统一 taxonomy + 大规模复现 —— 不仅总结，还验证结论 <span class="rate rate-mid">中等潜力</span></summary>
+        <div class="fold2-body">
+          <p>关键多做的一件事：<b>在相同条件下实际运行各方法，检验"区别"是否真的带来性能差异</b>。比较对象：BM25、dense retrieval、title/abstract retrieval、citation graph expansion、query decomposition、ReAct agent、Self-RAG、single-agent search、multi-agent search、automatic survey generation pipeline。给所有方法提供：相同文献库、相同用户问题、相同最大搜索轮数、相同 token/API 预算、相同输出格式。</p>
+          <p>统一测量：Recall@10 / Recall@100、Precision、nDCG、citation coverage、evidence correctness、answer completeness、search latency、token cost、tool-call 数量、重复搜索比例、提前停止比例。已有证据（ResearchArena）：agent 并不稳定优于简单关键词方法，一些 agent baseline 甚至低于 title-based retrieval。</p>
+          <p>可进一步回答：query decomposition 是否真提高 recall？citation traversal 是否更适合找经典论文？dense retrieval 是否更适合词汇不同但语义相关的论文？多 agent 提高 coverage 还是只增加成本？更长轨迹是否更好？agent 是否重复访问同一批论文？何时该停止？</p>
+          <h5>四步实现</h5>
+          <p><b>第一步 · 定义统一任务</b>：给定研究问题，要求系统返回统一 JSON：</p>
+          <div class="codeblock">{
+  "papers": [...],
+  "claims": [...],
+  "evidence": [...],
+  "confidence": ...,
+  "search_trace": [...]
+}</div>
+          <p><b>第二步 · 准备任务集</b>：从已有 survey 中提取主题、关键论文、引用关系、代表性方法、数据集、方法差异、实验结论。</p>
+          <p><b>第三步 · 实现 baseline</b>：至少含 keyword、dense retrieval、citation-based、LLM query expansion、ReAct agent、一个 multi-agent 或 planner-agent 系统。</p>
+          <p><b>第四步 · 统一评测</b>：不只评最终答案，还评搜索过程，并分析失败案例。例如：</p>
+          <div class="formula">Search Efficiency = Evidence Quality / Search Cost</div>
+          <p><b>贡献表述</b>："我们在统一实验设置下比较了多类 agentic literature search 方法，发现现有 agent 的主要瓶颈不是生成能力，而是<b>召回完整性、证据验证和停止决策</b>。" 适合投 SIGIR / ACL / EMNLP / COLM / NeurIPS D&amp;B / KDD。</p>
+        </div>
+      </details>
+
+      <details class="fold2">
+        <summary>类型 3 · 综述 + 新 benchmark —— 建立"这个领域如何被评价"的标准 <span class="rate rate-hi">高潜力</span></summary>
+        <div class="fold2-body">
+          <p>最重要的产出不是 taxonomy，而是<b>新的、公开的、可复现的任务和数据集</b>。已有覆盖：ResearchArena（discovery/selection/organization）、SurveyBench（survey 结构/内容/quiz answerability）、AutoResearchBench（精准找一篇 + 完整找一组）。可提出更聚焦 literature search + QA 的 benchmark，设计五类任务：</p>
+          <p><b>任务一 · 单篇论文事实问答</b>："某论文使用了哪些数据集？最好的 ablation 结果是什么？" 要求：找到正确论文、阅读正文/表格/附录、给出答案、附精确证据位置。评价：answer correctness、evidence entailment、citation precision、citation completeness。</p>
+          <p><b>任务二 · 跨论文比较</b>："比较三种方法在相同数据集上的性能并说明实验设置差异。" 要求对齐任务、对齐数据集、对齐指标、区分原始结果和复现实验、识别不可直接比较的情况——不能只分别总结论文。</p>
+          <p><b>任务三 · 条件式论文搜索</b>："找出所有同时满足：2023 年以后、使用某类模型、在某数据集上、包含 OOD 实验、并与非 LLM baseline 比较的论文。" 与 topic search 不同之处在于要求<b>集合完整性</b>，用集合指标：</p>
+          <div class="formula">IoU = |Ŷ ∩ Y*| / |Ŷ ∪ Y*|　（Y* 为人工标注正确集合，Ŷ 为 agent 返回集合）</div>
+          <p><b>任务四 · 证据验证</b>：给定 claim 和候选论文，判断哪些支持、哪些只部分支持、哪些矛盾、哪些证据不足。</p>
+          <p><b>任务五 · 搜索停止与 abstention</b>：证据不足时明确回答"目前无法确认"或"没有找到满足全部条件的论文"——literature search 不应要求系统永远生成看似合理的答案。</p>
+          <h5>一个好 benchmark 需要什么</h5>
+          <p>多个研究领域；时间切分防训练数据泄漏；全文级证据；表格/图注/附录信息；正例、负例和边界例；多跳问题；需要 citation traversal 的问题；人工验证的 gold answer；搜索轨迹记录；统一工具接口；强 baseline；详细 failure analysis。AutoResearchBench 的启发：真正困难的科学搜索问题要求从<b>全文细节、附录、表格和引用关系</b>中整合证据，而不是只看标题和摘要。</p>
+          <p><b>贡献主张</b>："现有 academic search benchmark 主要测相关性，现有 scientific QA benchmark 主要测给定文档上的回答能力；我们提出同时测量文献发现、全文证据验证、跨论文综合、集合完整性和引用可靠性的 agentic literature search benchmark。" benchmark 可被后续工作持续使用，比纯综述更有顶会潜力。</p>
+        </div>
+      </details>
+
+      <details class="fold2">
+        <summary>类型 4 · 综述 + benchmark + 新方法 —— 最完整、也最难 <span class="rate rate-hi">最有竞争力</span></summary>
+        <div class="fold2-body">
+          <p>结构：系统梳理已有工作 → 提出新 benchmark → 设计新 agent/search strategy → 在 benchmark 上证明有效 → 解释为什么有效。示例：<b>Evidence-Centric Literature Search Agent</b> —— 不是简单的"搜索 → 阅读 → 总结"，而是维护结构化 evidence state：</p>
+          <div class="codeblock">Research Question
+ ├── Sub-question 1
+ │    ├── Candidate papers
+ │    ├── Supporting evidence
+ │    ├── Contradicting evidence
+ │    └── Unresolved conditions
+ ├── Sub-question 2
+ │    ├── Candidate papers
+ │    ├── Supporting evidence
+ │    └── Missing evidence
+ └── Stopping status</div>
+          <div class="flow">
+            <span class="step">研究问题</span><span class="arr">→</span>
+            <span class="step">拆分约束</span><span class="arr">→</span>
+            <span class="step">生成搜索计划</span><span class="arr">→</span>
+            <span class="step">检索候选论文</span><span class="arr">→</span>
+            <span class="step">全文证据抽取</span><span class="arr">→</span>
+            <span class="step">验证支持与反驳</span><span class="arr">→</span>
+            <span class="step">更新证据图</span><span class="arr">→</span>
+            <span class="step loop">存在未解决约束？是 → 回到「生成搜索计划」</span><span class="arr">否 →</span>
+            <span class="step">生成答案</span><span class="arr">→</span>
+            <span class="step">引用与不确定性检查</span>
+          </div>
+          <h5>五个可能的新方法</h5>
+          <ul>
+            <li><b>方法一 · Evidence Graph</b>：每个 claim 作节点，论文片段作 evidence node（supports / contradicts / partially supports / related but insufficient）。agent 不直接把所有文本塞进 context，而是先构造证据图，再基于图回答。</li>
+            <li><b>方法二 · Coverage-Aware Search</b>：估计当前搜索覆盖了哪些子方向（方法类别、数据集、研究团队、年份、citation cluster、负面结果）；某方向 coverage 低时自动发起新搜索，而不是重复原 query。</li>
+            <li><b>方法三 · Cost-Aware Stopping</b>：每次新搜索前估计边际收益，低于阈值即停止并输出当前不确定性：
+              <div class="formula">Utility(q) = E[new evidence from q] / search cost(q)</div></li>
+            <li><b>方法四 · Claim-First QA</b>：先把用户问题拆成一组可验证 claim，分别检索和验证，避免一次性生成容易幻觉的大段答案：
+              <div class="codeblock">Claim 1: 方法 A 使用了数据集 X
+Claim 2: 方法 A 在 X 上优于 baseline B
+Claim 3: 该结果来自主实验而不是 ablation
+Claim 4: 方法 A 与方法 C 的比较是公平的</div></li>
+            <li><b>方法五 · 主动反例搜索</b>：普通 agent 只搜支持当前假设的证据；更可靠的系统应主动问——有没有论文报告相反结果？有没有同名但不同定义的方法？有没有边界条件不满足的候选？这个 claim 是否只在某个数据集成立？把 literature search 从"找支持材料"提升到"证据审查"。</li>
+          </ul>
+          <h5>需要证明什么（消融）</h5>
+          <p>不能只证明"我们的答案更好"，还要做：没有 evidence graph 会怎样？没有反例搜索会怎样？没有 coverage estimation 会怎样？没有 stopping policy 会怎样？单 agent 与 multi-agent 差异？相同 token budget 下是否仍有效？搜索时间和成本是否可接受？</p>
+          <p>理想结果形态（具体数值必须由真实实验得出，不能预设）：</p>
+          <table class="tbl">
+            <tr><th>方法</th><th>Recall</th><th>Evidence Accuracy</th><th>Completeness</th><th>Cost</th></tr>
+            <tr><td>BM25</td><td>低/中</td><td>高</td><td>低</td><td>低</td></tr>
+            <tr><td>Dense Retrieval</td><td>中</td><td>中</td><td>中</td><td>低</td></tr>
+            <tr><td>ReAct Agent</td><td>中</td><td>中</td><td>中</td><td>高</td></tr>
+            <tr><td>Multi-Agent</td><td>高</td><td>中</td><td>高</td><td>很高</td></tr>
+            <tr><td><b>你的方法</b></td><td><b>高</b></td><td><b>高</b></td><td><b>高</b></td><td><b>中</b></td></tr>
+          </table>
+        </div>
+      </details>
+
+      <h5>四类工作对比</h5>
+      <table class="tbl">
+        <tr><th>类型</th><th>主要产出</th><th>需要实现系统</th><th>需要新数据集</th><th>创新性</th><th>顶会潜力</th></tr>
+        <tr><td>普通综述</td><td>分类、总结、研究议程</td><td>不一定</td><td>不需要</td><td>较低</td><td><span class="rate rate-lo">较低</span></td></tr>
+        <tr><td>综述 + 统一复现</td><td>taxonomy + controlled comparison</td><td>需要</td><td>通常不需要</td><td>中等</td><td><span class="rate rate-mid">中等</span></td></tr>
+        <tr><td>综述 + benchmark</td><td>taxonomy + 新评测资源</td><td>需要 baseline</td><td>需要</td><td>高</td><td><span class="rate rate-hi">高</span></td></tr>
+        <tr><td>综述 + benchmark + 新方法</td><td>taxonomy + benchmark + agent</td><td>需要</td><td>需要</td><td>很高</td><td><span class="rate rate-hi">最高，工作量最大</span></td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>⑦ 行动建议 —— 两阶段路线与推荐切入点</summary>
+    <div class="fold-body">
+      <h5>第一阶段 · 先做"系统综述 + 小规模复现"</h5>
+      <p>先不要立刻构建很大的 benchmark：明确 agentic literature search 的定义 → 建立 taxonomy → 选 5–8 个代表性系统 → 在 3–5 个领域做小规模实验 → 找出最稳定的 failure modes → 再决定 benchmark 应该测什么。避免一开始凭直觉设计 benchmark。</p>
+      <h5>第二阶段 · 升级为"benchmark + 方法"</h5>
+      <p>根据第一阶段的失败模式，选一个核心问题：citation completeness / evidence verification / exhaustive search / cross-paper comparison / stopping and abstention / interactive user intent clarification，围绕它构造 benchmark 和新方法。</p>
+      <p><b>最推荐的切入点</b>：<b class="hl">Evidence-grounded and completeness-aware agentic literature search</b> —— 同时关注：找到正确论文、找全关键论文、找到支持结论的精确证据、明确哪些地方仍然无法确认。比泛泛做"一个能搜索论文的 agent"更容易形成清晰的 scientific contribution。</p>
+      <p><b>理由（现有工作暴露的空缺）</b>：SurveyBench 发现自动 survey 往往结构流畅但技术细节、综合推理和核心思想抽象不足；AutoResearchBench 显示科学文献搜索中的<b>完整性和细粒度验证</b>仍然很困难。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ==================== 领域版图 ==================== -->
+<section id="landscape">
+  <div class="sec-head"><h2>🗺 领域版图 · 相关工作全景</h2><span class="count">约 130 篇 + 56 个系统 · 来自「我的思考」笔记</span></div>
+  <p class="sec-note">本页下方各板块只收录<b>已深读归档</b>的项目；这里是尚未逐篇精读、但已登记在册的<b>全量工作清单</b>，作为选题与 related work 的检索起点。</p>
+  <p class="src">来源笔记：<a href="我的思考/论文梳理/List.html">论文梳理/List.md</a> · <a href="我的思考/待整理/文献.html">待整理/文献.md</a> · <a href="我的思考/56个自主科研系统按功能分类.html">56个自主科研系统按功能分类.md</a> · <a href="我的思考/论文梳理/详细/关于LABBench2.html">关于LABBench2.md</a></p>
+
+  <div class="todo">
+    <b>⚑ 优先补读（选题讨论里反复引用、但本地尚无归档）：</b>
+    <b>AutoResearchBench</b>（<a href="https://arxiv.org/abs/2604.25256">2604.25256</a>，9.39% / IoU 9.31% 这两个核心数字的出处）、<b>ResearchArena</b>（1,200 万全文 + 7,900 survey 离线环境；<span class="note-inline">注意：List.md 里记的 ResearchArena = <a href="https://arxiv.org/abs/2605.19156">2605.19156</a>「How Far Are We from True Auto-Research?」是<b>另一篇同名工作</b>，两者需分别核对</span>）、<b>SurveyForge / SurveyBench / AutoSurvey</b>（survey generation 线）、<b>Agentic RAG Survey</b>、<b>S1-DeepResearch</b>、<b>SciResearcher</b>。
+  </div>
+
+  <details class="fold">
+    <summary>Literature 论文版图 —— 七个能力层<span class="hint">按"要解决什么"而不是"用什么方法"切分</span></summary>
+    <div class="fold-body">
+      <table class="tbl">
+        <tr><th class="w">能力层</th><th>代表工作</th><th>核心问题</th></tr>
+        <tr><td>找到相关论文</td><td>LitSearch、PaSa、SAGE、AutoResearchBench</td><td>应该检索哪些论文，是否找全</td></tr>
+        <tr><td>找到正确引用</td><td>CiteME / CiteAgent</td><td>某个科学论述来自哪篇论文</td></tr>
+        <tr><td>读懂单篇全文</td><td>QASPER、SPIQA、LitQA3</td><td>能否在全文、图表中定位答案</td></tr>
+        <tr><td>多篇综合</td><td>OpenScholar、PaperQA2、Ai2 Scholar QA、STORM</td><td>能否写出全面、有组织、有引用的报告</td></tr>
+        <tr><td>多工具科学 Agent</td><td>PaperArena、AstaBench、LABBench2</td><td>能否搜索、读 PDF、看图表、计算、操作数据库</td></tr>
+        <tr><td>理解论文关系</td><td>SciNetBench</td><td>支持、反驳、继承、技术演化关系</td></tr>
+        <tr><td>开放世界深度研究</td><td>DeepResearch Bench、AutoResearchBench</td><td>目标论文集合未知时，能否找得完整并合理停止</td></tr>
+      </table>
+      <p><b>其他登记在册但未归档</b>：STORM / Co-STORM（长篇知识报告生成）、LitSearch（纯粹评测"能不能找对论文"，分 broad / specific query）、Ai2 Scholar QA & Asta（OpenScholar 之后更工程化的开放系统）、PaperArena、SciNetBench。</p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>八大类工作清单 —— 约 130 篇<span class="hint">检索 / 端到端 / Benchmark / Rubric / 引用证据 / 审查 / Artifact / Survey</span></summary>
+    <div class="fold-body">
+      <p class="src">下列各表只记"这篇做什么"，不记来源综述自身的评分与结论。链接直达 arXiv。</p>
+
+      <details class="fold2">
+        <summary>一 · 文献检索、阅读与综述生成系统（17）<span class="hint">本方向的正面竞品</span></summary>
+        <div class="fold2-body">
+          <table class="tbl dense">
+            <tr><th class="w">工作</th><th>做什么</th></tr>
+            <tr><td><a href="https://arxiv.org/abs/2409.13740">PaperQA2</a> (2024)</td><td>科学文献问答与知识综合，检索 + 证据抽取 + 引用绑定生成有来源支撑的回答。<span class="note-inline">本页已归档</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2411.14199">OpenScholar</a> (2024)</td><td>检索增强 LM 搜索科学文献并撰写带引用的研究综述。<span class="note-inline">本页已归档</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2404.07738">ResearchAgent</a> (2024)</td><td>在科学文献基础上迭代生成、扩展和改进研究想法。<span class="note-inline">待归档目录中</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2502.14767">Tree-of-Debate</a> (2025)</td><td>多角色辩论树比较科学论文，围绕方法、证据和结论批判性分析。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.20278">OpenResearcher</a> (2026)</td><td>开放长程 Deep Research 轨迹生成管线，记录搜索、开页、文内查找步骤。<span class="note-inline">本页已归档</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.10029">PaperScout</a> (2026)</td><td>学术论文搜索自主 Agent，优化多步检索过程与最终发现质量。<span class="note-inline">本页已深读</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2508.05748">WebWatcher</a> (2025)</td><td>结合网页视觉理解与长程搜索的多模态 Deep Research Agent。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2510.22732">WebAtlas</a> (2025)</td><td>通过经验记忆和动作模拟完成长程网页检索与信息搜集。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.28376">Marco DeepResearch</a> (2026)</td><td>verification-centric 设计筛选问答合成数据、搜索轨迹与测试时答案。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2511.02824">Kosmos</a> (2025)</td><td>联合文献检索与数据分析，报告陈述链接到文献或 notebook 证据。<span class="note-inline">本页已归档</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2505.18705">AI-Researcher</a> (2025)</td><td>文献研究、数学到代码、实验执行与论文写作串成自动科研流程。<span class="note-inline">本页已归档</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2512.19799">PhysMaster</a> (2025)</td><td>理论与计算物理：文献/知识库检索 + MCTS 推理 + 模拟器检查。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.05258">Parness / PARNESS</a> (2026)</td><td>为自动科研提供动态 workflow、全文索引和跨运行知识积累。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2508.01285">BioDisco</a> (2025)</td><td>结合文献与领域证据生成生物医学假设，通过反馈和时间维度评测更新。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.14176">ReSearch</a> (2026)</td><td>地球科学数据发现，多阶段 ML 流程寻找和组织研究数据。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.10813">NanoResearch</a> (2026)</td><td>技能、记忆和策略共同演化，支持个性化长期研究自动化。<span class="note-inline">本页已归档</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2602.03849">HybridQuestion</a> (2026)</td><td>人机协作识别和筛选高影响力研究问题。<span class="note-inline">笔记评价："有点水"</span></td></tr>
+          </table>
+          <p><b>HybridQuestion 方法记录</b>（清华中关村学院，2025-12-18）：OpenAlex 2015–2025 逐年关键词共现图 + node2vec 128 维嵌入 → 高斯核加权年度热度（Hotness）→ 热度优先贪心聚类；深度研究层调 o3-deep-research + qwen-deep-research 检索产业动态再由 GPT-5 整合；提案阶段 6 个模型各生成 100 个，600 个一起投票留 100；人类参与筛选 100→30→10。结论：AI 在回顾性成就识别上与专家高度一致，但预测未来开放问题时显著分歧。</p>
+        </div>
+      </details>
+
+      <details class="fold2">
+        <summary>二 · 含 Literature 模块的端到端科研系统（9）</summary>
+        <div class="fold2-body">
+          <table class="tbl dense">
+            <tr><th class="w">工作</th><th>做什么</th></tr>
+            <tr><td><a href="https://arxiv.org/abs/2408.06292">The AI Scientist</a> (2024)</td><td>从研究想法、相关文献、实验和结果分析推进到论文撰写与自动评审。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2504.08066">The AI Scientist-v2</a> (2025)</td><td>Agentic Tree Search 搜索研究方向，加图表检查、实验迭代和论文生成。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2501.04227">Agent Laboratory</a> (2025)</td><td>文献综述、实验和报告写作组织为多阶段研究助手工作流。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2502.18864">AI Co-Scientist</a> (2025)</td><td>从文献和领域知识生成、辩论、排序和演化生物医学研究假设。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2505.16938">NovelSeek</a> (2025)</td><td>假设生成、文献/知识支持到计算验证的闭环发现系统。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2503.18102">AgentRxiv</a> (2025)</td><td>多研究 Agent 协作产出、共享和检索研究成果。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2511.16931">OmniScientist</a> (2025)</td><td>组织人类与 AI 科学家共同构思、实验、写作和评审。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.03042">ARIS</a> (2026)</td><td>对抗式多 Agent 覆盖研究构思、实验、写作、审计和 rebuttal。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.02092">NORA</a> (2026)</td><td>空间数据科学端到端研究 Agent，含全文检索、写作、审查和提交检查。</td></tr>
+          </table>
+          <p class="note-inline">InternAgent / NovelSeek 已在本页「项目与系统 · 复杂」归档（含 Literature 模块分析与源码演化史）。</p>
+        </div>
+      </details>
+
+      <details class="fold2">
+        <summary>三 · Literature Discovery 与 Deep Research Benchmark（14）<span class="hint">做 benchmark 路线必须全部覆盖</span></summary>
+        <div class="fold2-body">
+          <table class="tbl dense">
+            <tr><th class="w">Benchmark</th><th>主要评测内容</th></tr>
+            <tr><td><a href="https://arxiv.org/abs/2504.12516">BrowseComp</a> (2025)</td><td>浏览 Agent 在开放网络中寻找难定位事实和组合证据的能力。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2508.06600">BrowseComp-Plus</a> (2025)</td><td>更透明、可检查的 Deep Research Agent 浏览评测。<span class="note-inline">ScholarQuest 漏引的四篇之一</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2506.11763">DeepResearch Bench</a> (2025)</td><td>检索、长报告生成、报告质量与引用可靠性综合评测。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.08536">DeepResearch Bench II</a> (2026)</td><td>用专家报告生成的细粒度 rubrics 诊断具体能力缺口。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.09688">DeepResearchEval</a> (2026)</td><td>自动构造 Deep Research 任务并评测搜索和报告结果。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2508.20033">DeepScholar-Bench</a> (2025)</td><td>Live Benchmark，评测 related-work 检索、引用正确性和综述综合质量。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2510.21652">AstaBench</a> (2025)</td><td>科学研究任务套件评测文献搜索、证据使用和研究推理。<span class="note-inline">本页已深读</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.25256">AutoResearchBench</a> (2026)</td><td>复杂科学文献发现：搜索、论文匹配、信息抽取和研究综合。<span class="note-inline">⚑ 优先补读</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2512.17776">DEER</a> (2025)</td><td>Deep Research Agent 生成专家级长报告的能力。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.14683">DR³-Eval</a> (2026)</td><td>静态任务 sandbox 对 Deep Research 报告做现实、可复现评测。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.21482">DeepWeb-Bench</a> (2026)</td><td>从大量跨来源网页收集证据并完成长链推导。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.12346">MMDeepResearch-Bench</a> (2026)</td><td>需要同时理解文本、图像的多模态 Deep Research Agent。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2503.21248">ResearchBench</a> (2025)</td><td>科学发现拆解为寻找灵感、理解关联、形成研究方向。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.19156">ResearchArena / 真 Auto-Research 有多远</a> (2026)</td><td>通过自评、同伴评审和人工评审比较自动生成研究论文的质量。<span class="note-inline">与选题讨论中"1,200 万论文离线环境"的 ResearchArena 同名不同篇，需核对</span></td></tr>
+          </table>
+          <p class="note-inline">本地已深读的同线 benchmark：AstaBench、ScholarQuest、SPARBench、RollingEval-Jun25 —— 见下方 Benchmark 板块。</p>
+        </div>
+      </details>
+
+      <details class="fold2">
+        <summary>四 · Rubric 与报告评测（7）</summary>
+        <div class="fold2-body">
+          <table class="tbl dense">
+            <tr><th class="w">工作</th><th>做什么</th></tr>
+            <tr><td><a href="https://arxiv.org/abs/2511.07685">ResearchRubrics</a> (2025)</td><td>用于评价 Deep Research Agent 的任务、提示词和人工编写 rubrics。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2510.07743">OpenRubrics</a> (2025)</td><td>自动生成可扩展评测 rubrics，用于开放式回答和 reward modeling。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.01562">RubricBench</a> (2026)</td><td>测量模型生成 rubric 与人类标准的一致性。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2510.18941">ProfBench</a> (2025)</td><td>多领域专业 rubrics，同时测试回答和评判能力。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.25240">JudgmentBench</a> (2026)</td><td>比较 rubric-based evaluation 与直接偏好判断的差异。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.19665">CriterAlign</a> (2026)</td><td>把 judge 判断依据与明确评价标准对齐，训练 criterion-centric rationale。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.06942">Deep Research, Shallow Evaluation</a> (2026)</td><td>长文本 QA benchmark 的 meta-evaluation：当前评价是否真的可靠。</td></tr>
+          </table>
+        </div>
+      </details>
+
+      <details class="fold2">
+        <summary>五 · 引用、证据与论文错误 Benchmark（14）</summary>
+        <div class="fold2-body">
+          <table class="tbl dense">
+            <tr><th class="w">Benchmark / 工作</th><th>主要评测内容</th></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.08583">CiteTracer</a> (2026)</td><td>多 Agent + 书目检索级联检测伪造、不可解析或与正文不匹配的引用。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2505.11855">SPOT</a> (2025)</td><td>用作者确认的真实论文错误评测自动科学研究验证能力。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2511.21843">FLAWS</a> (2025)</td><td>发现并定位科学论文中错误的能力。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.10246">SciIntegrity-Bench</a> (2026)</td><td>AI Scientist 在引用、实验、结果和写作中的学术完整性风险。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.30329">SoundnessBench</a> (2026)</td><td>能否区分可靠与低 soundness 的研究想法。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.01128">PaperRecon</a> (2026)</td><td>通过论文重建任务评测 AI 论文的表达质量和 hallucination。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.16616">MLReplicate</a> (2026)</td><td>围绕既有 ML 论文生成复现稿件，检查复现性和 claim 支撑。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2504.01848">PaperBench</a> (2025)</td><td>根据论文和代码从头复现 AI 研究，细粒度作者 rubric + 实际执行。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2504.00255">SciReplicate-Bench</a> (2025)</td><td>从论文重新实现算法并执行复现实验。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2409.11363">CORE-Bench</a> (2024)</td><td>对已发表计算研究进行可执行复现。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2507.18901">Repro-Bench</a> (2025)</td><td>判断社会科学研究的计算可复现性。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2506.02314">ResearchCodeBench</a> (2025)</td><td>根据论文描述实现新的机器学习研究代码。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2504.05228">NoveltyBench</a> (2025)</td><td>生成研究想法时的多样性与人类式创新表现。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.15164">HindSight</a> (2026)</td><td>通过后续真实影响反向评估自动生成研究想法的价值。</td></tr>
+          </table>
+        </div>
+      </details>
+
+      <details class="fold2">
+        <summary>六 · 论文审查、引用验证与可审计研究（15）</summary>
+        <div class="fold2-body">
+          <table class="tbl dense">
+            <tr><th class="w">工作</th><th>做什么</th></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.09590">DeepReviewer 2.0</a> (2026)</td><td>审查意见锚定到 PDF 位置，检索比较论文，建 claim–evidence–risk 记录输出可追踪评审包。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.22638">ScholarPeer</a> (2026)</td><td>上下文感知的多 Agent 协作完成自动同行评审。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.19049">Refute-or-Promote</a> (2026)</td><td>对抗式多阶段 gate 对论文缺陷做高精度发现和复核。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2602.13855">From Fluent to Verifiable</a> (2026)</td><td>为 Deep Research 输出定义 claim-level provenance、证据覆盖、矛盾透明度和审计成本。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.26340">ScientistOne</a> (2026)</td><td>Chain-of-Evidence 检查引用、数值、方法、代码与结论的对应关系。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.20025">AutoResearchClaw</a> (2026)</td><td>执行时记录数字和引用来源，论文生成阶段检查不匹配内容。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2511.05524">EviBound</a> (2025)</td><td>以运行 ID、日志、artifact 和指标约束研究 claim。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2510.12367">LLM-REval</a> (2025)</td><td>LLM reviewer 的可靠性及与可信评审标准的差距。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2504.09737">Can LLM Feedback Enhance Review Quality?</a> (2025)</td><td>真实 ICLR 流程中随机测试 LLM 反馈能否改善人类审稿。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2509.09912">When Your Reviewer Is an LLM</a> (2025)</td><td>LLM 同行评审中的偏差、判断分歧和 prompt injection 风险。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2412.01708">Are We There Yet?</a> (2024)</td><td>系统分析 LLM 用于学术同行评审的可靠性和安全风险。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2509.10248">Prompt Injection on LLM Reviews</a> (2025)</td><td>论文文本中的提示注入如何操纵自动审稿结果。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2512.10449">When Reject Turns into Accept</a> (2025)</td><td>量化间接 prompt injection 将拒稿翻转为接收的风险。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2502.16487">All That Glitters Is Not Novel</a> (2025)</td><td>AI 生成论文中的抄袭、重述和虚假创新。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.19196">Time to Reflect</a> (2026)</td><td>LLM judge 在需要真实证据支撑的研究 Agent 评测中是否可信。</td></tr>
+          </table>
+        </div>
+      </details>
+
+      <details class="fold2">
+        <summary>七 · 把论文转换为 Agent 可用 Artifact（13）</summary>
+        <div class="fold2-body">
+          <table class="tbl dense">
+            <tr><th class="w">工作</th><th>做什么</th></tr>
+            <tr><td><a href="https://arxiv.org/abs/2509.06917">Paper2Agent</a> (2025)</td><td>把论文及其代码仓库转换为可交互、可调用的研究 Agent / MCP Server。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2510.17795">xKG</a> (2025)</td><td>论文中的方法、代码和依赖转换为可执行知识图谱。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.24658">ARA</a> (2026)</td><td>论文扩展为含认知过程、物理 artifact、探索图和证据层的 Agent-native 研究包。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.17309">Knows</a> (2026)</td><td>结构化 sidecar 表达 statements、evidence、artifacts、relations 和 actions。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.08491">Figures as Interfaces</a> (2026)</td><td>论文图表变成可查询对象，关联渲染图、数据、代码和可视化规格。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2504.17192">Paper2Code</a> (2025)</td><td>从 ML 论文自动生成对应研究代码。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2510.15842">Paper2Web</a> (2025)</td><td>静态论文转换为可交互网页。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2510.05096">Paper2Video</a> (2025)</td><td>根据论文自动生成讲解视频。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.17745">HIRAS</a> (2026)</td><td>分层多 Agent 从论文生成代码并执行验证。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.01801">What Papers Don't Tell You</a> (2026)</td><td>恢复论文未明确写出的 tacit knowledge，帮助自动复现。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2505.20662">AutoReproduce</a> (2025)</td><td>按论文谱系组织自动实验复现，追踪方法与前序工作关系。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2508.16671">Reflective Paper-to-Code</a> (2025)</td><td>细粒度验证与反思，把论文逐步转换为可运行代码。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.28371">From Paper to Benchmark</a> (2026)</td><td>把描述不充分的论文方法转成可执行 benchmark，做静态、dry-run、泄漏和结果匹配检查。</td></tr>
+          </table>
+        </div>
+      </details>
+
+      <details class="fold2">
+        <summary>八 · 相关 Survey 与 Meta-study（5）<span class="hint">写综述前必读的"竞品"</span></summary>
+        <div class="fold2-body">
+          <table class="tbl dense">
+            <tr><th class="w">工作</th><th>做什么</th></tr>
+            <tr><td><a href="https://arxiv.org/abs/2508.12752">Deep Research: A Survey of Autonomous Research Agents</a> (2025)</td><td>按规划、问题发展、网页探索和报告生成梳理 Deep Research Agent。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2506.18096">Deep Research Agents: Systematic Examination and Roadmap</a> (2025)</td><td>系统比较组件、评测方式和未来路线。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2412.15249">LitLLMs: Are We There Yet?</a> (2024)</td><td>围绕检索、筛选、抽取和综合，评估 LLM 支持文献综述的成熟度。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2508.14111">From AI for Science to Agentic Science</a> (2025)</td><td>从领域和能力角度综述自主科学发现系统。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2508.21148">A Survey of Scientific Large Language Models</a> (2025)</td><td>从科学语料、模型能力到科研 Agent 梳理 Scientific LLM 路线。</td></tr>
+          </table>
+          <p class="note-inline">选题讨论里点名的重叠风险源：Agentic RAG Survey、Agentic Large Language Models a survey —— 这两篇尚未登记，需补入。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>FutureHouse / Edison Benchmark 谱系 —— LitQA → LAB-Bench → LABBench2<span class="hint">文献检索 QA 的事实标准线</span></summary>
+    <div class="fold-body">
+      <div class="codeblock">FutureHouse / Edison Benchmarks
+│
+├── 文献研究
+│   ├── LitQA v0
+│   ├── LitQA2 ── 属于 LAB-Bench
+│   └── LitQA3 ── 属于 LABBench2
+├── 综合生物科研
+│   ├── LAB-Bench
+│   └── LABBench2
+├── 计算生物学
+│   └── BixBench
+└── 化学推理
+    └── ether0-benchmark</div>
+      <table class="tbl dense">
+        <tr><th>版本</th><th>时间</th><th>所属</th><th>主要特点</th></tr>
+        <tr><td>LitQA v0</td><td>2023</td><td>独立小型基准</td><td>50 道选择题，答案藏在论文正文</td></tr>
+        <tr><td>LitQA2</td><td>2024</td><td>LAB-Bench 子集</td><td>248 题多项选择，评价全文检索和 DOI 召回</td></tr>
+        <tr><td>LitQA3</td><td>2026</td><td>LABBench2 子集</td><td>约 168 题，改为开放式回答，更难靠猜</td></tr>
+      </table>
+      <p><b>LAB-Bench（第一代，8 个子基准）</b>：LitQA2（检索全文并回答）、SuppQA（补充材料）、FigQA（图像图注）、TableQA（表格）、DbQA（生物数据库）、ProtocolQA（实验协议排查）、SeqQA（序列计算）、Cloning Scenarios（分子克隆设计）。接近"标准化考试"：多选为主、易自动算 Accuracy / Precision / Coverage、公开约 80%。</p>
+      <p><b>LABBench2（第二代）</b>：约 1,892 个真实科研任务、11 个大类；因 FigQA2 / TableQA2 分 image / PDF / retrieval 三种模式，排行榜上体现为约 15 个子基准。</p>
+      <table class="tbl dense">
+        <tr><th class="w">子基准</th><th>来源 / 后继</th><th>测试内容与规模</th></tr>
+        <tr><td>LitQA3</td><td>LitQA2 后继</td><td>168 道开放式全文检索 QA；166 题单来源 + 2 题双来源；答案中位数 1 个英文单词（最长 8）；两个环境 Base / Tool-augmented high-effort。<b>被测模型只收到问题本身</b>，DOI 与证据段落仅用于标注</td></tr>
+        <tr><td>PatentQA</td><td>新增</td><td>121 题，来源均为 patents.google.com；答案中位数 1 词、均值 3.3、最长 29；语义 LLM Judge 评分</td></tr>
+        <tr><td>TrialQA</td><td>新增</td><td>120 题覆盖 102 个临床试验，全部来自 ClinicalTrials.gov</td></tr>
+        <tr><td>SourceQualQA</td><td>新增</td><td>150 题 / 25 个系统综述；给定被排除的 paper.pdf 与综述问题，要求说明排除理由</td></tr>
+        <tr><td>FigQA2 / TableQA2</td><td>FigQA / TableQA 后继</td><td>各 303 / 300 题，三种变体（仅问题 / 问题+裁剪图 / 问题+完整论文）；每个图表周围构造三个变体任务而非机械复制</td></tr>
+        <tr><td>SuppQA2</td><td>SuppQA 后继</td><td>125 题对应 119 篇论文，扩展到更多补充材料格式</td></tr>
+        <tr><td>DbQA2</td><td>DbQA 后继</td><td>86 题覆盖 43 个生命科学数据库（每库 2 题）；数据库由约 1,000 篇近期 bioRxiv 论文的数据来源分析 + 专家意见选出</td></tr>
+        <tr><td>ProtocolQA2</td><td>ProtocolQA 后继</td><td>125 题（115 公开 + 10 专家未公开）；专家在正常方案里<b>故意注入唯一一个</b>会导致明确失败的错误，让模型反向诊断</td></tr>
+        <tr><td>SeqQA2</td><td>SeqQA 后继</td><td>400 题 / 20 类子任务 / 442 个附件，序列检索、计算和设计</td></tr>
+        <tr><td>CloningQA</td><td>Cloning Scenarios 后继</td><td>14 个场景，从局部选择题变成端到端实验方案设计，程序验证</td></tr>
+      </table>
+      <div class="todo"><b>LABBench2 的四个问题</b>（自己做评测时要避开）：① 只评最终答案，不评过程；② 不是完整"AI Scientist"测试，而是一组<b>原子能力</b>测试；③ 全量运行成本高（1,912 次被测执行 + 1,498 次 Judge 调用）；④ 数据源漂移。另注：<b>没有统一工具环境</b> —— OpenAI Responses 用 web_search + code_interpreter，Anthropic API 用 web_search + web_fetch + code_execution，跨厂商数字不可严格归因（与 AstaBench 的"标准工具环境"正相反）。</div>
+      <p class="src">详见 <a href="我的思考/论文梳理/详细/关于LABBench2.html">关于LABBench2.md</a>（含逐题示例）· <a href="我的思考/论文梳理/List.html">List.md</a></p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>测 Agent 还是测 LLM —— 三赛道设计<span class="hint">自己做 benchmark 时的公平性前提</span></summary>
+    <div class="fold-body">
+      <table class="tbl">
+        <tr><th class="w">赛道</th><th>被测对象</th><th>用途</th></tr>
+        <tr><td>Closed-book</td><td>裸 LLM</td><td>测模型自身知识与推理</td></tr>
+        <tr><td>Controlled Agent</td><td>LLM + 统一 Loop + 统一工具</td><td>公平比较模型的 Agent 能力</td></tr>
+        <tr><td>Native Agent</td><td>LLM + 厂商原生搜索/代码工具</td><td>比较厂商完整产品能力</td></tr>
+      </table>
+      <p>Controlled Agent 的模型无关循环：</p>
+      <div class="codeblock">messages = [task]
+
+for step in range(max_steps):
+    response = model.generate(
+        messages=messages,
+        tools=COMMON_TOOL_SCHEMAS,
+    )
+    if response.has_final_answer:
+        return response.final_answer
+
+    for call in response.tool_calls:
+        result = execute_tool(call.name, call.arguments)
+        messages.append(response.tool_call_message)
+        messages.append(tool_result_message(call.id, result))
+
+return timeout_answer</div>
+      <p class="src">来源：<a href="我的思考/论文梳理/详细/关于测agent还是llm能力.html">关于测agent还是llm能力.md</a>。与 AstaBench（标准工具环境）、LABBench2（各用厂商原生工具）的做法差异正好对应 Controlled vs Native 两条赛道。</p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>56 个自主科研系统 · 按功能重新分类<span class="hint">八类 · 含 R-grade 公共证据可靠性等级</span></summary>
+    <div class="fold-body">
+      <p class="src">来自某综述 Table 2，按功能类型重排。<b>R-grade 是论文给出的公共证据可靠性等级，不是能力或性能排名。</b>完整表见 <a href="我的思考/56个自主科研系统按功能分类.html">56个自主科研系统按功能分类.md</a></p>
+      <details class="fold2">
+        <summary>一 · 论文生成流水线：Idea → 实验 → 成稿（8）</summary>
+        <div class="fold2-body"><table class="tbl dense">
+          <tr><th>系统</th><th>日期</th><th>核心机制</th><th>R</th></tr>
+          <tr><td>AI Scientist v1</td><td>24.08</td><td>最早的范式确立者：生成→执行→评审流水线；评审是软性的，不能拦截发布</td><td>R4</td></tr>
+          <tr><td>CycleResearcher</td><td>24.11</td><td>论文形状的审稿—写作循环，但作者自己披露了实验结果造假</td><td>R3</td></tr>
+          <tr><td>Agent Laboratory</td><td>25.01</td><td>三阶段流程加人工检查点</td><td>R3</td></tr>
+          <tr><td>AgentRxiv</td><td>25.03</td><td>协作式自主研究，带可检索的预印本基底</td><td>R3</td></tr>
+          <tr><td>AI Scientist v2</td><td>25.04</td><td>树搜索 + VLM 审图，两层审稿循环，但发布仍非门控式</td><td>R4</td></tr>
+          <tr><td>AI-Researcher</td><td>25.05</td><td>覆盖文献、数学转代码和论文写作全流程</td><td>R3</td></tr>
+          <tr><td>NovelSeek</td><td>25.05</td><td>Idea 分支演化加假设验证工具</td><td>R3</td></tr>
+          <tr><td>EvoScientist</td><td>26.03</td><td>Idea 生成、代码执行，据称可产出完整论文</td><td>R2</td></tr>
+        </table></div>
+      </details>
+      <details class="fold2">
+        <summary>二 · 发现导向系统：搜索、实验与优化（5）</summary>
+        <div class="fold2-body"><table class="tbl dense">
+          <tr><th>系统</th><th>日期</th><th>核心机制</th><th>R</th></tr>
+          <tr><td>Co-Scientist (Google)</td><td>25.02</td><td>假设生成、反思、排名和演化循环，Elo 分数排列候选</td><td>R4</td></tr>
+          <tr><td>AlphaEvolve (GDM)</td><td>25.06</td><td>协议化程序数据库 + 目标打分驱动的代码 gate</td><td>R3</td></tr>
+          <tr><td>Robin</td><td>25.05</td><td>候选发现有 RNA-seq 和湿实验数据支撑</td><td>R4</td></tr>
+          <tr><td>Kosmos</td><td>25.11</td><td>结构化世界模型协调 200+ 条数据分析和文献 rollout，句子级证据链接</td><td>R4</td></tr>
+          <tr><td>AutoScientists</td><td>26.05</td><td>多团队协作，共享 champion、日志、论坛和 dead-end 记录</td><td>R4</td></tr>
+        </table></div>
+      </details>
+      <details class="fold2">
+        <summary>三 · ML 与代码优化 Agent：在外部打分器下搜索（10）</summary>
+        <div class="fold2-body"><table class="tbl dense">
+          <tr><th>系统</th><th>日期</th><th>核心机制</th><th>R</th></tr>
+          <tr><td>AIDE</td><td>25.02</td><td>面向 ML 竞赛，由外部打分器驱动搜索</td><td>R4</td></tr>
+          <tr><td>MLGym</td><td>25.02</td><td>Research Agent 框架及配套 benchmark</td><td>R4</td></tr>
+          <tr><td>R&amp;D-Agent</td><td>25.05</td><td>工业级数据科学循环，探索图 + MLE-Bench 式评分</td><td>R4</td></tr>
+          <tr><td>AIRA-dojo</td><td>25.07</td><td>起草、改进、调试、执行 notebook、评估并撰写提交</td><td>R4</td></tr>
+          <tr><td>ML-Master 2.0</td><td>26.01</td><td>MLE-Bench 奖牌循环 + 分层认知缓存</td><td>R2</td></tr>
+          <tr><td>InternAgent-1.5</td><td>26.02</td><td>"生成—验证—演化"循环处理长程科学任务<span class="note-inline">本页已归档</span></td><td>R2</td></tr>
+          <tr><td>Bilevel Autoresearch</td><td>26.03</td><td>序列化 trace 介导的内循环 + 外层机制搜索</td><td>R3</td></tr>
+          <tr><td>Multi-Agent Collab</td><td>26.03</td><td>Worktree 补丁、全局记忆和验证损失接受机制</td><td>R3</td></tr>
+          <tr><td>CORAL</td><td>26.04</td><td>隐藏打分器 + worktree，11 项任务中 8 项刷新记录</td><td>R4</td></tr>
+          <tr><td>AutoSOTA</td><td>26.04</td><td>仓库级优化，以可执行分数提升为反馈</td><td>R4</td></tr>
+        </table></div>
+      </details>
+      <details class="fold2">
+        <summary>四 · 文献与检索基础设施（4）<span class="hint">R5 最高分都在这一类</span></summary>
+        <div class="fold2-body"><table class="tbl dense">
+          <tr><th>系统</th><th>日期</th><th>核心机制</th><th>R</th></tr>
+          <tr><td>PaperQA2</td><td>24.09</td><td>文献问答与引用溯源模块<span class="note-inline">已归档</span></td><td>R4</td></tr>
+          <tr><td>OpenScholar</td><td>24.11</td><td>构建在 4,500 万篇开放获取论文之上的引用溯源检索基础设施<span class="note-inline">已归档</span></td><td><b>R5</b></td></tr>
+          <tr><td>Tree-of-Debate</td><td>25.02</td><td>检索支撑的辩论式论文比较</td><td>R3</td></tr>
+          <tr><td>OpenResearcher</td><td>26.03</td><td>开放的 search / open / find 轨迹进行证据检索<span class="note-inline">已归档</span></td><td><b>R5</b></td></tr>
+        </table>
+        <p class="note-inline">这一类只有 4 个系统，却包揽了全部 R5 —— 与本页的深读结论一致：<b>开放度与论文质量正相关</b>。</p></div>
+      </details>
+      <details class="fold2">
+        <summary>五 · 验证器与审计基础设施（7）</summary>
+        <div class="fold2-body"><table class="tbl dense">
+          <tr><th>系统</th><th>日期</th><th>核心机制</th><th>R</th></tr>
+          <tr><td>SWE-Debate</td><td>25.07</td><td>围绕代码补丁的辩论和 MCTS</td><td>R3</td></tr>
+          <tr><td>EviBound</td><td>25.11</td><td>MLflow 式运行证据合约：run ID、状态和指标范围</td><td>R4</td></tr>
+          <tr><td>SEVerA</td><td>26.03</td><td>Dafny 形式化 guard 与拒绝采样</td><td>R4</td></tr>
+          <tr><td>ASG-SI</td><td>25.12</td><td>审计过的技能图谱提案，支持哈希化证据回放</td><td>R2</td></tr>
+          <tr><td>AEGIS</td><td>26.03</td><td>面向安全代码的辩证式 verifier 与 meta-audit</td><td>R3</td></tr>
+          <tr><td>AgentV-RL</td><td>26.04</td><td>前向/反向 LLM 验证循环，校验分解式答案</td><td>R4</td></tr>
+          <tr><td>Debate as Reward</td><td>26.04</td><td>辩论作为研究 Idea 生成的奖励信号</td><td>R4</td></tr>
+        </table></div>
+      </details>
+      <details class="fold2">
+        <summary>六 · Agent-native 制品与可复用资源（8）</summary>
+        <div class="fold2-body"><table class="tbl dense">
+          <tr><th>系统</th><th>日期</th><th>核心机制</th><th>R</th></tr>
+          <tr><td>Knows</td><td>26.04</td><td>YAML sidecar 序列化 artifact、statement、evidence、relation、action</td><td>R4</td></tr>
+          <tr><td>ARA</td><td>26.04</td><td>认知、物理、探索图和证据四层构成的 Agent-native 论文包</td><td>R4</td></tr>
+          <tr><td>ARIS</td><td>26.05</td><td>持久 Wiki 覆盖 Idea、实验和 Claim，执行级联审计</td><td>R4</td></tr>
+          <tr><td>NORA</td><td>26.05</td><td>覆盖目标场地、写作、审稿/修订和投稿检查，最终权限仍归人</td><td>R3</td></tr>
+          <tr><td>AutoResearchClaw</td><td>26.05</td><td>执行期建立数值 registry，严格章节拒绝无法匹配的数字</td><td>R4</td></tr>
+          <tr><td>ScientistOne</td><td>26.05</td><td>Chain-of-Evidence 审计引用、数值、方法和结论四类 Claim</td><td>R4</td></tr>
+          <tr><td>PARNESS</td><td>26.05</td><td>声明式 DAG 加跨运行知识积累</td><td>R3</td></tr>
+          <tr><td>SciCrafter</td><td>26.04</td><td>MCP 轨迹与结构化知识书，用于 Minecraft 红石发现任务</td><td>R4</td></tr>
+        </table></div>
+      </details>
+      <details class="fold2">
+        <summary>七 · 领域专用系统（7）</summary>
+        <div class="fold2-body"><table class="tbl dense">
+          <tr><th>系统</th><th>日期</th><th>核心机制</th><th>R</th></tr>
+          <tr><td>CFD-copilot</td><td>25.12</td><td>领域适配 LLM + MCP 驱动流体仿真自动化</td><td>R4</td></tr>
+          <tr><td>PhysMaster</td><td>25.12</td><td>文献检索与 MCTS 轨迹，配合模拟器检查</td><td>R2</td></tr>
+          <tr><td>TianJi</td><td>26.03</td><td>生成气象学假设并用数值模式检验</td><td>R3</td></tr>
+          <tr><td>Medical AI Scientist</td><td>26.03</td><td>多阶段医学手稿工作流，含 Idea gate 和结构化实验记录</td><td>R3</td></tr>
+          <tr><td>A-Lab</td><td>26.04</td><td>机器人合成与表征，报告 352 个样本</td><td>R3</td></tr>
+          <tr><td>Qumus</td><td>26.05</td><td>序列化机器人合成和器件级证据，应用于石墨烯器件</td><td>R3</td></tr>
+          <tr><td>HANA</td><td>26.05</td><td>分层网络提案，缺少证据支持的独立审稿循环</td><td>R2</td></tr>
+        </table></div>
+      </details>
+      <details class="fold2">
+        <summary>八 · 自我演化型控制器与技能库（7）</summary>
+        <div class="fold2-body"><table class="tbl dense">
+          <tr><th>系统</th><th>日期</th><th>核心机制</th><th>R</th></tr>
+          <tr><td>MetaAgent</td><td>25.08</td><td>把工具交互历史写入持久向量记忆</td><td>R3</td></tr>
+          <tr><td>CMA</td><td>25.08</td><td>异步模块与共享记忆，没有合格的独立审稿循环</td><td>R2</td></tr>
+          <tr><td>AgentEvolver</td><td>25.11</td><td>在保留的工具使用任务上演化 Agent 控制器</td><td>R3</td></tr>
+          <tr><td>AInstein</td><td>25.10</td><td>generalizer 与 solver 的批评循环，为实验前问题求解提供证据</td><td>R4</td></tr>
+          <tr><td>ClawdLab</td><td>26.02</td><td>治理和工具架构提案，在 PI 监督下运行</td><td>R2</td></tr>
+          <tr><td>SkillFlow</td><td>26.05</td><td>基于可验证任务奖励训练的技能库控制器</td><td>R4</td></tr>
+          <tr><td>OmniScientist</td><td>25.11</td><td>以 AI/CS 案例支撑"构想—实验—写作—评审"工作流</td><td>R2</td></tr>
+        </table></div>
+      </details>
+    </div>
+  </details>
+</section>
+
+<!-- ==================== 项目与系统 ==================== -->
+<section id="systems">
+  <div class="sec-head"><h2>📚 项目与系统</h2><span class="count">Literature项目或者系统/ · 13 个项目</span></div>
+  <p class="sec-note">分类依据论文全文 + 源码深读：<b>复杂</b> = 有真实算法与工程实质；<b>简单</b> = 有实质但贡献有限或被重命名包装；<b>包装的好看</b> = 卖点在论文/代码层面无法成立。</p>
+
+  <div class="group"><span class="tag complex">复 杂</span><h3>真材实料</h3><span class="desc">算法、训练、工程都经得起深读</span></div>
+  <div class="grid">
+    <div class="card">
+      <h4>OpenScholar</h4>
+      <div class="meta">UW / AI2 · 检索增强文献问答 · Nature 发表</div>
+      <p class="blurb">4500 万论文数据库 + 自反馈生成的检索增强 LM，权重数据全开放。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/复杂/OpenScholar/OpenScholar_系统架构与论文精读.html">系统架构与论文精读</a>
+        <a href="Literature项目或者系统/复杂/OpenScholar/OpenScholar_official_blog.html">官方博客</a>
+        <a href="Literature项目或者系统/复杂/OpenScholar/OpenScholar_project_page.html">项目主页存档</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>PaperQA</h4>
+      <div class="meta">FutureHouse · 文献问答 Agent 谱系（1 → 2 → 3/Edison）</div>
+      <p class="blurb">RAG 文献问答的标杆项目，从 PaperQA1 到 WikiCrow 到 Edison 的完整演进。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/复杂/PaperQA/PaperQA_项目谱系与技术架构.html">项目谱系与技术架构</a>
+        <a href="Literature项目或者系统/复杂/PaperQA/PaperQA_源码演进与系统架构详解.html">源码演进详解</a>
+        <a class="dir" href="_未包含的内容.html">官方博客存档 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>InternAgent</h4>
+      <div class="meta">上海 AI Lab · 端到端自主科研系统</div>
+      <p class="blurb">覆盖 idea→实验→论文的大型系统，Literature 模块为其中一环。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/复杂/InternAgent/分析/InternAgent_Literature模块分析.html">Literature 模块分析</a>
+        <a href="Literature项目或者系统/复杂/InternAgent/分析/InternAgent-1.5_源码架构导读.html">1.5 源码架构导读</a>
+        <a href="Literature项目或者系统/复杂/InternAgent/分析/InternAgent_源码演化史.html">源码演化史</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>PaSa <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-real">SOTA 打七折</span></h4>
+      <div class="meta">ByteDance Seed · ACL 2025 Main · 文献搜索 Agent + RL</div>
+      <p class="blurb">Crawler+Selector 双 Agent，session 级 PPO 是真算法贡献，权重数据全开放；但部署是硬编码流水线、benchmark 有引文可达偏置。</p>
+      <div class="links">
+        <a class="md" href="Literature项目或者系统/复杂/PaSa/深读评价.html">深读评价 (md)</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 源码 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Kosmos</h4>
+      <div class="meta">FutureHouse / Edison · 自主科研 Agent</div>
+      <p class="blurb">长时程自主研究系统（材料归档中，暂无精读页面）。</p>
+      <div class="links">
+        <a class="dir" href="_未包含的内容.html">归档材料 →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="group"><span class="tag simple">简 单</span><h3>有实质但贡献有限</h3><span class="desc">能用 / 真做了，但创新点薄或被重命名包装</span></div>
+  <div class="grid">
+    <div class="card">
+      <h4>AI Researcher</h4>
+      <div class="meta">端到端科研 Agent · Literature 模块较薄</div>
+      <div class="links">
+        <a href="Literature项目或者系统/简单/AI%20Researcher/AI_Researcher_Literature模块导读.html">Literature 模块导读</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>PaperScout <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-ok">重命名的 GSPO</span></h4>
+      <div class="meta">USTC · 文献搜索 Agent + "PSPO" 强化学习</div>
+      <p class="blurb">真做了训练（turn 级 GAE + verl），但训练脚本白纸黑字 loss_mode=gspo，论文公式与实现不符；环境/数据/评测全断，复现性为零。</p>
+      <div class="links">
+        <a class="md" href="Literature项目或者系统/简单/PaperScout/深读评价.html">深读评价 (md)</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 源码 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>SciAtlas <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-ok">零验证的大图谱</span></h4>
+      <div class="meta">浙大 ZJUNLP · 科研知识图谱 · arXiv:2605.22878</div>
+      <p class="blurb">43.30M 论文 / 157M 实体 / 3B 关系，检索算法（三路召回 + RWR + 门控打分）参数完整可借鉴；但零定量实验、作者故意不去重、图谱不可下载、comments 写着 "Ongoing Work"。是"KG 优先"路线对 deep research agent 的公开开火方。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/简单/SciAtlas/SciAtlas_精读.html">精读页面 (html)</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 原图 →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="group"><span class="tag fancy">包装的好看</span><h3>卖点无法成立</h3><span class="desc">论文叙事与代码 / 证据严重脱节</span></div>
+  <div class="grid">
+    <div class="card">
+      <h4>NanoResearch</h4>
+      <div class="meta">自主科研系统 · Literature 模块精读</div>
+      <div class="links">
+        <a href="Literature项目或者系统/包装的好看/NanoResearch/NanoResearch_架构与Literature模块精读.html">架构与 Literature 模块精读</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>PaperPilot <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-hollow">三大卖点失守</span></h4>
+      <div class="meta">多轮文献搜索 + "工作流归纳" · arXiv:2607.00597</div>
+      <p class="blurb">"归纳"=抄 36 份手调模板；"偏好优化训练"代码 0 行；主表两行外置覆盖、旗舰行硬编码（99.5% forced finalize）、成本 19 倍改写。唯一真亮点：结构化 DAG 编辑机制。</p>
+      <div class="links">
+        <a class="md" href="Literature项目或者系统/包装的好看/PaperPilot/深读评价.html">深读评价 (md)</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 源码 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>PaSaMaster <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-hollow">零代码广告论文</span></h4>
+      <div class="meta">SJTU + SciLand · "递归自演化检索" · arXiv:2605.14306</div>
+      <p class="blurb">仓库 0 行代码；11 个公式无一承载创新；benchmark 用自家引擎构建（循环性）；蹭名 PaSa 却不与 PaSa 比较。残余价值：公开的 Bench 数据集 + scimaster-cli 工具。</p>
+      <div class="links">
+        <a class="md" href="Literature项目或者系统/包装的好看/PaSaMaster/深读评价.html">深读评价 (md)</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 仓库 →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="group"><span class="tag deep">深度研究系统</span><h3>Deep Research 类</h3></div>
+  <div class="grid">
+    <div class="card">
+      <h4>OpenResearcher</h4>
+      <div class="meta">开源 Deep Research 系统</div>
+      <div class="links">
+        <a href="Literature项目或者系统/深度研究系统/OpenResearcher/OpenResearcher_工作原理与复现审计.html">工作原理与复现审计</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 横向对比 ==================== -->
+<section id="compare">
+  <div class="sec-head"><h2>⚖️ 横向对比</h2><span class="count">Literature项目或者系统/横向对比/</span></div>
+  <p class="sec-note">跨系统的公平比较与定位分析。</p>
+
+  <div class="feature">
+    <h4>文献搜索系统横向比较 —— PaSa · PaSaMaster · PaperPilot · PaperScout</h4>
+    <p>四个文献搜索系统的范式、创新点、交互方式与产物对照；配套 2026-08-02 深读审稿结论（复杂/简单/包装三档分类及全部证据）。</p>
+    <div class="links">
+      <a href="Literature项目或者系统/横向对比/文献搜索系统/文献搜索系统横向比较.html">横向比较报告 (html)</a>
+      <a class="md" href="Literature项目或者系统/横向对比/文献搜索系统/文献搜索系统_归档说明.html">归档说明 + 深读结论 (md)</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h4>可以比较的系统</h4>
+      <div class="meta">同层抽象的 Agent 框架收录（当前：AgentScope）</div>
+      <div class="links">
+        <a class="md" href="Literature项目或者系统/横向对比/可以比较的系统/README_先看这里.html">README 先看这里 (md)</a>
+        <a class="dir" href="_未包含的内容.html">目录 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>关于 Agent 底座</h4>
+      <div class="meta">AgentENV（sandbox 基建）· LDP（policy/训练层）</div>
+      <div class="links">
+        <a class="dir" href="_未包含的内容.html">目录 →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Benchmark ==================== -->
+<section id="benchmark">
+  <div class="sec-head"><h2>🎯 Benchmark</h2><span class="count">Benchmark/ · 7 张卡（4 篇已深读）</span></div>
+  <p class="sec-note">2026-08 新增四篇「agentic 文献检索评测」簇：<b>AstaBench</b> 是这条线的参照点（ICLR 2026），<b>ScholarQuest</b> 是可用数据集但相关工作写空了领域，<b>SPARBench</b> 是它的对照竞品，<b>RollingEval</b> 攻击的是整条评测范式。</p>
+  <div class="grid">
+    <div class="card">
+      <h4>AstaBench <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-real">该线参照点</span></h4>
+      <div class="meta">Ai2 · ICLR 2026 · 11 个 benchmark / 2,404 题 / 57 个 agent</div>
+      <p class="blurb">把成本抬成一等指标；标准工具环境 + 日期截断防污染 + leaderboard 齐全。最高分 53.0%，最佳开权重 agent 仅 11.1%，端到端全任务完成率 0.00–0.05。硬约束：<b>语料托管、不可自托管、可随时撤销</b>，且从未披露语料规模。</p>
+      <div class="links">
+        <a href="Benchmark/AstaBench/AstaBench_精读.html">精读页面 (html)</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 原图 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>ScholarQuest <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-ok">数据可用 / 叙事不可信</span></h4>
+      <div class="meta">USTC · 1,111 条分类学引导 CS 查询 · arXiv:2606.20235</div>
+      <p class="blurb">数据集可用（1,111 条查询、86.0% 严格匹配）；但相关工作仅 12 句 6 引用、Table 1 实际只对比两篇、<b>漏引四篇同类冻结检索环境</b>（AstaBench/ICLR 2026、早五个月同细分的 ScholarGym、SAGE、BrowseComp-Plus）、"scope-controlled" 是 ExcluIR/NevIR 换名、κ=0.866 因二次加权+已裁决标签而不可横比，且未披露自家 PaperScout 夺冠。</p>
+      <div class="links">
+        <a href="Benchmark/ScholarQuest/ScholarQuest_精读与新颖性审计.html">精读 + 新颖性审计 (html)</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 原图 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>SPARBench <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-ok">小而精</span></h4>
+      <div class="meta">文献检索系统 + benchmark · arXiv:2507.15245</div>
+      <p class="blurb">50 条查询 / 560 篇专家核验文档，标注质量这条线最高、规模最小。<b>明确拒绝共享语料</b>（各系统用自己数据源），因此跨系统数字不可严格归因。</p>
+      <div class="links">
+        <a href="Benchmark/SPARBench/SPARBench_归档说明.html">归档说明 (html)</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 原图 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>RollingEval-Jun25 <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-hollow">范式攻击</span></h4>
+      <div class="meta">Mila · "人类引用列表不是金标" · arXiv:2605.29234</div>
+      <p class="blurb">人类引用仅 <b>51%</b> 被判中度以上相关，AI reranker 为 86–88%；人类引用直接合作者的概率高 2.5 倍。PaSa / LitSearch / ScholarQuest 这条线的金标假设由此被量化质疑 —— <b>自己做检索评测前先读</b>。</p>
+      <div class="links">
+        <a href="Benchmark/RollingEval-Jun25/RollingEval_归档说明.html">归档说明 (html)</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 原图 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>SciExplore</h4>
+      <div class="meta">科研探索能力评测</div>
+      <div class="links">
+        <a href="Benchmark/SciExplore/分析/SciExplore_论文精读.html">论文精读 (html)</a>
+        <a class="dir" href="_未包含的内容.html">论文 · 源码 · 物料 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>LifeSciBench</h4>
+      <div class="meta">生命科学领域评测 · 750 任务 / 7 工作流 × 7 领域</div>
+      <p class="blurb">工作流与领域是<b>两个正交维度</b>：证据处理、分析、设计优化、科学推理、验证运维、临床转化、科学传播 × 基因组学/药化/蛋白结构/分子细胞/筛选/生信/临床。173 位编写专家 + 453 位独立验证专家，1,062 个附件，<b>19,020 条 rubric（平均每题 25 条）</b>。</p>
+      <div class="links">
+        <a class="md" href="Benchmark/LifeSciBench/README.html">README (md)</a>
+        <a class="md" href="我的思考/论文梳理/详细/关于SciLifeBench.html">我的笔记 (md)</a>
+        <a class="dir" href="_未包含的内容.html">目录 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>LAB-Bench / LABBench2 <span class="pill mix">未归档</span></h4>
+      <div class="meta">FutureHouse · LitQA 谱系 · 约 1,892 任务 / 11 大类</div>
+      <p class="blurb">文献检索 QA 的事实标准线（LitQA v0→2→3）。已在「领域版图」板块完整拆解全部子基准与规模，并记录四个方法论问题（只评答案不评过程、原子能力而非 AI Scientist、全量成本高、数据源漂移、<b>无统一工具环境</b>）。</p>
+      <div class="links">
+        <a href="#landscape">看谱系拆解 ↑</a>
+        <a class="md" href="我的思考/论文梳理/详细/关于LABBench2.html">逐题笔记 (md)</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 文献库 · 数据接口 ==================== -->
+<section id="datalib">
+  <div class="sec-head"><h2>📖 文献库 · 数据接口</h2><span class="count">文献库/</span></div>
+  <p class="sec-note">不是检索系统也不是 benchmark，而是「给 agent 用的文献数据层」。这类项目的特点是<b>工程使用度与学术引用度严重分裂</b>。</p>
+  <div class="grid">
+    <div class="card">
+      <h4>DeepXiv-SDK <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 核查)</span><span class="verdict v-ok">工程被用 / 学术未认</span></h4>
+      <div class="meta">BAAI（Zheng Liu / BGE 组）· 三层 agentic 数据接口 · arXiv:2603.00084</div>
+      <p class="blurb">GitHub 763★、PyPI 8.7k/月、conda-forge 已建、约 20 个下游仓库在用；但 S2 引用仅 <b>2</b> 次、OpenAlex 0 次、无 venue，且<b>两次引用都不是背书</b>（一次当 baseline 打、一次当反面靶子）。第三方评测显示它<b>捞得到但排不出来</b>（R@All 0.288 ≈ 稠密检索，R@25 0.054 全表最低）。repo 自 2026-05-22 停更，而卖点是"每日同步"。</p>
+      <div class="links">
+        <a href="文献库/DeepXiv/DeepXiv_认可度与被引分析.html">认可度与被引分析 (html)</a>
+        <a class="md" href="文献库/DeepXiv/assets/2603.00084_fulltext.html">全文 md</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 原图 + OpenAPI 快照 →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 数据源 · 基础设施 ==================== -->
+<section id="sources">
+  <div class="sec-head"><h2>🔌 数据源 · 文献基础设施</h2><span class="count">21 个渠道可接入性 + 目标系统轮廓 + 四条投稿主线</span></div>
+  <p class="sec-note">"要自己做一个文献搜索系统"时的底层选择：哪些数据源能合法接入、怎么分层、以及如何把"搭库"这件工程活转化成可投顶会的研究问题。</p>
+  <p class="src">来源笔记：<a href="我的思考/关于搜索渠道by_GPTScholar.html">关于搜索渠道by_GPTScholar.md</a> · <a href="我的思考/待整理/持续更新的学术文献基础设施_调研起点.html">持续更新的学术文献基础设施_调研起点.md</a></p>
+
+  <details class="fold">
+    <summary>21 个数据源的可接入情况<span class="hint">能不能自己接 / 怎么接 / 限制在哪</span></summary>
+    <div class="fold-body">
+      <table class="tbl dense">
+        <tr><th>数据源</th><th>能否自行接入</th><th>常见方式</th><th>主要限制</th></tr>
+        <tr><td><b>OpenAlex</b></td><td><b>可以，推荐</b></td><td>REST API、全量数据快照</td><td>元数据覆盖广，但摘要、作者消歧和引用数据并非绝对准确</td></tr>
+        <tr><td><b>Crossref</b></td><td><b>可以，推荐</b></td><td>REST API</td><td>主要是 DOI 元数据，不是论文全文库</td></tr>
+        <tr><td>Semantic Scholar</td><td>可以</td><td>Academic Graph API</td><td>有速率限制；部分能力可能需要 API Key</td></tr>
+        <tr><td>arXiv</td><td>可以</td><td>API、OAI-PMH、公开论文文件</td><td>需控制请求频率；批量使用要遵守许可和服务规则</td></tr>
+        <tr><td>PubMed</td><td>可以</td><td>NCBI E-utilities</td><td>主要提供元数据和摘要，不等于全部全文</td></tr>
+        <tr><td>PubMed Central</td><td>部分可以</td><td>API、OAI、开放获取子集</td><td>只有符合许可的文章才能批量下载或再利用</td></tr>
+        <tr><td><b>Europe PMC</b></td><td><b>可以，生物医学推荐</b></td><td>REST API、开放全文接口</td><td>全文权限取决于文章许可</td></tr>
+        <tr><td>bioRxiv / medRxiv</td><td>可以</td><td>官方 API、预印本页面</td><td>预印本未必经过同行评审；PDF 再利用需看许可</td></tr>
+        <tr><td>Unpaywall</td><td>可以</td><td>DOI 查询 API、数据快照</td><td>提供开放全文<b>位置</b>，不提供全文本身</td></tr>
+        <tr><td>OpenCitations</td><td>可以</td><td>REST API、开放数据集</td><td>引用覆盖不等于 WoS 或 Scopus 的完整覆盖</td></tr>
+        <tr><td>CORE</td><td>可以申请</td><td>API、开放仓储聚合</td><td>API 配额、全文使用条件需遵守政策</td></tr>
+        <tr><td>Google Scholar</td><td><b>无官方公共 API</b></td><td>不建议直接爬虫</td><td>自动抓取容易触发封禁，也可能违反服务条款</td></tr>
+        <tr><td>Web of Science</td><td>有条件</td><td>商业 API</td><td>通常需机构订阅或单独授权</td></tr>
+        <tr><td>Scopus</td><td>有条件</td><td>Elsevier API</td><td>需注册，完整能力与订阅权限相关</td></tr>
+        <tr><td>Dimensions</td><td>有条件</td><td>API、DSL</td><td>一般需许可证或机构合作</td></tr>
+        <tr><td>IEEE Xplore</td><td>有条件</td><td>官方 API</td><td>有配额、字段及全文权限限制</td></tr>
+        <tr><td>Springer Nature</td><td>有条件</td><td>官方 API</td><td>元数据、摘要和开放全文权限不同</td></tr>
+        <tr><td>ACM DL</td><td>有限</td><td>授权数据、出版社合作</td><td>不适合作为无许可的批量抓取源</td></tr>
+        <tr><td>CNKI / 万方 / 维普</td><td>通常有条件</td><td>机构接口、商业授权</td><td>不应默认通过网页爬虫批量抓取</td></tr>
+        <tr><td>专利数据库</td><td>因机构而异</td><td>专利局 API、批量数据</td><td>EPO、USPTO、WIPO 及各国规则不同</td></tr>
+        <tr><td>普通公共网页</td><td>技术上部分可行</td><td>搜索接口、定向抓取</td><td>必须检查 robots、服务条款、版权和个人信息规定</td></tr>
+      </table>
+      <div class="todo"><b>三条 Tips</b>：① API 返回论文 ≠ 可以保存全文（检索到的往往只是标题/作者/摘要/DOI）；② 去重是必做项；③ 必须先定义"搜索质量"才能谈排序。</div>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>实用基础组合与实现分层<span class="hint">采集 → 标准化 → 去重 → 索引 → 排序</span></summary>
+    <div class="fold-body">
+      <h5>一个通用文献搜索系统的实用组合</h5>
+      <div class="codeblock">OpenAlex        ─ 主体论文、作者、机构、期刊、引用关系
+Crossref        ─ DOI 及出版元数据校正
+Semantic Scholar─ 语义检索、引用关系、相关论文
+Unpaywall       ─ 查找合法开放全文地址
+OpenCitations   ─ 补充开放引用图谱
+arXiv / bioRxiv ─ 预印本和公开全文
+PubMed / EuropePMC ─ 医学与生命科学增强</div>
+      <h5>推荐的实现分层</h5>
+      <div class="flow">
+        <span class="step">外部数据源</span><span class="arr">→</span>
+        <span class="step">采集适配层<br><span style="font-size:11px">每源独立 Connector · 频率限制 · 重试缓存 · Key 管理</span></span><span class="arr">→</span>
+        <span class="step">标准化层<br><span style="font-size:11px">DOI 标准化 · 作者消歧 · 期刊名统一 · 日期与类型统一</span></span><span class="arr">→</span>
+        <span class="step">去重与合并<br><span style="font-size:11px">DOI 优先 · PMID/arXiv ID 辅助 · 标题作者年份模糊匹配</span></span><span class="arr">→</span>
+        <span class="step">索引层<br><span style="font-size:11px">ES/OpenSearch 关键词 · 向量库语义 · 图库关系</span></span><span class="arr">→</span>
+        <span class="step">排序层<br><span style="font-size:11px">关键词相关性 · 向量相似度 · 引用与时间 · 研究类型 · 来源可信度</span></span><span class="arr">→</span>
+        <span class="step">用户搜索与研究助手</span>
+      </div>
+      <h5>不要把文献库等同于 Embedding 库</h5>
+      <p>完整文献库至少含 10 项：原始论文；规范化元数据；论文版本关系；结构化全文与文本块；图表及补充材料；关键词索引；Embedding 索引；引用关系；数据来源和处理血缘；可重建索引所需的配置。<b>Embedding 是派生索引，不是不可替代的源数据。</b></p>
+      <div class="codeblock">原始 PDF / HTML → 规范化元数据与版本 → 结构化全文、章节、段落、图表
+        → BM25 / Embedding / Citation Graph → Search / QA / Recommendation / Agent</div>
+      <h5>目标系统轮廓与规模分层</h5>
+      <table class="tbl">
+        <tr><th class="w">层次</th><th>数据规模</th><th>保存内容</th></tr>
+        <tr><td>Candidate Catalog</td><td>10 万～50 万篇</td><td>标题、摘要、元数据、引用、摘要向量</td></tr>
+        <tr><td>Watchlist</td><td>1 万～3 万篇</td><td>高相关元数据、推荐状态、可能的全文链接</td></tr>
+        <tr><td>Core Full-text</td><td>3,000～5,000 篇</td><td>PDF、解析全文、Chunk、向量、图表</td></tr>
+      </table>
+      <p>每日漏斗：数百篇新候选 → 分类和关键词过滤 → 约 200 篇 → 摘要向量排序 → 约 50 篇 → LLM 或规则精排 → 约 10 篇 → 下载与质量检查 → <b>约 5 篇进入核心全文库</b>。</p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>四条投稿主线 A/B/C/D —— 把"搭库"变成可发表的研究问题<span class="hint">ICLR / SIGIR / KDD / VLDB 各要什么</span></summary>
+    <div class="fold-body">
+      <p>面向 ICLR、NeurIPS、ICML、KDD、VLDB 时，<b>不应把工作定义为"构建论文库"</b>。仅实现爬虫、向量库和问答界面不足以形成主要贡献。需要把文献管理能力转化为研究问题。</p>
+      <table class="tbl">
+        <tr><th class="w">层次</th><th>主要作用</th><th>潜在投稿方向</th></tr>
+        <tr><td>Agent、学习与评测</td><td>定义任务、策略、奖励、记忆和端到端能力</td><td>ICLR、NeurIPS、ICML</td></tr>
+        <tr><td>检索、推荐与图挖掘</td><td>文献召回、排序、新论文发现、动态图建模</td><td>KDD、SIGIR、WWW、WSDM</td></tr>
+        <tr><td>数据系统</td><td>动态混合索引、版本、血缘、查询执行和一致性</td><td>VLDB、SIGMOD、ICDE</td></tr>
+        <tr><td>文献管理基础</td><td>元数据、PDF、解析、去重、开放获取、数字保存</td><td>JCDL、TPDL；同时支撑上述三层</td></tr>
+      </table>
+      <h5>A · Budgeted Self-Updating Literature Agent <span class="pill mix">ICLR / NeurIPS / ICML</span></h5>
+      <div class="codeblock">输入：持续到达的新论文流 / 当前 Agent 文献库 / 用户研究兴趣和历史任务
+      / 有限存储、Embedding、LLM 和时间预算
+动作：忽略论文 · 只保存元数据 · 下载并解析全文 · 更新已有论文版本
+      · 替换或归档旧论文 · 重新组织索引
+目标：最大化未来搜索、QA、综述和科研任务表现，同时控制存储、计算和 API 成本</div>
+      <p>核心研究点：knowledge acquisition policy、budgeted memory management、continual learning、temporal generalization、新旧知识冲突、摄取决策的长期价值、Agent 策略与 Retriever 联合优化。</p>
+      <h5>B · Agent-Centric Literature Retrieval <span class="pill mix">ICLR / NeurIPS / SIGIR / ACL / EMNLP</span></h5>
+      <p>传统 Retriever 优化 query–document 局部相关性；Agent-centric Retriever 应优化<b>文献对最终任务的效用</b>：是否提高最终答案正确率、是否增加新的证据维度、是否消除或暴露证据冲突、是否帮助生成下一步检索词、是否提高综述覆盖率、是否支持最终主张并提供可验证引用。<span class="note-inline">与选题讨论的"Evidence-grounded &amp; completeness-aware"切入点重合度最高</span></p>
+      <h5>C · Evolving Scholarly Graph Mining <span class="pill mix">KDD / WWW / WSDM / SIGIR</span></h5>
+      <p>数据 = 论文全文 + 引用图 + 作者机构图 + Method/Dataset/Benchmark 实体 + 发表与更新时序 + 用户阅读收藏查询轨迹。任务：新论文冷启动推荐、emerging topic detection、研究方向演化建模、方法-数据集-benchmark 关系抽取、个性化兴趣更新、缺少引用信号时评价新论文价值、从文献流中发现研究空白。</p>
+      <h5>D · Dynamic Multimodal Literature Data System <span class="pill mix">VLDB / SIGMOD / ICDE / CIDR</span></h5>
+      <p>统一管理 PDF 与结构化全文 + Chunk + 图表 + 多版本 Embedding + 引用图 + 元数据 + Agent 查询与证据轨迹。研究点：增量解析与 Chunk 级更新、关键词/向量/图/元数据混合查询、Embedding 模型在线迁移、多版本论文与 time-travel query、RAG 数据血缘与结果可复现、Agent 工作负载驱动的索引优化、持续更新时的一致性吞吐延迟成本。</p>
+      <h5>科研知识图谱的目标数据模型</h5>
+      <div class="codeblock">Paper A
+  ├── proposes ───────> Method X
+  ├── evaluates_on ───> Benchmark Y
+  ├── uses_dataset ───> Dataset Z
+  ├── reports ────────> Result R
+  ├── compares_with ──> Method B
+  └── cites ──────────> Paper C</div>
+      <p class="note-inline">本页「简单 · SciAtlas」正是这条路线的公开实例（43.30M 论文 / 157M 实体 / 3B 关系），可作为 C/D 主线的直接对照。</p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>调研时要避免的 11 个混淆<span class="hint">这些混淆会直接毁掉问题定义</span></summary>
+    <div class="fold-body">
+      <ul>
+        <li>不要把<b>参考文献管理器</b>等同于科学文献数据基础设施。</li>
+        <li>不要把<b>向量数据库</b>等同于完整文献库。</li>
+        <li>不要把<b>学术搜索引擎</b>等同于全文问答系统。</li>
+        <li>不要把<b>单轮 RAG</b>等同于文献搜索 Agent。</li>
+        <li>不要把<b>生成引用格式</b>等同于引用事实正确。</li>
+        <li>不要把<b>引用次数</b>等同于新论文质量。</li>
+        <li>不要把 arXiv、OpenReview 和正式出版版本<b>计为不同工作</b>。</li>
+        <li>不要让数字图书馆和传统文献管理工作主导问题定义。</li>
+        <li>不要忽略文献管理 —— 数据错误、版本错误和索引不可追溯会直接破坏上层实验。</li>
+        <li>AI、KDD 和 VLDB 相关工作是核心阅读；数字图书馆、IR、知识图谱和循证研究用于补全必要基础。</li>
+        <li>不要只搜索 <code>paper management</code> —— 该词主要召回个人文献管理工具。</li>
+      </ul>
+      <h5>七个必须分开的概念</h5>
+      <div class="flow">
+        <span class="step">Reference Manager</span><span class="step">Academic Search Engine</span><span class="step">Literature Discovery System</span><span class="step">Scholarly Knowledge Graph</span><span class="step">Scientific QA System</span><span class="step">Literature Review Agent</span><span class="step">Research Agent</span>
+      </div>
+      <p class="note-inline">完整版还含 9 组可直接使用的组合检索式、按会议扫描清单（ICLR→JCDL 共 17 个）、每篇论文的记录模板、20 项横向对比表字段、以及 14 条最小执行清单 —— 见 <a href="我的思考/待整理/持续更新的学术文献基础设施_调研起点.html">调研起点笔记</a>。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ==================== 商业产品 ==================== -->
+<section id="products">
+  <div class="sec-head"><h2>🏢 商业产品与工具生态</h2><span class="count">非论文系统 · 用于理解功能空间</span></div>
+  <p class="sec-note">这些系统<b>不等于公开了底层架构</b>，但定义了用户对"文献搜索"的实际期待，是学术工作的功能参照和竞品边界。</p>
+  <p class="src">来源笔记：<a href="我的思考/待整理/文献.html">待整理/文献.md</a> · <a href="我的思考/待整理/持续更新的学术文献基础设施_调研起点.html">调研起点笔记 §8</a></p>
+
+  <div class="group"><span class="tag complex">文献综合型</span><h3>回答问题 + 结构化抽取</h3><span class="desc">与本方向正面竞争的一类</span></div>
+  <div class="grid">
+    <div class="card">
+      <h4>Elicit <span class="pill biz">商业</span></h4>
+      <div class="meta">目前最主流的学术 lit review 工具之一</div>
+      <p class="blurb">自然语言提问、自动提取方法/结果/样本等结构化信息，可生成表格对比与系统综述流程。覆盖更广（含部分付费文献摘要），<b>结构化提取更强</b>；相比之下 OpenScholar 更强调开源 + 引用准确性。</p>
+    </div>
+    <div class="card">
+      <h4>Consensus <span class="pill biz">商业</span></h4>
+      <div class="meta">从同行评议论文中提取"科学共识"</div>
+      <p class="blurb">回答偏 yes/no + 证据强度。更侧重<b>共识判断</b>，回答更短，综合深度不如 OpenScholar。</p>
+    </div>
+    <div class="card">
+      <h4>Ai2 Asta / Paper Finder <span class="pill mix">机构产品</span></h4>
+      <div class="meta">Allen AI · 覆盖 1 亿+ 摘要、1,200 万+ 全文</div>
+      <p class="blurb">OpenScholar 的直接"下一代"，agentic 科学助手，功能更全面。<b>AstaBench 就是它的配套评测</b> —— 本页 Benchmark 板块已深读（语料托管、不可自托管、可随时撤销）。</p>
+      <div class="links"><a href="Benchmark/AstaBench/AstaBench_精读.html">AstaBench 精读 →</a></div>
+    </div>
+    <div class="card">
+      <h4>DR Tulu <span class="pill oss">开源</span></h4>
+      <div class="meta">Allen AI · Deep Research Tulu</div>
+      <p class="blurb">开源长文深度研究模型/配方，专为多步检索 + 长报告设计。同属 Ai2 体系后续工作，更强调 deep research agent。</p>
+    </div>
+    <div class="card">
+      <h4>PaperQA2 <span class="pill oss">开源</span></h4>
+      <div class="meta">FutureHouse · 已在本页归档</div>
+      <p class="blurb">开源 agent 系统，自主完成检索、证据收集、总结，甚至找文献矛盾；曾宣称部分任务达到/超过人类专家。更 agent 化（多步工具调用）。OpenScholar 当时在 ScholarQABench 上与它对比过。</p>
+      <div class="links"><a href="Literature项目或者系统/复杂/PaperQA/PaperQA_项目谱系与技术架构.html">项目谱系 →</a></div>
+    </div>
+    <div class="card">
+      <h4>SciSpace <span class="pill biz">商业</span></h4>
+      <div class="meta">论文阅读与问答</div>
+      <p class="blurb">面向单篇/多篇论文的阅读辅助与对话式问答。</p>
+    </div>
+  </div>
+
+  <div class="group"><span class="tag simple">搜索 · 可视化</span><h3>引用网络与演进关系</h3><span class="desc">"从一篇核心论文向外扩展"的范式</span></div>
+  <div class="grid">
+    <div class="card">
+      <h4>Semantic Scholar <span class="pill mix">免费 + API</span></h4>
+      <div class="meta">Ai2 · 学术搜索引擎</div>
+      <p class="blurb">AI TLDR、引用上下文、Semantic Reader。<b>是 OpenScholar 数据的重要来源之一</b>，也是自建系统最常用的 Academic Graph API（见上方数据源表）。</p>
+    </div>
+    <div class="card">
+      <h4>Connected Papers / ResearchRabbit / Litmaps <span class="pill biz">商业</span></h4>
+      <div class="meta">引用图可视化三件套</div>
+      <p class="blurb">以可视化方式展示论文引用网络和演进关系。ResearchRabbit 侧重文献图谱 + 持续推荐；Litmaps 侧重引用追踪和<b>新论文提醒</b>（对应"持续更新"这条线）。</p>
+    </div>
+    <div class="card">
+      <h4>Scite <span class="pill biz">商业</span></h4>
+      <div class="meta">引用意图分析</div>
+      <p class="blurb">区分引用是<b>支持 / 反对 / 仅提及</b>，帮助判断文献被如何引用。对应选题讨论里的 contradiction detection 与 evidence sufficiency 能力。</p>
+    </div>
+    <div class="card">
+      <h4>Zotero / Mendeley <span class="pill mix">工具</span></h4>
+      <div class="meta">Reference Manager</div>
+      <p class="blurb">文献与附件管理（Mendeley 另有推荐）。<b>注意不要把它们等同于文献数据基础设施</b> —— 见上方"11 个混淆"。</p>
+    </div>
+  </div>
+
+  <div class="group"><span class="tag fancy">通用 AI 的学术模式</span><h3>覆盖广但引用严格性弱</h3></div>
+  <div class="grid">
+    <div class="card">
+      <h4>Perplexity（Academic / Deep Research）<span class="pill biz">商业</span></h4>
+      <div class="meta">实时搜索 + 引用 + 多步迭代报告</div>
+      <p class="blurb">覆盖面广，但<b>学术深度和引用严格性通常不如专用工具</b>。</p>
+    </div>
+    <div class="card">
+      <h4>ChatGPT / Claude / Gemini Deep Research <span class="pill biz">商业</span></h4>
+      <div class="meta">通用 Deep Research 与学术插件</div>
+      <p class="blurb">通用能力强，但<b>引用幻觉问题更明显</b>，需人工严格核实。对应 AutoResearchBench 的核心发现：通用 web agent 的高分不能代表 scientific literature search 能力。</p>
+    </div>
+  </div>
+
+  <div class="group"><span class="tag deep">已归档的商业/半商业系统</span><h3>本页别处已深读</h3></div>
+  <div class="grid">
+    <div class="card">
+      <h4>PaSaMaster / SciMaster <span class="pill biz">公司主导</span><span class="verdict v-hollow">零代码广告论文</span></h4>
+      <div class="meta">SJTU + SciLand · Bohrium 商业平台 + npm scimaster-cli</div>
+      <p class="blurb">仓库 0 行代码，导流至闭源在线服务；GitHub 以 README 广告页与"开源"观感刻意混淆。<b>研究材料只剩一篇 PDF 和一个 API 端点</b>，但 benchmark 数据集与 CLI 工具可用。</p>
+      <div class="links"><a class="md" href="Literature项目或者系统/包装的好看/PaSaMaster/深读评价.html">深读评价 →</a></div>
+    </div>
+    <div class="card">
+      <h4>DeepXiv-SDK <span class="pill oss">开源 SDK</span><span class="verdict v-ok">工程被用 / 学术未认</span></h4>
+      <div class="meta">BAAI · 三层 agentic 数据接口</div>
+      <p class="blurb">GitHub 763★、PyPI 8.7k/月，但 S2 引用仅 2 次且两次都不是背书。是"文献数据层"这类产品的典型处境。</p>
+      <div class="links"><a href="文献库/DeepXiv/DeepXiv_认可度与被引分析.html">认可度分析 →</a></div>
+    </div>
+    <div class="card">
+      <h4>XYZ AI Lab · Aquila <span class="pill biz">商业</span></h4>
+      <div class="meta">2026-07-31 · 待归档</div>
+      <p class="blurb">商业实验室的研究档案存档。</p>
+      <div class="links"><a href="Literature项目或者系统/待归档/XYZ_AI_Lab_Aquila_研究档案_2026-07-31/index.html">档案入口 →</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 实证论文 ==================== -->
+<section id="empirical">
+  <div class="sec-head"><h2>🔬 实证论文</h2><span class="count">实证论文/</span></div>
+  <div class="grid">
+    <div class="card">
+      <h4>What's Missing in Autonomous Research</h4>
+      <div class="meta">自主科研系统的系统化实证分析</div>
+      <div class="links">
+        <a href="实证论文/Whats_Missing_in_Autonomous_Research/Whats_Missing_in_Autonomous_Research_A_Systematiz.html">精读页面 (html)</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 我的思考 ==================== -->
+<section id="thoughts">
+  <div class="sec-head"><h2>✍️ 我的思考</h2><span class="count">我的思考/ · Markdown 笔记</span></div>
+  <div class="grid">
+    <div class="card">
+      <h4>56 个自主科研系统按功能分类</h4>
+      <div class="links"><a class="md" href="我的思考/56个自主科研系统按功能分类.html">打开 (md)</a></div>
+    </div>
+    <div class="card">
+      <h4>梳理一下工作有哪些</h4>
+      <div class="links"><a class="md" href="我的思考/梳理一下工作有哪些.html">打开 (md)</a></div>
+    </div>
+    <div class="card">
+      <h4>实证性论文的写法</h4>
+      <div class="links"><a class="md" href="我的思考/实证性论文的写法.html">打开 (md)</a></div>
+    </div>
+    <div class="card">
+      <h4>关于搜索渠道 (by GPTScholar)</h4>
+      <div class="links"><a class="md" href="我的思考/关于搜索渠道by_GPTScholar.html">打开 (md)</a></div>
+    </div>
+    <div class="card">
+      <h4>论文梳理 List</h4>
+      <div class="meta">八大类约 130 篇 · 已展开到上方「领域版图」</div>
+      <div class="links">
+        <a class="md" href="我的思考/论文梳理/List.html">List (md)</a>
+        <a href="#landscape">看版图 ↑</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>关于测 agent 还是 llm 能力</h4>
+      <div class="meta">Closed-book / Controlled Agent / Native Agent 三赛道</div>
+      <div class="links">
+        <a class="md" href="我的思考/论文梳理/详细/关于测agent还是llm能力.html">打开 (md)</a>
+        <a href="#landscape">看版图 ↑</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>关于 LABBench2</h4>
+      <div class="meta">11 大类 / 约 15 子基准逐题拆解 + 四点问题</div>
+      <div class="links">
+        <a class="md" href="我的思考/论文梳理/详细/关于LABBench2.html">打开 (md)</a>
+        <a href="#landscape">看版图 ↑</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>关于 SciLifeBench / LifeSciBench</h4>
+      <div class="meta">750 任务 · 7 工作流 × 7 生科领域 · 19,020 条 rubric</div>
+      <div class="links">
+        <a class="md" href="我的思考/论文梳理/详细/关于SciLifeBench.html">打开 (md)</a>
+        <a href="#benchmark">看 Benchmark ↓</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>关于搜索渠道 by GPTScholar</h4>
+      <div class="meta">21 个数据源可接入性 · 已展开到「数据源」板块</div>
+      <div class="links">
+        <a class="md" href="我的思考/关于搜索渠道by_GPTScholar.html">打开 (md)</a>
+        <a href="#sources">看数据源 ↑</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>持续更新的学术文献基础设施 · 调研起点</h4>
+      <div class="meta">四条投稿主线 A/B/C/D · 会议分级 · 检索式 · 记录模板</div>
+      <div class="links">
+        <a class="md" href="我的思考/待整理/持续更新的学术文献基础设施_调研起点.html">打开 (md)</a>
+        <a href="#sources">看主线 ↑</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>文献（偏功能产品 + 论文版图）</h4>
+      <div class="meta">商业工具清单 + 七能力层 · 已展开到两个板块</div>
+      <div class="links">
+        <a class="md" href="我的思考/待整理/文献.html">打开 (md)</a>
+        <a href="#products">看产品 ↑</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 其他 · 待归档 ==================== -->
+<section id="misc">
+  <div class="sec-head"><h2>🗂 其他 · 待归档</h2></div>
+  <div class="grid">
+    <div class="card">
+      <h4>XYZ AI Lab · Aquila 研究档案</h4>
+      <div class="meta">2026-07-31 · 待归档</div>
+      <div class="links">
+        <a href="Literature项目或者系统/待归档/XYZ_AI_Lab_Aquila_研究档案_2026-07-31/index.html">档案入口 (html)</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>ResearchAgent</h4>
+      <div class="meta">arXiv:2404.07738 · 待归档（待深读分类）</div>
+      <div class="links">
+        <a class="dir" href="_未包含的内容.html">论文 + 源码 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>AI build AI</h4>
+      <div class="meta">其他/</div>
+      <div class="links">
+        <a href="其他/aibuildai.html">页面存档 (html)</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  入口页面：<code>Literature/index.html</code> · 生成于 2026-08-02 · 2026-08-03 新增「选题讨论」「领域版图」「数据源 · 基础设施」「商业产品」四个板块 · 新增精读/分析页面后请同步在本页对应板块补一张卡片。<br>
+  分类口径见 <code>横向对比/文献搜索系统/文献搜索系统_归档说明.md</code>。「领域版图 / 数据源 / 商业产品」三块的内容源头是 <code>我的思考/</code> 下的 markdown 笔记，笔记更新后需回来同步。
+</footer>
+
+</div>
+</body>
+</html>

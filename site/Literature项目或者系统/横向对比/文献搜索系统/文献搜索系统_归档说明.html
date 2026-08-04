@@ -1,0 +1,156 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>文献搜索系统_归档说明</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../index.html">← 返回总览</a><h1>文献搜索系统归档说明</h1>
+<p>归档日期：2026-07-31（2026-08-02 深读后更新分类并完成归档）</p>
+<p>本批材料都直接研究“如何更全面、准确、可控地搜索学术论文”，应归入文献搜索系统/算法，而不是以文献问答或综述生成为主要目标的系统。</p>
+<h2>深读结论与归档位置（2026-08-02）</h2>
+<p>四篇均经论文全文 + 代码深读审稿，详细证据见各项目文件夹内的 <code>深读评价.md</code>。</p>
+<table>
+<thead>
+<tr>
+<th>工作</th>
+<th>归档位置</th>
+<th>分类</th>
+<th>一句话定性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PaSa</td>
+<td><code>../../复杂/PaSa/</code></td>
+<td><strong>复杂</strong></td>
+<td>真 RL 训练 + 真算法贡献（session 级 PPO）+ 权重数据全开放；但部署是硬编码流水线、benchmark 有 citation 可达偏置，SOTA 打七折看</td>
+</tr>
+<tr>
+<td>PaperScout</td>
+<td><code>../../简单/PaperScout/</code></td>
+<td><strong>简单</strong></td>
+<td>真做了训练，但 PSPO 实为 GSPO 损失 + turn 级 GAE 的重命名（训练脚本 <code>loss_mode=gspo</code>，论文式(5)与实现不符）；复现性为零</td>
+</tr>
+<tr>
+<td>PaperPilot</td>
+<td><code>../../包装的好看/PaperPilot/</code></td>
+<td><strong>包装的好看</strong></td>
+<td>工程外壳真实（DAG 执行器 + 结构化编辑 ~5k 行成立），但"归纳"=抄 36 份手调模板、"偏好优化训练"代码 0 行、主表两行外置覆盖 + 旗舰行硬编码（99.5% forced finalize 未披露）+ 成本 19 倍改写</td>
+</tr>
+<tr>
+<td>PaSaMaster</td>
+<td><code>../../包装的好看/PaSaMaster/</code></td>
+<td><strong>包装的好看</strong></td>
+<td>零代码产品广告论文：11 个公式无一承载算法创新，"自演化"实测增益仅 +13%，benchmark 用自家引擎构建（循环性），蹭名 PaSa 却不与 PaSa 比较，语料规模自相矛盾（1.7B vs 160M）</td>
+</tr>
+</tbody>
+</table>
+<p>共性问题：① 全部使用自建/自选 benchmark 且有不同程度循环性；② "agent 自主性"普遍是叙事而非实现；③ 后三篇活在 PaSa 的评测生态里但无一与 PaSa 公平正面比较；④ 开放度与论文质量正相关（PaSa &gt; PaperScout &gt; PaperPilot &gt; PaSaMaster）。</p>
+<h2>1. PaSa</h2>
+<ul>
+<li>论文：<em>PaSa: An LLM Agent for Comprehensive Academic Paper Search</em></li>
+<li>版本：arXiv:2501.10120v2；ACL 2025 Main</li>
+<li>定位：文献搜索 Agent 系统 + Agent 强化学习方法</li>
+<li>核心：Crawler 负责搜索、阅读和沿引用扩展；Selector 负责逐篇判断相关性。系统使用 AutoScholarQuery 进行训练，并以 RealScholarQuery 等数据评测。</li>
+<li>本地材料：<code>../../复杂/PaSa/</code>（PDF、code、深读评价.md）</li>
+<li>官方来源：</li>
+<li>https://arxiv.org/abs/2501.10120v2</li>
+<li>https://aclanthology.org/2025.acl-long.572/</li>
+<li>https://github.com/bytedance/pasa</li>
+<li>开放情况：代码仓库采用 Apache-2.0；模型权重和数据集由仓库另行链接，未在本批归档中下载大体积权重。</li>
+</ul>
+<h2>2. PaSaMaster</h2>
+<ul>
+<li>论文：<em>Towards Recursive Self-Evolving Agentic Literature Retrieval</em></li>
+<li>版本：arXiv:2605.14306v3</li>
+<li>定位：文献检索系统 + 递归自演化检索/排序方法 + PaSaMaster-Bench</li>
+<li>核心：根据已检索和排序的证据反复细化搜索意图；只对真实检索到的论文评分，避免生成虚假引用；将高成本意图规划和较轻量的检索、评分分离。</li>
+<li>本地材料：<code>../../包装的好看/PaSaMaster/</code>（PDF、code、深读评价.md）</li>
+<li>官方来源：</li>
+<li>https://arxiv.org/abs/2605.14306v3</li>
+<li>https://github.com/sjtu-sai-agents/PaSaMaster</li>
+<li>https://huggingface.co/datasets/PaSaMaster/PaSaMaster_bench</li>
+<li>开放情况：当前 GitHub 仓库主要是说明文档和图片，不含论文系统的完整实现；可通过在线服务以及 <code>scimaster-cli</code>/MCP 使用。</li>
+</ul>
+<h2>3. PaperPilot</h2>
+<ul>
+<li>论文：<em>Multi-Turn Agentic Scientific Literature Search via Workflow Induction</em></li>
+<li>版本：arXiv:2607.00597v2</li>
+<li>定位：多轮交互式文献搜索系统 + 工作流归纳与偏好优化方法</li>
+<li>核心：从锚点论文和用户查询生成一个可执行、可检查、可编辑的 DAG；节点包含关键词搜索、引用扩展、过滤、打分、重排和证据抽取。用户反馈同时修改查询和工作流。</li>
+<li>本地材料：<code>../../包装的好看/PaperPilot/</code>（PDF、code、深读评价.md）</li>
+<li>官方来源：</li>
+<li>https://arxiv.org/abs/2607.00597v2</li>
+<li>https://github.com/mtilyxuegao/PaperPilot</li>
+<li>https://paperpilot.papersearch.org/</li>
+<li>开放情况：当前仓库采用 Apache-2.0，包含核心系统、API、UI 和部分评测代码；训练基础设施、完整轨迹数据等尚未随首个版本公开。</li>
+</ul>
+<h2>4. PaperScout</h2>
+<ul>
+<li>论文：<em>PaperScout: An Autonomous Agent for Academic Paper Search with Process-Aware Sequence-Level Policy Optimization</em></li>
+<li>版本：arXiv:2601.10029v2</li>
+<li>定位：自主文献搜索系统 + PSPO 强化学习算法</li>
+<li>核心：把检索建模为 POMDP，让 Agent 根据当前论文池自主决定何时搜索、使用什么查询、何时沿引用扩展；PSPO 在完整 Agent 响应/交互序列层面分配信用，并结合过程奖励。</li>
+<li>本地材料：<code>../../简单/PaperScout/</code>（PDF、code、深读评价.md）</li>
+<li>官方来源：</li>
+<li>https://arxiv.org/abs/2601.10029v2</li>
+<li>https://github.com/pty12345/PaperScout</li>
+<li>开放情况：官方仓库包含 PaperScout/PSPO 训练相关代码，但仓库根目录目前没有单独的 LICENSE 文件，应谨慎理解其复用许可。</li>
+</ul>
+<h2>横向定位</h2>
+<table>
+<thead>
+<tr>
+<th>工作</th>
+<th>主要搜索范式</th>
+<th>最突出的创新</th>
+<th>用户交互</th>
+<th>主要产物</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PaSa</td>
+<td>搜索 + 引用网络扩展 + 相关性筛选</td>
+<td>双 Agent 与 RL 训练</td>
+<td>单轮复杂查询为主</td>
+<td>排序/筛选后的相关论文集合</td>
+</tr>
+<tr>
+<td>PaSaMaster</td>
+<td>证据驱动的递归自演化检索</td>
+<td>意图随证据迭代、真实来源排序、规划/检索分离</td>
+<td>以递归内部迭代为主</td>
+<td>有证据和分数的真实论文集合</td>
+</tr>
+<tr>
+<td>PaperPilot</td>
+<td>多轮对话 + 可执行 DAG</td>
+<td>工作流归纳、用户反馈直接编辑工作流</td>
+<td>强，多轮澄清偏好</td>
+<td>可复现工作流及排序结果</td>
+</tr>
+<tr>
+<td>PaperScout</td>
+<td>自适应 Search/Expand 决策</td>
+<td>POMDP 建模与 PSPO 序列级强化学习</td>
+<td>主要是 Agent 与检索环境多轮交互</td>
+<td>高召回论文集合及自适应策略</td>
+</tr>
+</tbody>
+</table>
+<p>它们与 OpenScholar、PaperQA 一类“检索后回答/综述综合”系统的边界是：本批工作的第一目标是把正确且较完整的论文集合找出来；回答生成、长篇综述或跨论文知识综合不是主要终点。</p><footer>由 <code>Literature项目或者系统/横向对比/文献搜索系统/文献搜索系统_归档说明.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>
