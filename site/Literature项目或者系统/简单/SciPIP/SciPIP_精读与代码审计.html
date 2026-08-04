@@ -62,6 +62,10 @@ a { color: var(--accent-dark); }
 .evidence.code { color: var(--blue); background: var(--blue-pale); }
 .evidence.inference { color: var(--warning); background: var(--warning-pale); }
 .evidence.audit { color: var(--danger); background: var(--danger-pale); }
+.zh { display: block; margin: 4px 0 14px; padding: 10px 14px; border-left: 3px solid var(--blue); border-radius: 4px; background: var(--blue-pale); color: #2d4759; font-size: .92rem; }
+.en { color: var(--ink); }
+.score-bad { color: var(--danger); font-weight: 700; }
+.score-mid { color: var(--warning); font-weight: 700; }
 .figure { margin: 30px 0; text-align: center; }
 .figure-frame { display: block; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--white); box-shadow: var(--figure-shadow); }
 .figure img { display: block; width: 100%; height: auto; }
@@ -163,6 +167,154 @@ footer { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line);
 <div class="warning-note">
   <p><strong>发表状态：</strong>v2 用了 <code>\usepackage[accepted]{icml2025}</code> 模板，暗示投中了 ICML 2025（主会或 workshop），但截至 2026-08 DBLP 只收录 arXiv 版，未见正式会议记录——按 arXiv 预印本对待。</p>
 </div>
+
+<h3 id="iclr-reviews" style="margin-top:44px;padding-top:14px;border-top:1px dashed var(--line)">ICLR 2025 评审存档（内嵌全文）</h3>
+<p>以下为撤稿前四份 OpenReview 评审的完整存档（与<a href="SciPIP_OpenReview_ICLR2025_评审存档.html">独立存档页</a>内容一致），供在精读页内直接对照上表阅读；评审全文默认折叠。</p>
+<h3>评分板</h3>
+<table class="comparison-table">
+  <thead><tr><th>Reviewer</th><th>Rating</th><th>Confidence</th><th>Soundness</th><th>Presentation</th><th>Contribution</th></tr></thead>
+  <tbody>
+    <tr><td><strong>3Kwp</strong>（最详尽）</td><td class="score-bad">3 · reject</td><td>4</td><td>2 fair</td><td>2 fair</td><td class="score-bad">1 poor</td></tr>
+    <tr><td><strong>Qkgm</strong></td><td class="score-bad">3 · reject</td><td>4</td><td>3 good</td><td>2 fair</td><td class="score-bad">1 poor</td></tr>
+    <tr><td><strong>6bY3</strong></td><td class="score-bad">3 · reject</td><td>4</td><td>2 fair</td><td>3 good</td><td>2 fair</td></tr>
+    <tr><td><strong>JoFd</strong>（最温和）</td><td class="score-mid">5 · 略低于线</td><td>2</td><td>2 fair</td><td>3 good</td><td>3 good</td></tr>
+  </tbody>
+</table>
+<p>三个 rating=3 且 confidence=4——这是"审稿人有把握的拒"。唯一给 5 分的 JoFd confidence 只有 2，且其核心疑虑（LLM 评 novelty 不可靠）与其他三位一致。作者未进入 rebuttal 交锋，11 月 25 日直接撤稿。</p>
+
+<h3>四份评审的共性问题（按提及次数排序）</h3>
+<div class="card-grid">
+  <article class="card">
+    <h4>① LLM-as-judge 不可信（4/4 位全部提及）</h4>
+    <p>novelty / feasibility / similarity 全部由 GPT-4o 打分，无任何人类专家验证。3Kwp 要求至少做 100 例人机一致性检验（Spearman / Cohen's κ + 假设检验）；6bY3 追问 LLM 裁判是否对"来自 related work 的 idea"有系统性偏置（SciPIP 用检索而 AI Scientist 不用，裁判可能不公平）；JoFd 指出语义相似度根本不度量 idea 的逻辑、原创性与可行性。</p>
+  </article>
+  <article class="card">
+    <h4>② 原创性有限（3 位）</h4>
+    <p>检索策略 = 实体匹配 + 语义嵌入 + 共引 + 聚类的<strong>已有技术组合</strong>（共引在 PubMed 等库早已实现；SciMON 已同时用 semantic/entity/citation 信号）；idea 生成管线"是一个实现，不是一个方法"。公认最有原创性的部分反而是那个 5 万篇带 idea 标注的数据库——但论文没讲数据库构建的定量质控。</p>
+  </article>
+  <article class="card">
+    <h4>③ 相关工作与基线严重不足（2 位）</h4>
+    <p>没引 arXiv/PMC/Semantic Scholar 等百万级文献库；嵌入模型用过时的 SentenceBERT（而非 OpenAI-v3 / GritLM / RankLlama）；没和 RankGPT 等 LLM 检索方法比；没在 DORIS-MAE / SciDocs / SciRepEval 等标准检索基准上测；指标只有 Recall，没有 nDCG / Precision。</p>
+  </article>
+  <article class="card">
+    <h4>④ 范围与题目不符（2 位）</h4>
+    <p>叫 "<strong>Scientific</strong> Paper Idea Proposer"，实际只覆盖 AI/ML，实验只在 NLP。3Kwp：要么改名要么在 limitation 里承认只适用于 NLP——prompt 工程是为 AI/ML 定制的，对以数学推导或生物实验为核心的领域未必成立。</p>
+  </article>
+  <article class="card">
+    <h4>⑤ 数据污染疑虑（3Kwp，尖锐）</h4>
+    <p>GPT-4 截止 2023-10，评测用 ACL 2024 论文——但 ACL 论文常在 ARR 轮次期间就挂 arXiv 预印本。"实验里有多少论文在 2023-11 之前就有预印本？"生成的 idea 与 ground truth 相似，可能只是模型背过。</p>
+  </article>
+  <article class="card">
+    <h4>⑥ 案例经不起细看（2 位独立发现同一处）</h4>
+    <p>论文展示的多模态对比学习案例：生成的 idea 是领域常识（CLIP 2021 年就有），且没提 ground truth 的核心贡献（掩蔽视频/音频模态的增强视图构造），GPT-4o 裁判却给了相似度 4 分——两位审稿人各自扒出这个例子，是"LLM 裁判不可靠"最具体的证据。</p>
+  </article>
+</div>
+
+<div class="warning-note">
+  <p><strong>对本档案的镜鉴：</strong>这组评审几乎是一份"idea 生成类论文的死因清单"——① 评测必须有人类专家或至少人机一致性验证；② 检索组件要在标准 IR 基准上和现代基线比；③ 系统名与实际覆盖范围要匹配；④ 用 LLM 记忆截止之后的论文做 ground truth 时必须排查预印本泄漏。同期活下来的对比项目（如 Tree-of-Debate 用 5 位领域专家全人工评测）恰好在 ① 上做对了。</p>
+</div>
+
+<h3>评审全文存档</h3>
+
+<details>
+<summary><strong>Reviewer 3Kwp</strong>　Rating 3 · Confidence 4 · Sound 2 / Pres 2 / Contrib 1<span class="badge">最详尽 · 双语</span></summary>
+<div class="details-body">
+  <h4>Summary</h4>
+  <p class="en">This paper explores an emerging and interesting application of LLM in proposing scientific ideas. The paper creates a new annotated database of 50k recent AI/ML papers (annotated with entities and embeddings for ideas, backgrounds, summary etc). The paper proposes a multi-pronged literature retrieval strategy using entity retrieval, semantic retrieval, co-citation retrieval and clustering. This specific ensemble strategy is new, to the best of my knowledge. The paper then proposes three pipelines for idea proposal that includes idea generation, filtering, refinement and independent brainstorming using gpt-4o. The experiment setting is using an NLP conference's recent publications. In the experiment, the paper compares its own retrieval strategy with two other retrieval strategies, and observed improved performance. The paper also compares its idea proposal strategy with another strategy (i.e. AI Scientist), based on gpt-4o's judgments, the paper's method outperforms its counterpart in terms of novelty, feasibility etc.</p>
+  <span class="zh">本文探索了 LLM 在科学思想提出方面的一个新兴且有趣的应用。文章创建了一个包含 5 万篇近期 AI/ML 论文的标注数据库（标注了实体和嵌入，涵盖思想、背景、摘要等信息），提出实体/语义/共引检索+聚类的多管齐下检索策略（据其所知该集成是新的），以及含生成、过滤、提炼与独立头脑风暴的三个 idea 流程。实验在 NLP 会议论文上进行，检索与 idea 生成均报告优于对照（AI Scientist），但均基于 gpt-4o 评判。</span>
+  <h4>Strengths</h4>
+  <p class="en">Generally well-written and easy to follow. Creates a new dataset with 50k AI/ML papers — "no comprehensive scientific literature database exists where each paper's ideas are extracted and annotated." The system likely outperforms vanilla LLM idea generation, at least in NLP.</p>
+  <span class="zh">写作流畅清晰；5 万篇带 idea 标注的数据库是亮点（此前不存在逐篇提取标注 idea 的综合文献库）；系统在 NLP 领域大概率优于裸 LLM 生成。</span>
+  <h4>Weaknesses</h4>
+  <ul>
+    <li class="en">Related work 严重不足：未引用 arXiv/PMC/PubMed/Semantic Scholar 等百万级文献库；用过时的 SentenceBERT 而非 OpenAI-v3/GritLM/RankLlama；未提及 RankGPT、BIRCO、DORIS-MAE 等 LLM 检索工作，其中一些应作为检索基线。</li>
+    <li class="en">规模与全面性：只做 AI/ML、实验只在 NLP，却自称 "scientific"——该词涵盖生物医学、物理、数学等；limitation 部分也过短，未坦承这些局限。</li>
+    <li class="en">原创性不足：检索策略是已有技术（实体匹配、语义检索、共引——PubMed 等库早已实现、聚类）的组合；idea 管线只是实现。最有原创性的是标注数据库，但没有构建过程的定量质控。</li>
+  </ul>
+  <h4>Questions（关键三问）</h4>
+  <ul>
+    <li><strong>数据污染：</strong>GPT-4 截止 2023-10，实验用 ACL 2024 论文；ACL 论文常在 ARR 期间挂 arXiv 预印本——实验集里有多少论文在 2023-11 之前就有预印本（含 ARR 前轮版本）？</li>
+    <li><strong>LLM 凭什么评 feasibility：</strong>可行性标准含资源/时间/执行，但 SciPIP 和 ground truth 的 idea 都没有实验计划、GPU 数、数据规模、损失函数公式——几乎零细节如何判可行性？应由有发表记录的人类专家评，或至少在 100 个随机样本上验证人机一致性（Spearman/Cohen's κ + 假设检验）。novelty 同理。</li>
+    <li><strong>案例质疑：</strong>多模态对比学习 2021 年就存在；ground truth 的原创点在"掩蔽视频或音频模态构造增强视图"，SciPIP 生成的 idea 没有此策略、反而在科普什么是多模态对比学习，裁判却给相似度 4 分。期望 idea 至少给出损失函数的数学形式与使用计划。</li>
+    <li>检索实验请加基线与标准指标（nDCG、Precision，不只 Recall），并在 DORIS-MAE、SciDocs、SciRepEval 上测试；讨论管线对物理/数学/循证医学的可推广性，否则请承认目前仅限 NLP。</li>
+  </ul>
+</div>
+</details>
+
+<details>
+<summary><strong>Reviewer Qkgm</strong>　Rating 3 · Confidence 4 · Sound 3 / Pres 2 / Contrib 1</summary>
+<div class="details-body">
+  <h4>Summary</h4>
+  <p class="en">Introduces SciPIP to assist researchers against information overload: hybrid approach leveraging LLMs to suggest ideas based on literature retrieved by a new method; dual-path strategy balances feasibility and originality.</p>
+  <h4>Strengths</h4>
+  <p class="en">In line with the trend of AI-fostered research automation; the original part is mainly the multi-path proposal.</p>
+  <span class="zh">符合 AI 助研自动化潮流；原创部分主要是多路提案。</span>
+  <h4>Weaknesses</h4>
+  <ul>
+    <li class="en">评估大量委托给 GPT-4o："novelty" 和 "feasibility" 除了"是 GPT-4o 评的"之外无从得知如何确定。</li>
+    <li class="en">SentenceBERT 未必适合实体与文本片段的相似度评估，比较细微语义时有已知局限。</li>
+    <li class="en">方法值得关注但非突破——是 LLM 与嵌入检索等现有技术的扎实应用，缺乏变革性创新；目前形态更适合特定场景的实际使用，而非重大研究贡献。</li>
+    <li class="en">部分内容细节不足难以跟随：Table 1 无解说，分数含义不明，只能看出是 GPT-4o 输出的。</li>
+  </ul>
+  <h4>Questions</h4>
+  <p class="en">L243-244 似乎在暗用 Latent Semantic Indexing 的原理却未明确使用；Table 1 需要解释。</p>
+</div>
+</details>
+
+<details>
+<summary><strong>Reviewer 6bY3</strong>　Rating 3 · Confidence 4 · Sound 2 / Pres 3 / Contrib 2</summary>
+<div class="details-body">
+  <h4>Summary</h4>
+  <p class="en">SciPIP: literature retrieval (semantic/topical/citation factors + clustering to filter) then dual-path idea generation (with and without augmented knowledge, combined). Experiments show it outperforms AI Scientist (idea proposal) and SciMON (retrieval).</p>
+  <h4>Strengths</h4>
+  <p class="en">Important topic; three distinct embeddings per paper (Background/Summary/Main Ideas) used differently across retrieval stages; generation goes beyond retrieval-augmentation by also prompting direct idea generation then aggregating; clear presentation (Figures 1 & 3 effective).</p>
+  <h4>Weaknesses</h4>
+  <ul>
+    <li class="en"><strong>与 SciMON 的边际差距：</strong>SciMON 已在检索中用 semantic/entity/citation 信号；SciPIP 的扩展带来的改进普遍较小，且增加计算成本与复杂度。</li>
+    <li class="en"><strong>缺消融：</strong>三条 idea 生成管线各子模块的直觉没有解释，也没有消融说明各自贡献。</li>
+    <li class="en"><strong>评测管线存疑：</strong>idea 可以在背景/设定/方法等不同维度上"相似"，仅让 LLM 打一个相似度分数并不充分；论文自己都需要多个模块才能让 LLM 产出可靠 idea，凭什么相信 LLM 一步就能判 novelty。</li>
+    <li class="en"><strong>案例质量：</strong>Figure 4 生成的多模态 idea（对比损失拉近不同模态的相似实例）是领域公认做法（CLIP 2021）；ground truth 讨论的数据增强在生成 idea 中缺失，LLM 却给了相似度 4。</li>
+  </ul>
+  <h4>Questions</h4>
+  <p class="en">LLM 评相似度/新颖度与人类到底差多少？不同语境与论文类型下评分是否一致？裁判是否对"用了 related work 的 idea"（SciPIP 用检索、AI Scientist 不用）存在偏置？</p>
+</div>
+</details>
+
+<details>
+<summary><strong>Reviewer JoFd</strong>　Rating 5 · Confidence 2 · Sound 2 / Pres 3 / Contrib 3<span class="badge">最温和</span></summary>
+<div class="details-body">
+  <h4>Summary</h4>
+  <p class="en">SciPIP retrieves relevant studies then generates inspiring concepts, plus独立 brainstorming; balances novelty and feasibility. Results show it identifies ideas similar to existing research and generates promising concepts.</p>
+  <h4>Strengths</h4>
+  <p class="en">Semantic/Entity/Citation co-occurrence retrieval covers multiple dimensions; combines retrieval and brainstorming; filters and refines initial ideas.</p>
+  <h4>Weaknesses</h4>
+  <ul>
+    <li class="en">高相似度可能只说明模型在"复述"训练数据中见过的内容（LLM 训练语料可能含相同或相似文献），不代表真的创新。</li>
+    <li class="en">相似度分数信息量有限：高分可能只是对已有工作的微调，低分若偏离研究问题也无价值；且语义相似度只度量措辞，不度量逻辑、原创性和技术可行性。</li>
+    <li class="en">缺少用户研究或人类专家评估，难以验证真实适用性——建议改投 demo paper，或补充用户研究转向 HCI 方向。</li>
+    <li class="en">建议引用讨论 Citation-Enhanced Generation for LLM-based Chatbot (arXiv:2402.16063)。</li>
+  </ul>
+  <h4>Questions</h4>
+  <p class="en">高相似度是否只是"复制"已知信息？依赖语义相似度是否会误判 idea 的实际价值？</p>
+</div>
+</details>
+
+<h3>时间线与后续动向</h3>
+<table class="comparison-table">
+  <thead><tr><th>时间</th><th>事件</th></tr></thead>
+  <tbody>
+    <tr><td>2024-09-27</td><td>投稿 ICLR 2025（Submission #9653）</td></tr>
+    <tr><td>2024-10-26 ~ 11-04</td><td>四份评审陆续到达：3 / 3 / 3 / 5</td></tr>
+    <tr><td>2024-10-30</td><td>arXiv v1 公开（2410.23166）</td></tr>
+    <tr><td>2024-11-25</td><td>作者撤稿，未进行 rebuttal</td></tr>
+    <tr><td>2025-02-17</td><td>arXiv v2：20 页，改用 <code>[accepted]{icml2025}</code> 模板——<strong>疑似后续被 ICML 2025（主会或 workshop）接收，但截至 2026-08 DBLP 仅收录 arXiv 版，未见正式会议记录，存疑</strong></td></tr>
+  </tbody>
+</table>
+
+<div class="source-note">
+  <p><strong>存档说明：</strong>评审全文来自 OpenReview forum（<code>openreview.net/forum?id=RiQRUcjXBD</code>）页面快照（2026-08-04 整理；OpenReview API 有反爬验证，未能拉取原始 JSON，被评审的 ICLR 投稿版 PDF 同样未能直接下载——本地 PDF 为 arXiv v2）。中文段落为快照中自带或整理时补写的翻译，以英文原文为准。本地材料：<code>paper/</code>（arXiv v2 PDF + TeX 源码）、<code>code/</code>（官方仓库 cheerss/SciPIP 完整 clone，约 7.5k 行 Python，含 Streamlit 前端）。</p>
+</div>
+
 </section>
 
 <!-- ==================== 文献库 ==================== -->

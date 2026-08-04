@@ -221,11 +221,11 @@
 <header>
   <h1>Literature <span>·</span> 自动化科研文献模块 总览</h1>
   <p class="sub">文献搜索 / 文献问答 / 深度研究系统的调研档案入口。按「复杂 — 简单 — 包装的好看」三档可信度分类；点击卡片内链接进入各精读 / 分析子页面。下方板块默认折叠，点击标题展开。</p>
-  <div style="background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:14px 20px;margin-top:20px;font-size:13.6px;line-height:1.7">
-    <b style="color:#b4530a">📦 这是 Literature 调研档案的分享站 · 持续更新</b><br>
-    所有<b>精读页面、审计结论、配图、笔记、论文 PDF</b> 都已包含，论文链接点开即可阅读原文。<br>
-    源码仓库与数据集未打包（原始档案 107 GB）：相应链接指向官方仓库，或跳到 <a href="_未包含的内容.html" style="color:#b4530a">未包含内容说明</a>。
-  </div>
+<div style="background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:14px 20px;margin-top:20px;font-size:13.6px;line-height:1.7">
+  <b style="color:#b4530a">📦 这是 Literature 调研档案的分享站 · 持续更新</b><br>
+  所有<b>精读页面、审计结论、配图、笔记、论文 PDF</b> 都已包含，论文链接点开即可阅读原文。<br>
+  源码仓库与数据集未打包（原始档案 107 GB）：相应链接指向官方仓库，或跳到 <a href="_未包含的内容.html" style="color:#b4530a">未包含内容说明</a>。
+</div>
   <div class="map">
     <div class="map-col">
       <div class="map-title">① 选题讨论 · 我要做什么</div>
@@ -1168,7 +1168,7 @@ return timeout_answer</div>
       <p class="blurb">7.8 万篇顶会论文重摘要成五元组入 Neo4j（库 dump 公开）+ SKC 三路检索 + 双路生成。大修版逐条回应评审（改 12 人评审、排查污染），但删掉了被点名"差距边际"的 SciMON 对比；检索框架系 SciMON 的组合改进。</p>
       <div class="links">
         <a href="Literature项目或者系统/简单/SciPIP/SciPIP_精读与代码审计.html">精读与代码审计</a>
-        <a href="Literature项目或者系统/简单/SciPIP/SciPIP_OpenReview_ICLR2025_评审存档.html">ICLR 评审存档</a>
+        <a href="Literature项目或者系统/简单/SciPIP/SciPIP_精读与代码审计.html#iclr-reviews">ICLR 评审存档（内嵌）</a>
       </div>
     </div>
     <div class="card">
@@ -1255,7 +1255,7 @@ return timeout_answer</div>
     <div class="card">
       <h4>Chain of Ideas (CoI Agent) <span class="verdict v-ok">文献→引用链</span></h4>
       <div class="meta">DAMO Academy 等 · ICLR 2025 Reject (5/5/5/8) · arXiv:2410.13185</div>
-      <p class="blurb">把相关文献按发展脉络组织成<b>链</b>（anchor 论文向前 LLM 读全文找源头、向后按引用+相似度延伸），让 LLM 沿趋势外推 idea；配套 Idea Arena（成对对战+ELO）评价协议。审计发现：<b>向前扩链的 LLM 相关性闸门判错对象（恒通过）</b>，Idea Arena 评测代码整体缺失、主实验不可复现。</p>
+      <p class="blurb">实质是<b>「idea 链版 RAG」+ prompt engineering</b>：无训练、无新模型，把 Semantic Scholar 检回的论文按引用脉络排成一条"发展链"塞进 prompt，让 GPT-4o 顺链外推"下一步"；"agent" 只是固定流程的 LLM 调用串，Idea Arena 则是 LLM-as-judge 成对比较包装成 ELO。它对"怎么做文献"的真正证据只有一条：<b>同样的文献，喂法（链式 vs 乱堆）显著影响产出质量</b>。审计：扩链的 LLM 相关性闸门判错对象、恒通过（实际全靠 embedding 相似度），Idea Arena 评测代码缺失、主实验不可复现。</p>
       <div class="links">
         <a href="Literature项目或者系统/待归档/ChainOfIdeas/ChainOfIdeas_精读与代码审计.html">精读 + 代码审计 (html)</a>
         <a href="https://arxiv.org/abs/2410.13185">arXiv</a>
@@ -1266,7 +1266,7 @@ return timeout_answer</div>
     <div class="card">
       <h4>CycleResearcher <span class="verdict v-ok">文献→训练语料</span></h4>
       <div class="meta">Westlake NLP 等 · ICLR 2025 Poster（带保留接收）· arXiv:2411.00816</div>
-      <p class="blurb">开源 LLM 全循环：CycleResearcher 从 references 直接写完整论文，CycleReviewer 模拟评审给 RL 奖励迭代偏好训练。<b>meta review 批评极重</b>：初版实验结果全是幻觉仍拿高分、对自产 reviewer 优化后再用它评估——reward hacking / LLM-judge OOD 失效的活教材。审计发现：<b>repo 只是推理壳</b>，SFT/SimPO 训练与 rebuttal 承诺的 o1 端到端流水线均未发布；"两轮输入"名实不符（实验结果由模型一口气编造）。</p>
+      <p class="blurb">实质是<b>对"评审喜欢什么"做 RLHF 的论文仿写器</b>：不做实验、不接触真实世界，实验数字由模型当场编造——它的"研究"不产生知识，只产生形似论文的文本；文献在这里只是 SFT 语料（学 references→整篇论文的映射）。用自产 CycleReviewer 打分、再对这个分数做偏好优化，是 <b>reward hacking / LLM-judge OOD 失效的活教材</b>（初版幻觉结果照拿高分，AC 因此"带保留接收"）。审计：repo 只是推理壳，SFT/SimPO 训练与 rebuttal 承诺开源的 o1 端到端流水线均未发布。</p>
       <div class="links">
         <a href="Literature项目或者系统/待归档/CycleResearcher/CycleResearcher_精读与代码审计.html">精读 + 代码审计 (html)</a>
         <a href="https://arxiv.org/abs/2411.00816">arXiv</a>
@@ -1277,7 +1277,7 @@ return timeout_answer</div>
     <div class="card">
       <h4>Deep Ideation <span class="verdict v-hollow">文献→概念网络</span></h4>
       <div class="meta">清华 FIB Lab · ICLR 2026 Withdrawn (2/6/2/2) · arXiv:2511.02238</div>
-      <p class="blurb">10 万篇顶会论文建<b>科学概念网络</b>（关键词共现+上下文关系），explore–expand–evolve 工作流 + Idea Stack + 评审数据训练的 critic。三个 2 分共同指向：概念网络的机制价值没被论证、critic 训练数据可疑（精读核实：<b>训练标签是 GPT 模拟推理产物</b>，"trained on real-world reviewer feedback" 属过度声称）、54 人人类评估细节为零。精读还发现 <b>Table 1 内部数字自相矛盾</b>。<b>代码仓库仅 README 占位</b>，无法代码审计。</p>
+      <p class="blurb">实质是<b>关键词共现图上的游走式 RAG</b>："概念网络" = 共现矩阵 + LLM 补写的两句关系文本，explore–expand–evolve = 在图上换邻居关键词重新组合喂 LLM——相对 CoI 只是把检索单位从"论文"换成"关键词"；critic 也不是真实评审训练的（精读核实：<b>训练标签是 GPT 模拟推理产物</b>，"trained on real-world reviewer feedback" 属过度声称）。两个真正可辩护的卖点（边上的 LLM 关系文本、图游走）恰恰都没做对照实验；另审出 <b>Table 1 内部数字自相矛盾</b>。<b>代码仓库仅 README 占位</b>，无法代码审计。</p>
       <div class="links">
         <a href="Literature项目或者系统/待归档/DeepIdeation/DeepIdeation_精读.html">精读（纯论文层）(html)</a>
         <a href="https://arxiv.org/abs/2511.02238">arXiv</a>
@@ -1288,7 +1288,7 @@ return timeout_answer</div>
     <div class="card">
       <h4>VirSci · Two Heads Are Better Than One <span class="verdict v-ok">文献→人设+对照库</span></h4>
       <div class="meta">上海 AI Lab 系 · ICLR 2025 Withdrawn (5/5/3/3) → 改名 Many Heads 中 ACL 2025 Main · arXiv:2410.09403</div>
-      <p class="blurb">多智能体模拟科研团队（组队→选题→生成→查新→写摘要）；论文库不做深度组织，只用作 <b>agent 真实人设</b>（作者档案）与 novelty 对照库——与 CoI 形成两极。卖点是复现 Science of Science 结论（8 人团队×5 轮讨论峰值、新团队更创新）。审计发现 12 项不一致：<b>邀请机制实为字符串 "by the way" 触发且外援永久入队</b>（与论文直接矛盾）、HD/CD/CI/ON 指标计算代码全部未发布（定量结果无法端到端复现）。</p>
+      <p class="blurb">实质是<b>角色扮演式的多次采样+聚合</b>：同一个 LLM 套上 n 个真实作者人设互相"讨论"，文献完全不参与推理——论文库只当<b>人设来源</b>（作者档案）和 novelty 查重对照库用，且"多智能体协作的收益"与"多采样几次再挑好的"没有做区分实验。真正独特的卖点是用 LLM 模拟去复现 Science of Science 规律（8 人×5 轮峰值、新团队更创新）。审计 12 项不一致：<b>邀请机制实为字符串 "by the way" 触发且外援永久入队</b>（与论文直接矛盾）、HD/CD/CI/ON 指标计算代码全部未发布，定量结果无法端到端复现。</p>
       <div class="links">
         <a href="Literature项目或者系统/待归档/VirSci/VirSci_精读与代码审计.html">精读 + 代码审计 (html)</a>
         <a href="https://arxiv.org/abs/2410.09403">arXiv</a>
