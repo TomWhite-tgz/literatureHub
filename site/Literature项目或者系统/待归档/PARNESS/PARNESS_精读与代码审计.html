@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PARNESS 祛魅式代码审计：论文声称 vs 70k 行源码逐项核对，三层真实画像">
+    <title>PARNESS · 祛魅式代码审计</title>
+
+    <style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+
+        .container { width: min(920px, calc(100% - 44px)); margin: 0 auto; padding: 52px 18px 76px; }
+
+        header { margin-bottom: 34px; padding-bottom: 34px; border-bottom: 1px solid var(--line); text-align: center; }
+
+        .back-link {
+            display: inline-block; margin-bottom: 20px; color: var(--accent);
+            font-size: 0.93rem; font-weight: 650; text-decoration: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+        .back-link:hover { color: var(--accent-dark); transform: translateX(-2px); }
+
+        .status-row, .resource-row, .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .status-row, .resource-row { justify-content: center; }
+        .status-row { margin-bottom: 18px; }
+        .resource-row { margin-top: 22px; }
+
+        .badge, .tag, .evidence {
+            display: inline-flex; align-items: center; width: fit-content;
+            border-radius: 999px; white-space: nowrap;
+        }
+        .badge { padding: 4px 11px; color: var(--accent-dark); background: var(--accent-pale); font-size: 0.79rem; font-weight: 650; }
+
+        .resource-link {
+            display: inline-block; padding: 7px 13px; border: 1px solid var(--line);
+            border-radius: 999px; color: var(--accent-dark); background: var(--panel);
+            font-size: 0.84rem; font-weight: 620; text-decoration: none;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .resource-link.primary { border-color: var(--accent); color: var(--white); background: var(--accent); }
+        .resource-link:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+
+        h1 { margin-bottom: 12px; font-size: clamp(2.35rem, 7vw, 3.25rem); font-weight: 670; letter-spacing: -0.035em; line-height: 1.08; }
+        .subtitle { max-width: 720px; margin: 0 auto; color: var(--muted); font-size: 1.08rem; font-weight: 360; }
+        .meta { margin-top: 12px; color: var(--muted); font-size: 0.91rem; font-weight: 360; }
+
+        h2 { margin: 56px 0 24px; padding-bottom: 11px; border-bottom: 2px solid var(--accent); font-size: 1.78rem; font-weight: 630; line-height: 1.3; }
+        h3 { margin: 30px 0 14px; color: var(--accent); font-size: 1.25rem; font-weight: 630; }
+        h4 { margin-bottom: 8px; color: var(--accent-dark); font-size: 1.01rem; font-weight: 650; }
+        p { margin-bottom: 17px; font-weight: 360; }
+        strong { font-weight: 660; }
+        a { color: var(--accent-dark); }
+        .lead { color: #343b37; font-size: 1.02rem; }
+
+        .toc {
+            position: sticky; top: 10px; z-index: 20; display: flex; flex-wrap: wrap;
+            justify-content: center; gap: 7px; margin: 24px 0 34px; padding: 10px;
+            border: 1px solid rgba(231, 225, 215, 0.9); border-radius: 16px;
+            background: rgba(247, 244, 239, 0.93);
+            box-shadow: 0 8px 24px rgba(31, 36, 33, 0.06); backdrop-filter: blur(10px);
+        }
+        .toc a { padding: 6px 10px; border-radius: 999px; color: var(--muted); font-size: 0.8rem; font-weight: 620; text-decoration: none; }
+        .toc a:hover { color: var(--accent-dark); background: var(--accent-pale); }
+
+        .highlight-box, .source-note, .warning-note, .critical-note, .code-note {
+            margin: 26px 0; padding: 21px 25px; border-left: 4px solid var(--accent);
+            border-radius: 5px; background: var(--panel); box-shadow: var(--shadow);
+        }
+        .source-note { border-left-color: var(--green); background: var(--green-pale); }
+        .code-note { border-left-color: var(--blue); background: var(--blue-pale); }
+        .warning-note { border-left-color: var(--warning); background: var(--warning-pale); }
+        .critical-note { border-left-color: var(--danger); background: var(--danger-pale); }
+        .highlight-box p:last-child, .source-note p:last-child, .warning-note p:last-child,
+        .critical-note p:last-child, .code-note p:last-child { margin-bottom: 0; }
+
+        .key-insight {
+            margin: 32px 0; padding: 28px 31px; border-radius: 8px; color: var(--white);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 4px 12px rgba(196, 97, 47, 0.22);
+        }
+        .key-insight h3, .key-insight p { color: var(--white); }
+        .key-insight h3 { margin-top: 0; }
+        .key-insight p:last-child { margin-bottom: 0; }
+
+        .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; margin: 24px 0; }
+        .card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .card { padding: 21px 23px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+        .card h3 { margin-top: 0; font-size: 1.08rem; }
+        .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+
+        .evidence { margin-bottom: 10px; padding: 3px 9px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; }
+        .evidence.paper { color: var(--accent-dark); background: var(--accent-pale); }
+        .evidence.code { color: var(--blue); background: var(--blue-pale); }
+        .evidence.inference { color: var(--warning); background: var(--warning-pale); }
+        .evidence.audit { color: var(--danger); background: var(--danger-pale); }
+
+        .figure, .figure-grid { margin: 30px 0; }
+        .figure { text-align: center; }
+        .figure-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .figure-grid .figure { margin: 0; }
+        .figure a, .figure-frame {
+            display: block; overflow: hidden; border: 1px solid var(--line);
+            border-radius: 8px; background: var(--white); box-shadow: var(--figure-shadow);
+        }
+        .figure img { display: block; width: 100%; height: auto; }
+        .figure figcaption { max-width: 760px; margin: 11px auto 0; color: var(--muted); font-size: 0.86rem; font-style: italic; line-height: 1.55; }
+
+        .comparison-table {
+            width: 100%; margin: 26px 0; border-collapse: collapse; border-radius: 8px;
+            background: var(--panel); box-shadow: var(--shadow); overflow: hidden;
+        }
+        .comparison-table th { padding: 13px 15px; color: var(--white); background: var(--accent); font-size: 0.88rem; font-weight: 620; text-align: left; }
+        .comparison-table td { padding: 13px 15px; border-bottom: 1px solid var(--line); font-size: 0.89rem; font-weight: 360; vertical-align: top; }
+        .comparison-table tr:last-child td { border-bottom: 0; }
+        .comparison-table .focus-row td { background: #f8ede4; font-weight: 590; }
+        .table-scroll { width: 100%; margin: 26px 0; border-radius: 8px; overflow-x: auto; }
+        .table-scroll .comparison-table { min-width: 680px; margin: 0; }
+
+        .flow-diagram { margin: 29px 0; padding: 27px 31px; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+        .flow-step { position: relative; margin: 16px 0; padding: 18px 22px; border-left: 4px solid var(--accent); border-radius: 4px; background: var(--white); }
+        .flow-step::before { content: "▼"; position: absolute; bottom: -28px; left: 50%; color: var(--accent); font-size: 18px; transform: translateX(-50%); }
+        .flow-step:last-child::before { content: ""; }
+        .flow-step p { margin-bottom: 0; }
+
+        ul { margin: 15px 0 19px 2px; list-style: none; }
+        li { position: relative; margin-bottom: 9px; padding-left: 22px; font-weight: 360; }
+        li::before { content: "•"; position: absolute; left: 2px; color: var(--accent); font-size: 1.2rem; font-weight: 700; }
+
+        details { margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+        summary { display: flex; align-items: center; gap: 12px; padding: 17px 20px; cursor: pointer; font-weight: 630; list-style: none; }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: "＋"; margin-left: auto; color: var(--accent); font-size: 1.1rem; }
+        details[open] summary::after { content: "−"; }
+        .details-body { padding: 18px 22px 22px; border-top: 1px solid var(--line); }
+
+        code { padding: 2px 5px; border-radius: 4px; color: var(--accent-dark); background: var(--accent-pale); font-size: 0.88em; }
+        pre {
+            margin: 22px 0; padding: 20px 22px; border: 1px solid #343b37; border-radius: 8px;
+            color: #edf2ee; background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.84rem; line-height: 1.65; overflow-x: auto;
+        }
+        pre code { padding: 0; color: inherit; background: transparent; }
+
+        .code-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
+        .code-item { padding: 16px 18px; border: 1px solid var(--line); border-radius: 7px; background: var(--white); }
+        .code-item code { display: inline-block; margin-bottom: 7px; color: var(--blue); background: var(--blue-pale); font-weight: 660; }
+        .code-item p { margin-bottom: 0; color: var(--muted); font-size: 0.86rem; }
+
+        .tag-list { margin: 13px 0 22px; }
+        .tag { padding: 4px 10px; color: var(--green); background: var(--green-pale); font-size: 0.78rem; font-weight: 630; }
+
+        footer { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.86rem; font-weight: 360; text-align: center; }
+
+        @media (max-width: 760px) {
+            .container { width: min(100% - 28px, 920px); padding: 34px 8px 56px; }
+            .card-grid, .card-grid.three, .figure-grid, .code-list { grid-template-columns: 1fr; }
+            .toc { position: static; }
+            .flow-diagram { padding: 20px 16px; }
+            h2 { margin-top: 46px; font-size: 1.55rem; }
+            .highlight-box, .key-insight { padding: 22px; }
+            .subtitle, .meta { overflow-wrap: anywhere; }
+        }
+
+        @media print {
+            .toc, .back-link { display: none; }
+            body { background: white; }
+            .container { width: 100%; max-width: none; padding: 24px; }
+            .figure a, .card, details { box-shadow: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <header>
+            <a class="back-link" href="../../../index.html">← 返回调研首页</a>
+            <div class="status-row">
+                <span class="badge">arXiv 2605.05258 · cs.SE</span>
+                <span class="badge">v1 · 2026-05-06 · 无 venue</span>
+                <span class="badge">代码开源 · 9★ · 单次代码倾倒</span>
+                <span class="badge">引用 ≈1 · 无社区反响（2026-08）</span>
+                <span class="badge">档位：简单（工程真实、卖点虚标）</span>
+            </div>
+            <h1>PARNESS · 祛魅式代码审计</h1>
+            <p class="subtitle">当"161 个模块"遇见"70 个从未被任何 pipeline 引用"——一篇野心远大于证据的系统论文 vs 它自己的仓库</p>
+            <p class="meta">Yuchen Wang · Zhongzhi Luan（栾钟治） · 北京航空航天大学 中德联合软件研究所 · 31 页 / 13 图</p>
+            <div class="resource-row">
+                <a class="resource-link primary" href="paper/PARNESS_2605.05258.pdf">论文 PDF</a>
+                <a class="resource-link" href="paper/tex_source/main.tex">TeX source</a>
+                <a class="resource-link" href="../../../_未包含的内容.html">本地代码</a>
+                <a class="resource-link" href="https://github.com/gtrhythm/PARNESS">官方 GitHub</a>
+            </div>
+        </header>
+
+        <div class="highlight-box">
+            <p><strong>真实身份（抛开论文叙事）：</strong>一个学生（大概率大量借助 coding agent 生成）为科研场景重造了一个 LangGraph 式编排引擎，外挂 Neo4j 记忆层，端到端跑通过一次（产出一篇报告自身 MAE 退化的机器论文），然后为它写了一个野心远大于证据的学术包装。<strong>真正有的东西：</strong>一条真实跑通的「PDF→解析→入库→知识图谱」主干（约 1.76 万篇论文的语料级运行痕迹），一个跨运行持久化的概念框架。<strong>没有的东西：</strong>任何一个核心假设的验证、论文宣称的三大卖点中的两个（场景化检索、paper↔code 图）在代码里根本不存在、任何用户、任何影响力。</p>
+        </div>
+
+        <nav class="toc" aria-label="导航">
+            <a href="#context">背景</a>
+            <a href="#kernel">调度内核</a>
+            <a href="#orchestration-nature">编排本质</a>
+            <a href="#adapters">模块库真相</a>
+            <a href="#kg">知识图谱</a>
+            <a href="#ideation">认知角色</a>
+            <a href="#codelink">paper↔code 链</a>
+            <a href="#e2e">端到端产物</a>
+            <a href="#verdict">三层画像与判断</a>
+        </nav>
+
+        <!-- ================================================================ -->
+        <section id="context">
+            <h2>① 背景：这篇论文 vs 它自己的仓库</h2>
+            <p class="lead">PARNESS 的论文（31 页）讲了五个痛点、四个设计动作、八阶段索引、场景化检索、认知角色、paper↔code 图、跨运行累积——是一套相当完整的科研 agent 基建蓝图。下面这张图来自论文 Fig. 2，展示了它宣称的"同一 DSL 表达四种学科循环"。</p>
+
+            <figure class="figure">
+                <a href="assets/fig2_four_disciplines.png" target="_blank">
+                    <img src="assets/fig2_four_disciplines.png" alt="四个学科的 pipeline" loading="lazy">
+                </a>
+                <figcaption>论文 Fig. 2：四种学科的循环都表达为 YAML。这张图展示了论文的野心——但本页后面会看到，实际被真实运行的只有左上角的 ML/文献一条线，其余三种学科形状没有运行证据。</figcaption>
+            </figure>
+
+            <div class="key-insight">
+                <h3>先说结论：论文描述的是"理想架构"，仓库存的是"某个时刻的快照"，两者各说各话</h3>
+                <p>论文写 5 个 SQLite 库，代码只有 3 个（另两个被重构合并，但重构脚本没被清理）；论文写 50 条 pipeline，仓库只有 38 条；论文写 553 个测试，仓库零测试文件；论文写"场景化检索"和"paper↔code 图"，代码里这两个机制根本不存在；论文写"认知角色 × KG 场景切片"，代码里角色不接 KG、场景只是字符串。<strong>这不是"简化版"，而是论文在描述一个代码里没有实现的系统。</strong></p>
+            </div>
+
+            <div class="source-note">
+                <p><strong>学界反响（截至 2026-08-04 实查）：</strong>未中稿——arXiv 仍是 v1，无 journal-ref、无接收记录，三个月未出修订版。引用：OpenAlex 0 次，Semantic Scholar 仅 1 篇（同类预印本 ResearchLoop）。社区：GitHub 9★ / 0 fork / 0 issue，发布一个多月后（2026-06-15）即停止 push；从未登上 HuggingFace Daily Papers。工程体量与影响力严重倒挂。<strong>引用姿势：适合在 related work 里作为"工程系统"一句带过，不宜当作需要正面比较的公认 baseline。</strong></p>
+            </div>
+        </section>
+
+        <!-- ================================================================ -->
+        <section id="kernel">
+            <h2>② 调度内核：它干什么、有多复杂、坏在哪里</h2>
+            <p class="lead">先解释名词：<strong>"调度内核"就是"流程图引擎"</strong>——系统里有几十个模块（爬论文、解析 PDF、生成 idea、跑实验、写论文），谁先跑、谁后跑、失败了重不重试、评分不够要不要倒回去重新想，回答这些问题的代码就是调度内核。在 PARNESS 里它就是 <code>graph_runner.py</code> 这一个文件（686 行）。论文把它当最大卖点之一，我们用三个问题来看清它。</p>
+
+            <h3>Q1 · 它具体干什么？</h3>
+            <p>输入一份 YAML 流程图（例如 <code>crawl → parse → idea → gate → experiment → write</code>），做三件事：</p>
+            <ul>
+                <li><strong>排序</strong>：按依赖关系排出执行顺序（教科书上的 Kahn 拓扑排序）</li>
+                <li><strong>推进</strong>：跑完一个模块，看它的输出决定下一步跑谁——比如 gate 模块说"idea 评分不够"，就倒回去重新执行 idea 模块</li>
+                <li><strong>隔离</strong>：每个模块跑在单独的子进程里，一个崩了不拖累其他模块</li>
+            </ul>
+
+            <h3>Q2 · 它有多复杂？≈ LangGraph 已做功能的简化子集</h3>
+            <p>对照主流 agent 编排框架 LangGraph，它实现的是其一部分功能，且质量更差：</p>
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>功能</th><th>LangGraph</th><th>PARNESS</th></tr></thead>
+                    <tbody>
+                        <tr><td>条件分支</td><td>conditional edges（成熟）</td><td><code>_route</code> 字段（低配版：误路由不报错）</td></tr>
+                        <tr><td>一对多 fan-out</td><td>Send API（可用）</td><td><code>_routes</code> 字段（<strong>全库无任何模块用过，纯死代码</strong>）</td></tr>
+                        <tr><td>状态持久化 / 断点续跑</td><td>checkpointer</td><td>没有</td></tr>
+                        <tr class="focus-row"><td>有效逻辑量</td><td>—</td><td><strong>约 300 行</strong>（686 行里其余是隔离、重试、日志）</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>唯一超出教科书的部分是<strong>子进程隔离的 40 行</strong>（<code>_worker_execute</code> + <code>_subprocess_main</code>）：工作跑在 daemon 线程、主线程保证走到 <code>os._exit(0)</code> 强退——这是被 PyTorch/PaddleOCR 残留线程挂死的真实事故打磨出来的代码，是全文件最有"实战包浆"的部分。</p>
+
+            <h3>Q3 · 它坏在哪里？所有失败都"看起来像成功"</h3>
+            <div class="critical-note">
+                <p><strong>① 跑一半被截断，却报告"成功"：</strong>所谓"迭代轮数 <code>max_rounds</code>"其实是流程推进的步数上限（config 里 <code>max_rounds: 8000</code> 的 YAML 证实作者自己也知道"round=步"）。触顶后只打一条 warning 就跳出，结果判定只看"有没有节点抛异常"——一条 100+ 层的流水线被无声截断，仍报告 success。</p>
+                <p><strong>② 路由写错，静默走岔：</strong>模块返回的 <code>_route</code> 指向不存在的节点——静默丢弃；写了个 routes 表里没有的 key（typo）——静默落入 default 分支。误路由全程零报错。</p>
+                <p><strong>③ 隐式依赖的节点，第二轮后再也不被调度：</strong>只写了 <code>input_mapping</code> 没写 <code>depends_on</code> 的节点，排序时算进了图，但推进逻辑只沿 <code>depends_on</code> 找下游——第一轮之后永远轮不到它。</p>
+                <p><strong>④ GPU 最常见的死法会挂死整个系统：</strong>子进程被 OOM-killer 杀掉时队列永远等不到数据，而默认没有 timeout——整个编排器无限挂起。为 GPU 隔离设计的机制，在 GPU 最典型的故障下失效。</p>
+            </div>
+
+            <div class="code-note">
+                <p><strong>死代码清单（写了但从没被走过的路径）：</strong>① <code>_routes</code> fan-out（132 个 adapter 零使用）；② <code>IterationEdge</code> 的 condition/priority/backtrack 四字段（runner 从不读 edges）；③ <code>ConditionEvaluator</code>（从未实例化）；④ 旧迭代框架 controller/gate/rules/memory 约 1400 行（只被 <code>__init__</code> re-export）。<strong>一句话：这个内核是一个 300 行有效逻辑的简化版 LangGraph，唯一扎实的是子进程隔离，所有失败模式的共同点是"看起来成功了"。</strong></p>
+            </div>
+        </section>
+
+        <!-- ================================================================ -->
+        <section id="orchestration-nature">
+            <h2>③ 编排层的本质：不是多智能体，就是函数调用链</h2>
+            <p class="lead">论文用了"多智能体协作"、"认知角色"、"agent"这些词，但代码里实际跑的是：<strong>把一堆 Python 函数按 YAML 里的顺序排好，前一个的输出传给后一个，有些函数内部会调一次 LLM</strong>——仅此而已。</p>
+
+            <h3>具体看一条真实在用的 pipeline</h3>
+            <p><code>idea_generation_loop.yaml</code> 这条 pipeline 的模块链是：</p>
+
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <h4>paper_retriever</h4>
+                    <p>从 SQLite 拉论文（确定性函数，不调 LLM）</p>
+                </div>
+                <div class="flow-step">
+                    <h4>idea_generator</h4>
+                    <p>调一次 LLM："Generate 5-10 ideas, return as JSON"（<code>generator.py:146-174</code>）</p>
+                </div>
+                <div class="flow-step">
+                    <h4>idea_evaluator</h4>
+                    <p>再调一次 LLM：给 idea 打分（novelty/feasibility/impact 三维）</p>
+                </div>
+                <div class="flow-step">
+                    <h4>idea_judge</h4>
+                    <p>一个 <code>if score >= 7.0</code> 的判断（确定性函数，不调 LLM）</p>
+                </div>
+                <div class="flow-step">
+                    <h4>idea_counter</h4>
+                    <p>数一下够不够，不够就告诉编排层"回到 idea_generator 再来一轮"</p>
+                </div>
+                <div class="flow-step">
+                    <h4>result_exporter</h4>
+                    <p>导出 JSON</p>
+                </div>
+            </div>
+
+            <div class="code-note">
+                <p><strong>每个模块就是一个 Python 函数</strong>（<code>async execute(inputs) -> dict</code>），编排层做的事就是：跑完一个函数，把它的输出传给下一个函数。所谓"agent"就是一个函数内部调了一次 LLM API——<strong>没有角色、没有对话、没有记忆、没有工具调用</strong>。</p>
+            </div>
+
+            <h3>那"多智能体"的说法从哪来的？</h3>
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence paper">论文叙事</span>
+                    <h3>论文里有"六个认知角色协作"</h3>
+                    <p>论文 Fig. 12 画了六个认知角色（Reader/Analyst/Connector/Contrarian/Synthesizer/Critic）并行工作、各自消费 KG 的不同场景切片、聚合器去重排序的图。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence audit">代码实况</span>
+                    <h3>5/6 角色没有被任何 pipeline 引用</h3>
+                    <p>六个角色的 prompt 确实存在（见第⑤节），但只有 analyst 被用过 1 次（且直接吃 PDF 解析输出，不碰 KG）。实际跑的是单体 <code>idea_generator</code>——一条大 prompt 调一次 LLM，生成 5-10 个 idea。<strong>"多智能体协作"只存在于论文的图里</strong>。</p>
+                </article>
+            </div>
+
+            <div class="critical-note">
+                <p><strong>装饰品案例：</strong>代码里有个 <code>src/conversation_manager/</code> 目录（context/message/memory/manager），看起来像是"多智能体对话系统"。但<strong>全仓库没有任何 pipeline 或模块 import 它</strong>（grep 零命中）——它是从别处拷来的一个独立小包，没有接进编排层。典型的"看起来该有所以有，但从未被用过"的装饰品。</p>
+            </div>
+
+            <h3>和真正的多智能体系统（比如 AutoGen、MetaGPT）的区别</h3>
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>维度</th><th>真正的多智能体系统</th><th>PARNESS 的编排层</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>角色</strong></td><td>有（"产品经理"、"工程师"、"测试"）</td><td>没有——只有"函数"</td></tr>
+                        <tr><td><strong>对话</strong></td><td>有（agent 之间发消息、讨论、协作）</td><td>没有——只有"数据传递"（前一个函数的输出传给后一个）</td></tr>
+                        <tr><td><strong>记忆</strong></td><td>有（每个 agent 记得之前说过什么）</td><td>没有——每次调用 LLM 都是独立的，不记得之前说过什么</td></tr>
+                        <tr><td><strong>工具调用</strong></td><td>有（agent 可以决定调用哪个工具）</td><td>没有——每个函数内部是固定的逻辑（要么调 LLM，要么做确定性计算）</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="key-insight">
+                <h3>一句话总结</h3>
+                <p>PARNESS 的编排层<strong>不是多智能体系统，就是一个"函数调用链"</strong>——把一堆函数按 YAML 里的顺序排好，前一个的输出传给后一个，有些函数内部会调一次 LLM。所谓"多智能体协作"只存在于论文的图里，代码里实际跑的是单 LLM 单 prompt 生成 + 一堆确定性小工具（if 判断、计数、导出）。</p>
+            </div>
+        </section>
+
+        <!-- ================================================================ -->
+        <section id="adapters">
+            <h2>④ 模块库真相：161 注册 vs 91 被引用 vs 60% 冲压件</h2>
+            <p class="lead">论文宣称"130+ 注册模块"，实测注册表 <code>_ADAPTERS</code> 有 161 条、adapters 目录 132 个文件。但这只是故事的三分之一。</p>
+
+            <div class="card-grid three">
+                <article class="card">
+                    <span class="evidence code">硬数字</span>
+                    <h3>161 → 91 → 70</h3>
+                    <p>38 个 pipeline YAML 合计只引用了 <strong>91</strong> 个不同模块；<strong>70 个（43.5%）注册后没有任何 pipeline 用过</strong>。使用频次高度长尾：91 个被用模块中 48 个只出现 1 次。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence code">薄度分布</span>
+                    <h3>60%+ 是模板冲压产物</h3>
+                    <p>~30 个是 LLM 代理纯转发壳（51-70 行，真逻辑 ≤15 行）；crawler_adapters 一个文件贡献 24 个复制粘贴壳（INPUT_SPEC 逐字节相同）；~50 个是 70-160 行的确定性小工具。只有 6 个文件超过 300 行。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence audit">审计发现</span>
+                    <h3>三套互不校验的 schema</h3>
+                    <p><code>_ADAPTERS</code>（161 条 name→类映射）+ <code>get_all_module_specs()</code>（1158 行手抄重复元数据）+ adapter 类身上的 <code>INPUT_SPEC/OUTPUT_SPEC</code>——三套互不引用、互不校验一致性。这是 agent 分批生成、每次按当时需要新起一层的典型堆积纹理。</p>
+                </article>
+            </div>
+
+            <div class="critical-note">
+                <p><strong>整族阵亡名单（全部 0 引用）：</strong>① 认知角色 5/6（reader/connector/contrarian/synthesizer/critic）；② 12 个"新 agent"（adversarial/hypothesis/evidence/critique/theory/replication/transfer/meta_analysis/follow_up/limitation）；③ LaTeX 论文链 6 连（outline/section_writer/coherence_checker/formatter/persist + reference 5 件套）；④ 图像链 3 连；⑤ 5 个迭代控制器（threshold/patience/improving/llm/multi_criteria）+ quality_scorer + result_aggregator——README 引以为傲的"可插拔迭代控制"，实际 pipeline 只用了 hardcode 的 round_controller 和 idea_counter；⑥ 24 个 crawler 里 12 个 0 引用。</p>
+            </div>
+
+            <div class="warning-note">
+                <p><strong>真实身份：</strong>这个项目真实身份是一条跑通了的「PDF→解析→入库→KG」流水线。高频被引用的模块（paper_search_persist、pdf_download 各 35 次）来自脚本生成的同族 YAML（<code>gen_paper_search_yaml.py</code>）；git 后续 commit 加的是 KG 语料清单和生成的 idea 工件（十几万行 JSON），说明真实被跑通的是 KG/爬虫/PDF 解析这一支，其余模块是为论文里"161 modules"这个数字存在的。</p>
+            </div>
+        </section>
+
+        <!-- ================================================================ -->
+        <section id="kg">
+            <h2>⑤ 知识图谱：论文说它能"找矛盾、找跨领域"，代码只会"找相似"</h2>
+            <p class="lead">论文把知识图谱当成最大卖点之一，说它能"跨运行积累知识"、能"按场景切换不同找法"（找相似的/找矛盾的/找跨领域的/找反直觉的）。但代码里，这套系统实际上只会做一件事：<strong>用向量相似度找"长得像"的文本片段</strong>。</p>
+
+            <h3>先说人话：这个"知识图谱"到底存了什么？</h3>
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence code">代码确认</span>
+                    <h3>节点：一篇论文 = 几十个"文本片段"</h3>
+                    <p>每篇 PDF 被解析后，切成几十个小块（段落/表格/公式），每块存成一个节点（<code>KGNode</code>）。节点里只有：原文文本 + 一个 2560 维的向量（embedding）+ 来源信息（哪篇论文、哪一页）。<strong>没有"方法"、"数据集"、"结论"这样的结构化实体</strong>——所谓"四类节点"（论文/idea/实验/代码仓库）在代码里只是 <code>source_type</code> 字段的四个字符串，没有对应的 schema 或属性。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence code">代码确认</span>
+                    <h3>边：LLM 判的关系，或 SQLite 的外键</h3>
+                    <p>边有两种来源：① <strong>结构边</strong>——从 SQLite 直接复制外键关系（比如"这个 idea 属于这篇论文"）；② <strong>LLM 判的边</strong>——把两个文本片段喂给 LLM，让它判"支持/矛盾/扩展/用同一方法"（<code>edge_builder.py</code> 的 prompt 里列了 7 个可选标签）。<strong>边的"语义"完全是 LLM 单次调用的输出</strong>，没有任何验证。</p>
+                </article>
+            </div>
+
+            <h3>再说人话：这个图谱怎么"建"起来的？</h3>
+            <p>论文画了八阶段流程图（抽取→去重→向量化→写节点→找内部关系→找结构关系→找语义关系→随机游走），看起来很像一个精密的流水线。但代码里：</p>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence audit">审计发现</span>
+                    <h3>八阶段管线被废弃了</h3>
+                    <p><code>kg_ingest.yaml</code> 这条八阶段 pipeline 没有任何驱动脚本或产物证明大规模跑过。实际跑的是另一条 <code>paper_intra_index.py</code>（954 行，docstring 明写"replaces the legacy three-round chunker"）——<strong>单次 LLM 调用同时抽单元和关系，不走八阶段分解</strong>。八阶段是论文叙事，"一遍过"是代码实况。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence code">代码确认</span>
+                    <h3>但确实灌过大规模语料</h3>
+                    <p><code>papers/categorical_kg_idea_mining/inputs/</code> 里有 <strong>1.76 万篇全文论文 + 9 千篇摘要</strong>的清单（S2 id + 标题），<code>artifacts/</code> 里有一次完整运行的产物（6,039 条 proposals，带 token 估算和随机种子）。<strong>KG 确实被真实灌过、跑出过实验</strong>——但产出这些产物的代码不在仓库里（只有结果快照）。</p>
+                </article>
+            </div>
+
+            <h3>最关键的问题：论文说的"场景化检索"在代码里是什么？</h3>
+            <p class="lead">论文 Fig. 7 画了一张很漂亮的图：四种检索预设（similar / opposite / cross-domain / counter-intuitive）分别供四个认知角色调用。但代码里：</p>
+
+            <div class="critical-note">
+                <p><strong>核心判定：四场景预设在代码中不存在。</strong></p>
+                <ul style="margin-top:12px">
+                    <li><strong>"counter-intuitive" 和 "opposite"</strong>：在整个 <code>src/</code> + <code>config/</code> 里<strong>零字符命中</strong>——这两个词在代码里根本不存在。</li>
+                    <li><strong>"contradict"</strong>：只出现在建边 prompt 的关系标签枚举里（"SUPPORTS, CONTRADICTS, EXTENDS..."），查询侧<strong>没有任何"找矛盾"的检索模式</strong>。</li>
+                    <li><strong>"cross_domain"</strong>：只是一个被 format 进 prompt 的字符串参数（<code>kg_synthesize.py:18</code>），<strong>换成任何词检索行为一字不变</strong>。</li>
+                    <li><strong>"similar"</strong>：就是默认的向量 kNN 检索——这是系统<strong>唯一的检索路径</strong>。</li>
+                </ul>
+                <p style="margin-top:12px"><strong>查询侧从头到尾只有一条路：</strong>把查询文本转成向量 → 在 Neo4j 里找最相似的 k 个片段 → 可选地沿图走几步扩展邻居 → 去重返回。<strong>不存在按"场景"切换的任何机制</strong>——不是简化，不是 prompt 化，是没有。</p>
+            </div>
+
+            <figure class="figure">
+                <a href="assets/fig7_kg_scenarios.png" target="_blank">
+                    <img src="assets/fig7_kg_scenarios.png" alt="场景化检索" loading="lazy">
+                </a>
+                <figcaption>论文 Fig. 7 宣称的"场景化检索"——四种边组合成四个检索预设。<strong>代码核实：检索侧从头到尾只有一条路径（向量 kNN→遍历→去重），不存在按认知场景切换的任何机制。</strong>"opposite" 和 "counter-intuitive" 在代码里零字符存在。</figcaption>
+            </figure>
+
+            <h3>那"认知角色 × KG 场景切片"呢？</h3>
+            <p>论文说六个认知角色（Reader/Analyst/Connector/Contrarian/Synthesizer/Critic）各自消费 KG 的不同场景切片。但代码里：</p>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence code">代码确认</span>
+                    <h3>角色存在，但不接 KG</h3>
+                    <p>六个角色的代码确实存在，prompt 也各有针对性（见第⑤节）。但它们的输入全部是 pipeline 上游传入的 Python 列表（papers/insights），<strong>没有任何一个角色文件或其 adapter 调用 KG 检索</strong>。KG 检索模块存在（<code>kg_vector_search</code> 等），但它们只出现在 4 个纯 KG pipeline 里，没有任何一条边把 KG 输出接到任何认知角色。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence audit">审计发现</span>
+                    <h3>且 5/6 角色零引用</h3>
+                    <p>在 38 个 pipeline YAML 里，reader/connector/contrarian/synthesizer/critic 五个角色<strong>零引用</strong>，只有 analyst 被用过 1 次（且直接吃 PDF 解析输出，不碰 KG）。<strong>"角色 × 场景绑定"只存在于论文的图里</strong>。</p>
+                </article>
+            </div>
+
+            <h3>这个子系统的真实画像</h3>
+            <div class="card-grid three">
+                <article class="card">
+                    <span class="evidence code">设计层（~85 分）</span>
+                    <p>八阶段增量索引、双向量索引、随机游走、provenance 溯源、边衰减剪枝、27 表 SQLite→KG 重建——设计文档级的完备度，明显是精心 prompt 出来的架构。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence inference">实现层（~60 分）</span>
+                    <p>Neo4j 存储层扎实（防注入白名单、带真实调试注释）、随机游走是真算法、爬虫是真 API 客户端；但八阶段被废弃、四场景预设不存在、CITES 边是 no-op、"vector_store"退化为关键词重叠。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence audit">使用层（~40 分）</span>
+                    <p>KG 确实被灌过 1.76 万篇全文并跑出过实验（有备份/统计/续跑脚本佐证）。但被使用的路径是 paper_intra_index + cross_paper_discover + 一个不在仓库里的 idea-mining 管线；论文叙事管线（八阶段、场景化检索、认知角色×KG）无使用证据。</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- ================================================================ -->
+        <section id="ideation">
+            <h2>⑥ 认知角色：prompt 是真的，"角色 × KG 场景切片"是假的</h2>
+            <p class="lead">论文宣称"六认知角色（Reader/Analyst/Connector/Contrarian/Synthesizer/Critic）+ 十二专长 agent，各自消费知识图谱的不同场景切片"。</p>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence code">代码确认</span>
+                    <h3>prompt 层面是真异质的</h3>
+                    <p>六角色的 prompt 不是同一模板改两句话：Reader 逐篇压缩成 7 字段 insight、Analyst 做聚类和 gap 分析、Connector 用 Jaccard 词集重叠筛"半相关"对再让 LLM 找类比、Contrarian 专门吃 Reader 输出的 <code>assumed_but_not_proven</code> 字段做假设反转。这部分设计是认真做过的。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence audit">审计发现</span>
+                    <h3>"角色 × KG 场景绑定"在代码中完全不存在</h3>
+                    <p>六角色的输入全部是 pipeline 上游传入的 Python 列表（papers/insights），没有任何一个角色文件或其 adapter 调用 KG 检索。"角色 × 场景绑定"只存在于论文的图里。且 <strong>5/6 角色零 pipeline 引用</strong>，12/12 专长 agent 全部零引用——实际跑的 idea 链路是单体 <code>idea_generator</code> 一条大 prompt（"Generate 5-10 ideas, return as JSON"）。</p>
+                </article>
+            </div>
+
+            <div class="critical-note">
+                <p><strong>假实现实锤：</strong><code>src/reviewers/</code> 三个评审器<strong>调完 LLM 把响应扔掉，返回硬编码的 7.0 分和"论文整体质量良好，有一定创新性"</strong>；rebuttal 模块对每条审稿意见返回硬编码"感谢审稿意见，我们将根据建议进行修改"。典型的 agent 生成占位代码，从未被人读过第二遍。quality gate 全貌：<code>(novelty+feasibility+impact)/3 ≥ 7.0</code> 的一次 if 比较，解析失败一律给 5.0 分。</p>
+            </div>
+
+            <figure class="figure">
+                <a href="assets/fig12_cognitive_roles.png" target="_blank">
+                    <img src="assets/fig12_cognitive_roles.png" alt="六认知角色" loading="lazy">
+                </a>
+                <figcaption>论文 Fig. 12 宣称的"六认知角色 × KG 场景切片"——代码核实：角色 prompt 真异质，但"角色接 KG"零实现；实际出厂配置跑的是单 LLM 单 prompt 生成。</figcaption>
+            </figure>
+        </section>
+
+        <!-- ================================================================ -->
+        <section id="codelink">
+            <h2>⑦ paper↔code 链：论文自称最独特的机制，代码里不存在</h2>
+            <p class="lead">论文说"代码仓库成为图谱一等公民，带 derivation 边 + 仓库相似边，无码论文借兄弟仓库找实验方案"。这是论文自称最有原创味的机制。</p>
+
+            <div class="critical-note">
+                <p><strong>三层判定：</strong>① 设计层：有（三段式蓝图完整——提取→克隆→分析）；② 实现层：半成品拼盘（URL 提取就是 regex、克隆"沙箱"就是 git clone + 超时、"类型化仓库文件树"是文件名关键词启发式 + AST）；③ 使用层：<strong>零</strong>（code_link_extractor 全仓库零调用者、无 pipeline 引用、无运行产物）。<strong>论文宣称的 derivation 边/仓库相似边/借兄弟仓库属于纯论文叙事，代码中无对应物。</strong>实际只有 SQLite FTS5 关键词检索 + 固定 0.5 分。</p>
+            </div>
+
+            <figure class="figure">
+                <a href="assets/fig5_codelink.png" target="_blank">
+                    <img src="assets/fig5_codelink.png" alt="paper-code 图" loading="lazy">
+                </a>
+                <figcaption>论文 Fig. 5 宣称的 paper↔code 图——代码核实：code_link_extractor 全仓库零调用者，"derivation 边/仓库相似边/借兄弟仓库"在代码中不存在。</figcaption>
+            </figure>
+        </section>
+
+        <!-- ================================================================ -->
+        <section id="e2e">
+            <h2>⑧ 端到端产物：真实跑过一次，但证据链不完整</h2>
+            <p class="lead">论文没有 benchmark，取而代之的"能力展示"是两份产物：附录 A 的 idea 目录，和附录 B 整篇嵌入的机器生成论文（QM9 实验，报告 18.36% MAE 退化）。</p>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence code">真实痕迹</span>
+                    <h3>确实被跑通过的部分</h3>
+                    <p><code>papers/categorical_kg_idea_mining/</code> 里有一次完整运行的输入（1.76 万篇全文 + 9 千篇摘要清单）与产物（C1-C4 四条件的 proposals/families JSONL+CSV，6,039 条 proposals，带 token 估算和随机种子）。这种颗粒度不像编造——<strong>但产出这些产物的代码不在仓库里</strong>（只有结果快照），可复现性为零。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence audit">审计发现</span>
+                    <h3>证据链的断裂点</h3>
+                    <p>QM9/18.36% MAE 在整个仓库<strong>零痕迹</strong>：无实验 workspace、无 results.json、无生成的 PDF。那篇机器生成论文的全部证据链都在被 gitignore 的 <code>output/</code> 里，外部无法核验其存在。且 <code>.gitignore</code> 吞掉了 <code>.opencode/</code> agent 定义文件——三个 CLI 的 workspace 构建都要拷贝这些模板，按提交状态任何人 clone 后跑 runner/verifier/paper_cli 都会 <code>FileNotFoundError</code>。</p>
+                </article>
+            </div>
+
+            <figure class="figure">
+                <a href="assets/epaper_page1.png" target="_blank">
+                    <img src="assets/epaper_page1.png" alt="端到端生成论文第一页" loading="lazy" style="max-width:520px;margin:0 auto;">
+                </a>
+                <figcaption>附录 B 嵌入的端到端生成论文（7 页）——确实被收录在论文 PDF 里，但全部证据链都在被 gitignore 的 output/ 里，外部无法核验。</figcaption>
+            </figure>
+        </section>
+
+        <!-- ================================================================ -->
+        <section id="verdict">
+            <h2>⑨ 三层画像与价值判断</h2>
+
+            <div class="key-insight">
+                <h3>真实身份（我认可你之前的判词）</h3>
+                <p>一个学生（大概率大量借助 coding agent 生成）为科研场景重造了一个 LangGraph 式编排引擎，外挂 Neo4j 记忆层，端到端跑通过一次（产出一篇报告自身 MAE 退化的机器论文），然后为它写了一个野心远大于证据的学术包装。</p>
+            </div>
+
+            <h3>三层真实画像</h3>
+            <div class="card-grid three">
+                <article class="card">
+                    <span class="evidence code">设计层（~85 分的野心）</span>
+                    <p>八阶段增量索引、双向量索引、随机游走远程发现、retrospect 补边、provenance 溯源、边衰减剪枝、27 表 SQLite→KG 重建——设计文档级的完备度，明显是精心 prompt 出来的架构。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence inference">实现层（~60 分，两代叠放）</span>
+                    <p>Neo4j 层、随机游走、cross_paper_discover、爬虫是真实且有调试痕迹的实现；但八阶段管线被废弃、四场景预设不存在、code-link 链零接线、reviewers/rebuttal 是假实现、llm_dispatcher 零调用、provider 层带着从未触发过的 TypeError 级 bug。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence audit">使用层（~40 分，且用的不是宣传的那套）</span>
+                    <p>KG 确实被灌过 1.76 万篇全文并跑出过四条件实验（有备份/统计/续跑脚本佐证运维发生过）。但被使用的路径是 paper_intra_index + cross_paper_discover + 一个不在仓库里的 idea-mining 管线；论文叙事管线（八阶段、场景化检索、认知角色×KG）无使用证据。</p>
+                </article>
+            </div>
+
+            <h3>价值判断：简单档（有实质但贡献有限）</h3>
+            <ul>
+                <li><strong>有实质</strong>：框架确实能跑（一条主干真实跑通）、代码覆盖面广、DB schema 层质量高（81 表、真实 UNIQUE 去重、upsert 严谨）、爬虫层是真实 API 客户端。</li>
+                <li><strong>贡献有限</strong>：核心机制是成熟技术的搬运（调度内核 ≈ LangGraph conditional edges 子集）、论文宣称的三大卖点中的两个（场景化检索、paper↔code 图）在代码里不存在、核心假设全部未验证、无用户、无影响力。</li>
+                <li><strong>与先例对照</strong>：它比 PaperPilot 强在没有撒关键的谎（"控制流跑通"确实是真的）、东西确实能用；但"复杂 = 真材实料"这个档它配不上，因为"料"的部分（动态流程有用、知识积累有用、场景化检索有用）恰恰是没有料的部分。</li>
+            </ul>
+
+            <div class="source-note">
+                <p><strong>对本调研方向的可借鉴点（限正面）：</strong>① 子进程隔离的 40 行（daemon 线程 + os._exit）是真实可用的工程模式；② DB schema 层的规范化设计（81 表、UNIQUE 去重、upsert 保旧值）可作参考；③ "PDF→解析→入库→KG"这条主干证明这条路能走通，但用的是更粗暴的"一遍过"路线而非论文宣称的八阶段；④ 反面教材：placeholder 静默降级 + 以"控制流跑通"当验证，示范了系统类论文如何在不撒谎的前提下让证据显得比实际厚——审读同类系统时可作对照检查项。</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>PARNESS 祛魅式代码审计 · Literature 调研档案 · 待归档/PARNESS</p>
+            <p>整理日期：2026-08-04 · 代码版本：commit 100b4f7 · 审计范围：论文全文 + 562 个 Python 文件逐项核对</p>
+        </footer>
+    </main>
+</body>
+</html>

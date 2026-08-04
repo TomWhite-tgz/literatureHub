@@ -220,11 +220,11 @@
 <header>
   <h1>Literature <span>·</span> 自动化科研文献模块 总览</h1>
   <p class="sub">文献搜索 / 文献问答 / 深度研究系统的调研档案入口。按「复杂 — 简单 — 包装的好看」三档可信度分类；点击卡片内链接进入各精读 / 分析子页面。下方板块默认折叠，点击标题展开。</p>
-<div style="background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:14px 20px;margin-top:20px;font-size:13.6px;line-height:1.7">
-  <b style="color:#b4530a">📦 这是 Literature 调研档案的分享站 · 持续更新</b><br>
-  所有<b>精读页面、审计结论、配图、笔记、论文 PDF</b> 都已包含，论文链接点开即可阅读原文。<br>
-  源码仓库与数据集未打包（原始档案 107 GB）：相应链接指向官方仓库，或跳到 <a href="_未包含的内容.html" style="color:#b4530a">未包含内容说明</a>。
-</div>
+  <div style="background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:14px 20px;margin-top:20px;font-size:13.6px;line-height:1.7">
+    <b style="color:#b4530a">📦 这是 Literature 调研档案的分享站 · 持续更新</b><br>
+    所有<b>精读页面、审计结论、配图、笔记、论文 PDF</b> 都已包含，论文链接点开即可阅读原文。<br>
+    源码仓库与数据集未打包（原始档案 107 GB）：相应链接指向官方仓库，或跳到 <a href="_未包含的内容.html" style="color:#b4530a">未包含内容说明</a>。
+  </div>
   <div class="map">
     <div class="map-col">
       <div class="map-title">① 选题讨论 · 我要做什么</div>
@@ -1153,6 +1153,15 @@ return timeout_answer</div>
         <a class="dir" href="_未包含的内容.html">论文 + 源码 →</a>
       </div>
     </div>
+    <div class="card">
+      <h4>PARNESS <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-ok">叙事与代码脱节</span></h4>
+      <div class="meta">北航中德软件所 · arXiv:2605.05258 · 科研编排框架 + 知识图谱</div>
+      <p class="blurb">学生+coding agent 重造的 LangGraph 式编排引擎，外挂 Neo4j 记忆层。真实跑通「PDF→解析→入库→KG」主干（1.76 万篇论文语料），但论文宣称的三大卖点中的两个（场景化检索、paper↔code 图）在代码里不存在；161 注册模块中 70 个零引用，调度内核 ≈ LangGraph 子集 + 挂起漏洞，reviewers/rebuttal 是假实现。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/待归档/PARNESS/PARNESS_精读与代码审计.html">祛魅式代码审计</a>
+        <a class="dir" href="_未包含的内容.html">论文 + 源码 →</a>
+      </div>
+    </div>
   </div>
 
   <div class="group"><span class="tag fancy">包装的好看</span><h3>卖点无法成立</h3><span class="desc">论文叙事与代码 / 证据严重脱节</span></div>
@@ -1214,24 +1223,6 @@ return timeout_answer</div>
     </div>
   </div>
 
-  <div class="grid">
-    <div class="card">
-      <h4>可以比较的系统</h4>
-      <div class="meta">同层抽象的 Agent 框架收录（当前：AgentScope）</div>
-      <div class="links">
-        <a class="md" href="Literature项目或者系统/横向对比/可以比较的系统/README_先看这里.html">README 先看这里 (md)</a>
-        <a href="Literature项目或者系统/横向对比/可以比较的系统/AgentScope/index.html">AgentScope 架构精读 (html)</a>
-        <a class="dir" href="_未包含的内容.html">目录 →</a>
-      </div>
-    </div>
-    <div class="card">
-      <h4>关于 Agent 底座</h4>
-      <div class="meta">AgentENV（sandbox 基建）· LDP（policy/训练层）</div>
-      <div class="links">
-        <a class="dir" href="_未包含的内容.html">目录 →</a>
-      </div>
-    </div>
-  </div>
 </div>
 </details>
 </section>
