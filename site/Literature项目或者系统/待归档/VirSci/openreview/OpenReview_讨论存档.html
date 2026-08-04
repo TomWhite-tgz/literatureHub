@@ -1,0 +1,83 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VirSci（Two Heads Are Better Than One）— OpenReview 讨论存档</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../../index.html">← 返回总览</a>
+<h1>VirSci（Two Heads Are Better Than One）— OpenReview 讨论存档</h1>
+<blockquote>
+<p><strong>来源</strong>: OpenReview, ICLR 2025 Submission #1763（存档日期 2026-08-04，OpenReview API 有反爬验证，本文为人工抓取全文整理）<br />
+<strong>标题</strong>: Two Heads Are Better Than One: A Multi-Agent System Has the Potential to Improve Scientific Idea Generation<br />
+<strong>作者</strong>: Haoyang Su, Renqi Chen, Shixiang Tang, Xinzhe Zheng, Jinzhe Li, Zhenfei Yin, Wanli Ouyang, Nanqing Dong（上海 AI Lab 系）<br />
+<strong>结果</strong>: ❌ <strong>Withdrawn</strong>（2024-12-11 撤稿；评分 5 / 5 / 3 / 3）<br />
+<strong>arXiv</strong>: 2410.09403 · <strong>代码</strong>: https://github.com/RenqiChen/Virtual-Scientists</p>
+</blockquote>
+<h2>TL;DR &amp; 摘要（要点）</h2>
+<p><strong>TL;DR</strong>: We propose a multi-agent system that has the potential to improve scientific idea generation, suggesting promising avenues for exploring collaborative mechanisms in scientific research.</p>
+<p>VirSci（Virtual Scientists）：LLM 多智能体系统模拟科研团队协作——组队、选题、生成 idea、评估新颖性、写摘要五阶段。声称多智能体协作在产出新颖有影响力的 idea 上优于 SOTA 单智能体方法（AI Scientist），且模拟结果与 Science of Science 领域的关键结论一致（如"新团队倾向产出更多创新研究"）。</p>
+<p>Keywords: Large Language Model, Multi-agent System, Collaboration Strategy, Automatic Scientific Discovery, Science of Science</p>
+<hr />
+<h2>Review 1 — Reviewer 2X9t（Rating 5, Confidence 4; Soundness 3, Presentation 3, Contribution 3）</h2>
+<p><strong>Strengths</strong>: 首个把 LLM 多智能体用于科学发现 idea 生成的工作；实验量大（团队规模、讨论轮数、系统组件消融）；写作与技术细节清晰；展示了 AI for Science 的更大可能性。</p>
+<p><strong>Weaknesses/Questions</strong>:<br />
+- 指标偏重 novelty 与 dissimilarity，<strong>无法说明生成 idea 的可用性</strong>（feasibility/usability），"这一点相对致命"。<br />
+- 各 agent 的组织结构与交互模式描述不足；除队长外其他科学家 agent 的差异与特征不清。<br />
+- 只做了计算机科学领域。<br />
+- 循环执行策略是否新颖？顺序执行能否保证效果？消融只在 5 轮讨论设置下做，结论说服力有限。</p>
+<p><strong>作者回复</strong>（要点）:<br />
+- 定位：主贡献是<strong>首个基于真实数据 role-play 的学术协作模拟系统</strong>，服务 Science of Science 研究；可用性不是本文重点。<br />
+- 补充人类评估表（10 位 CS 博士生盲评 20 篇摘要，10 分制）：GPT-4o 下 VirSci Novelty 5.24 / Usability 4.52，AI Scientist 4.94/4.18；LLaMA3.1-8b、LLaMA3.1-70b 同趋势全面占优。图 7：novelty 指标与人类评估 Pearson 0.51。<br />
+- 指标定义：Historical Dissimilarity（与过去论文库的差异）、Contemporary Dissimilarity（与当代论文库的差异）、Contemporary Impact（相似近期论文的引用量）、Overall Novelty（三者综合）。<br />
+- 附两个生成摘要 vs 相似已发表论文的案例（龋齿管理+AI 影像；膀胱癌机器人手术+预测建模）。<br />
+- 组织结构：所有 agent 用真实数据初始化（姓名、机构、研究兴趣、引用数、合作史）；随机选队长负责邀人与总结；固定顺序+固定轮数发言，每阶段总结后进入下一阶段；有"邀请机制"（讨论中可向外求助）。<br />
+- 消融补做了 1-7 轮全部设置（邀请机制/新颖性评估/自评三个组件在 4 人与 8 人团队全轮数下均为正贡献）。</p>
+<hr />
+<h2>Review 2 — Reviewer 6tUq（Rating 5, Confidence 3; Soundness 3, Presentation 3, Contribution 2）</h2>
+<p><strong>Strengths</strong>: 多智能体方式贴近真实科研讨论；五阶段框架稳健；评价指标（CD/CI/HD）逻辑合理；相对单智能体优势明显。</p>
+<p><strong>Weaknesses/Questions</strong>: 只生成摘要，若能做初步实验影响更大；缺实用可行性指标；效果依赖底层 LLM；邻接矩阵为何简单 +1 而不用分布函数或 explore-exploit？不同 LLM 是否需要调整团队规模/轮数？</p>
+<p><strong>作者回复</strong>（要点）: 摘要足以承载研究核心与新颖性（算力受限）；可用性同上（人类评估表+案例）；底层 LLM 影响的是绝对值不是相对比较（GPT-4o/LLaMA3.1-8b/70b 三组对照都占优）；补做正态分布增量实验（结论不变，略有正效应）；补做 LLaMA3-8b 全表——绝对值低于 LLaMA3.1-8b，但"适中团队规模（8 人）+适中轮数（5 轮）最优"的结论跨模型一致。<br />
+<strong>6tUq 回应</strong>: 维持原分。</p>
+<hr />
+<h2>Review 3 — Reviewer poux（Rating 3, Confidence 3; Soundness 2, Presentation 3, Contribution 2）</h2>
+<p><strong>Strengths</strong>: 新框架+新数据集+新指标；实验设计全面（成员数、组件等消融）。</p>
+<p><strong>Weaknesses/Questions</strong>:<br />
+- 基准数据集领域窄（只有 CS）、年代有限（2000-2014，重点 2011-2014）——领域发展非线性，旧数据难代表现状。<br />
+- <strong>评价只靠自定义的 novelty 指标</strong>（embedding 距离+引用数）；语义比较用的是 2000-2010 与 2010-2014 的论文；应有人类评估或案例研究验证语义距离能否反映质量。<br />
+- 实际使用价值：真实科研需要 idea 既可行又合理，目前指标缺失；idea 可能新颖但源于模型幻觉；建议与更近论文对照看是否有实际匹配。</p>
+<p><strong>作者回复</strong>（要点）: CS 数据集时间跨度 1948-2014 是数据集本身限制；补做 Open Academic Graph 3.1（物理/化学/CS/生物，2010-2020 为过去库、2021-2023 为当代库）——趋势跨域一致：novelty 随团队规模先升后降，8 人×5 轮达峰；人类评估与案例同上。</p>
+<hr />
+<h2>Review 4 — Reviewer wXAg（Rating 3, Confidence 5; Soundness 2, Presentation 2, Contribution 2; Ethics Flag: potentially harmful）</h2>
+<p><strong>Weaknesses</strong>:<br />
+1. <strong>数据泄漏风险</strong>：数据集是 2000-2014 的论文，当代 LLM 训练数据大概率覆盖，模型可能在"复现见过的概念"而非生成新 idea，novelty 评估的有效性被破坏。<br />
+2. 严重依赖 LLM 评估（GPT-4o 等），无人类标注验证指标可靠性。<br />
+3. 框架创新有限：更像现有 LLM 多智能体系统在科研 idea 场景的应用，没有为该任务引入特别的新机制。</p>
+<p><strong>Ethics Concerns</strong>: 缺人类监督可能传播不准确/误导性科学概念；科研 idea 自动化应谨慎，避免未经审查信息损害科学界信任。</p>
+<p><strong>作者回复</strong>（要点）:<br />
+- 数据泄漏：①所有对比（vs AI Scientist、不同团队设置间）用同一批 LLM，泄漏影响均匀，相对比较仍公平；②研究目标是"协作策略如何影响 novelty"而非绝对 novelty；③novelty 指标与人类评估 Pearson 0.51；④补做 OAG 3.1（2021-2023 当代库）缓解泄漏，结论不变（8 人×5 轮峰值模式跨数据集复现）。<br />
+- 人类评估：同上（10 博士生盲评表）。<br />
+- 方法创新：定位是 AI for Science of Science 的模拟平台，重点在系统构建而非新组织结构。</p>
+<hr />
+<h2>Withdrawal（2024-12-11）</h2>
+<p>作者确认撤稿。（注：VirSci 后续版本以 arXiv 2410.09403 持续更新，团队来自上海 AI Lab；撤稿后该工作以修订版另投。）</p>
+<h2>归档者备注</h2>
+<ul>
+<li>评分 <strong>5/5/3/3</strong>，撤稿。评审的共性质疑：<strong>novelty 指标自证循环</strong>（embedding 距离+引用数+LLM judge，Pearson 0.51 的人类相关性偏弱）、<strong>2000-2014 老语料的数据泄漏</strong>、<strong>可用性/可行性无指标</strong>。</li>
+<li>对本档案的价值：①多智能体协作做 idea 生成的代表作，与 CoI（单 agent+链式文献）、Deep Ideation（概念网络）、CycleResearcher（端到端 RL）构成 idea 生成的四条技术路线；②其文献使用方式：论文库只作为 agent 人设（真实作者档案）与 novelty 对照库，<strong>不做深度文献组织</strong>——与 CoI 形成鲜明对比；③Science of Science 结论复现（团队规模 8、轮数 5 峰值；新团队更创新）是其独特卖点。</li>
+</ul>
+<footer>由 <code>Literature项目或者系统/待归档/VirSci/openreview/OpenReview_讨论存档.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

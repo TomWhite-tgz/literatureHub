@@ -1,0 +1,69 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Deep Ideation — OpenReview 讨论存档</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../../index.html">← 返回总览</a>
+<h1>Deep Ideation — OpenReview 讨论存档</h1>
+<blockquote>
+<p><strong>来源</strong>: OpenReview, ICLR 2026 Submission #20167（存档日期 2026-08-04，OpenReview API 有反爬验证，本文为人工抓取全文整理）<br />
+<strong>标题</strong>: Deep Ideation: Designing LLM Agents to Generate Novel Research Ideas on Scientific Concept Network<br />
+<strong>作者</strong>: Keyu Zhao, Weiquan Lin, Qirui Zheng, Fengli Xu, Yong Li（清华 FIB Lab 系）<br />
+<strong>结果</strong>: ❌ <strong>Withdrawn</strong>（2025-11-27 作者撤稿；评分 2 / 6 / 2 / 2，作者未做 rebuttal）<br />
+<strong>arXiv</strong>: 2511.02238 · <strong>代码</strong>: https://github.com/kyZhao-1/Deep-Ideation（截至存档日仅 README 占位，代码未放出）</p>
+</blockquote>
+<h2>摘要（要点）</h2>
+<p>已有 idea 生成方法要么简单 prompt LLM，要么只用关键词共现/语义相似度做文献统计关联，忽略科学概念间复杂的上下文关系。Deep Ideation 框架：①从 10 个 AI 顶会约 10 万篇论文构建<strong>科学概念网络</strong>（关键词共现 + 上下文关系）；②<strong>explore–expand–evolve</strong> 工作流迭代精炼 idea，用 <strong>Idea Stack</strong> 追踪研究进展；③用真实评审反馈训练的 <strong>critic engine</strong> 对 novelty/feasibility 给持续信号。声称比基线整体提升 10.67%，生成 idea 超过顶会接收线。</p>
+<p>Keywords: Large Language Model, LLM Agent, Automated Scientific Discovery, AI Scientist</p>
+<hr />
+<h2>Review 1 — Reviewer gb37（Rating 2, Confidence 4; Soundness 2, Presentation 3, Contribution 2）</h2>
+<p><strong>Summary</strong>: 概念网络（100k 论文）+ explore-expand-evolve 循环 + 基于 peer review 训练的 Critic（novelty/feasibility 1-5 分）；4 个 AI 领域对比 SciMON、ResearchAgent、MOOSE-Chem 等，报告 8-10% 提升。</p>
+<p><strong>Strengths</strong>: 方向重要；语料大、模块化设计清晰；图 1-2 可读性好；4 领域一致的实验报告与结构化打分 rubric；有 critic 消融。</p>
+<p><strong>Weaknesses</strong>:<br />
+- 类似概念网络与迭代 ideation 已存在，方法新颖性偏增量式。<br />
+- <strong>Critic 是在 LLM 生成的 paper–review 对上训练的，不是真实人类评审</strong>；消融提升仅 3-5% 且只有 LLM judge 衡量，无相关性/可靠性分析；数据污染与模型 checkpoint 日期不明。<br />
+- 数据集统计未报告。<br />
+- novelty/feasibility 用自造 rubric，无同行评审标准参照；可能把 novelty 与图距离混同；缺 Si et al. 2024 提出的 Effectiveness 维度。<br />
+- 提升幅度小可能在方差范围内；人类评估细节严重缺失（盲法？招募？专业？统计显著性？用的哪个数据集？）。<br />
+- 100k 语料对 ideation 的实际价值不清：只用关键词共现+LLM 生成的短上下文关系，机制简单，缺深层概念/因果理解；聚合函数 g(·) 未定义；没有分析图对 novelty/feasibility 的实际贡献。<br />
+- 对比部分不公平（MOOSE-Chem 是化学领域）；缺多智能体基线（Many Heads、ResearchTown、IdeaSynth/WebWeaver/LDC）。</p>
+<p><strong>Questions</strong>: 数据分布？relation(vi,vj,p) 怎么算（LLM 解析还是 embedding 相似度）？critic 用真实数值评分还是仅文本理由微调？如何保证生成 idea 不是对 checkpoint 后所见论文的换皮？</p>
+<hr />
+<h2>Review 2 — Reviewer DTQ4（Rating 6, Confidence 5; Soundness 4, Presentation 4, Contribution 4）</h2>
+<p><strong>Strengths</strong>: 概念网络包含上下文关系，比统计方法更有依据；explore-expand-evolve + Idea Stack 模拟人类研究者认知过程；真实评审反馈训练的 Critic 使迭代不"盲目"。</p>
+<p><strong>Weaknesses</strong>: 边特征（上下文关系）的形式化定义太高层——如何表示、量化、蒸馏成 LLM 可稳健查询的形式不明；Critic 只用 4278 条样例微调，跨 4 个领域的泛化存疑。</p>
+<p><strong>Questions</strong>: 能否给"复杂上下文边特征 vs 简单边特征（共现频次/连接文本 embedding）"的对照实验？每个 idea 的摊销成本（token/API/时间）对比 one-shot 或更简单的迭代基线？</p>
+<hr />
+<h2>Review 3 — Reviewer Dots（Rating 2, Confidence 4; Soundness 3, Presentation 2, Contribution 2）</h2>
+<p><strong>Strengths</strong>: 100k 语料；发布了基于真实评审反馈的 review 数据集；有消融、案例研究、SOTA 基线、人类+自动双评估。</p>
+<p><strong>Weaknesses</strong>: 为什么用共现概念图而不用科学 IE 系统抽取关键词与关系？框架似乎纯靠 prompting；邻居关键词的思路 ResearchAgent 和 SciMON 已提出；建议加入领域 LLM（如 OLMO2）。方法节 evolve 部分很混乱（确切算法？关键词何时删除？与 ResearchAgent/SciMON 的迭代精炼区别？）；评估数据集是什么？100k 全用于评估吗？4.2 节评价指标？人类标注者背景与一致性？缺 use of LLMs 声明、缺代码、缺伦理声明。</p>
+<hr />
+<h2>Review 4 — Reviewer hrL1（Rating 2, Confidence 4; Soundness 2, Presentation 2, Contribution 2）</h2>
+<p><strong>Strengths</strong>: 超越静态关键词/embedding 检索，动态检索组合概念关系；用真实评审文本微调给出现实反馈信号；概念网络与数据集若发布对 AI4Science 有用。</p>
+<p><strong>Weaknesses</strong>: 未分析训练语料/评审数据/参照论文与 LLM 训练截止日期的先后（公平性与新颖性判断的关键）；4.2.2 节列了 54 位研究者却没有遴选标准/专业/校准细节；无人类评审者间一致性、无不同 LLM judge 间一致性；只消融了 Evolve 和 Critic；附录 A.1.3 与 A.1.7 的 prompt 基本重复（编辑疏漏）。</p>
+<p><strong>Questions</strong>: 边特征 F_ij 如何从多篇论文具体计算？训练/评估数据是否晚于 LLM 截止日期？54 位评估者如何选出、与 LLM 评分一致性？GPT-4o vs Gemini 2.5 Flash 等 judge 间一致性？计算成本与可扩展性？Evolve 阶段停止准则？</p>
+<hr />
+<h2>Withdrawal（2025-11-27）</h2>
+<p>作者确认撤稿（无 rebuttal、无回复）。</p>
+<h2>归档者备注</h2>
+<ul>
+<li>评分 <strong>2/6/2/2</strong>，撤稿。三个 2 分的共同指向：<strong>概念网络的机制价值没有被论证</strong>（共现+LLM 短摘要 ≈ 换皮的 RAG）、<strong>Critic 训练数据可疑</strong>（gb37 直指是 LLM 生成的 paper-review 对而非真实评审）、<strong>人类评估（54 人）细节几乎为零</strong>。</li>
+<li>对本档案的价值：①"概念网络/知识图谱做文献组织"路线的失败样本，与 CoI 的"链式组织"、ResearchAgent 的"实体共现知识库"构成对照；②评审们点名的基线清单（SciMON、MOOSE-Chem、ResearchTown、IdeaSynth 等）本身就是 idea 生成领域的文献地图；③代码未放出+撤稿，可信度档位偏低，精读时以论文声明为主、无法做代码审计。</li>
+</ul>
+<footer>由 <code>Literature项目或者系统/待归档/DeepIdeation/openreview/OpenReview_讨论存档.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CycleResearcher — OpenReview 讨论存档</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../../index.html">← 返回总览</a>
+<h1>CycleResearcher — OpenReview 讨论存档</h1>
+<blockquote>
+<p><strong>来源</strong>: OpenReview, ICLR 2025 Submission #489（存档日期 2026-08-04，OpenReview API 有反爬验证，本文为人工抓取全文整理）<br />
+<strong>标题</strong>: CycleResearcher: Improving Automated Research via Automated Review<br />
+<strong>作者</strong>: Yixuan Weng, Minjun Zhu, Guangsheng Bao, Hongbo Zhang, Jindong Wang, Yue Zhang, Linyi Yang<br />
+<strong>结果</strong>: ✅ <strong>Accept (Poster)</strong>——但 AC 明确写"recommend acceptance but with reservations"<br />
+<strong>arXiv</strong>: 2411.00816 · <strong>代码</strong>: https://github.com/zhu-minjun/Researcher （官网 wengsyx.github.io/Researcher）</p>
+</blockquote>
+<h2>TL;DR &amp; 摘要</h2>
+<p><strong>TL;DR</strong>: We propose CycleResearcher and CycleReviewer, open-source LLMs automating the research and review cycle.</p>
+<p><strong>Abstract</strong>（要点）: 探索用开源后训练 LLM 作为自主 agent 完成"文献综述→写稿→同行评审→修改"全循环。迭代偏好训练框架：CycleResearcher 做研究任务，CycleReviewer 模拟同行评审给出 RL 反馈。构建两个数据集 Review-5k 和 Research-14k。结果：CycleReviewer 预测论文分数的 MAE 比单个人类评审低 26.89%；CycleResearcher 生成论文的模拟评审分 5.36，接近人类 preprint 水平（5.24），低于 accepted 水平（5.69）。代码/数据/权重公开。</p>
+<p>Keywords: Large Language Models, Automation of Scientific Discovery, AI Scientist</p>
+<hr />
+<h2>Paper Decision（Program Chairs, 2025-01-22）</h2>
+<p><strong>Decision: Accept (Poster)</strong></p>
+<h2>Meta Review（Area Chair PfL8, 2024-12-23）——⚠️ 保留意见极多，值得全文细读</h2>
+<p>The authors study the problem of automatically evaluating and writing scientific papers: 1) CycleReviewer, a model that takes in a paper and returns a score 1-10 (trained to match human peer reviewer scores), and 2) CycleResearcher, an automated paper writing model that trains against the reward provided by CycleReviewer.</p>
+<p>This was an interesting but contentious paper. Reviewers all found the work intriguing, but raised questions about the ethical implications, the overclaiming in the writing, as well as the rigor of the evaluations. After discussion, I recommend acceptance <strong>but with reservations</strong>.</p>
+<p><strong>核心方法论批评</strong>（AC 原文要义）:<br />
+- 论文主张（CycleResearcher 产出接近人类论文质量）主要依赖 CycleReviewer 打分，而 CycleReviewer 是在（人类写的）历史数据上训练的——生成论文对它是严重 out-of-distribution。<strong>初版论文里实验结果完全是 LLM 自回归编造的（大量幻觉），CycleReviewer 仍给了高分。</strong> 人类评审有"作者确实做了所说之事"的信任前提；对生成论文需要高得多的审查标准。<br />
+- CycleResearcher 直接对 CycleReviewer 分数做优化，它在该指标上得分高不足为奇。<br />
+- 作者 rebuttal 中 (a) 改用 OpenAI o1 生成并执行代码而非编造结果；(b) 做了 n=3 的人类评审研究。但 (a) 无代码正确性分析；(b) 细节太少（作者身份是否对评审盲？评审能否发现实验错误？）。两者都需大幅加强才能令人信服。<br />
+- <strong>强烈建议作者改变论文 framing</strong>："这些结果展示了一个有趣的例子——可以生成在自动评审指标上得分很高、但结果未必正确的论文。" 目前"平均质量接近人类 preprint"的说法未被实验支撑。AC 还敦促作者慎重考虑公开发布模型的伦理问题。</p>
+<hr />
+<h2>Review 1 — Reviewer 7LzG（Rating 6, Confidence 3; Soundness 2, Presentation 3, Contribution 2）</h2>
+<p><strong>Strengths</strong>: 框架创新（模拟真实科研循环）；CycleReviewer MAE 优于单个人类评审 26.89%；生成论文接受率 31.07%；Review-5k/Research-8k 数据集有价值。</p>
+<p><strong>Weaknesses</strong>: 跨领域泛化未验证（只做 ML）；reward 设计可能被 policy model 钻空子（reward hacking）；实现复杂、资源门槛高。</p>
+<p><strong>作者回复</strong>: 框架核心与领域无关，选 ML 因为开放数据丰富+实验可代码自动化；跨域需与出版商合作获取数据。reward hacking：用 Review-5k 测试集在 Mistral-Large-2 上训了一个完全隔离的 reward model 重新评估——平均分 5.36→5.29（差 0.14），接受率 31.07%→28.65%，性能差异小，说明稳健（附录 F.2）。人类专家评估（平均 1110 引用）：CycleResearcher 4.8 vs AI Scientist 3.6。</p>
+<hr />
+<h2>Review 2 — Reviewer CzSX（Rating 6, Confidence 4; Soundness 3, Presentation 2, Contribution 2）</h2>
+<p><strong>Strengths</strong>: researcher+reviewer 双模型设计新颖；用了较新的偏好优化方法；数据集贡献有用；图漂亮；评估方式多样。</p>
+<p><strong>Weaknesses</strong>:<br />
+- <strong>核心问题：ground truth 评审分的取法</strong>——"用其余 n−1 个评审的平均分作为真实分数的估计"在社区共识里并不成立。评审因背景不同而分歧是同行评审的<strong>优点</strong>而非噪声。若 CycleReviewer 只是输出接近中位数的"对冲"分数，MAE 指标上就能"超过人类"。而且只看分数忽略了评审更重要的功能（指出错误、给出修改建议）。"LLMs can surpass expert-level performance in research evaluation" 属过度声明。<br />
+- 由于不认可 reviewer 的评价指标，对 CycleResearcher 的结果也存疑（用 CycleReviewer 评 CycleResearcher，且后者对前者优化过）。<br />
+- 不少笔误（4.1 节 CycleReviewer 写成 WhizeReviewer 等）。</p>
+<p><strong>作者回复</strong>（三连帖）: 真实分不可观测，只能用估计；按 [Su et al. 2024, ICML 2023 ranking data] 的做法把 n 个人类分分成 {x₁..xₙ₋₁} 与 {xₙ} 两组做 proxy MSE/MAE；proxy 指标是常规指标的向上有偏估计（偏置项 Var(y) 在比较两个 estimator 时抵消），因此比较是公平的；随机轮换 n 个评审避免离群影响。决策准确率对比：CycleReviewer (123B) 74.24% / Macro-F1 73.99，远超 GPT-4o 52.58%/34.51 等。分布分析（附录 C.1、图 4-5）：低/高/平均分分布接近人类，非简单回归均值；≤4.5 时预测 reject 准确率 93.65%，≥7 时预测 accept 准确率 93.94%；与人类平均分 Spearman 0.5126。<br />
+<strong>CzSX 回应提分</strong>: 指标选择"想得算认真"，配合削减声明（不再声称超过人类评审）可以接受；提醒结论里还有一句"CycleReviewer surpassing human experts in scoring consistency"要改；图 6 "WhizResearch" 笔误；真诚希望许可与监管体系认真落实——"低质量科研内容的泛滥对整个学术界是非常可怕的结局"，"in good faith" 提分。</p>
+<hr />
+<h2>Review 3 — Reviewer GAvj（Rating 6, Confidence 4; Soundness 2, Presentation 2, Contribution 2; Ethics Flag: potentially harmful）</h2>
+<p><strong>Weaknesses</strong>（最尖锐的一份）:<br />
+1. <strong>过度声明</strong>：号称"full cycle of automated research"却缺关键环节——<strong>真正跑实验</strong>。模型纯靠往届论文摘要写完整论文，实验设计与结果全是幻觉。<br />
+2. <strong>任务动机本身可疑</strong>："幻觉出实验结果再为其写论文"不会为科学贡献真实知识。"I think this is dual use technology, if not a completely malicious one... In current form, the paper is probably net-negative."（建议重新 framing 为"揭示评审系统即将失灵、向社区报警"）<br />
+3. <strong>reward model 过优化</strong>（引 Gao et al. 2022）：训练与测试用同一 reward model，无实验检验。建议用 held-out reward model。<br />
+4. "超过 preprint 质量、接近 accepted 质量"的声明不成立：人类评审给 4.8，自动评审给 5.36；应报告 ICLR2024 accepted 论文的真实平均分。<br />
+5. 人类评估问题：只给 CycleResearcher 用 best-of-N 不公平；规模小（10 篇、3 人）；30 分钟/篇不够。<br />
+6. "revision" 用词误导（实际是参数更新，不是基于评审的论文修改）。</p>
+<p><strong>Ethics Concerns</strong>: 同 Weakness 2，结果应让公众知晓但不应以当前 framing。</p>
+<p><strong>作者回复</strong>: 已修改摘要/引言降低声明力度；rebuttal 期间实现了完整自动化流水线（CycleResearcher 设计实验→GPT-o1-preview 生成并执行代码，附录 G，含完整代码库+实验日志，结果真实可验证）；held-out reward model 实验（同上，差 0.14）；完整对比表：ICLR 2024 submissions 人类分 5.54、accepted 6.44，CycleResearcher-12B 自动 5.36/人类 4.8，AI Scientist 自动 4.31/人类 3.6——承认未达 ICLR 提交平均水平；N=100 rejection sampling vs AI Scientist 150 次 API 调用（算力对等）；3 位专家每人评 20 篇/一周；"revision"→"refinement"。<br />
+<strong>GAvj 回应</strong>: "Thanks, I've raised my score."</p>
+<p><strong>Q&amp;A 补充</strong>: 系统 prompt 全文公开（analyze references→identify gaps→propose idea→LaTeX 正文→JSON 实验设计→收到 JSON 实验结果→写完 Results/Discussion/Conclusion）；小模型反而分高的原因=上下文长度（12B 训练 32k/RL 18k；72B/123B 只有 24k/10k），扩数据到 Research-14k 后 72B（5.38）反超 12B（5.36）；自动评估 802 篇测试集。</p>
+<hr />
+<h2>Review 4 — Reviewer 5wHA（Rating 8, Confidence 5; Soundness 3, Presentation 4, Contribution 3; Ethics Flag: bias/privacy/safety）</h2>
+<p><strong>Strengths</strong>: 数据集有价值；迭代偏好训练有意思；有 AI 生成检测模型这类伦理防护；覆盖全研究生命周期的野心。</p>
+<p><strong>Weaknesses</strong>: 附录 E.1/E.2 样例论文明显有幻觉与不实（声称超 SOTA 却无证据无引用）；12B 比 72B/123B 接受率高反直觉且无解释；伦理讨论不够深。</p>
+<p><strong>作者回复</strong>: 同上（分工定位=研究策略层；rebuttal 期实现端到端流水线，约 $20 + 6 A100-GPU 时/篇，MIT 协议开源；上下文长度解释+Research-14k 新结果；温度 0.4 三次独立评估 std&lt;1%）。<br />
+<strong>5wHA 回应提分至 8</strong>。</p>
+<hr />
+<h2>作者的伦理措施汇总帖（2024-12-04，写给全体 PC/伦理委员会）</h2>
+<ol>
+<li><strong>安全</strong>: 开源权重前加 SafetyLock 安全策略 + 红队测试（11 个安全类别 + 危险药物/网络攻击专项），攻击成功率降到可接受范围才开源；严格使用指南。</li>
+<li><strong>问责与署名</strong>: 三重措施——水印（生成论文末尾自动声明由 CycleResearcher 辅助）；检测工具（基于 Fast-Detect-GPT，对 CycleReviewer/CycleResearcher 生成内容约 95% Acc/F1，1 GPU 2 秒出结果，可部署到投稿系统）；许可制度（下载权重需公开机构信息与用途，出版商可在合理怀疑滥用时查询特定作者是否在特定时间段访问过模型）。</li>
+<li><strong>方法透明</strong>: 两轮输入输出格式（文献→动机+idea+方法+实验设置；实验结果→完整论文）；承认恶意用户可喂假实验结果产出错误论文——"学术伦理责任最终在使用者"，提供透明检测工具与问责机制。</li>
+<li><strong>使用指南</strong>: CycleReviewer 建议用于分层评审（AC 收到初始分后做建议，分歧大时 SAC 请求额外评审）、best paper 遴选辅助、投稿前自查；CycleResearcher 建议用于假设生成与优化、实验设计（每实验至少 3 套方案）、结果多角度分析、渐进融入工作流并保持人类监督。</li>
+</ol>
+<hr />
+<h2>归档者备注</h2>
+<ul>
+<li>最终评分 <strong>6/6/6/8</strong>，Accept (Poster)，但 <strong>meta review 是一份罕见的"带保留接收"</strong>——AC 直接指出核心评价循环（自产 reviewer 评自产 researcher、且后者对前者优化）的方法论缺陷，以及初版"幻觉实验结果也能拿高分"的事实。</li>
+<li>对本档案的价值：①这是"用 RL 优化论文以通过自动评审"的代表作，reward hacking / LLM-judge OOD 失效的活教材；②Review-5k / Research-14k 数据集；③GAvj 的"net-negative / dual-use"质疑与 AC 的 reframing 建议，是评估这类工作时应有的批判视角；④文献处理方式：从 references（BibTeX）直接生成 motivation/idea——文献→idea 的映射完全交给端到端训练。</li>
+</ul>
+<footer>由 <code>Literature项目或者系统/待归档/CycleResearcher/openreview/OpenReview_讨论存档.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>

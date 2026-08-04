@@ -1,0 +1,125 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chain of Ideas — OpenReview 讨论存档</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../../../../index.html">← 返回总览</a>
+<h1>Chain of Ideas — OpenReview 讨论存档</h1>
+<blockquote>
+<p><strong>来源</strong>: OpenReview, ICLR 2025 Submission #6109（存档日期 2026-08-04，OpenReview API 有反爬验证，本文为人工抓取全文整理）<br />
+<strong>标题</strong>: Chain of Ideas: Revolutionizing Research in Idea Development with LLM Agents<br />
+<strong>作者</strong>: Long Li, Weiwen Xu, Jiayan Guo, Ruochen Zhao, Xingxuan Li, Yuqian Yuan, Boqiang Zhang, Yuming Jiang, Yifei Xin, Ronghao Dang, Yu Rong, Deli Zhao, Tian Feng, Lidong Bing<br />
+<strong>结果</strong>: ❌ <strong>Reject</strong>（评分 5 / 5 / 5 / 8，恰在录取线下）<br />
+<strong>arXiv</strong>: 2410.13185 · <strong>代码</strong>: https://github.com/DAMO-NLP-SG/CoI-Agent<br />
+<strong>评审过程特记</strong>: AC 称"整个评审过程充满 drama，创纪录的 45 条回帖"——作者投诉 wMda 不回复、投诉 E21D 用 LLM 写评审（AC 认为"确实像"）、投诉 6L2R 违反学术诚信（先加分至 6 又因"自己投稿的同类文章收到负面反馈"降回 5，后删帖，作者贴出修改历史，AC 认为不构成违规）。</p>
+</blockquote>
+<h2>TL;DR &amp; 摘要</h2>
+<p><strong>TL;DR</strong>: We propose an CoI agent for automatic idea generation and corresponding experiment design.</p>
+<p><strong>Abstract</strong>: Effective research ideation is a critical step for scientific research. However, the exponential increase in scientific literature makes it challenging for researchers to stay current with recent advances and identify meaningful research directions. Recent developments in large language models (LLMs) suggest a promising avenue for automating the generation of novel research ideas. However, existing methods for idea generation either trivially prompt LLMs or directly expose LLMs to extensive literature without indicating useful information. Inspired by the research process of human researchers, we propose a Chain-of-Ideas (CoI) agent, an LLM-based agent that organizes relevant literature in a chain structure to effectively mirror the progressive development in a research domain. This organization facilitates LLMs to capture the current advancements in research, thereby enhancing their ideation capabilities. Furthermore, we propose Idea Arena, an evaluation protocol that can comprehensively evaluate idea generation methods from different perspectives, aligning closely with the preferences of human researchers. Experimental results indicate that the CoI agent consistently outperforms other methods and shows comparable quality as humans in research idea generation. Moreover, our CoI agent is budget-friendly, with a minimum cost of $0.50 to generate a candidate idea and its corresponding experimental design.</p>
+<p>Keywords: Large Language Model, Agent, Idea Generation</p>
+<hr />
+<h2>Paper Decision（Program Chairs, 2025-01-22）</h2>
+<p><strong>Decision: Reject</strong></p>
+<h2>Meta Review（Area Chair tHKB, 2024-12-24）</h2>
+<p>The paper introduces a Chain-of-Ideas (CoI), a method to help large language models generate novel research ideas. CoI organizes relevant research papers in a chain structure to simulate the progression of ideas in a field. This helps the models to generate new ideas by identifying current advancements; the authors also propose an evaluation framework, Idea Arena, to assess idea generation from multiple perspectives. The CoI agent outperforms some existing methods and is also cost-effective.</p>
+<p><strong>Strengths</strong>: CoI outperforms existing methods in generating research ideas. The method is cost-effective. A novel evaluation framework called Idea Arena is proposed.</p>
+<p><strong>Weaknesses</strong>: Evaluation metrics, particularly using LLMs as judges, need better justification. Limited analysis of the generated ideas. The CoI method might be seen as a simple adaptation of existing prompting techniques. Potential limitations and biases of the method are not adequately addressed. Comparison with other relevant work is lacking (addressed with additional experiments in the rebuttal).</p>
+<p>Based on the review scores for that paper (5, 5, 5, 8), the paper is just below the acceptance bar.</p>
+<p><strong>Additional Comments On Reviewer Discussion</strong>: The whole review process was filled with drama, with a record number of 45 posts. The authors have written to complain about wMda for not responding (fair point), about E21D for using an LLM to write the review (it does look so) and about 6L2R for violating academic integrity (I do not think so).</p>
+<hr />
+<h2>Review 1 — Reviewer wMda（Rating 5, Confidence 3; Soundness 2, Presentation 2, Contribution 1）</h2>
+<p><strong>Summary</strong>: The paper presents a Chain-of-Ideas (CoI) agent, designed to enhance research idea generation using LLMs. While recent similar approaches (Lu et al. 2024, Besta et al. 2024) just mix up papers into the prompt without effective organisation, the CoI agent organises relevant literature in a chain structure emulating the progressive development in a particular research topic. In addition, the authors propose Idea Arena to assess idea generation from multiple perspectives akin to human researchers.</p>
+<p><strong>Strengths</strong>:<br />
+- Originality: chain-of-ideas structure is a notable shift from traditional RAG or simple prompting; Idea Arena with tournament-style evaluation is structured and potentially more accurate.<br />
+- Quality: comprehensive experiments vs simple RAG, AI Scientist, GPT-Researcher, ResearchAgent.<br />
+- Clarity: well presented.<br />
+- Significance: contributes to automating research ideation.</p>
+<p><strong>Weaknesses</strong>:<br />
+- 总体：chain 结构可被视为对已知 prompting 策略（CoT / retrieval-based prompting）的轻微改造。<br />
+- 分析与结果有限：应对生成的 idea 做更多分析（与人类的差异？chain/trend 的准确性评估？完整结果在哪里？）。<br />
+- 评价方式有限：只有一种评价方法是否足够？Idea Arena 依赖 ELO 分和成对排名，可能无法完全捕捉 idea 原创性或现实可行性的质的差异。<br />
+- 缺 Limitation 章节：应讨论方法局限；性能强依赖底层 LLM（建议测试较弱的本地 LLM）；$0.50/idea 的成本分析不够透明；只在 AI 领域验证。<br />
+- 应与并行工作 SciAgents (arXiv:2409.05556) 比较。</p>
+<p><strong>Questions</strong>（节选）: 文献稀少的领域如何处理、是否幻觉？只考虑线性链，是否考虑多路径/网络结构？chain 构建的度量与阈值？如何识别与缓解文献选择偏差？完整结果在哪？是否考虑 graph-based RAG / 知识图谱？是否考虑 connected papers API？是否优化过 prompt / 用 ADAS、AFlow 优化多智能体系统？</p>
+<h3>作者回复（要点）</h3>
+<ul>
+<li><strong>CoI vs CoT</strong>: CoI 将已有研究重组为清晰的发展趋势，据此推导创新 idea；CoT 独立生成推理步骤。"idea"是经数月实践的完整研究工作，"thought"是解特定问题的中间推理步，粒度与信息量完全不同。追加实验（50 场对战，胜 2 平 1 负 0，满分 100）：CoT 对 CoI 仅得 4/1/14/25/0（Novelty/Significance/Clarity/Feasibility/Effectiveness），RAG 得 8/7/23/44/7，CoT+RAG 得 20/21/40/48/18——CoI 显著优于三者。</li>
+<li><strong>与人类差异</strong>: 以 HuggingFace daily papers 为人类基线，生成 idea 在 novelty/significance 上超过人类，feasibility 较低（论文 4.1 节）。</li>
+<li><strong>chain 质量</strong>: 用 LLM 分析新论文全文找最相关文献（向前）；用引用关系+相似度（向后）；外部 LLM 评估检索文献与主题/当前链的一致性；承认未单独评估链质量（主观性强），留作未来工作。</li>
+<li><strong>完整结果</strong>: supplementary experiments/case.json。</li>
+<li><strong>ELO 评价</strong>: 科学 idea 开放性强、缺乏公认标准（AI-Researcher [Si et al. 2409.04109] 也讨论过），成对比较+ELO 减少对 gold standard 的依赖。</li>
+<li><strong>SciAgents 复现对比</strong>（ELO 均分）: Real Paper 1130 (rank1) &gt; <strong>CoI 1129</strong> &gt; AI-Researcher 1095 &gt; GPT-Researcher 1019 &gt; ResearchAgent 1017 &gt; RAG 952 &gt; SciAgent 836 &gt; AI-Scientist 822。</li>
+<li><strong>少文献场景</strong>: 3 篇即有明显提升，5 篇效果很好；无相关文献时退化为原始 RAG；引用检索+向量重排缓解幻觉。</li>
+<li><strong>成本</strong>: 约 $0.1 选最佳 idea，$0.5 生成；可通过链数控制成本。</li>
+<li><strong>图结构</strong>: 试过 GoI（graph of ideas），表现不如链式，可能因推理复杂度提高；计划模拟 GoT 渐进引入。</li>
+<li>wMda 整个 rebuttal 期未回复（作者多次催促，包括 [URGENT] 帖）。</li>
+</ul>
+<hr />
+<h2>Review 2 — Reviewer AfFY（Rating 8, Confidence 4; Soundness 3, Presentation 4, Contribution 3）</h2>
+<p><strong>Summary</strong>: The authors show a way how LLMs can be utilized to generate novel paper directions together with experimental design. They call it Chain-of-Ideas since it utilizes the trend of ideas in the papers to come up with new ideas.</p>
+<p><strong>Strengths</strong>: CoI 在 LLM-as-judge 基准中表现好；便宜（对闭源 LLM 重要）；确实能找到新论文中出现的一些 idea。</p>
+<p><strong>Weaknesses/Questions</strong>: 用 LLM 评审 idea 的动机需更充分；人类评审也难从几段描述预判结果；70% 人机一致率为何算"强一致"？是否存在新论文污染？</p>
+<h3>作者回复（要点）</h3>
+<ul>
+<li>AI-Scientist、ResearchAgent 也用 LLM 做评审。人-人一致率仅 71.9%（ICLR）/66%（NeurIPS）（Si et al. 数据），故 70% 人机一致已属高位。补充 Pearson/Spearman 相关矩阵：Human–GPT-4o 89.3%/80.6%，Human–Gemini-1.5-pro 88.0%/80.6%，Human–Claude-3.5 83.9%/76%（模型间更高，96%+/86%+）。</li>
+<li>防污染：外部 novelty checker 检索相关文章判断是否抄袭，是则重新生成。</li>
+</ul>
+<p><strong>评审后续</strong>（AfFY 提分至 8）: 人机相关性显示 SOTA LLM 在评判 idea 价值上与人类接近，"可能有更大影响"。建议作者做一个网站：对未来会议生成数千 abstract，看多少论文可被预见——可能颠覆学术出版结构。并公开反对 E21D 的 ethics flag（"维护传统写论文方式为何重要？"），且点名 E21D 的初审"LLM 润色痕迹明显（每条 remark 加粗）+ 模糊措辞 'remaining constraints'，这本身也无益于学术诚信"。</p>
+<hr />
+<h2>Review 3 — Reviewer E21D（Rating 5, Confidence 4; Soundness 3, Presentation 3, Contribution 1; Ethics Flag: Privacy/security/safety）</h2>
+<p><strong>Summary</strong>: 提出 CoI 框架增强 LLM 生成科研 idea 的能力，实验显示优于其他方法、成本低。</p>
+<p><strong>Strengths</strong>: 方法扎实（模拟人类研究者实践）；Idea Arena 评价协议全面；实验证明有效。</p>
+<p><strong>Weaknesses</strong>:<br />
+1. 缺 idea 安全与伦理讨论（可能生成不安全/不伦理的科研提案）。<br />
+2. 表 1 中人机一致率不算高，评价指标可靠性存疑。<br />
+3. 与 CoT 方法相似，更像 CoT 在 idea 生成场景的应用，方法新颖性存疑。<br />
+4. 幻觉问题评估不足。</p>
+<p><strong>Ethics Concerns</strong>: 可能生成不安全/不伦理 idea；AI 生成提案的问责与责任归属；影响科研诚信（削弱人类创造力与批判性思维、idea 同质化）。</p>
+<h3>作者回复（要点）</h3>
+<ul>
+<li>安全：追加实验——用两个不安全主题（"AI 武器化"、"高成瘾致死药物开发"）各生成 10 个 idea，结果全部导向伦理规范/安全增强/透明度/预防滥用方向（LLM 安全对齐 + 公开文献多为正面视角所致）。</li>
+<li>一致率：同 AfFY 回复（71.9%/66% 参照 + 相关系数矩阵）。</li>
+<li>CoI vs CoT：同 wMda 回复 + 对战实验数据；并举 Chain-of-Knowledge、Chain-of-Experts、CodeChain（均 ICLR 2024）说明链式框架不减新颖性；prompt engineering 的价值应看任务达成度（MetaGPT/CAMEL/Reflexion 先例）。</li>
+<li>幻觉：引用检索+向量重排保证 Idea Chain 质量；趋势来自真实连续论文而非 LLM 生成。</li>
+<li>E21D 先表示"愿从 reject 提到 5"，作者追问 "remaining constraints" 具体内容；E21D 最终回复两点：仍质疑 chain-based prompting 新颖性；安全风险与防御方法在设定中仍不明确。作者再回复（引用文献+已修改 PDF 加入安全讨论）后 E21D 维持 5 分。</li>
+</ul>
+<hr />
+<h2>Review 4 — Reviewer 6L2R（Rating 5→6→5, Confidence 3; Soundness 3, Presentation 2, Contribution 2）</h2>
+<p><strong>Summary</strong>: CoI 框架按 idea 进展（以 anchor 论文向前后延伸）组织文献，让 LLM 理解领域现状并生成新 idea；实验显著优于 RAG 等已有方法，接近人类创造力。</p>
+<p><strong>Strengths</strong>: 系统性组织文献有创新；便宜；Idea Arena 增强评估稳健性。</p>
+<p><strong>Weaknesses</strong>:<br />
+1. 方法节公式变量标注不全、图 2 caption 太简（"Our proposed CoI agent framework"）。<br />
+2. 评价指标最关键：ICML2020 评审指南是给论文的不是给 idea 的，具体如何操作？10 位人类评审背景与胜任度细节（引 Si et al. [1]）？<br />
+3. 只做 AI 领域——领域太小、贡献有过度声明之嫌；只做 idea 生成应用面有限（对比 AI Scientist 可写整篇论文）。<br />
+4. 与 AI Scientist 的对比公平性："We extract the components related to idea generation and experiment design to serve as our baseline" 描述过简，且 AI Scientist 目标是完成整篇论文。</p>
+<h3>作者回复（要点）</h3>
+<ul>
+<li>评价标准来源：Novelty/Significance 改编自 ICML 2020 评审指南（去除实验评估标准）；Effectiveness 参考 AI-Researcher；Feasibility 为 idea 生成任务定制；Clarity 沿用 ICML 2020。实验设计评价：Quality（ICML 2020 Technical Quality 去除结果导向标准）+ Clarity + Feasibility（定制）。</li>
+<li>人类评审团：2 硕 8 博，覆盖 CV/具身智能/NLP，均有顶会论文；每人从 HF daily papers 选 5 篇感兴趣论文导出 research topic。</li>
+<li>AI 领域选择：CoI 理论上适用于任何领域；选 AI 是专业所在、评估质量更高；已与心理学教授合作用 CoI 生成心理学研究主题。AI-Scientist 依赖已有代码、多为对 seed idea 的微调（举 dual_expert_denoiser 例子：只在原方法输出层后加了个简单 gating）。</li>
+<li>AI-Scientist 对比：其流程 4 步（生成 idea、设计实验、跑实验、写论文），取前两步对比合理。附 SciAgent/AI-Researcher 复现 ELO 表（同上）。</li>
+<li><strong>6L2R 提分至 6</strong>；11-26 又降回 5（原因帖后删除，作者贴出编辑历史："based on the feedback I received from my own review in ICLR2025, it seems that articles of this type are unlikely to receive positive feedback"）。作者以"评审应只关注论文本身质量"为由向 AC 举报利益冲突/学术诚信问题。AC 在 meta review 中表示不认为构成违规。</li>
+</ul>
+<hr />
+<h2>归档者备注</h2>
+<ul>
+<li>四个评审的最终分：<strong>5 (wMda), 8 (AfFY), 5 (E21D), 5 (6L2R)</strong>，avg 5.75 → Reject。</li>
+<li>对本档案有价值的信息点：①CoI 的文献组织=引用链+趋势提取，向前用 LLM 读全文找相关、向后用引用+相似度；②Idea Arena=成对对战+ELO，5 维度（Novelty/Significance/Clarity/Feasibility/Effectiveness）；③与 ResearchAgent/AI-Researcher/GPT-Researcher/SciAgents/AI-Scientist 的横向 ELO 对比数据在 rebuttal 中；④评审过程本身是"LLM 时代同行评审失灵"的鲜活样本（LLM 写的评审、失联评审、利益冲突降分）。</li>
+</ul>
+<footer>由 <code>Literature项目或者系统/待归档/ChainOfIdeas/openreview/OpenReview_讨论存档.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>
