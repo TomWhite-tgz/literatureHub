@@ -46,7 +46,7 @@
   .toc a:hover { background: var(--accent); color: #fff; }
 
   /* ---------- 分区 ---------- */
-  section { margin-top: 46px; }
+  section { margin-top: 16px; }
   .sec-head { display: flex; align-items: baseline; gap: 12px; border-left: 5px solid var(--accent); padding-left: 14px; margin-bottom: 6px; }
   .sec-head h2 { font-size: 21px; }
   .sec-head .count { color: var(--ink-soft); font-size: 13px; }
@@ -179,6 +179,36 @@
   .pill.biz { background: var(--rose-bg); color: var(--rose); }
   .pill.mix { background: var(--amber-bg); color: var(--amber); }
 
+
+  /* ---------- 全页逻辑导航（三列） ---------- */
+  .map { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 14px; margin-top: 20px; }
+  .map-col { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(120,90,50,.06); }
+  .map-title { font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-soft); }
+  .map-item { display: block; text-decoration: none; color: var(--ink); font-size: 13.8px; font-weight: 600; padding: 7px 10px; border-radius: 8px; margin: 2px 0; transition: background .12s; }
+  .map-item span { display: block; font-size: 11.8px; color: var(--ink-soft); font-weight: 400; margin-top: 1px; }
+  .map-item:hover { background: var(--accent-soft); }
+  .map-item.sub { margin-left: 18px; border-left: 2px solid #e6cdaa; border-radius: 0 8px 8px 0; }
+  @media (max-width: 860px) { .map { grid-template-columns: 1fr; } }
+
+  /* ---------- 三大分区容器 ---------- */
+  .zone { border: 1.5px solid var(--line); border-radius: 16px; padding: 16px 18px 18px; margin-top: 30px; background: rgba(255,253,248,.45); }
+  .zone-title { font-size: 13.5px; font-weight: 700; letter-spacing: 1.5px; color: var(--accent); margin-bottom: 4px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-soft); }
+  .zone.zone1 { border-color: #dcbf95; }
+  .zone.zone2 { border-color: #c9cfb8; }
+  .zone.zone3 { border-color: #cfc4d6; }
+
+  /* ---------- 板块折叠卡片 ---------- */
+  details.sec-fold { background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 1px 3px rgba(120,90,50,.06); overflow: hidden; }
+  details.sec-fold > summary { cursor: pointer; list-style: none; padding: 15px 20px; display: flex; align-items: baseline; gap: 12px; user-select: none; }
+  details.sec-fold > summary::-webkit-details-marker { display: none; }
+  details.sec-fold > summary::before { content: "▸"; color: var(--accent); font-size: 15px; transition: transform .15s; flex-shrink: 0; }
+  details.sec-fold[open] > summary::before { transform: rotate(90deg); }
+  details.sec-fold > summary:hover { background: #fbf3e6; }
+  details.sec-fold > summary .sec-head { border-left: none; padding-left: 0; margin-bottom: 0; flex-wrap: wrap; }
+  details.sec-fold > summary .open-hint { margin-left: auto; font-size: 12px; color: var(--ink-soft); flex-shrink: 0; }
+  details.sec-fold[open] > summary .open-hint { visibility: hidden; }
+  .sec-body { padding: 4px 20px 20px; border-top: 1px dashed var(--line); }
+
   footer { margin-top: 60px; border-top: 1px solid var(--line); padding-top: 16px; color: var(--ink-soft); font-size: 12.5px; }
   footer code { background: #f1e9d8; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
 </style>
@@ -188,30 +218,43 @@
 
 <header>
   <h1>Literature <span>·</span> 自动化科研文献模块 总览</h1>
-  <p class="sub">文献搜索 / 文献问答 / 深度研究系统的调研档案入口。按「复杂 — 简单 — 包装的好看」三档可信度分类；点击卡片内链接进入各精读 / 分析子页面。</p>
+  <p class="sub">文献搜索 / 文献问答 / 深度研究系统的调研档案入口。按「复杂 — 简单 — 包装的好看」三档可信度分类；点击卡片内链接进入各精读 / 分析子页面。下方板块默认折叠，点击标题展开。</p>
   <div style="background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:14px 20px;margin-top:20px;font-size:13.6px;line-height:1.7">
     <b style="color:#b4530a">📦 这是 Literature 调研档案的分享站 · 持续更新</b><br>
     所有<b>精读页面、审计结论、配图、笔记、论文 PDF</b> 都已包含，论文链接点开即可阅读原文。<br>
     源码仓库与数据集未打包（原始档案 107 GB）：相应链接指向官方仓库，或跳到 <a href="_未包含的内容.html" style="color:#b4530a">未包含内容说明</a>。
   </div>
-  <div class="toc">
-    <a href="#survey-plan">🧭 选题讨论</a>
-    <a href="#landscape">🗺 领域版图</a>
-    <a href="#systems">项目与系统</a>
-    <a href="#compare">横向对比</a>
-    <a href="#benchmark">Benchmark</a>
-    <a href="#datalib">文献库 · 数据接口</a>
-    <a href="#sources">🔌 数据源 · 基础设施</a>
-    <a href="#products">🏢 商业产品</a>
-    <a href="#empirical">实证论文</a>
-    <a href="#thoughts">我的思考</a>
-    <a href="#misc">其他 · 待归档</a>
+  <div class="map">
+    <div class="map-col">
+      <div class="map-title">① 选题讨论 · 我要做什么</div>
+      <a class="map-item" href="#survey-plan">🧭 Agentic Literature Search 综述可行性<span>与 alphaXiv 的交流 · 四类做法与顶会潜力</span></a>
+      <a class="map-item sub" href="#tracks">🛤 四条投稿主线 A/B/C/D<span>把「搭文献库」变成可发表的研究问题</span></a>
+      <a class="map-item" href="#sources">🔌 数据源 · 文献基础设施<span>21 个渠道能不能接、怎么接 —— 做系统的前置调研</span></a>
+    </div>
+    <div class="map-col">
+      <div class="map-title">② 领域调研 · 别人做了什么</div>
+      <a class="map-item" href="#landscape">🗺 领域版图<span>约 130 篇八大类 + 56 个系统分类</span></a>
+      <a class="map-item" href="#systems">📚 项目与系统<span>13 个项目深读 · 复杂/简单/包装三档</span></a>
+      <a class="map-item sub" href="#compare">⚖️ 横向对比<span>文献搜索四系统横评</span></a>
+      <a class="map-item" href="#benchmark">🎯 Benchmark<span>7 张卡 · 4 篇已深读</span></a>
+      <a class="map-item" href="#datalib">📖 文献库 · 数据接口<span>DeepXiv 等</span></a>
+      <a class="map-item" href="#products">🏢 商业产品<span>Elicit / Consensus / Asta / Scite …</span></a>
+      <a class="map-item" href="#empirical">🔬 实证论文<span>What's Missing in Autonomous Research 等</span></a>
+    </div>
+    <div class="map-col">
+      <div class="map-title">③ 思考笔记 · 内容的源头</div>
+      <a class="map-item" href="#thoughts">✍️ 我的思考<span>md 笔记 —— 上面各板块的内容源头</span></a>
+    </div>
   </div>
 </header>
 
+<div class="zone zone1">
+<div class="zone-title">① 选题讨论 · 我要做什么</div>
 <!-- ==================== 选题讨论 ==================== -->
 <section id="survey-plan">
-  <div class="sec-head"><h2>🧭 选题讨论 · Agentic Literature Search 综述可行性</h2><span class="count">与 alphaXiv 的交流 · 2026-08-03</span></div>
+<details class="sec-fold">
+<summary>  <div class="sec-head"><h2>🧭 选题讨论 · Agentic Literature Search 综述可行性</h2><span class="count">与 alphaXiv 的交流 · 2026-08-03</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<div class="sec-body">
   <p class="sec-note">问题：写一篇 agentic literature search 的综述，能不能发顶会？下面按讨论脉络折叠存档，含四类做法的具体实现步骤。</p>
 
   <div class="key">
@@ -467,11 +510,156 @@ Claim 4: 方法 A 与方法 C 的比较是公平的</div></li>
       <p><b>理由（现有工作暴露的空缺）</b>：SurveyBench 发现自动 survey 往往结构流畅但技术细节、综合推理和核心思想抽象不足；AutoResearchBench 显示科学文献搜索中的<b>完整性和细粒度验证</b>仍然很困难。</p>
     </div>
   </details>
+</div>
+</details>
 </section>
 
+<!-- ==================== 数据源 · 基础设施 ==================== -->
+<section id="sources">
+<details class="sec-fold">
+<summary>  <div class="sec-head"><h2>🔌 数据源 · 文献基础设施</h2><span class="count">21 个渠道可接入性 + 目标系统轮廓 + 四条投稿主线</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<div class="sec-body">
+  <p class="sec-note">"要自己做一个文献搜索系统"时的底层选择：哪些数据源能合法接入、怎么分层、以及如何把"搭库"这件工程活转化成可投顶会的研究问题。</p>
+  <p class="src">来源笔记：<a href="我的思考/关于搜索渠道by_GPTScholar.html">关于搜索渠道by_GPTScholar.md</a> · <a href="我的思考/待整理/持续更新的学术文献基础设施_调研起点.html">持续更新的学术文献基础设施_调研起点.md</a></p>
+
+  <details class="fold">
+    <summary>21 个数据源的可接入情况<span class="hint">能不能自己接 / 怎么接 / 限制在哪</span></summary>
+    <div class="fold-body">
+      <table class="tbl dense">
+        <tr><th>数据源</th><th>能否自行接入</th><th>常见方式</th><th>主要限制</th></tr>
+        <tr><td><b>OpenAlex</b></td><td><b>可以，推荐</b></td><td>REST API、全量数据快照</td><td>元数据覆盖广，但摘要、作者消歧和引用数据并非绝对准确</td></tr>
+        <tr><td><b>Crossref</b></td><td><b>可以，推荐</b></td><td>REST API</td><td>主要是 DOI 元数据，不是论文全文库</td></tr>
+        <tr><td>Semantic Scholar</td><td>可以</td><td>Academic Graph API</td><td>有速率限制；部分能力可能需要 API Key</td></tr>
+        <tr><td>arXiv</td><td>可以</td><td>API、OAI-PMH、公开论文文件</td><td>需控制请求频率；批量使用要遵守许可和服务规则</td></tr>
+        <tr><td>PubMed</td><td>可以</td><td>NCBI E-utilities</td><td>主要提供元数据和摘要，不等于全部全文</td></tr>
+        <tr><td>PubMed Central</td><td>部分可以</td><td>API、OAI、开放获取子集</td><td>只有符合许可的文章才能批量下载或再利用</td></tr>
+        <tr><td><b>Europe PMC</b></td><td><b>可以，生物医学推荐</b></td><td>REST API、开放全文接口</td><td>全文权限取决于文章许可</td></tr>
+        <tr><td>bioRxiv / medRxiv</td><td>可以</td><td>官方 API、预印本页面</td><td>预印本未必经过同行评审；PDF 再利用需看许可</td></tr>
+        <tr><td>Unpaywall</td><td>可以</td><td>DOI 查询 API、数据快照</td><td>提供开放全文<b>位置</b>，不提供全文本身</td></tr>
+        <tr><td>OpenCitations</td><td>可以</td><td>REST API、开放数据集</td><td>引用覆盖不等于 WoS 或 Scopus 的完整覆盖</td></tr>
+        <tr><td>CORE</td><td>可以申请</td><td>API、开放仓储聚合</td><td>API 配额、全文使用条件需遵守政策</td></tr>
+        <tr><td>Google Scholar</td><td><b>无官方公共 API</b></td><td>不建议直接爬虫</td><td>自动抓取容易触发封禁，也可能违反服务条款</td></tr>
+        <tr><td>Web of Science</td><td>有条件</td><td>商业 API</td><td>通常需机构订阅或单独授权</td></tr>
+        <tr><td>Scopus</td><td>有条件</td><td>Elsevier API</td><td>需注册，完整能力与订阅权限相关</td></tr>
+        <tr><td>Dimensions</td><td>有条件</td><td>API、DSL</td><td>一般需许可证或机构合作</td></tr>
+        <tr><td>IEEE Xplore</td><td>有条件</td><td>官方 API</td><td>有配额、字段及全文权限限制</td></tr>
+        <tr><td>Springer Nature</td><td>有条件</td><td>官方 API</td><td>元数据、摘要和开放全文权限不同</td></tr>
+        <tr><td>ACM DL</td><td>有限</td><td>授权数据、出版社合作</td><td>不适合作为无许可的批量抓取源</td></tr>
+        <tr><td>CNKI / 万方 / 维普</td><td>通常有条件</td><td>机构接口、商业授权</td><td>不应默认通过网页爬虫批量抓取</td></tr>
+        <tr><td>专利数据库</td><td>因机构而异</td><td>专利局 API、批量数据</td><td>EPO、USPTO、WIPO 及各国规则不同</td></tr>
+        <tr><td>普通公共网页</td><td>技术上部分可行</td><td>搜索接口、定向抓取</td><td>必须检查 robots、服务条款、版权和个人信息规定</td></tr>
+      </table>
+      <div class="todo"><b>三条 Tips</b>：① API 返回论文 ≠ 可以保存全文（检索到的往往只是标题/作者/摘要/DOI）；② 去重是必做项；③ 必须先定义"搜索质量"才能谈排序。</div>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>实用基础组合与实现分层<span class="hint">采集 → 标准化 → 去重 → 索引 → 排序</span></summary>
+    <div class="fold-body">
+      <h5>一个通用文献搜索系统的实用组合</h5>
+      <div class="codeblock">OpenAlex        ─ 主体论文、作者、机构、期刊、引用关系
+Crossref        ─ DOI 及出版元数据校正
+Semantic Scholar─ 语义检索、引用关系、相关论文
+Unpaywall       ─ 查找合法开放全文地址
+OpenCitations   ─ 补充开放引用图谱
+arXiv / bioRxiv ─ 预印本和公开全文
+PubMed / EuropePMC ─ 医学与生命科学增强</div>
+      <h5>推荐的实现分层</h5>
+      <div class="flow">
+        <span class="step">外部数据源</span><span class="arr">→</span>
+        <span class="step">采集适配层<br><span style="font-size:11px">每源独立 Connector · 频率限制 · 重试缓存 · Key 管理</span></span><span class="arr">→</span>
+        <span class="step">标准化层<br><span style="font-size:11px">DOI 标准化 · 作者消歧 · 期刊名统一 · 日期与类型统一</span></span><span class="arr">→</span>
+        <span class="step">去重与合并<br><span style="font-size:11px">DOI 优先 · PMID/arXiv ID 辅助 · 标题作者年份模糊匹配</span></span><span class="arr">→</span>
+        <span class="step">索引层<br><span style="font-size:11px">ES/OpenSearch 关键词 · 向量库语义 · 图库关系</span></span><span class="arr">→</span>
+        <span class="step">排序层<br><span style="font-size:11px">关键词相关性 · 向量相似度 · 引用与时间 · 研究类型 · 来源可信度</span></span><span class="arr">→</span>
+        <span class="step">用户搜索与研究助手</span>
+      </div>
+      <h5>不要把文献库等同于 Embedding 库</h5>
+      <p>完整文献库至少含 10 项：原始论文；规范化元数据；论文版本关系；结构化全文与文本块；图表及补充材料；关键词索引；Embedding 索引；引用关系；数据来源和处理血缘；可重建索引所需的配置。<b>Embedding 是派生索引，不是不可替代的源数据。</b></p>
+      <div class="codeblock">原始 PDF / HTML → 规范化元数据与版本 → 结构化全文、章节、段落、图表
+        → BM25 / Embedding / Citation Graph → Search / QA / Recommendation / Agent</div>
+      <h5>目标系统轮廓与规模分层</h5>
+      <table class="tbl">
+        <tr><th class="w">层次</th><th>数据规模</th><th>保存内容</th></tr>
+        <tr><td>Candidate Catalog</td><td>10 万～50 万篇</td><td>标题、摘要、元数据、引用、摘要向量</td></tr>
+        <tr><td>Watchlist</td><td>1 万～3 万篇</td><td>高相关元数据、推荐状态、可能的全文链接</td></tr>
+        <tr><td>Core Full-text</td><td>3,000～5,000 篇</td><td>PDF、解析全文、Chunk、向量、图表</td></tr>
+      </table>
+      <p>每日漏斗：数百篇新候选 → 分类和关键词过滤 → 约 200 篇 → 摘要向量排序 → 约 50 篇 → LLM 或规则精排 → 约 10 篇 → 下载与质量检查 → <b>约 5 篇进入核心全文库</b>。</p>
+    </div>
+  </details>
+
+  <details class="fold" id="tracks">
+    <summary>四条投稿主线 A/B/C/D —— 把"搭库"变成可发表的研究问题<span class="hint">ICLR / SIGIR / KDD / VLDB 各要什么</span></summary>
+    <div class="fold-body">
+      <p>面向 ICLR、NeurIPS、ICML、KDD、VLDB 时，<b>不应把工作定义为"构建论文库"</b>。仅实现爬虫、向量库和问答界面不足以形成主要贡献。需要把文献管理能力转化为研究问题。</p>
+      <table class="tbl">
+        <tr><th class="w">层次</th><th>主要作用</th><th>潜在投稿方向</th></tr>
+        <tr><td>Agent、学习与评测</td><td>定义任务、策略、奖励、记忆和端到端能力</td><td>ICLR、NeurIPS、ICML</td></tr>
+        <tr><td>检索、推荐与图挖掘</td><td>文献召回、排序、新论文发现、动态图建模</td><td>KDD、SIGIR、WWW、WSDM</td></tr>
+        <tr><td>数据系统</td><td>动态混合索引、版本、血缘、查询执行和一致性</td><td>VLDB、SIGMOD、ICDE</td></tr>
+        <tr><td>文献管理基础</td><td>元数据、PDF、解析、去重、开放获取、数字保存</td><td>JCDL、TPDL；同时支撑上述三层</td></tr>
+      </table>
+      <h5>A · Budgeted Self-Updating Literature Agent <span class="pill mix">ICLR / NeurIPS / ICML</span></h5>
+      <div class="codeblock">输入：持续到达的新论文流 / 当前 Agent 文献库 / 用户研究兴趣和历史任务
+      / 有限存储、Embedding、LLM 和时间预算
+动作：忽略论文 · 只保存元数据 · 下载并解析全文 · 更新已有论文版本
+      · 替换或归档旧论文 · 重新组织索引
+目标：最大化未来搜索、QA、综述和科研任务表现，同时控制存储、计算和 API 成本</div>
+      <p>核心研究点：knowledge acquisition policy、budgeted memory management、continual learning、temporal generalization、新旧知识冲突、摄取决策的长期价值、Agent 策略与 Retriever 联合优化。</p>
+      <h5>B · Agent-Centric Literature Retrieval <span class="pill mix">ICLR / NeurIPS / SIGIR / ACL / EMNLP</span></h5>
+      <p>传统 Retriever 优化 query–document 局部相关性；Agent-centric Retriever 应优化<b>文献对最终任务的效用</b>：是否提高最终答案正确率、是否增加新的证据维度、是否消除或暴露证据冲突、是否帮助生成下一步检索词、是否提高综述覆盖率、是否支持最终主张并提供可验证引用。<span class="note-inline">与选题讨论的"Evidence-grounded &amp; completeness-aware"切入点重合度最高</span></p>
+      <h5>C · Evolving Scholarly Graph Mining <span class="pill mix">KDD / WWW / WSDM / SIGIR</span></h5>
+      <p>数据 = 论文全文 + 引用图 + 作者机构图 + Method/Dataset/Benchmark 实体 + 发表与更新时序 + 用户阅读收藏查询轨迹。任务：新论文冷启动推荐、emerging topic detection、研究方向演化建模、方法-数据集-benchmark 关系抽取、个性化兴趣更新、缺少引用信号时评价新论文价值、从文献流中发现研究空白。</p>
+      <h5>D · Dynamic Multimodal Literature Data System <span class="pill mix">VLDB / SIGMOD / ICDE / CIDR</span></h5>
+      <p>统一管理 PDF 与结构化全文 + Chunk + 图表 + 多版本 Embedding + 引用图 + 元数据 + Agent 查询与证据轨迹。研究点：增量解析与 Chunk 级更新、关键词/向量/图/元数据混合查询、Embedding 模型在线迁移、多版本论文与 time-travel query、RAG 数据血缘与结果可复现、Agent 工作负载驱动的索引优化、持续更新时的一致性吞吐延迟成本。</p>
+      <h5>科研知识图谱的目标数据模型</h5>
+      <div class="codeblock">Paper A
+  ├── proposes ───────> Method X
+  ├── evaluates_on ───> Benchmark Y
+  ├── uses_dataset ───> Dataset Z
+  ├── reports ────────> Result R
+  ├── compares_with ──> Method B
+  └── cites ──────────> Paper C</div>
+      <p class="note-inline">本页「简单 · SciAtlas」正是这条路线的公开实例（43.30M 论文 / 157M 实体 / 3B 关系），可作为 C/D 主线的直接对照。</p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>调研时要避免的 11 个混淆<span class="hint">这些混淆会直接毁掉问题定义</span></summary>
+    <div class="fold-body">
+      <ul>
+        <li>不要把<b>参考文献管理器</b>等同于科学文献数据基础设施。</li>
+        <li>不要把<b>向量数据库</b>等同于完整文献库。</li>
+        <li>不要把<b>学术搜索引擎</b>等同于全文问答系统。</li>
+        <li>不要把<b>单轮 RAG</b>等同于文献搜索 Agent。</li>
+        <li>不要把<b>生成引用格式</b>等同于引用事实正确。</li>
+        <li>不要把<b>引用次数</b>等同于新论文质量。</li>
+        <li>不要把 arXiv、OpenReview 和正式出版版本<b>计为不同工作</b>。</li>
+        <li>不要让数字图书馆和传统文献管理工作主导问题定义。</li>
+        <li>不要忽略文献管理 —— 数据错误、版本错误和索引不可追溯会直接破坏上层实验。</li>
+        <li>AI、KDD 和 VLDB 相关工作是核心阅读；数字图书馆、IR、知识图谱和循证研究用于补全必要基础。</li>
+        <li>不要只搜索 <code>paper management</code> —— 该词主要召回个人文献管理工具。</li>
+      </ul>
+      <h5>七个必须分开的概念</h5>
+      <div class="flow">
+        <span class="step">Reference Manager</span><span class="step">Academic Search Engine</span><span class="step">Literature Discovery System</span><span class="step">Scholarly Knowledge Graph</span><span class="step">Scientific QA System</span><span class="step">Literature Review Agent</span><span class="step">Research Agent</span>
+      </div>
+      <p class="note-inline">完整版还含 9 组可直接使用的组合检索式、按会议扫描清单（ICLR→JCDL 共 17 个）、每篇论文的记录模板、20 项横向对比表字段、以及 14 条最小执行清单 —— 见 <a href="我的思考/待整理/持续更新的学术文献基础设施_调研起点.html">调研起点笔记</a>。</p>
+    </div>
+  </details>
+</div>
+</details>
+</section>
+</div><!-- /zone -->
+
+<div class="zone zone2">
+<div class="zone-title">② 领域调研 · 别人做了什么</div>
 <!-- ==================== 领域版图 ==================== -->
 <section id="landscape">
-  <div class="sec-head"><h2>🗺 领域版图 · 相关工作全景</h2><span class="count">约 130 篇 + 56 个系统 · 来自「我的思考」笔记</span></div>
+<details class="sec-fold">
+<summary>  <div class="sec-head"><h2>🗺 领域版图 · 相关工作全景</h2><span class="count">约 130 篇 + 56 个系统 · 来自「我的思考」笔记</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<div class="sec-body">
   <p class="sec-note">本页下方各板块只收录<b>已深读归档</b>的项目；这里是尚未逐篇精读、但已登记在册的<b>全量工作清单</b>，作为选题与 related work 的检索起点。</p>
   <p class="src">来源笔记：<a href="我的思考/论文梳理/List.html">论文梳理/List.md</a> · <a href="我的思考/待整理/文献.html">待整理/文献.md</a> · <a href="我的思考/56个自主科研系统按功能分类.html">56个自主科研系统按功能分类.md</a> · <a href="我的思考/论文梳理/详细/关于LABBench2.html">关于LABBench2.md</a></p>
 
@@ -857,11 +1045,15 @@ return timeout_answer</div>
       </details>
     </div>
   </details>
+</div>
+</details>
 </section>
 
 <!-- ==================== 项目与系统 ==================== -->
 <section id="systems">
-  <div class="sec-head"><h2>📚 项目与系统</h2><span class="count">Literature项目或者系统/ · 13 个项目</span></div>
+<details class="sec-fold">
+<summary>  <div class="sec-head"><h2>📚 项目与系统</h2><span class="count">Literature项目或者系统/ · 13 个项目</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<div class="sec-body">
   <p class="sec-note">分类依据论文全文 + 源码深读：<b>复杂</b> = 有真实算法与工程实质；<b>简单</b> = 有实质但贡献有限或被重命名包装；<b>包装的好看</b> = 卖点在论文/代码层面无法成立。</p>
 
   <div class="group"><span class="tag complex">复 杂</span><h3>真材实料</h3><span class="desc">算法、训练、工程都经得起深读</span></div>
@@ -983,11 +1175,15 @@ return timeout_answer</div>
       </div>
     </div>
   </div>
+</div>
+</details>
 </section>
 
 <!-- ==================== 横向对比 ==================== -->
 <section id="compare">
-  <div class="sec-head"><h2>⚖️ 横向对比</h2><span class="count">Literature项目或者系统/横向对比/</span></div>
+<details class="sec-fold">
+<summary>  <div class="sec-head"><h2>⚖️ 横向对比</h2><span class="count">Literature项目或者系统/横向对比/</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<div class="sec-body">
   <p class="sec-note">跨系统的公平比较与定位分析。</p>
 
   <div class="feature">
@@ -999,28 +1195,15 @@ return timeout_answer</div>
     </div>
   </div>
 
-  <div class="grid">
-    <div class="card">
-      <h4>可以比较的系统</h4>
-      <div class="meta">同层抽象的 Agent 框架收录（当前：AgentScope）</div>
-      <div class="links">
-        <a class="md" href="Literature项目或者系统/横向对比/可以比较的系统/README_先看这里.html">README 先看这里 (md)</a>
-        <a class="dir" href="_未包含的内容.html">目录 →</a>
-      </div>
-    </div>
-    <div class="card">
-      <h4>关于 Agent 底座</h4>
-      <div class="meta">AgentENV（sandbox 基建）· LDP（policy/训练层）</div>
-      <div class="links">
-        <a class="dir" href="_未包含的内容.html">目录 →</a>
-      </div>
-    </div>
-  </div>
+</div>
+</details>
 </section>
 
 <!-- ==================== Benchmark ==================== -->
 <section id="benchmark">
-  <div class="sec-head"><h2>🎯 Benchmark</h2><span class="count">Benchmark/ · 7 张卡（4 篇已深读）</span></div>
+<details class="sec-fold">
+<summary>  <div class="sec-head"><h2>🎯 Benchmark</h2><span class="count">Benchmark/ · 7 张卡（4 篇已深读）</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<div class="sec-body">
   <p class="sec-note">2026-08 新增四篇「agentic 文献检索评测」簇：<b>AstaBench</b> 是这条线的参照点（ICLR 2026），<b>ScholarQuest</b> 是可用数据集但相关工作写空了领域，<b>SPARBench</b> 是它的对照竞品，<b>RollingEval</b> 攻击的是整条评测范式。</p>
   <div class="grid">
     <div class="card">
@@ -1087,11 +1270,15 @@ return timeout_answer</div>
       </div>
     </div>
   </div>
+</div>
+</details>
 </section>
 
 <!-- ==================== 文献库 · 数据接口 ==================== -->
 <section id="datalib">
-  <div class="sec-head"><h2>📖 文献库 · 数据接口</h2><span class="count">文献库/</span></div>
+<details class="sec-fold">
+<summary>  <div class="sec-head"><h2>📖 文献库 · 数据接口</h2><span class="count">文献库/</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<div class="sec-body">
   <p class="sec-note">不是检索系统也不是 benchmark，而是「给 agent 用的文献数据层」。这类项目的特点是<b>工程使用度与学术引用度严重分裂</b>。</p>
   <div class="grid">
     <div class="card">
@@ -1105,145 +1292,16 @@ return timeout_answer</div>
       </div>
     </div>
   </div>
+</div>
+</details>
 </section>
 
-<!-- ==================== 数据源 · 基础设施 ==================== -->
-<section id="sources">
-  <div class="sec-head"><h2>🔌 数据源 · 文献基础设施</h2><span class="count">21 个渠道可接入性 + 目标系统轮廓 + 四条投稿主线</span></div>
-  <p class="sec-note">"要自己做一个文献搜索系统"时的底层选择：哪些数据源能合法接入、怎么分层、以及如何把"搭库"这件工程活转化成可投顶会的研究问题。</p>
-  <p class="src">来源笔记：<a href="我的思考/关于搜索渠道by_GPTScholar.html">关于搜索渠道by_GPTScholar.md</a> · <a href="我的思考/待整理/持续更新的学术文献基础设施_调研起点.html">持续更新的学术文献基础设施_调研起点.md</a></p>
-
-  <details class="fold">
-    <summary>21 个数据源的可接入情况<span class="hint">能不能自己接 / 怎么接 / 限制在哪</span></summary>
-    <div class="fold-body">
-      <table class="tbl dense">
-        <tr><th>数据源</th><th>能否自行接入</th><th>常见方式</th><th>主要限制</th></tr>
-        <tr><td><b>OpenAlex</b></td><td><b>可以，推荐</b></td><td>REST API、全量数据快照</td><td>元数据覆盖广，但摘要、作者消歧和引用数据并非绝对准确</td></tr>
-        <tr><td><b>Crossref</b></td><td><b>可以，推荐</b></td><td>REST API</td><td>主要是 DOI 元数据，不是论文全文库</td></tr>
-        <tr><td>Semantic Scholar</td><td>可以</td><td>Academic Graph API</td><td>有速率限制；部分能力可能需要 API Key</td></tr>
-        <tr><td>arXiv</td><td>可以</td><td>API、OAI-PMH、公开论文文件</td><td>需控制请求频率；批量使用要遵守许可和服务规则</td></tr>
-        <tr><td>PubMed</td><td>可以</td><td>NCBI E-utilities</td><td>主要提供元数据和摘要，不等于全部全文</td></tr>
-        <tr><td>PubMed Central</td><td>部分可以</td><td>API、OAI、开放获取子集</td><td>只有符合许可的文章才能批量下载或再利用</td></tr>
-        <tr><td><b>Europe PMC</b></td><td><b>可以，生物医学推荐</b></td><td>REST API、开放全文接口</td><td>全文权限取决于文章许可</td></tr>
-        <tr><td>bioRxiv / medRxiv</td><td>可以</td><td>官方 API、预印本页面</td><td>预印本未必经过同行评审；PDF 再利用需看许可</td></tr>
-        <tr><td>Unpaywall</td><td>可以</td><td>DOI 查询 API、数据快照</td><td>提供开放全文<b>位置</b>，不提供全文本身</td></tr>
-        <tr><td>OpenCitations</td><td>可以</td><td>REST API、开放数据集</td><td>引用覆盖不等于 WoS 或 Scopus 的完整覆盖</td></tr>
-        <tr><td>CORE</td><td>可以申请</td><td>API、开放仓储聚合</td><td>API 配额、全文使用条件需遵守政策</td></tr>
-        <tr><td>Google Scholar</td><td><b>无官方公共 API</b></td><td>不建议直接爬虫</td><td>自动抓取容易触发封禁，也可能违反服务条款</td></tr>
-        <tr><td>Web of Science</td><td>有条件</td><td>商业 API</td><td>通常需机构订阅或单独授权</td></tr>
-        <tr><td>Scopus</td><td>有条件</td><td>Elsevier API</td><td>需注册，完整能力与订阅权限相关</td></tr>
-        <tr><td>Dimensions</td><td>有条件</td><td>API、DSL</td><td>一般需许可证或机构合作</td></tr>
-        <tr><td>IEEE Xplore</td><td>有条件</td><td>官方 API</td><td>有配额、字段及全文权限限制</td></tr>
-        <tr><td>Springer Nature</td><td>有条件</td><td>官方 API</td><td>元数据、摘要和开放全文权限不同</td></tr>
-        <tr><td>ACM DL</td><td>有限</td><td>授权数据、出版社合作</td><td>不适合作为无许可的批量抓取源</td></tr>
-        <tr><td>CNKI / 万方 / 维普</td><td>通常有条件</td><td>机构接口、商业授权</td><td>不应默认通过网页爬虫批量抓取</td></tr>
-        <tr><td>专利数据库</td><td>因机构而异</td><td>专利局 API、批量数据</td><td>EPO、USPTO、WIPO 及各国规则不同</td></tr>
-        <tr><td>普通公共网页</td><td>技术上部分可行</td><td>搜索接口、定向抓取</td><td>必须检查 robots、服务条款、版权和个人信息规定</td></tr>
-      </table>
-      <div class="todo"><b>三条 Tips</b>：① API 返回论文 ≠ 可以保存全文（检索到的往往只是标题/作者/摘要/DOI）；② 去重是必做项；③ 必须先定义"搜索质量"才能谈排序。</div>
-    </div>
-  </details>
-
-  <details class="fold">
-    <summary>实用基础组合与实现分层<span class="hint">采集 → 标准化 → 去重 → 索引 → 排序</span></summary>
-    <div class="fold-body">
-      <h5>一个通用文献搜索系统的实用组合</h5>
-      <div class="codeblock">OpenAlex        ─ 主体论文、作者、机构、期刊、引用关系
-Crossref        ─ DOI 及出版元数据校正
-Semantic Scholar─ 语义检索、引用关系、相关论文
-Unpaywall       ─ 查找合法开放全文地址
-OpenCitations   ─ 补充开放引用图谱
-arXiv / bioRxiv ─ 预印本和公开全文
-PubMed / EuropePMC ─ 医学与生命科学增强</div>
-      <h5>推荐的实现分层</h5>
-      <div class="flow">
-        <span class="step">外部数据源</span><span class="arr">→</span>
-        <span class="step">采集适配层<br><span style="font-size:11px">每源独立 Connector · 频率限制 · 重试缓存 · Key 管理</span></span><span class="arr">→</span>
-        <span class="step">标准化层<br><span style="font-size:11px">DOI 标准化 · 作者消歧 · 期刊名统一 · 日期与类型统一</span></span><span class="arr">→</span>
-        <span class="step">去重与合并<br><span style="font-size:11px">DOI 优先 · PMID/arXiv ID 辅助 · 标题作者年份模糊匹配</span></span><span class="arr">→</span>
-        <span class="step">索引层<br><span style="font-size:11px">ES/OpenSearch 关键词 · 向量库语义 · 图库关系</span></span><span class="arr">→</span>
-        <span class="step">排序层<br><span style="font-size:11px">关键词相关性 · 向量相似度 · 引用与时间 · 研究类型 · 来源可信度</span></span><span class="arr">→</span>
-        <span class="step">用户搜索与研究助手</span>
-      </div>
-      <h5>不要把文献库等同于 Embedding 库</h5>
-      <p>完整文献库至少含 10 项：原始论文；规范化元数据；论文版本关系；结构化全文与文本块；图表及补充材料；关键词索引；Embedding 索引；引用关系；数据来源和处理血缘；可重建索引所需的配置。<b>Embedding 是派生索引，不是不可替代的源数据。</b></p>
-      <div class="codeblock">原始 PDF / HTML → 规范化元数据与版本 → 结构化全文、章节、段落、图表
-        → BM25 / Embedding / Citation Graph → Search / QA / Recommendation / Agent</div>
-      <h5>目标系统轮廓与规模分层</h5>
-      <table class="tbl">
-        <tr><th class="w">层次</th><th>数据规模</th><th>保存内容</th></tr>
-        <tr><td>Candidate Catalog</td><td>10 万～50 万篇</td><td>标题、摘要、元数据、引用、摘要向量</td></tr>
-        <tr><td>Watchlist</td><td>1 万～3 万篇</td><td>高相关元数据、推荐状态、可能的全文链接</td></tr>
-        <tr><td>Core Full-text</td><td>3,000～5,000 篇</td><td>PDF、解析全文、Chunk、向量、图表</td></tr>
-      </table>
-      <p>每日漏斗：数百篇新候选 → 分类和关键词过滤 → 约 200 篇 → 摘要向量排序 → 约 50 篇 → LLM 或规则精排 → 约 10 篇 → 下载与质量检查 → <b>约 5 篇进入核心全文库</b>。</p>
-    </div>
-  </details>
-
-  <details class="fold">
-    <summary>四条投稿主线 A/B/C/D —— 把"搭库"变成可发表的研究问题<span class="hint">ICLR / SIGIR / KDD / VLDB 各要什么</span></summary>
-    <div class="fold-body">
-      <p>面向 ICLR、NeurIPS、ICML、KDD、VLDB 时，<b>不应把工作定义为"构建论文库"</b>。仅实现爬虫、向量库和问答界面不足以形成主要贡献。需要把文献管理能力转化为研究问题。</p>
-      <table class="tbl">
-        <tr><th class="w">层次</th><th>主要作用</th><th>潜在投稿方向</th></tr>
-        <tr><td>Agent、学习与评测</td><td>定义任务、策略、奖励、记忆和端到端能力</td><td>ICLR、NeurIPS、ICML</td></tr>
-        <tr><td>检索、推荐与图挖掘</td><td>文献召回、排序、新论文发现、动态图建模</td><td>KDD、SIGIR、WWW、WSDM</td></tr>
-        <tr><td>数据系统</td><td>动态混合索引、版本、血缘、查询执行和一致性</td><td>VLDB、SIGMOD、ICDE</td></tr>
-        <tr><td>文献管理基础</td><td>元数据、PDF、解析、去重、开放获取、数字保存</td><td>JCDL、TPDL；同时支撑上述三层</td></tr>
-      </table>
-      <h5>A · Budgeted Self-Updating Literature Agent <span class="pill mix">ICLR / NeurIPS / ICML</span></h5>
-      <div class="codeblock">输入：持续到达的新论文流 / 当前 Agent 文献库 / 用户研究兴趣和历史任务
-      / 有限存储、Embedding、LLM 和时间预算
-动作：忽略论文 · 只保存元数据 · 下载并解析全文 · 更新已有论文版本
-      · 替换或归档旧论文 · 重新组织索引
-目标：最大化未来搜索、QA、综述和科研任务表现，同时控制存储、计算和 API 成本</div>
-      <p>核心研究点：knowledge acquisition policy、budgeted memory management、continual learning、temporal generalization、新旧知识冲突、摄取决策的长期价值、Agent 策略与 Retriever 联合优化。</p>
-      <h5>B · Agent-Centric Literature Retrieval <span class="pill mix">ICLR / NeurIPS / SIGIR / ACL / EMNLP</span></h5>
-      <p>传统 Retriever 优化 query–document 局部相关性；Agent-centric Retriever 应优化<b>文献对最终任务的效用</b>：是否提高最终答案正确率、是否增加新的证据维度、是否消除或暴露证据冲突、是否帮助生成下一步检索词、是否提高综述覆盖率、是否支持最终主张并提供可验证引用。<span class="note-inline">与选题讨论的"Evidence-grounded &amp; completeness-aware"切入点重合度最高</span></p>
-      <h5>C · Evolving Scholarly Graph Mining <span class="pill mix">KDD / WWW / WSDM / SIGIR</span></h5>
-      <p>数据 = 论文全文 + 引用图 + 作者机构图 + Method/Dataset/Benchmark 实体 + 发表与更新时序 + 用户阅读收藏查询轨迹。任务：新论文冷启动推荐、emerging topic detection、研究方向演化建模、方法-数据集-benchmark 关系抽取、个性化兴趣更新、缺少引用信号时评价新论文价值、从文献流中发现研究空白。</p>
-      <h5>D · Dynamic Multimodal Literature Data System <span class="pill mix">VLDB / SIGMOD / ICDE / CIDR</span></h5>
-      <p>统一管理 PDF 与结构化全文 + Chunk + 图表 + 多版本 Embedding + 引用图 + 元数据 + Agent 查询与证据轨迹。研究点：增量解析与 Chunk 级更新、关键词/向量/图/元数据混合查询、Embedding 模型在线迁移、多版本论文与 time-travel query、RAG 数据血缘与结果可复现、Agent 工作负载驱动的索引优化、持续更新时的一致性吞吐延迟成本。</p>
-      <h5>科研知识图谱的目标数据模型</h5>
-      <div class="codeblock">Paper A
-  ├── proposes ───────> Method X
-  ├── evaluates_on ───> Benchmark Y
-  ├── uses_dataset ───> Dataset Z
-  ├── reports ────────> Result R
-  ├── compares_with ──> Method B
-  └── cites ──────────> Paper C</div>
-      <p class="note-inline">本页「简单 · SciAtlas」正是这条路线的公开实例（43.30M 论文 / 157M 实体 / 3B 关系），可作为 C/D 主线的直接对照。</p>
-    </div>
-  </details>
-
-  <details class="fold">
-    <summary>调研时要避免的 11 个混淆<span class="hint">这些混淆会直接毁掉问题定义</span></summary>
-    <div class="fold-body">
-      <ul>
-        <li>不要把<b>参考文献管理器</b>等同于科学文献数据基础设施。</li>
-        <li>不要把<b>向量数据库</b>等同于完整文献库。</li>
-        <li>不要把<b>学术搜索引擎</b>等同于全文问答系统。</li>
-        <li>不要把<b>单轮 RAG</b>等同于文献搜索 Agent。</li>
-        <li>不要把<b>生成引用格式</b>等同于引用事实正确。</li>
-        <li>不要把<b>引用次数</b>等同于新论文质量。</li>
-        <li>不要把 arXiv、OpenReview 和正式出版版本<b>计为不同工作</b>。</li>
-        <li>不要让数字图书馆和传统文献管理工作主导问题定义。</li>
-        <li>不要忽略文献管理 —— 数据错误、版本错误和索引不可追溯会直接破坏上层实验。</li>
-        <li>AI、KDD 和 VLDB 相关工作是核心阅读；数字图书馆、IR、知识图谱和循证研究用于补全必要基础。</li>
-        <li>不要只搜索 <code>paper management</code> —— 该词主要召回个人文献管理工具。</li>
-      </ul>
-      <h5>七个必须分开的概念</h5>
-      <div class="flow">
-        <span class="step">Reference Manager</span><span class="step">Academic Search Engine</span><span class="step">Literature Discovery System</span><span class="step">Scholarly Knowledge Graph</span><span class="step">Scientific QA System</span><span class="step">Literature Review Agent</span><span class="step">Research Agent</span>
-      </div>
-      <p class="note-inline">完整版还含 9 组可直接使用的组合检索式、按会议扫描清单（ICLR→JCDL 共 17 个）、每篇论文的记录模板、20 项横向对比表字段、以及 14 条最小执行清单 —— 见 <a href="我的思考/待整理/持续更新的学术文献基础设施_调研起点.html">调研起点笔记</a>。</p>
-    </div>
-  </details>
-</section>
 
 <!-- ==================== 商业产品 ==================== -->
 <section id="products">
-  <div class="sec-head"><h2>🏢 商业产品与工具生态</h2><span class="count">非论文系统 · 用于理解功能空间</span></div>
+<details class="sec-fold">
+<summary>  <div class="sec-head"><h2>🏢 商业产品与工具生态</h2><span class="count">非论文系统 · 用于理解功能空间</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<div class="sec-body">
   <p class="sec-note">这些系统<b>不等于公开了底层架构</b>，但定义了用户对"文献搜索"的实际期待，是学术工作的功能参照和竞品边界。</p>
   <p class="src">来源笔记：<a href="我的思考/待整理/文献.html">待整理/文献.md</a> · <a href="我的思考/待整理/持续更新的学术文献基础设施_调研起点.html">调研起点笔记 §8</a></p>
 
@@ -1342,11 +1400,15 @@ PubMed / EuropePMC ─ 医学与生命科学增强</div>
       <div class="links"><a href="Literature项目或者系统/待归档/XYZ_AI_Lab_Aquila_研究档案_2026-07-31/index.html">档案入口 →</a></div>
     </div>
   </div>
+</div>
+</details>
 </section>
 
 <!-- ==================== 实证论文 ==================== -->
 <section id="empirical">
-  <div class="sec-head"><h2>🔬 实证论文</h2><span class="count">实证论文/</span></div>
+<details class="sec-fold">
+<summary>  <div class="sec-head"><h2>🔬 实证论文</h2><span class="count">实证论文/</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<div class="sec-body">
   <div class="grid">
     <div class="card">
       <h4>What's Missing in Autonomous Research</h4>
@@ -1356,11 +1418,18 @@ PubMed / EuropePMC ─ 医学与生命科学增强</div>
       </div>
     </div>
   </div>
+</div>
+</details>
 </section>
+</div><!-- /zone -->
 
+<div class="zone zone3">
+<div class="zone-title">③ 思考笔记 · 内容的源头</div>
 <!-- ==================== 我的思考 ==================== -->
 <section id="thoughts">
-  <div class="sec-head"><h2>✍️ 我的思考</h2><span class="count">我的思考/ · Markdown 笔记</span></div>
+<details class="sec-fold">
+<summary>  <div class="sec-head"><h2>✍️ 我的思考</h2><span class="count">我的思考/ · Markdown 笔记</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<div class="sec-body">
   <div class="grid">
     <div class="card">
       <h4>56 个自主科研系统按功能分类</h4>
@@ -1435,35 +1504,10 @@ PubMed / EuropePMC ─ 医学与生命科学增强</div>
       </div>
     </div>
   </div>
+</div>
+</details>
 </section>
-
-<!-- ==================== 其他 · 待归档 ==================== -->
-<section id="misc">
-  <div class="sec-head"><h2>🗂 其他 · 待归档</h2></div>
-  <div class="grid">
-    <div class="card">
-      <h4>XYZ AI Lab · Aquila 研究档案</h4>
-      <div class="meta">2026-07-31 · 待归档</div>
-      <div class="links">
-        <a href="Literature项目或者系统/待归档/XYZ_AI_Lab_Aquila_研究档案_2026-07-31/index.html">档案入口 (html)</a>
-      </div>
-    </div>
-    <div class="card">
-      <h4>ResearchAgent</h4>
-      <div class="meta">arXiv:2404.07738 · 待归档（待深读分类）</div>
-      <div class="links">
-        <a class="dir" href="_未包含的内容.html">论文 + 源码 →</a>
-      </div>
-    </div>
-    <div class="card">
-      <h4>AI build AI</h4>
-      <div class="meta">其他/</div>
-      <div class="links">
-        <a href="其他/aibuildai.html">页面存档 (html)</a>
-      </div>
-    </div>
-  </div>
-</section>
+</div><!-- /zone -->
 
 <footer>
   入口页面：<code>Literature/index.html</code> · 生成于 2026-08-02 · 2026-08-03 新增「选题讨论」「领域版图」「数据源 · 基础设施」「商业产品」四个板块 · 新增精读/分析页面后请同步在本页对应板块补一张卡片。<br>
@@ -1471,5 +1515,20 @@ PubMed / EuropePMC ─ 医学与生命科学增强</div>
 </footer>
 
 </div>
+<script>
+function openHashTarget() {
+  var h = location.hash;
+  if (!h || h.length < 2) return;
+  var el = document.getElementById(decodeURIComponent(h.slice(1)));
+  if (!el) return;
+  var d = el.querySelector && el.querySelector('details.sec-fold');
+  if (d) d.open = true;
+  var p = el.closest ? el.closest('details') : null;
+  while (p) { p.open = true; p = p.parentElement && p.parentElement.closest('details'); }
+  requestAnimationFrame(function () { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+}
+window.addEventListener('hashchange', openHashTarget);
+document.addEventListener('DOMContentLoaded', openHashTarget);
+</script>
 </body>
 </html>
