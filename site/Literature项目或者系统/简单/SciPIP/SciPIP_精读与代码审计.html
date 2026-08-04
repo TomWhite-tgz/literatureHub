@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="SciPIP 精读：检索增强的科研 idea 生成系统，论文（撤稿大修版）与官方代码交叉审计。">
+<title>SciPIP｜自建文献图库 + 双路 idea 生成的精读与代码审计</title>
+<style>
+:root {
+    --ink: #1f2421; --muted: #5c635d; --paper: #f7f4ef; --panel: #fbf9f5;
+    --white: #fff; --line: #e7e1d7; --accent: #c4612f; --accent-dark: #a94e22;
+    --accent-pale: #f2e3d6; --green: #315b45; --green-pale: #edf2ee;
+    --blue: #355f78; --blue-pale: #edf4f7; --warning: #8a641c; --warning-pale: #fff7e6;
+    --danger: #934958; --danger-pale: #fff0f2;
+    --shadow: 0 2px 8px rgba(31,36,33,.06); --figure-shadow: 0 4px 14px rgba(31,36,33,.11);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { color: var(--ink); background: var(--paper); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 16px; line-height: 1.72; overflow-x: hidden; }
+.container { width: min(920px, calc(100% - 44px)); margin: 0 auto; padding: 52px 18px 76px; }
+header { margin-bottom: 34px; padding-bottom: 34px; border-bottom: 1px solid var(--line); text-align: center; }
+.status-row, .resource-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.status-row { margin-bottom: 18px; }
+.resource-row { margin-top: 22px; }
+.badge { display: inline-flex; align-items: center; padding: 4px 11px; border-radius: 999px; color: var(--accent-dark); background: var(--accent-pale); font-size: .79rem; font-weight: 650; white-space: nowrap; }
+.badge.red { color: var(--danger); background: var(--danger-pale); }
+.badge.green { color: var(--green); background: var(--green-pale); }
+.resource-link { display: inline-block; padding: 7px 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent-dark); background: var(--panel); font-size: .84rem; font-weight: 620; text-decoration: none; transition: box-shadow .2s ease, transform .2s ease; }
+.resource-link.primary { border-color: var(--accent); color: var(--white); background: var(--accent); }
+.resource-link:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+h1 { margin-bottom: 12px; font-size: clamp(2.35rem, 7vw, 3.25rem); font-weight: 670; letter-spacing: -.035em; line-height: 1.08; }
+.subtitle { max-width: 720px; margin: 0 auto; color: var(--muted); font-size: 1.08rem; font-weight: 360; }
+.meta { margin-top: 12px; color: var(--muted); font-size: .91rem; font-weight: 360; }
+h2 { margin: 56px 0 24px; padding-bottom: 11px; border-bottom: 2px solid var(--accent); font-size: 1.78rem; font-weight: 630; line-height: 1.3; }
+h3 { margin: 30px 0 14px; color: var(--accent); font-size: 1.25rem; font-weight: 630; }
+h4 { margin-bottom: 8px; color: var(--accent-dark); font-size: 1.01rem; font-weight: 650; }
+p { margin-bottom: 17px; font-weight: 360; }
+strong { font-weight: 660; }
+a { color: var(--accent-dark); }
+.lead { color: #343b37; font-size: 1.02rem; }
+.toc { position: sticky; top: 10px; z-index: 20; display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin: 24px 0 34px; padding: 10px; border: 1px solid rgba(231,225,215,.9); border-radius: 16px; background: rgba(247,244,239,.93); box-shadow: 0 8px 24px rgba(31,36,33,.06); backdrop-filter: blur(10px); }
+.toc a { padding: 6px 10px; border-radius: 999px; color: var(--muted); font-size: .8rem; font-weight: 620; text-decoration: none; }
+.toc a:hover { color: var(--accent-dark); background: var(--accent-pale); }
+.highlight-box, .source-note, .warning-note, .critical-note, .code-note { margin: 26px 0; padding: 21px 25px; border-left: 4px solid var(--accent); border-radius: 5px; background: var(--panel); box-shadow: var(--shadow); }
+.source-note { border-left-color: var(--green); background: var(--green-pale); }
+.code-note { border-left-color: var(--blue); background: var(--blue-pale); }
+.warning-note { border-left-color: var(--warning); background: var(--warning-pale); }
+.critical-note { border-left-color: var(--danger); background: var(--danger-pale); }
+.highlight-box p:last-child, .source-note p:last-child, .warning-note p:last-child, .critical-note p:last-child, .code-note p:last-child { margin-bottom: 0; }
+.key-insight { margin: 32px 0; padding: 28px 31px; border-radius: 8px; color: var(--white); background: linear-gradient(135deg, var(--accent), var(--accent-dark)); box-shadow: 0 4px 12px rgba(196,97,47,.22); }
+.key-insight h3, .key-insight p { color: var(--white); }
+.key-insight h3 { margin-top: 0; }
+.key-insight p:last-child { margin-bottom: 0; }
+.card-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 15px; margin: 24px 0; }
+.card-grid.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.card { padding: 21px 23px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+.card h3 { margin-top: 0; font-size: 1.08rem; }
+.card p:last-child, .card ul:last-child { margin-bottom: 0; }
+.evidence { display: inline-flex; align-items: center; margin-bottom: 10px; padding: 3px 9px; border-radius: 999px; font-size: .72rem; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+.evidence.paper { color: var(--accent-dark); background: var(--accent-pale); }
+.evidence.code { color: var(--blue); background: var(--blue-pale); }
+.evidence.inference { color: var(--warning); background: var(--warning-pale); }
+.evidence.audit { color: var(--danger); background: var(--danger-pale); }
+.figure { margin: 30px 0; text-align: center; }
+.figure-frame { display: block; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--white); box-shadow: var(--figure-shadow); }
+.figure img { display: block; width: 100%; height: auto; }
+.figure figcaption { max-width: 760px; margin: 11px auto 0; color: var(--muted); font-size: .86rem; font-style: italic; line-height: 1.55; }
+.figure-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; margin: 30px 0; }
+.figure-grid .figure { margin: 0; }
+.comparison-table { width: 100%; margin: 26px 0; border-collapse: collapse; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+.comparison-table th { padding: 13px 15px; color: var(--white); background: var(--accent); font-size: .88rem; font-weight: 620; text-align: left; }
+.comparison-table td { padding: 13px 15px; border-bottom: 1px solid var(--line); font-size: .89rem; font-weight: 360; vertical-align: top; }
+.comparison-table tr:last-child td { border-bottom: 0; }
+.comparison-table .focus-row td { background: #f8ede4; font-weight: 590; }
+.table-scroll { width: 100%; margin: 26px 0; border-radius: 8px; overflow-x: auto; }
+.table-scroll .comparison-table { min-width: 680px; margin: 0; }
+.flow-diagram { margin: 29px 0; padding: 27px 31px; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+.flow-step { position: relative; margin: 16px 0; padding: 18px 22px; border-left: 4px solid var(--accent); border-radius: 4px; background: var(--white); }
+.flow-step::before { content: "▼"; position: absolute; bottom: -28px; left: 50%; color: var(--accent); font-size: 18px; transform: translateX(-50%); }
+.flow-step:last-child::before { content: ""; }
+.flow-step p { margin-bottom: 0; }
+ul { margin: 15px 0 19px 2px; list-style: none; }
+li { position: relative; margin-bottom: 9px; padding-left: 22px; font-weight: 360; }
+li::before { content: "•"; position: absolute; left: 2px; color: var(--accent); font-size: 1.2rem; font-weight: 700; }
+details { margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+summary { display: flex; align-items: center; gap: 12px; padding: 17px 20px; cursor: pointer; font-weight: 630; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "＋"; margin-left: auto; color: var(--accent); font-size: 1.1rem; }
+details[open] summary::after { content: "−"; }
+.details-body { padding: 18px 22px 22px; border-top: 1px solid var(--line); }
+code { padding: 2px 5px; border-radius: 4px; color: var(--accent-dark); background: var(--accent-pale); font-size: .88em; }
+pre { margin: 22px 0; padding: 20px 22px; border: 1px solid #343b37; border-radius: 8px; color: #edf2ee; background: var(--ink); font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .84rem; line-height: 1.65; overflow-x: auto; }
+pre code { padding: 0; color: inherit; background: transparent; }
+footer { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: .86rem; font-weight: 360; text-align: center; }
+@media (max-width: 760px) {
+    .container { width: min(100% - 28px, 920px); padding: 34px 8px 56px; }
+    .card-grid, .card-grid.three, .figure-grid { grid-template-columns: 1fr; }
+    .toc { position: static; }
+    h2 { margin-top: 46px; font-size: 1.55rem; }
+    .subtitle, .meta { overflow-wrap: anywhere; }
+}
+@media print { .toc { display: none; } body { background: white; } .container { width: 100%; max-width: none; padding: 24px; } .figure-frame, .card, details { box-shadow: none; } }
+</style>
+</head>
+<body>
+<main class="container">
+
+<header>
+  <div class="status-row">
+    <span class="badge red">ICLR 2025 撤稿 → arXiv 大修（发表状态存疑）</span>
+    <span class="badge">arXiv:2410.23166 · v2 2025-02</span>
+    <span class="badge green">论文 / 代码 / 文献库 dump 齐全</span>
+  </div>
+  <h1>SciPIP</h1>
+  <p class="subtitle">一个"检索增强的科研 idea 生成器"：把 7.8 万篇顶会论文重摘要成结构化五元组存进 Neo4j 图数据库，用<strong>语义 + 关键词 + 共引</strong>三路互喂的方式检索，再用<strong>检索推演 + 自由头脑风暴</strong>双路生成并融合 idea。</p>
+  <p class="meta">Wenxiao Wang 等 10 人 · 浙江大学 × 阿里云 × 浙江工业大学 · 本地材料核查：2026-08-04</p>
+  <div class="resource-row">
+    <a class="resource-link primary" href="paper/SciPIP_arXiv_2410.23166.pdf">论文 PDF（v2，20 页）</a>
+    <a class="resource-link" href="SciPIP_OpenReview_ICLR2025_评审存档.html">ICLR 评审存档</a>
+    <a class="resource-link" href="paper/tex_source/example_paper.tex">TeX source</a>
+    <a class="resource-link" href="code/README.html">本地代码</a>
+    <a class="resource-link" href="https://github.com/cheerss/SciPIP">官方 GitHub</a>
+    <a class="resource-link" href="https://huggingface.co/spaces/lihuigu/SciPIP">HF Demo</a>
+  </div>
+</header>
+
+<div class="highlight-box">
+  <p><strong>最短理解：</strong>SciPIP 押注的是"idea 生成的质量瓶颈在检索，而检索的瓶颈在索引粒度"。它不检索原文，而是先让 GPT-4o 把每篇论文重写成 <strong>关键词 / 背景 / idea / 精简方法 / 引用</strong> 五元组，按字段分别编码入库——之后无论检索（拿用户背景对论文"背景"字段匹配）还是生成（把"精简方法"喂给 LLM 提炼灵感），操作的都是这些结构化摘要。这个<strong>公开下载的文献图数据库</strong>，也是四位 ICLR 审稿人唯一公认的原创贡献。</p>
+</div>
+
+<nav class="toc">
+  <a href="#story">版本故事</a>
+  <a href="#database">文献库构建</a>
+  <a href="#retrieval">SKC 检索</a>
+  <a href="#generation">双路生成</a>
+  <a href="#scimon-compare">对比 SciMON</a>
+  <a href="#code">代码执行链</a>
+  <a href="#experiments">实验与结果</a>
+  <a href="#verdict">最终判断</a>
+</nav>
+
+<!-- ==================== 版本故事 ==================== -->
+<section id="story">
+<h2>01 · 先看版本故事：一次被评审塑形的大修</h2>
+<p class="lead">这篇论文有两个差异很大的版本：ICLR 2025 投稿版（2024-09，三拒一弱拒后撤稿）和 arXiv v2（2025-02，20 页 ICML 模板）。<strong>v2 逐条回应了评审的主要批评</strong>——对照读比单独读 v2 信息量大得多（评审全文见<a href="SciPIP_OpenReview_ICLR2025_评审存档.html">评审存档页</a>）。</p>
+
+<div class="table-scroll">
+<table class="comparison-table">
+  <thead><tr><th>ICLR 评审批评</th><th>ICLR 投稿版</th><th>arXiv v2 的回应</th><th>核对</th></tr></thead>
+  <tbody>
+    <tr class="focus-row"><td>LLM-as-judge 不可信（4/4 位提及）</td><td>novelty/feasibility 全由 GPT-4o 打分</td><td>改为 <strong>12 位人类评审</strong>（AI 方向研究生，至少 1 篇一作顶会），5 维度打分 + 成对比较</td><td><span class="evidence paper">已修复</span></td></tr>
+    <tr><td>数据污染（GPT-4 截止 vs ACL 2024 预印本）</td><td>未排查</td><td>明确只选<strong>正式发表前未上 arXiv</strong> 的 ACL 2024 / CVPR 2024 论文做测试背景</td><td><span class="evidence paper">已修复</span></td></tr>
+    <tr><td>嵌入模型过时（SentenceBERT）</td><td>SentenceBERT</td><td>换成 jina-embeddings-v3</td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr><td>只做 NLP 却叫 "Scientific"</td><td>仅 NLP，5 万篇库</td><td>库扩到 7.8 万篇（9 个 ML/NLP/CV 顶会近十年），实验加了 CV 域；<strong>但标题没改，limitation 仍只承认"聚焦 NLP+CV"</strong></td><td><span class="evidence audit">部分修复</span></td></tr>
+    <tr class="focus-row"><td>与 SciMON 差距边际（6bY3）</td><td>有 SciMON 检索对比实验</td><td>v2 仍引用 SciMON，但<strong>删掉了与它的对比实验</strong>，只比 GPT-4o 裸生成和 AI Scientist</td><td><span class="evidence audit">回避</span></td></tr>
+    <tr><td>检索没上标准 IR 基准 / 无 nDCG、Precision</td><td>只报自建集 Recall</td><td>v2 消融只比自家变体（Abstract/Background/Keyword/SKC），仍无 DORIS-MAE、SciDocs 等外部基准</td><td><span class="evidence audit">未修复</span></td></tr>
+    <tr><td>方法原创性有限（技术组合）</td><td>—</td><td>方法主体未变：仍是实体匹配 + 语义嵌入 + 共引 + 聚类的组合</td><td><span class="evidence inference">本质未变</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="warning-note">
+  <p><strong>发表状态：</strong>v2 用了 <code>\usepackage[accepted]{icml2025}</code> 模板，暗示投中了 ICML 2025（主会或 workshop），但截至 2026-08 DBLP 只收录 arXiv 版，未见正式会议记录——按 arXiv 预印本对待。</p>
+</div>
+</section>
+
+<!-- ==================== 文献库 ==================== -->
+<section id="database">
+<h2>02 · 文献库构建：把论文重写成五元组再入库</h2>
+<p class="lead">出发点：通用检索要么关键词匹配（丢语义），要么整段/定长分块编码（噪声大、一段话混多种信息）。SciPIP 认为服务 idea 生成的检索只需要两类信息——<strong>该领域的问题/挑战（背景）</strong>和<strong>文献给出的想法/方法</strong>，所以先摘要再建索引。</p>
+
+<figure class="figure">
+  <div class="figure-frame"><img src="assets/fig1_database.png" alt="文献数据库构建管线"></div>
+  <figcaption>论文 Fig.1：PDF 解析出题目/摘要/引言/方法/引用 → GPT-4o 用三套 prompt 分别提取（背景+总结）、关键词、精简方法 → 分字段编码入库，同时存"论文-关键词"共现图。</figcaption>
+</figure>
+
+<ul>
+  <li><strong>语料：</strong>ICML / NeurIPS / ICLR / ACL / EMNLP / NAACL / CVPR / ICCV / ECCV 九个顶会近十年共 <strong>78,571 篇</strong>。<span class="evidence paper">论文声称</span></li>
+  <li><strong>五元组：</strong>关键词（摘要提取，≤5 个）、背景、idea、精简方法（由方法节摘要而来）、引用列表；背景/贡献/总结/摘要各自编码存独立嵌入字段。<span class="evidence code">代码确认（Neo4j 节点属性）</span></li>
+  <li><strong>图结构（实质是一张二部图）：</strong>库里只有两种节点、一种边——<code>(关键词)-[出现于]->(论文)</code>。论文-论文、关键词-关键词之间<strong>都没有边</strong>；"关键词邻域"是查询时经 <code>(词A)→(论文)←(词B)</code> 二跳现算共现篇数（≥7 才算相关），不是预存的关系。<span class="evidence code">代码确认（paper_client.py）</span></li>
+  <li><strong>公开分发：</strong>整个 Neo4j data 目录可从 Google Drive / 百度盘下载，替换本地 Neo4j 的 data 文件夹即用——这是全仓库最有价值的资产。<span class="evidence code">README 确认</span></li>
+</ul>
+
+<div class="code-note">
+  <p><strong>看清 Neo4j 在这里的实质：</strong>它不是"知识图谱方法"，而是一个方便的<strong>容器</strong>——五元组、原文、四路嵌入向量全是论文节点的属性，一个库同时兼任文档库、向量库和共现索引，还能整目录打包分发。全系统没有用到任何图算法（无 PageRank、无社区发现），图查询最深两跳；共引检索甚至不走图——引用列表是节点上的普通属性，启动时在内存里建共引计数字典查询。同样的信息用倒排索引 + 一张共现表也能实现。这呼应了 ICLR 审稿人的判断：<strong>图是工程容器，不是方法贡献</strong>。</p>
+</div>
+</section>
+
+<!-- ==================== 检索 ==================== -->
+<section id="retrieval">
+<h2>03 · SKC 检索：三路不是并列，而是互相喂</h2>
+
+<figure class="figure">
+  <div class="figure-frame"><img src="assets/fig2_retrieval.png" alt="SKC 检索管线"></div>
+  <figcaption>论文 Fig.2：语义（S）、关键词（K）、共引（C）三路检索 + 聚类过滤。红字为用户 query 中的关键词示例。</figcaption>
+</figure>
+
+<div class="flow-diagram">
+  <div class="flow-step">
+    <h4>① 语义检索 N₁</h4>
+    <p>用户背景编码后，与库中论文的<strong>背景字段嵌入</strong>做余弦相似，取 top-5。检索的是"面对相似挑战的论文"，而不是"文字相似的论文"。</p>
+  </div>
+  <div class="flow-step">
+    <h4>② 关键词检索 N₂（从 N₁ 出发扩展）</h4>
+    <p>从用户 query（LLM 提取）和 N₁ 论文（库中直取）收集关键词，再做<strong>关键词邻域扩展</strong>：含关键词 T 的论文，其其余关键词也进候选集（配过滤规则：两个关键词需共现于 ≥7 篇论文）。用扩展后的关键词集回库里捞论文。</p>
+  </div>
+  <div class="flow-step">
+    <h4>③ 共引检索 N₃</h4>
+    <p>对 N₁∪N₂ 中每篇论文，把与它最常被同时引用的 1 篇论文也拉进来——捕捉"关键词和语义都不像、但研究者已发现潜在关联"的文献。</p>
+  </div>
+  <div class="flow-step">
+    <h4>④ 聚类过滤 → 最终 10 篇</h4>
+    <p>N₁∪N₂∪N₃ 可达数百篇。按嵌入相似度（阈值合并的并查集）聚类，从各簇轮流取分数最高者，直到凑满 10 篇——模拟"写背景时只引代表作"的习惯，保多样性、去冗余。</p>
+  </div>
+</div>
+
+<div class="code-note">
+  <p><strong>代码里的真实顺序</strong>（<code>SNKGRetriever.retrieve_paper</code>）：语义 top-5 → 从这 5 篇取实体并与用户实体合并 → 同义词/邻域扩展 → 实体找论文 → 共引扩展 → 全体按"与用户背景的嵌入相似度"打分 → 聚类轮选 top-10。与论文叙述一致，但注意<strong>最终排序只用背景相似度</strong>（配置 <code>s_bg=1.0</code>，contribution/summary/abstract 权重全为 0）。</p>
+</div>
+</section>
+
+<!-- ==================== 生成 ==================== -->
+<section id="generation">
+<h2>04 · 双路生成：检索管可行性，脑暴管新颖性</h2>
+
+<figure class="figure">
+  <div class="figure-frame"><img src="assets/fig3_dualpath.png" alt="双路 idea 生成管线"></div>
+  <figcaption>论文 Fig.3：上路靠检索文献推演，下路靠模型内部知识脑暴，最后融合成约 5 个 idea 并扩写。</figcaption>
+</figure>
+
+<div class="card-grid">
+  <article class="card">
+    <span class="evidence paper">脑暴路</span>
+    <h3>Brainstorm-Based</h3>
+    <p>先把用户 query 改写成"每个术语都解释过、为什么难都说清"的详细背景（模型对过短 query 容易误读），再让 LLM 生成 3–4 个 idea。<strong>副产物</strong>：从脑暴 idea 里再提关键词，并回灌给检索路扩充检索词。</p>
+  </article>
+  <article class="card">
+    <span class="evidence paper">检索路</span>
+    <h3>Retrieval-Based</h3>
+    <p>不用题目/摘要（太浅）也不用全文（太长），而是用 few-shot 示范让 LLM 把检索到论文的<strong>方法节摘要成"精简方法"</strong>；再针对用户问题从每篇提炼 inspiration（判定无价值则丢弃），最后综合生成 idea。</p>
+  </article>
+</div>
+<p><strong>融合与扩写：</strong>两路 idea 合并整合成约 5 个，再扩写成详细版——扩写时从库里取一篇已有论文的"精简方法"当格式示范，因为纯指令控制不了产出的风格与详略。这个"拿库存摘要当 demonstration"的技巧在全管线出现了两次（方法摘要 few-shot、idea 扩写示范），是工程上最值得抄的细节。</p>
+
+<div class="key-insight">
+  <h3>双路的分工在数字上是真的</h3>
+  <p>NLP 域：脑暴路 novelty≥4 占 26.02%、可行性只有 24.39%；检索路 novelty 22.16%、可行性 35.33%——<strong>脑暴更新颖、检索更可行</strong>，方向相反。融合版两头都拿到最高（novelty 27.22% / feasibility 38.46%），双路设计的互补性得到了消融级别的支撑。</p>
+</div>
+</section>
+
+<!-- ==================== 对比 SciMON ==================== -->
+<section id="scimon-compare">
+<h2>05 · 与 SciMON 的真实差异：继承了什么、真正新在哪</h2>
+<p class="lead">SciMON（ACL 2024，本档案<a href="../SciMON/SciMON_精读与代码审计.html">已有精读</a>）是这条路线的参照原点，也是 SciPIP 被拒的参照系。下表基于两边论文与代码的实际内容逐项对比——哪些是继承、哪些是真差异，不采信任何一方的自我表述。</p>
+
+<div class="table-scroll">
+<table class="comparison-table">
+  <thead><tr><th>维度</th><th>SciMON（2023-05 / ACL 2024）</th><th>SciPIP（2024-09 / arXiv v2）</th><th>差异性质</th></tr></thead>
+  <tbody>
+    <tr><td><strong>任务输入</strong></td><td>背景句 + <strong>种子术语</strong>（取自真实论文的 ground truth，半开卷设定）</td><td>纯用户背景段落，无种子提示</td><td>SciPIP 设定更接近真实使用</td></tr>
+    <tr><td><strong>输出</strong></td><td><strong>一句话</strong> idea</td><td>约 5 个 idea，每个扩写成带细节的段落</td><td>粒度差异，直接影响可比性</td></tr>
+    <tr class="focus-row"><td><strong>文献如何变成"知识"</strong></td><td>IE 流水线（句子分类 → PL-Marker 实体抽取 → SciCo 共指 → ScispaCy）从 67,408 篇 ACL 论文抽出<strong>实体级 used-for 知识图</strong>（19.7 万节点）；抽取误差层层累积，关系抽取精度仅 65%</td><td>GPT-4o <strong>整篇重摘要</strong>成五元组（背景/idea/精简方法/关键词/引用），78,571 篇 9 个顶会，分字段嵌入入 Neo4j</td><td><strong>真差异 ①</strong>：抽取式 → 生成式，是 LLM 时代对 IE 时代的整体替换</td></tr>
+    <tr class="focus-row"><td><strong>灵感的单位</strong></td><td><strong>实体/术语</strong>（从相似旧背景的 idea 里取目标实体、从 KG 取邻居实体，均值 10.8 个词条塞进输入）</td><td><strong>方法摘要</strong>（把检索论文的"精简方法"few-shot 摘要后，逐篇提炼 inspiration 段落）</td><td><strong>真差异 ②</strong>：词条级提示 vs 段落级方法迁移，SciPIP 的 idea 细节量由此而来</td></tr>
+    <tr><td><strong>三路检索信号</strong></td><td>语义近邻（SentenceBERT 找相似旧背景）+ KG 一跳邻居 + 引文近邻（被引论文标题 top-5）</td><td>语义（背景字段嵌入 top-5）+ 关键词共现邻域 + 共引统计（各 1 篇）</td><td><strong>继承</strong>：信号框架相同，实现细节不同——这正是审稿人"差距边际"的依据</td></tr>
+    <tr><td><strong>概念图谱的性质</strong></td><td>有语义类型的关系图（used-for：A 用于 B）</td><td>无类型的论文-关键词<strong>共现二部图</strong>（见 02 节实质框）</td><td>SciMON 的图反而更"知识图谱"；SciPIP 的图是工程容器</td></tr>
+    <tr class="focus-row"><td><strong>新颖性机制</strong></td><td><strong>事后查重迭代</strong>：生成 → 与训练集旧 idea 比相似度（SentenceBERT，阈值 0.6）→ 超阈值强制"显著不同地重写"，实测至多 2 轮</td><td><strong>事前双路分工</strong>：脑暴路管新颖、检索路管可行，融合平衡；<strong>没有任何显式查重环节</strong></td><td><strong>真差异 ③</strong>：方向相反，且互不包含——SciMON 的招牌组件恰恰是 SciPIP 没继承的</td></tr>
+    <tr><td><strong>模型形态</strong></td><td>训练时代产物：微调 T5-large + 对比损失（GPT-3.5/4 few-shot 为对照组）</td><td>零训练，纯 prompt 编排 GPT-4o / GPT-4o-mini</td><td>时代差异：2023 中到 2024 底，微调价值被通用模型抹平</td></tr>
+    <tr><td><strong>评测</strong></td><td>人评为主，且做了最狠的一项：与真实论文 idea 对比——<strong>85% 场合真实 idea 被判显著更深</strong>（自曝上限）；全部模型输出随仓库公开</td><td>v1 用 GPT-4o 当裁判（被 ICLR 四位评审齐轰）→ v2 改 12 人评审；无与真实论文的直接对比，无人评材料公开</td><td>SciMON 的评测更自我批判；SciPIP v2 的人评规模更大但透明度低</td></tr>
+    <tr><td><strong>代码工程</strong></td><td>13.1k 行研究脚本堆：无统一入口，发布版迭代脚本带必崩 bug，编码器论文（mpnet）与代码（MiniLM）不一致</td><td>7.5k 行完整系统：Streamlit 前端、Neo4j 库 dump 公开下载、多家 LLM API 适配（τ 与聚类嵌入两处与论文不一致）</td><td>研究原型 vs 可分发工具，SciPIP 明显占优</td></tr>
+    <tr><td><strong>发表命运</strong></td><td>ACL 2024 主会</td><td>ICLR 2025 撤稿，后续发表状态存疑</td><td>开创任务的可以粗糙，跟进的必须显著更好</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="key-insight">
+  <h3>刨掉包装，真差异就三条</h3>
+  <p>① <strong>文献知识的来源</strong>：IE 抽取（误差累积、实体级）→ LLM 重摘要（质量高、段落级）——这是实质升级，但属于"用更强的模型重做基础设施"，而非新方法；② <strong>灵感单位</strong>：词条提示 → 方法迁移，SciPIP 的 idea 更具体主要来自这里；③ <strong>新颖性机制方向相反</strong>：SciMON 事后查重重写、SciPIP 事前分路，两者互不包含——理论上最强的系统应该两个都要。而<strong>三路检索信号框架是原样继承的</strong>，这正是 ICLR 审稿人认定"组合创新、差距边际"的客观依据；SciPIP v2 删掉与 SciMON 的对比实验（见 01 节），等于默认了这个判断。</p>
+</div>
+</section>
+
+<!-- ==================== 代码 ==================== -->
+<section id="code">
+<h2>06 · 回到代码：Neo4j 图库 + Streamlit 前端的完整系统</h2>
+<p class="lead">约 7.5k 行 Python，是四个已归档 idea 生成项目里工程完成度最高的：图数据库、检索器工厂、Streamlit 交互前端（一键式 / 分步式两种页面）、多家 LLM API 适配，且文献库 dump 公开可下。</p>
+
+<pre><code>code/
+├── app.py + src/app_pages/       # Streamlit 前端：one-click / step-by-step 两种生成模式
+├── src/generator.py              # CLI 入口：backgrounds JSON → 检索 → 双路生成 → ideas JSON
+├── src/paper_manager.py          # 建库：爬虫 → PDF 解析 → GPT-4o 摘要五元组 → 写入 Neo4j
+├── src/utils/paper_client.py     # Neo4j 客户端（1206 行）：节点/边/嵌入的全部读写
+├── src/utils/paper_retriever.py  # Retriever 工厂：SN / KG / SNKG 三种检索器 + 并查集聚类
+├── src/utils/llms_api.py         # 全部生成环节的 prompt 封装（problem/inspiration/idea/expand…）
+├── src/utils/scipdf/             # PDF 解析（GROBID 系）
+├── src/prompt/ + assets/prompt/  # prompt 模板（XML 管理）
+└── configs/datasets.yaml         # 超参数：检索路数、阈值、嵌入模型
+</code></pre>
+
+<h3>论文概念 ↔ 代码核对表</h3>
+<div class="table-scroll">
+<table class="comparison-table">
+  <thead><tr><th>论文声称</th><th>代码位置</th><th>实际情况</th><th>核对</th></tr></thead>
+  <tbody>
+    <tr><td>jina-embedding-v3 编码</td><td><code>configs/datasets.yaml</code></td><td><code>jinaai/jina-embeddings-v3</code>，task 用 text-matching（对称嵌入）；注释里还留着 MiniLM / llm-embedder 的旧选项</td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr><td>语义检索 TopK=5</td><td><code>sn_num_for_entity: 5</code></td><td>SNKG 检索器里语义路确实取 5 篇（用于扩实体）；单独的 SN 检索器则取 100 篇再截 10</td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr><td>nCOCITE=1、nPapers=10</td><td><code>cocite_top_k: 1</code> / <code>all_retrieve_paper_num: 10</code></td><td>一致</td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr class="focus-row"><td>聚类阈值 τ=0.8</td><td><code>similarity_threshold: 0.95</code></td><td>仓库默认 0.95（注释掉的备选是 0.55），<strong>与论文的 0.8 都对不上</strong>；阈值直接决定去冗余强度</td><td><span class="evidence audit">论文-代码不一致</span></td></tr>
+    <tr class="focus-row"><td>聚类用 summary 嵌入相似度</td><td><code>filter_related_paper()</code></td><td>聚类嵌入是四字段加权和，而权重配置 <code>s_bg=1.0</code>、summary=0——<strong>实际用背景嵌入聚类</strong>，非论文所述 summary</td><td><span class="evidence audit">论文-代码不一致</span></td></tr>
+    <tr><td>"关键词"（v2 用语）</td><td>全代码</td><td>代码里从 prompt 到 Neo4j 节点全叫 <code>entity</code>——ICLR 版术语的遗留，v2 只改了论文措辞</td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr><td>库构建管线可复跑</td><td><code>paper_manager.py</code></td><td>爬取（按会议/年份）→ 解析 → 摘要 → 入库全流程在；但 7.8 万篇 × GPT-4o 摘要的成本自负，好在<strong>成品库 dump 可直接下载</strong></td><td><span class="evidence code">代码确认</span></td></tr>
+    <tr><td>评测</td><td>仓库内</td><td><strong>无任何人评相关代码/数据</strong>（打分表、评审指南均未随仓库发布）；<code>ai_scientist_idea.py</code> 只是给对比实验准备 AI Scientist 输入的脚本</td><td><span class="evidence audit">审计发现</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="code-note">
+  <p><strong>复现门槛（比看上去低）：</strong>装 Neo4j → 下载官方库 dump 替换 data 目录 → 配 <code>MODEL_TYPE/MODEL_NAME/MODEL_API_KEY</code>（OpenAI 兼容接口即可）→ <code>streamlit run app.py</code>。不需要 GPU 训练，嵌入模型 jina-v3 自动下载。生成质量依赖所配的 LLM。</p>
+</div>
+</section>
+
+<!-- ==================== 实验 ==================== -->
+<section id="experiments">
+<h2>07 · 实验：12 位人类评审下的主结果</h2>
+
+<div class="source-note">
+  <p><strong>设置：</strong>NLP 域用 GPT-4o 生成、CV 域用 GPT-4o-mini（成本考虑，作者自己把 CV 的 clarity 偏低归因于此）；测试背景取自 34 篇 ACL 2024 + 25 篇 CVPR 2024（<strong>均未预发布 arXiv</strong>，规避 2023-10 截止的训练数据污染）；评审为 12 位 AI 方向研究生/博士生（至少 1 篇一作顶会），按 novelty / clarity / feasibility / relevance 打 0–5 分 + helpfulness 二值 + 成对比较。<em>来源：Sec 4.1。</em></p>
+</div>
+
+<h3>好评率（评分 ≥4 的 idea 占比）</h3>
+<div class="table-scroll">
+<table class="comparison-table">
+  <thead><tr><th>域</th><th>方法</th><th>Novelty</th><th>Clarity</th><th>Feasibility</th><th>Relevance</th><th>Helpful</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="4">NLP<br>(GPT-4o)</td><td>GPT-4o 裸生成</td><td>16.50%</td><td>16.50%</td><td>18.45%</td><td>64.08%</td><td>38.83%</td></tr>
+    <tr><td>AI Scientist</td><td>20.00%</td><td>(100%)*</td><td>23.33%</td><td>—</td><td>46.67%</td></tr>
+    <tr><td>SciPIP 单路（脑暴 / 检索）</td><td>26.02 / 22.16%</td><td>34.15 / 31.74%</td><td>24.39 / 35.33%</td><td>62.60 / 68.26%</td><td>51.22 / 49.70%</td></tr>
+    <tr class="focus-row"><td><strong>SciPIP 双路</strong></td><td><strong>27.22%</strong></td><td><strong>36.69%</strong></td><td><strong>38.46%</strong></td><td>66.86%</td><td><strong>53.25%</strong></td></tr>
+    <tr><td rowspan="2">CV<br>(GPT-4o-mini)</td><td>GPT-4o 裸生成</td><td>13.04%</td><td>16.30%</td><td>14.13%</td><td>42.39%</td><td>47.83%</td></tr>
+    <tr class="focus-row"><td><strong>SciPIP 双路</strong></td><td><strong>22.41%</strong></td><td><strong>30.17%</strong></td><td>26.72%</td><td><strong>46.55%</strong></td><td><strong>74.14%</strong></td></tr>
+  </tbody>
+</table>
+</div>
+<p>* AI Scientist 的 clarity 100% 是因为它连可运行代码一起生成，解释天然清楚；它的 idea 部分直接取自官方仓库、背景与 SciPIP 不同——这行数字的可比性有限（论文自己加了脚注）。成对比较里（图 4），双方在相同背景下各生成约 30 个 idea，SciPIP 的 novelty 胜率 <strong>80%</strong>，feasibility/helpfulness 也占优。</p>
+
+<div class="figure-grid">
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/fig4_winrate.png" alt="SciPIP vs AI Scientist 胜率"></div>
+    <figcaption>Fig.4：与 AI Scientist 的成对比较胜率（GPT-4o-mini 生成，3 个背景 ≈30 个 idea）。</figcaption>
+  </figure>
+  <figure class="figure">
+    <div class="figure-frame"><img src="assets/fig6_ablation.png" alt="检索方法消融"></div>
+    <figcaption>Fig.6：检索消融——SKC 综合最均衡；检索篇数（10–150）与评分无显著相关，故定 10 篇。</figcaption>
+  </figure>
+</div>
+
+<details>
+<summary>更多结果与该打的折扣</summary>
+<div class="details-body">
+  <ul>
+    <li><strong>评分分布</strong>（Fig.5）：NLP idea 的 novelty/clarity/feasibility 大多数落在 ≥3；relevance≥4 超 66%；helpful 53.14%。整体是"多数中上、少数优秀"的分布，不是遍地 4-5 分。</li>
+    <li><strong>CV 的 helpful 74% vs NLP 53%</strong>：论文自己承认这可能是两组评审（按研究方向分配任务）标准不一致——<strong>v2 依然没有报告任何评审间一致性指标</strong>（ICC/κ），这在被 ICLR 评审教育过之后仍是缺口。<span class="evidence audit">审计发现</span></li>
+    <li><strong>与 AI Scientist 比较的公平性</strong>：独立打分实验里两者背景不同（AI Scientist 只有 3 个背景 30 个 idea）；成对比较为对齐背景，是先从 AI Scientist 的 idea 反推问题再喂给 SciPIP——流程合理但样本量小（3 背景）。<span class="evidence inference">合理推断</span></li>
+    <li><strong>检索评测仍全部内循环</strong>：消融只比自家变体，Recall 定义在"生成的 idea 是否命中原论文引用"这类自建口径上，没有外部 IR 基准可锚定。<span class="evidence audit">审计发现</span></li>
+    <li><strong>好评率的分母是 idea 数</strong>（NLP 169 个 / CV 116 个），同一背景可产多个 idea，质量间存在相关性，按 idea 计的百分比会平滑掉"整个背景全军覆没"的情况。<span class="evidence inference">合理推断</span></li>
+  </ul>
+</div>
+</details>
+</section>
+
+<!-- ==================== 判断 ==================== -->
+<section id="verdict">
+<h2>08 · 最终判断</h2>
+
+<div class="key-insight">
+  <h3>一句话评价</h3>
+  <p>一个<strong>被评审逼成熟的工程系统</strong>：方法本身仍是"已有技术的组合"（这点从 ICLR 版到 v2 没有变，评审的原创性批评依然成立），但 v2 用 12 人评审换掉了 LLM 裁判、排查了数据污染，而它真正的可留存资产——<strong>7.8 万篇顶会论文的五元组 Neo4j 图库（公开 dump）+ 全流程可跑的系统</strong>——比论文的方法论贡献更有价值。</p>
+</div>
+
+<div class="card-grid">
+  <article class="card">
+    <h3>对本档案的价值</h3>
+    <p>① 它的<strong>文献库构建方案</strong>（LLM 重摘要成五元组 + 分字段嵌入 + 论文-关键词图）是"自建可检索文献底座"的一个完整参考实现，与档案里数据源/基础设施调研直接相关；② 公开的 Neo4j dump 可直接拿来做检索实验的起点；③ "脑暴管新颖、检索管可行"的消融结论对设计 idea 生成管线有直接指导意义；④ 与 SciMON / ResearchAgent / AI Scientist 同属 idea 生成线，其撤稿评审 + 大修的完整记录（见<a href="SciPIP_OpenReview_ICLR2025_评审存档.html">评审存档</a>）本身就是这个方向评审标准的样本。</p>
+  </article>
+  <article class="card">
+    <h3>归档建议</h3>
+    <p>建议归入<strong>「简单（有实质但贡献有限）」</strong>：系统真实、工程完整、数据资产公开且独有；但方法为组合创新、检索评测内循环、人评无一致性报告、发表状态存疑。与 ResearchAgent（同档）相比，它胜在开源完整度（库 dump + 全管线可复跑），输在学术原创性与发表记录。待你过目后定档。</p>
+  </article>
+</div>
+</section>
+
+<footer>
+  <p>SciPIP 中文精读 · 论文（arXiv:2410.23166v2）与官方代码（commit a0a927a）交叉核对完成 · 配套：<a href="SciPIP_OpenReview_ICLR2025_评审存档.html">ICLR 2025 评审存档</a></p>
+  <p>整理日期：2026-08-04 · 材料：paper/（PDF + TeX）· code/（全量 clone）· assets/（论文原图 6 张）</p>
+</footer>
+
+</main>
+</body>
+</html>

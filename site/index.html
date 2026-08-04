@@ -91,6 +91,7 @@
   .v-real  { background: var(--amber-bg); color: var(--amber); }
   .v-ok    { background: var(--sage-bg);  color: var(--sage); }
   .v-hollow{ background: var(--rose-bg);  color: var(--rose); }
+  .v-warn  { background: var(--amber-bg); color: var(--amber); }
 
   /* 特色大卡（横向比较入口） */
   .feature {
@@ -235,7 +236,7 @@
     <div class="map-col">
       <div class="map-title">② 领域调研 · 别人做了什么</div>
       <a class="map-item" href="#landscape">🗺 领域版图<span>约 130 篇八大类 + 56 个系统分类</span></a>
-      <a class="map-item" href="#systems">📚 项目与系统<span>15 个项目深读 · 复杂/简单/包装三档</span></a>
+      <a class="map-item" href="#systems">📚 项目与系统<span>17 个项目深读 · 复杂/简单/包装三档</span></a>
       <a class="map-item sub" href="#compare">⚖️ 横向对比<span>文献搜索四系统横评</span></a>
       <a class="map-item" href="#ideation">💡 Idea 生成<span>4 篇已精读+代码审计 · 看别人怎么"用文献喂出 idea"</span></a>
       <a class="map-item" href="#benchmark">🎯 Benchmark<span>7 张卡 · 4 篇已深读</span></a>
@@ -1054,7 +1055,7 @@ return timeout_answer</div>
 <!-- ==================== 项目与系统 ==================== -->
 <section id="systems">
 <details class="sec-fold">
-<summary>  <div class="sec-head"><h2>📚 项目与系统</h2><span class="count">Literature项目或者系统/ · 14 个项目</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<summary>  <div class="sec-head"><h2>📚 项目与系统</h2><span class="count">Literature项目或者系统/ · 17 个项目</span></div><span class="open-hint">点开阅读 ▾</span></summary>
 <div class="sec-body">
   <p class="sec-note">分类依据论文全文 + 源码深读：<b>复杂</b> = 有真实算法与工程实质；<b>简单</b> = 有实质但贡献有限或被重命名包装；<b>包装的好看</b> = 卖点在论文/代码层面无法成立。</p>
 
@@ -1151,6 +1152,23 @@ return timeout_answer</div>
       <div class="links">
         <a href="Literature项目或者系统/简单/ResearchAgent/ResearchAgent_精读与代码审计.html">精读与代码审计</a>
         <a class="dir" href="_未包含的内容.html">论文 + 源码 →</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>SciMON <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-ok">参照原点</span></h4>
+      <div class="meta">Wang/Downey/Ji/Hope · ACL 2024 · idea 生成线的定型之作</div>
+      <p class="blurb">IE 流水线自建 used-for 知识图 + 语义/概念/引用三路灵感检索 + 事后新颖性查重重写。评测自我批判（自报 85% 输给真实论文 idea）、全部输出公开；但发布代码是带必崩 bug、无入口的研究脚本堆。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/简单/SciMON/SciMON_精读与代码审计.html">精读与代码审计</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>SciPIP <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-warn">撤稿后大修</span></h4>
+      <div class="meta">浙大 × 阿里云 · ICLR 2025 撤稿 → arXiv 大修 · 检索增强 idea 生成</div>
+      <p class="blurb">7.8 万篇顶会论文重摘要成五元组入 Neo4j（库 dump 公开）+ SKC 三路检索 + 双路生成。大修版逐条回应评审（改 12 人评审、排查污染），但删掉了被点名"差距边际"的 SciMON 对比；检索框架系 SciMON 的组合改进。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/简单/SciPIP/SciPIP_精读与代码审计.html">精读与代码审计</a>
+        <a href="Literature项目或者系统/简单/SciPIP/SciPIP_OpenReview_ICLR2025_评审存档.html">ICLR 评审存档</a>
       </div>
     </div>
     <div class="card">

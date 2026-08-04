@@ -1,0 +1,135 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SciPIP 官方 README</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}img{max-width:100%}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../SciPIP_精读与代码审计.html">← 返回精读页</a>
+<p><center><h1> 💡SciPIP: An LLM-based Scientific Paper Idea Proposer </h1></center></p>
+<div align="center">
+  <p>
+      <a href="https://github.com/cheerss/SciPIP/issues">
+          <img src="https://img.shields.io/github/issues/cheerss/SciPIP" alt="GitHub issues">
+      </a>
+      <a href="LICENSE">
+          <img src="https://img.shields.io/github/license/cheerss/SciPIP" alt="License">
+      </a>
+      <a href="https://arxiv.org/abs/2410.23166">
+          <img src="https://img.shields.io/badge/arXiv-2410.23166-b31b1b" alt="arXiv">
+      </a>
+      <img src="https://img.shields.io/github/stars/cheerss/SciPIP?color=green&style=social" alt="GitHub stars">
+      <img src="https://img.shields.io/badge/python->=3.10.3-blue" alt="Python version">
+  </p>
+</div>
+
+<p><img alt="SciPIP" src="./assets/pic/logo.jpg" /></p>
+<h2>Introduction</h2>
+<p>SciPIP is a scientific paper idea generation tool powered by a large language model (LLM) designed to <strong>assist researchers in quickly generating novel research ideas</strong>. Based on the background information provided by the user, SciPIP first conducts a literature review to identify relevant research, then generates fresh ideas for potential studies.<br />
+<img alt="SciPIP" src="./assets/pic/demo.png" /></p>
+<p>🤗 Try it on the Hugging Face: https://huggingface.co/spaces/lihuigu/SciPIP (The demo uses the old version code temporally and will be updated soon.)</p>
+<h2>Updates</h2>
+<ul>
+<li>[x] Idea generation in a GUI enviroment (web app).</li>
+<li>[x] Idea generation for the NLP and multimodal field.</li>
+<li>[x] Idea generation for the CV field.</li>
+<li>[ ] Idea generation for other fields.</li>
+<li>[x] Release the Huggingface demo.</li>
+<li>[x] Support DeepSeek-v3 as an backend, now. 🎉 🎉 🎉 </li>
+</ul>
+<h2>Prerequisites</h2>
+<p>The following enviroments are tested under Ubuntu 22.04 with python&gt;=3.10.3.</p>
+<ol>
+<li><strong>Install essential packages</strong>, feel free to copy and paste the following commans into your terminal. After that, you can visit your Neo4j databse in a browser.</li>
+</ol>
+<p>```bash<br />
+   ## Install git-lfs<br />
+   curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash<br />
+   sudo apt install git-lfs</p>
+<p>## Create new conda environment scipip<br />
+   conda env create -f environment.yml<br />
+   conda activate scipip</p>
+<p>## Install Neo4j database<br />
+   sudo apt install -y openjdk-17-jre # Install Neo4j required JDK<br />
+   # cd ~/Downloads # or /your/path/to/download/Neo4j<br />
+   wget http://dist.neo4j.org/neo4j-community-5.25.1-unix.tar.gz<br />
+   tar -xvf neo4j-community-5.25.1-unix.tar.gz</p>
+<p>## Start Neo4j<br />
+   cd ./neo4j-community-5.25.1<br />
+   # Uncomment server.default_listen_address=0.0.0.0 in conf/neo4j.conf to visit Neo4j through a browser<br />
+   sed -i 's/# server.default_listen_address=0.0.0.0/server.default_listen_address=0.0.0.0/g' ./conf/neo4j.conf<br />
+   ./bin/neo4j start</p>
+<p># Default URL for neo4j is "http://127.0.0.1:7474"<br />
+   # Default URI for ner4j is "bolt://127.0.0.1:7687"<br />
+   # Default username and password for neo4j database are both "neo4j"<br />
+   # !![IMPORTANT] You must visit "http://127.0.0.1:7474" and change the default password before next step. It is because Neo4j does not permit running with a default password.<br />
+   ```<br />
+2. <strong>Clone this repository (SciPIP) and edit the configuration files.</strong> Specifically, LLMs' API token and the Neo4j' username/password are need configuring, and we have provided the template.</p>
+<p>```bash<br />
+   ## Clone our repository<br />
+   git clone git@github.com:cheerss/SciPIP.git &amp;&amp; cd SciPIP</p>
+<p>## Edit scripts/env.sh<br />
+   # Must be corrected: NEO4J_USERNAME / NEO4J_PASSWD / MODEL_API_KEY / MODEL_URL<br />
+   # Others are optional</p>
+<p>## source env<br />
+   source scripts/env.sh<br />
+   ```<br />
+3. <strong>Prepare the literature database</strong></p>
+<ol>
+<li>Download the literature data from <a href="https://drive.google.com/file/d/1kZmJff8am-JGegZZQx0qxlC7o7YgBURg/view?usp=sharing">google_drive</a> or <a href="https://pan.baidu.com/s/1S22Evi5ReL0MvahFoQ-ipA?pwd=scip">baidu disk</a>. Replace the <code>/your/path/neo4j-community-5.25.1/data</code> folder with our provided <code>data</code> folder, which contains literature of CV, NLP, ML, <em>etc.</em></li>
+<li>[Optional] Prepare the embedding model. Our algorithm uses <strong>jina-embedding v3</strong> and will automatically download it from Huggingface the first time the program is run. However, if you're concerned about potential download failures due to network issues, you can download it in advance and place it in the specified directory.</li>
+</ol>
+<p><code>bash
+   cd /root/path/of/SciPIP &amp;&amp; mkdir -p assets/model/
+   git clone https://huggingface.co/jinaai/jina-embeddings-v3 assets/model</code></p>
+<h2>Run In a Browser (Recommended)</h2>
+<pre><code class="language-bash">streamlit run app.py
+# OR
+python -m streamlit run app.py
+</code></pre>
+<p>Then, visit <code>http://localhost:8501</code> in your browser with an interactive enviroment.</p>
+<h2>Run In a Terminal</h2>
+<p><strong>1. Generate new idea</strong></p>
+<p>Input your backgound in <code>assets/data/test_background.json</code></p>
+<pre><code>python src/generator.py new-idea --brainstorm-mode mode_c --use-inspiration True --num 2
+</code></pre>
+<p>Results dump in <code>assets/output_idea/output-file.json</code>.</p>
+<h2>Others</h2>
+<h3>Database Construction</h3>
+<p>SciPIP uses Neo4j as its database. You can directly import the provided data or add your own research papers.ddddddsfasdfldsafkldsjfdkls</p>
+<pre><code>wget https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+pip install en_core_web_sm-3.7.1-py3-none-any.whl
+</code></pre>
+<p>The directory for storing papers can be modified in the <code>pdf_cached</code> field of <code>configs/datasets.yaml</code>.</p>
+<p><strong>1. Generate json list</strong></p>
+<pre><code>python src/paper_manager.py crawling --year all --venue-name nips
+</code></pre>
+<p>json files are saved at <code>./assets/paper/&lt;$venue-name&gt;/&lt;$year&gt;</code></p>
+<p><strong>2. Fetch Papers</strong></p>
+<pre><code>python src/paper_manager.py update --year all --venue-name nips
+</code></pre>
+<h2>Cite Us</h2>
+<pre><code>@article{wang2024scipip,
+  title={SciPIP: An LLM-based Scientific Paper Idea Proposer},
+  author={Wenxiao Wang, Lihui Gu, Liye Zhang, Yunxiang Luo, Yi Dai, Chen Shen, Liang Xie, Binbin Lin, Xiaofei He, Jieping Ye},
+  journal={arXiv preprint arXiv:2410.23166},
+  url={https://arxiv.org/abs/2410.23166},
+  year={2024}
+}
+</code></pre>
+<h2>Help Us To Improve</h2>
+<p>https://forms.gle/YpLUrhqs1ahyCAe99</p>
+<p>Thank you for your use! We hope SciPIP can help you generate research ideas! 🎉</p><footer>由 <code>SciPIP/code/README.md</code> 转换生成 · Literature 文献调研档案分享站</footer></div></body></html>

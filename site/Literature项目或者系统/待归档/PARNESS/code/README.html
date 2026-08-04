@@ -1,0 +1,527 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PARNESS 官方 README</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}img{max-width:100%}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../PARNESS_精读与代码审计.html">← 返回精读页</a>
+<div align="center">
+
+# PARNESS
+
+**End-to-End Automated Academic Research Pipeline**
+
+*DAG-Orchestrated · LLM-Agent-Driven · Fully Configurable*
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Pipelines](https://img.shields.io/badge/pipelines-38-orange.svg)](config/pipelines/)
+[![Modules](https://img.shields.io/badge/modules-140%2B-blueviolet.svg)](src/orchestrator/modules/)
+
+</div>
+
+<hr />
+<h2>Overview</h2>
+<p>PARNESS is a <strong>declarative DAG orchestration framework</strong> for academic research, with 140+ pluggable agent modules that you compose into arbitrary workflows via pure YAML — no code required.</p>
+<p>The framework imposes no fixed pipeline shape. Wire any subset of modules in any topology: linear chains, iterative loops, fan-out branches, conditional routing, nested sub-pipelines. A few examples of what a single YAML file can express:</p>
+<pre><code># Iterative idea generation with quality gates
+retrieve papers ➜ generate idea ➜ evaluate ➜ accept? save &amp; continue : reject &amp; loop
+
+# Multi-source parallel crawl + merge
+[crawl arXiv] ─┐
+[crawl S2]     ├➜ aggregate ➜ dedup ➜ persist
+[crawl OpenAlex]─┘
+
+# Full lifecycle with nested loops
+search ➜ parse ➜ index ➜ [generate ideas (loop until N accepted)]
+                     ➜ [design experiment ➜ run ➜ verify (loop until pass)]
+                     ➜ write paper ➜ review ➜ revise
+</code></pre>
+<p><strong>What makes PARNESS different</strong>: the framework provides only topology sorting and data passing. All domain decisions — branching, iteration, evaluation — are made by autonomous agent nodes emitting <code>_route</code> signals. There are no hardcoded pipeline types; every control-flow pattern is just a YAML wiring convention.</p>
+<hr />
+<h2>Pipeline Engine</h2>
+<h3>Zero-Code Composition</h3>
+<p>Pipelines are declarative YAML DAGs. You compose research workflows by wiring existing modules through <code>depends_on</code>, <code>input_mapping</code>, <code>output_mapping</code>, and <code>routes</code> — no code changes needed.</p>
+<pre><code class="language-yaml">name: my_research_pipeline
+config:
+  topic: &quot;Graph Neural Networks&quot;
+
+nodes:
+  - id: search
+    module: search_crawler
+    params:
+      max_results: 20
+
+  - id: parse
+    module: pdf_kit_parse
+    depends_on: [search]
+
+  - id: generate_ideas
+    module: idea_generator
+    depends_on: [parse]
+    input_mapping:
+      papers: output.parse.parsed_papers
+
+  - id: judge
+    module: idea_judge
+    depends_on: [generate_ideas]
+    params:
+      threshold: 7.0
+    routes:                          # ← conditional branching
+      accept: idea_saver
+      reject: idea_counter
+
+  - id: idea_saver
+    module: idea_saver
+    depends_on: [judge]
+
+  - id: idea_counter
+    module: idea_counter
+    depends_on: [judge]
+    routes:
+      continue: generate_ideas      # ← loop back
+      exhausted: null
+</code></pre>
+<h3>Control Flow</h3>
+<p>The engine supports rich control flow — all driven by agent output, not hardcoded node types:</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Mechanism</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Conditional routing</strong></td>
+<td>Node emits <code>_route: "key"</code> → routes to mapped target</td>
+<td>Accept/reject ideas</td>
+</tr>
+<tr>
+<td><strong>Fan-out</strong></td>
+<td>Node emits <code>_routes: ["a", "b"]</code> → multiple targets run in parallel</td>
+<td>Save + persist simultaneously</td>
+</tr>
+<tr>
+<td><strong>Iteration loops</strong></td>
+<td>Route maps back to an earlier node</td>
+<td>Generate ideas until 50 accepted</td>
+</tr>
+<tr>
+<td><strong>Iteration controllers</strong></td>
+<td>5 built-in strategies: threshold, patience, improving, LLM-judged, multi-criteria</td>
+<td>Retry until score ≥ 0.85</td>
+</tr>
+<tr>
+<td><strong>Backtrack edges</strong></td>
+<td><code>backtrack: true</code> on edges re-visits completed nodes</td>
+<td>Re-process on parse failure</td>
+</tr>
+<tr>
+<td><strong>Parallel levels</strong></td>
+<td>Nodes with no dependency relation run concurrently via topological sort</td>
+<td>Crawl 5 sources in parallel</td>
+</tr>
+<tr>
+<td><strong>Result aggregation</strong></td>
+<td><code>result_aggregator</code> merges branches: concat, merge_dict, best_score, all</td>
+<td>Merge multi-source search results</td>
+</tr>
+</tbody>
+</table>
+<h3>Resilient Execution</h3>
+<pre><code class="language-yaml">nodes:
+  - id: llm_agent
+    module: idea_evaluator
+    timeout: 120                      # per-node timeout (seconds)
+    retry:
+      max_attempts: 3
+      backoff: exponential            # constant | linear | exponential
+</code></pre>
+<ul>
+<li>Each node runs in a <strong>fresh subprocess</strong> — GPU memory is fully released on exit</li>
+<li>Per-node timeout and retry with configurable backoff</li>
+<li>Global <code>max_rounds</code> ceiling prevents infinite loops</li>
+<li><strong>Incremental persistence</strong> taps can be wired onto any node to flush results to JSONL in real time — no data loss even on pipeline crash</li>
+</ul>
+<h3>Data Flow</h3>
+<p>Every data dependency is explicit via dot-path addressing:</p>
+<pre><code class="language-yaml">input_mapping:
+  papers: output.crawl.metadata       # read from another node's output
+  topic: config.topic                 # read from pipeline global config
+  idea: output.judge.idea             # nested field access
+</code></pre>
+<p>The validation script (<code>validate_pipeline.py</code>) statically checks all connections <strong>before execution</strong> — catch wiring errors instantly.</p>
+<hr />
+<h2>Module Catalog</h2>
+<p>140+ registered building blocks, organized by category. All modules are <strong>lazy-loaded</strong> — only those referenced in your pipeline YAML are imported.</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Modules</th>
+<th>Highlights</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Research Agents</strong></td>
+<td>18</td>
+<td>Reader, Analyst, Connector, Contrarian, Synthesizer, Critic, Transfer, Hypothesis, Theory, Meta-Analysis, Adversarial, Replication, ...</td>
+</tr>
+<tr>
+<td><strong>Paper Crawlers</strong></td>
+<td>17 sources</td>
+<td>arXiv, S2, OpenAlex, Crossref, NCBI, bioRxiv, Europe PMC, DBLP, ACL, CVF, IEEE, Frontiers, SSRN, Springer, ACS, PLOS, ICLR</td>
+</tr>
+<tr>
+<td><strong>Idea Pipeline</strong></td>
+<td>9</td>
+<td>Generator, Evaluator, Reviewer, Deduplicator, Judge, Saver, Counter, Scheduler, Scout</td>
+</tr>
+<tr>
+<td><strong>Experiment System</strong></td>
+<td>12</td>
+<td>Plan Generator/Evaluator/Reviser, Runner (local + OpenCode CLI), Verifier, Goal Evaluator, Report Generator, Chart Code Generator</td>
+</tr>
+<tr>
+<td><strong>Paper Writing</strong></td>
+<td>9</td>
+<td>Writer, Section Writer, Editor, Reviewer, Formatter, Outline Generator, Coherence Checker, MD Assembler, LaTeX CLI</td>
+</tr>
+<tr>
+<td><strong>Knowledge Graph</strong></td>
+<td>20</td>
+<td>Extract, Dedup, Embed, Build Edges (structural/semantic/LLM), Random Walk, Retrospect, Vector Search, NL Query, Cross-Paper Discovery, Rebuild, Prune</td>
+</tr>
+<tr>
+<td><strong>Iteration Controllers</strong></td>
+<td>7</td>
+<td>Threshold, Patience, Improving, LLM-Judged, Multi-Criteria, Result Aggregator, Quality Scorer</td>
+</tr>
+<tr>
+<td><strong>PDF Processing</strong></td>
+<td>7</td>
+<td>Parser (daemon + batch), PDF-Extract-Kit integration, PDF Queue Feeder</td>
+</tr>
+<tr>
+<td><strong>Gates &amp; Persistence</strong></td>
+<td>19</td>
+<td>Parse/Title/Summary Result Gates, Incremental Persistence, Paper/Idea/Experiment Persist, PDF Mover</td>
+</tr>
+<tr>
+<td><strong>Reference Management</strong></td>
+<td>5</td>
+<td>Collector, Gap Analyzer, BibTeX Generator, Citation Inserter, Integrity Checker</td>
+</tr>
+</tbody>
+</table>
+<h3>Creating New Modules</h3>
+<pre><code class="language-python"># src/my_module/my_adapter.py
+from src.orchestrator.adapters.base import BaseModule
+
+class MyAdapter(BaseModule):
+    async def execute(self, inputs: dict) -&gt; dict:
+        result = do_something(inputs[&quot;data&quot;])
+        return {
+            &quot;output_data&quot;: result,
+            &quot;_route&quot;: &quot;accept&quot;,       # optional: control flow
+            &quot;_score&quot;: 0.92,           # optional: self-assessment
+        }
+</code></pre>
+<p>Then register it and use it in any pipeline YAML. Or use the scaffold generator:</p>
+<pre><code class="language-bash">python scripts/design_adapter.py --name my_adapter \
+    --upstream idea_generator --downstream experiment_designer
+</code></pre>
+<hr />
+<h2>Architecture</h2>
+<pre><code>┌──────────────────────────────────────────────────────────────┐
+│  Layer 9  Paper Writer (LaTeX generation)                     │
+│  Layer 8  Knowledge Graph (Neo4j)                             │
+│  Layer 7  PDF Parser (PDF-Extract-Kit)                        │
+│  Layer 6  Crawlers (arXiv, S2, ICLR, CVPR, OpenAlex, ...)    │
+│  Layer 5  Persistence (SQLite + JSONL incremental)             │
+│  Layer 4  Monitoring (WebSocket dashboard + live progress)     │
+│  Layer 3  DAG Orchestrator (YAML pipelines, ~900 LOC)          │
+│  Layer 2  Module System (140+ pluggable agents, lazy-loaded)   │
+│  Layer 1  LLM Provider (OpenAI, Anthropic, MiniMax, GLM, ...) │
+└──────────────────────────────────────────────────────────────┘
+</code></pre>
+<p>The orchestrator engine (Layer 3) is deliberately thin (~900 lines). All intelligence lives in the 140+ module implementations. The framework provides only:<br />
+- Topological level sorting + parallel execution<br />
+- Explicit data flow via <code>input_mapping</code> / <code>output_mapping</code><br />
+- Agent-driven routing via <code>_route</code> / <code>_routes</code> protocol<br />
+- Per-node subprocess isolation, timeout, and retry</p>
+<hr />
+<h2>Quick Start</h2>
+<h3>Prerequisites</h3>
+<ul>
+<li>Python 3.10+</li>
+<li><em>(Optional)</em> NVIDIA GPU + CUDA for PDF parsing</li>
+<li><em>(Optional)</em> Neo4j for knowledge graph features</li>
+</ul>
+<h3>Installation</h3>
+<pre><code class="language-bash">git clone https://github.com/gtrhythm/PARNESS.git
+cd parness
+
+python -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -e .                # base install
+pip install -e &quot;.[pdf]&quot;         # with PDF parsing (CUDA required)
+pip install -e &quot;.[dev]&quot;         # with dev/test dependencies
+</code></pre>
+<h3>Configuration</h3>
+<pre><code class="language-bash">cp .env.example .env           # add your API keys
+</code></pre>
+<p>Configure LLM providers in <code>config/llm_config.yaml</code>:</p>
+<pre><code class="language-yaml">default_provider: openai
+providers:
+  openai:
+    api_key: &quot;your-api-key&quot;
+    model: &quot;gpt-4&quot;
+</code></pre>
+<h3>Run a Pipeline</h3>
+<pre><code class="language-bash"># Run a single pipeline
+python scripts/run_pipeline.py config/pipelines/simple_idea_test.yaml
+
+# End-to-end: idea discovery → experiment → paper
+python scripts/run_auto_idea_to_paper.py
+
+# Validate pipeline wiring before execution
+python scripts/validate_pipeline.py config/pipelines/simple_idea_test.yaml
+python scripts/validate_pipeline.py config/pipelines/         # validate all
+</code></pre>
+<hr />
+<h2>Pipeline Examples</h2>
+<h3>Simple Linear Pipeline</h3>
+<p>Evaluate an idea, run an experiment, write a paper:</p>
+<pre><code class="language-yaml">nodes:
+  - { id: evaluate,  module: idea_evaluator }
+  - { id: design,    module: experiment_designer,  depends_on: [evaluate] }
+  - { id: run,       module: experiment_runner_cli, depends_on: [design] }
+  - { id: write,     module: paper_cli_runner,      depends_on: [run] }
+</code></pre>
+<h3>Iterative Loop with Quality Gate</h3>
+<p>Generate ideas until 50 are accepted:</p>
+<pre><code class="language-yaml">nodes:
+  - { id: retrieve, module: paper_retriever }
+  - { id: generate, module: idea_generator,  depends_on: [retrieve] }
+  - { id: evaluate, module: idea_evaluator,  depends_on: [generate] }
+  - id: judge
+    module: idea_judge
+    depends_on: [evaluate]
+    routes:
+      accept: idea_saver
+      reject: counter
+  - { id: idea_saver, module: idea_saver,   depends_on: [judge] }
+  - id: counter
+    module: idea_counter
+    depends_on: [judge, idea_saver]
+    routes:
+      continue: generate      # loop back
+      exhausted: null          # done
+</code></pre>
+<h3>Full Research Automation (4 Phases)</h3>
+<p>The <code>auto_paper_e2e_opencode.yaml</code> pipeline runs the complete lifecycle:<br />
+1. <strong>Phase 1</strong>: Iterative paper retrieval + summarization (nested inner/outer loops)<br />
+2. <strong>Phase 2</strong>: Idea scoring + best selection<br />
+3. <strong>Phase 3</strong>: Experiment plan → execute (OpenCode CLI) → verify → retry gate<br />
+4. <strong>Phase 4</strong>: Paper writing via OpenCode CLI<br />
+Plus incremental persistence taps at every stage for crash resilience.</p>
+<h3>All Pre-built Pipelines</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Pipeline</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Search</strong></td>
+<td><code>paper_search_multi_source</code></td>
+<td>Search S2, OpenAlex, arXiv simultaneously</td>
+</tr>
+<tr>
+<td><strong>Search</strong></td>
+<td><code>paper_search_multi_intent</code></td>
+<td>Multi-intent paper discovery</td>
+</tr>
+<tr>
+<td><strong>PDF</strong></td>
+<td><code>pdf_parse_persist_layer</code> → <code>title_persist_layer</code> → <code>db_persist_layer</code></td>
+<td>3-layer parsing architecture</td>
+</tr>
+<tr>
+<td><strong>PDF</strong></td>
+<td><code>pdf_reparse_daemon_pipeline</code></td>
+<td>Continuous reprocessing daemon</td>
+</tr>
+<tr>
+<td><strong>Indexing</strong></td>
+<td><code>paper_intra_index</code></td>
+<td>Full paper index build</td>
+</tr>
+<tr>
+<td><strong>Indexing</strong></td>
+<td><code>paper_intra_index_incremental</code></td>
+<td>Incremental index update</td>
+</tr>
+<tr>
+<td><strong>Ideas</strong></td>
+<td><code>idea_generation_loop</code></td>
+<td>Iterative generation with quality gates</td>
+</tr>
+<tr>
+<td><strong>Ideas</strong></td>
+<td><code>idea_mining</code></td>
+<td>Bulk idea mining from paper corpus</td>
+</tr>
+<tr>
+<td><strong>Ideas</strong></td>
+<td><code>idea_driven_crawl</code></td>
+<td>Crawl papers driven by idea gaps</td>
+</tr>
+<tr>
+<td><strong>Automation</strong></td>
+<td><code>auto_idea_to_paper</code></td>
+<td>End-to-end idea → paper</td>
+</tr>
+<tr>
+<td><strong>Automation</strong></td>
+<td><code>auto_paper_e2e_opencode</code></td>
+<td>4-phase full lifecycle</td>
+</tr>
+<tr>
+<td><strong>Experiments</strong></td>
+<td><code>experiment_opencode</code></td>
+<td>OpenCode-based experiment execution</td>
+</tr>
+<tr>
+<td><strong>Benchmarks</strong></td>
+<td><code>bfs_vs_dfs</code> / <code>merge_vs_quick_sort</code> / <code>two_sum_comparison</code></td>
+<td>Algorithm benchmarking</td>
+</tr>
+<tr>
+<td><strong>KG</strong></td>
+<td><code>kg_ingest</code> / <code>kg_query</code> / <code>kg_maintenance</code></td>
+<td>Knowledge graph lifecycle</td>
+</tr>
+<tr>
+<td><strong>KG</strong></td>
+<td><code>kg_abstract_enrich</code></td>
+<td>Enrich KG nodes with abstracts</td>
+</tr>
+<tr>
+<td><strong>Full</strong></td>
+<td><code>iterative_research_pipeline</code></td>
+<td>5-phase research pipeline with monitoring</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>AI Coding Skills</h2>
+<p>PARNESS ships with skills for OpenCode and Claude Code that understand the pipeline architecture:</p>
+<table>
+<thead>
+<tr>
+<th>Skill</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>design-adapter</code></td>
+<td>Generate adapter scaffold with input/output contracts</td>
+</tr>
+<tr>
+<td><code>design-new-agent</code></td>
+<td>End-to-end agent design workflow</td>
+</tr>
+<tr>
+<td><code>generate-pipeline-yaml</code></td>
+<td>Create pipeline YAML from natural language</td>
+</tr>
+<tr>
+<td><code>validate-pipeline</code></td>
+<td>Validate pipeline YAML integrity</td>
+</tr>
+<tr>
+<td><code>parse-pdf</code></td>
+<td>PDF parsing with layout detection, OCR, formula recognition</td>
+</tr>
+<tr>
+<td><code>multi-agent-update</code></td>
+<td>Parallel multi-agent modification workflow</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-bash"># OpenCode
+cp -r skills/design-adapter ~/.opencode/skills/
+
+# Claude Code
+cp -r skills/design-adapter ~/.claude/skills/
+</code></pre>
+<hr />
+<h2>PDF-Extract-Kit</h2>
+<p>Integrates <a href="https://github.com/opendatalab/PDF-Extract-Kit">PDF-Extract-Kit</a> for high-quality PDF parsing. Model weights are <strong>not</strong> included in the repo.</p>
+<pre><code class="language-bash">cd src/PDF-Extract-Kit
+python -c &quot;from huggingface_hub import snapshot_download; \
+    snapshot_download('opendatalab/pdf-extract-kit-1.0', local_dir='.')&quot;
+</code></pre>
+<hr />
+<h2>Project Structure</h2>
+<pre><code>parness/
+├── config/
+│   ├── pipelines/                  # 38 YAML pipeline definitions
+│   ├── kg_config.yaml              # Knowledge graph settings
+│   ├── opencode_config.yaml        # OpenCode integration
+│   └── resource_config.yaml        # Resource limits
+├── scripts/
+│   ├── run_pipeline.py             # Main pipeline runner
+│   ├── run_auto_idea_to_paper.py   # Full automation script
+│   ├── validate_pipeline.py        # Pipeline validator
+│   └── design_adapter.py           # Adapter scaffold generator
+├── src/
+│   ├── orchestrator/               # DAG engine &amp; adapter framework
+│   │   ├── adapters/               # 140+ adapter modules
+│   │   ├── iteration/              # Graph runner, controllers, state
+│   │   ├── modules/                # Module registry &amp; catalog
+│   │   └── registry.py             # Lazy-load module factory
+│   ├── llm_provider/               # Multi-provider LLM interface
+│   ├── llm_dispatcher/             # LLM routing, rate limiting, retry
+│   ├── knowledge_graph/            # Neo4j knowledge graph
+│   ├── crawler/                    # Paper crawlers (17 sources)
+│   ├── pdf_parser/                 # PDF parsing + daemon
+│   ├── paper_cli/                  # Paper writing CLI
+│   ├── paper_writer/               # Section-by-section writer agents
+│   ├── idea_agents/                # Idea generation &amp; evaluation
+│   ├── experiment_*/               # Experiment design &amp; execution
+│   ├── db/                         # SQLite persistence layer
+│   └── ...
+├── skills/                         # OpenCode / Claude skills
+├── pyproject.toml
+└── .env.example
+</code></pre>
+<hr />
+<h2>Acknowledgments</h2>
+<ul>
+<li><a href="https://github.com/opendatalab/PDF-Extract-Kit">PDF-Extract-Kit</a> — PDF parsing toolkit</li>
+</ul>
+<h2>License</h2>
+<p><a href="LICENSE">MIT</a></p><footer>由 <code>PARNESS/code/README.md</code> 转换生成 · Literature 文献调研档案分享站</footer></div></body></html>

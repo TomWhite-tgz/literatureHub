@@ -1,0 +1,367 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CycleResearcher 官方 README</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}img{max-width:100%}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../CycleResearcher_精读与代码审计.html">← 返回精读页</a>
+<h1>AI-powered Research and Review Agents [ICLR 2025 / ACL 2025]</h1>
+<div align="center">
+
+[![GitHub stars](https://img.shields.io/github/stars/zhu-minjun/Researcher)](https://github.com/zhu-minjun/Researcher/stargazers) 
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/) 
+[![arXiv](https://img.shields.io/badge/arXiv-2411.00816-b31b1b.svg)](https://arxiv.org/abs/2411.00816)
+[![OpenReview](https://img.shields.io/badge/OpenReview-ICLR2025-8b1a1a.svg)](https://openreview.net/forum?id=bjcsVLoHYs)
+[![Homepage](https://img.shields.io/badge/Homepage-ai--researcher.cn-green.svg)](http://ai-researcher.cn)
+
+
+<div align="center">
+  <img src="img/ai-research.png" alt="AI Research Ecosystem" width="90%">
+</div>
+</div>
+
+<h3>Update:</h3>
+<p>[03/05/2026] We have opensourced the <strong>DeepReviewer-v2</strong> in <a href="https://github.com/ResearAI/DeepReviewer-v2">Github</a> and the DeepReviewer 2.0 <strong>online platform</strong> is now live. It is free for all scholars. Try it out at <a href="https://deepscientist.cc">deepscientist.cc</a>.</p>
+<p>[04/26/2025] We hosted <a href="https://ai-researcher.net/social-iclr-2025">AI Co-scientist Discussion</a> in ICLR 2025, over 300 people gathered together!</p>
+<p>[04/06/2025] We have collected 400 papers related to AI Scientists in our <a href="https://github.com/ResearAI/Awesome-AI-Scientist">Awesome-AI-Scientist GitHub repository</a>. If you're interested in this field, don't miss out!</p>
+<p>[03/22/2025] We've just rolled out an exciting new feature for https://ai-researcher.net! 🎉 Now you can directly read arXiv papers with unprecedented ease! 📚✨ </p>
+<p>Transform any arXiv link from: <code>https://arxiv.org/abs/2503.08569</code> -&gt; <code>https://ai-researcher.net/abs/2503.08569</code></p>
+<h2>🔍 Overview</h2>
+<p>CycleResearcher is a comprehensive open-source ecosystem for AI-powered academic research and review. Our system features three integrated components:</p>
+<ul>
+<li><strong>CycleResearcher</strong>: Generates high-quality research papers</li>
+<li><strong>CycleReviewer</strong>: Provides detailed academic reviews</li>
+<li><strong>DeepReviewer</strong>: Delivers multi-perspective review simulations with self-verification</li>
+</ul>
+<p>By creating a complete feedback loop between research generation and evaluation, we aim to:</p>
+<ul>
+<li>🤖 Automate academic research processes</li>
+<li>📝 Provide rigorous, multi-perspective research reviews</li>
+<li>🔄 Establish research-review feedback loops</li>
+<li>🚀 Accelerate scientific discovery</li>
+</ul>
+<p><img src="img/method.png" alt="CycleResearcher Architecture" width="80%"></p>
+<h2>🚀 Getting Started</h2>
+<h3>Installation</h3>
+<pre><code class="language-bash">pip install ai_researcher
+</code></pre>
+<h3>Using CycleResearcher</h3>
+<pre><code class="language-python"># Import necessary libraries
+from ai_researcher import CycleResearcher
+from ai_researcher.utils import print_paper_summary
+
+# Initialize CycleResearcher with the default 12B model
+researcher = CycleResearcher(model_size=&quot;12B&quot;)
+
+# Load references from BibTeX file
+with open('cycleresearcher_references.bib', 'r') as f:
+    references_content = f.read()
+
+# Generate a paper with specific references
+generated_papers = researcher.generate_paper(
+    topic = &quot;AI Researcher&quot;,
+    references = references_content,
+    n = 1  # Generate a single paper
+)
+
+# Print summary of generated paper
+print_paper_summary(generated_papers[0])
+</code></pre>
+<h3>Using CycleReviewer</h3>
+<pre><code class="language-python"># Import necessary libraries
+from ai_researcher import CycleReviewer
+
+# Initialize CycleReviewer with the default 8B model
+reviewer = CycleReviewer(model_size=&quot;8B&quot;)
+
+# Review a paper (assuming paper_text contains the paper content)
+review_results = reviewer.evaluate(paper_text)
+
+# Print review results
+print(f&quot;Average score: {review_results[0]['avg_rating']}&quot;)
+print(f&quot;Decision: {review_results[0]['paper_decision']}&quot;)
+</code></pre>
+<h3>Using DeepReviewer</h3>
+<pre><code class="language-python"># Import necessary libraries
+from ai_researcher import DeepReviewer
+
+# Initialize DeepReviewer with 14B model
+deep_reviewer = DeepReviewer(model_size=&quot;14B&quot;)
+
+# Review a paper with multiple simulated reviewers in Standard Mode
+review_results = deep_reviewer.evaluate(
+    paper_text,
+    mode=&quot;Standard Mode&quot;,  # Options: &quot;Fast Mode&quot;, &quot;Standard Mode&quot;, &quot;Best Mode&quot;
+    reviewer_num=4         # Simulate 4 different reviewers
+)
+
+# Print review results
+for i, review in enumerate(review_results[0]['reviews']):
+    print(f&quot;Reviewer {i+1} Rating: {review.get('rating', 'N/A')}&quot;)
+    print(f&quot;Reviewer {i+1} Summary: {review.get('summary', 'N/A')[:100]}...&quot;)
+</code></pre>
+<h4>Launching DeepReviewer Best Mode</h4>
+<h5>Using OpenScholar</h5>
+<p>OpenScholar is a retrieval-augmented generation-based academic research question-answering system. For detailed usage instructions, please refer to the <a href="./OpenScholar/">OpenScholar directory</a>.</p>
+<h5>Quick Start Guide for OpenScholar</h5>
+<ol>
+<li>
+<p><strong>Apply for Semantic Scholar API Key</strong>: Visit <a href="https://www.semanticscholar.org/product/api">Semantic Scholar API</a></p>
+</li>
+<li>
+<p><strong>Start Model Services</strong>:<br />
+<code>bash
+   # For Linux/Mac users
+   cd OpenScholar
+   chmod +x start_models.sh
+   ./start_models.sh</code></p>
+</li>
+<li>
+<p><strong>Start API Service</strong>:<br />
+<code>bash
+   python openscholar_api.py \
+       --s2_api_key YOUR_SEMANTIC_SCHOLAR_API_KEY \
+       --reranker_path OpenSciLM/OpenScholar_Reranker</code></p>
+</li>
+<li>
+<p><strong>Using the API</strong>:<br />
+   ```python<br />
+   import requests</p>
+</li>
+</ol>
+<p># Send questions to OpenScholar API<br />
+   response = requests.post("http://localhost:38015/batch_ask", json={<br />
+       "questions": ["How do retrieval-augmented LMs perform in knowledge-intensive tasks?"]<br />
+   })</p>
+<p>result = response.json()<br />
+   print("OpenScholar Answer:", result["results"][0]["output"])<br />
+   ```</p>
+<h4>Best Mode</h4>
+<p>DeepReviewer's Best Mode provides the most comprehensive review experience, including background knowledge search, multi-reviewer simulation, and self-verification:</p>
+<pre><code class="language-python"># Use Best Mode for in-depth review
+review_results = deep_reviewer.evaluate(
+    paper_text,
+    mode=&quot;Best Mode&quot;,      # Most comprehensive review mode
+    reviewer_num=6,        # Simulate 6 different reviewers
+    enable_search=True,    # Enable background knowledge search
+    self_verification=True # Enable self-verification
+)
+</code></pre>
+<p><img src="img/deepreviewer.png" alt="DeepReviewer Architecture" width="80%"></p>
+<h2>📊 Model Evaluation</h2>
+<div class="evaluation-grid">
+  <div class="evaluation-card">
+    <h3>CycleResearcher</h3>
+    <img src="img/cycleresearcher.png" alt="CycleResearcher Evaluation" width="100%">
+    <p>CycleResearcher-12B achieves an average score of 5.36, approaching the 5.69 average for conference-accepted papers and surpassing AI Scientist's score of 4.31.</p>
+  </div>
+
+  <div class="evaluation-card">
+    <h3>CycleReviewer</h3>
+    <img src="img/cyclereviewer.png" alt="CycleReviewer Evaluation" width="100%">
+    <p>CycleReviewer outperforms both proprietary systems and human experts with a 48.77% reduction in Proxy MSE and a 26.89% reduction in Proxy MAE compared to human reviewers. With a decision accuracy of 74.24%, our model demonstrates a significant lead over other closed-source systems.</p>
+  </div>
+
+  <div class="evaluation-card">
+    <h3>DeepReviewer</h3>
+    <img src="img/deepreviewer.png" alt="DeepReviewer Evaluation" width="100%">
+    <p>DeepReviewer provides multi-perspective simulation with self-verification, enabling more comprehensive and balanced feedback. It offers three distinct review modes: Fast Mode, Standard Mode, and Best Mode to accommodate different use cases.</p>
+  </div>
+</div>
+
+<h2>🧠 Models &amp; Datasets</h2>
+<h3>Models Overview</h3>
+<details open>
+<summary><b>CycleResearcher Models</b></summary>
+<table>
+  <tr>
+    <th>Model Name</th>
+    <th>Pre-training Language Model</th>
+    <th>HF Link</th>
+  </tr>
+  <tr>
+    <td>CycleResearcher-ML-12B</td>
+    <td><a href="https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407">Mistral-Nemo-Instruct-2407</a></td>
+    <td><a href="https://huggingface.co/WestlakeNLP/CycleResearcher-ML-12B">🤗 link</a></td>
+  </tr>
+  <tr>
+    <td>CycleResearcher-ML-72B</td>
+    <td><a href="https://huggingface.co/Qwen/Qwen2.5-72B-Instruct">Qwen2.5-72B-Instruct</a></td>
+    <td><a href="https://huggingface.co/WestlakeNLP/CycleResearcher-ML-72B">🤗 link</a></td>
+  </tr>
+  <tr>
+    <td>CycleResearcher-ML-123B</td>
+    <td><a href="https://huggingface.co/mistralai/Mistral-Large-Instruct-2407">Mistral-Large-2</a></td>
+    <td><a href="https://huggingface.co/WestlakeNLP/CycleResearcher-ML-123B">🤗 link</a></td>
+  </tr>
+</table>
+</details>
+
+<details open>
+<summary><b>CycleReviewer Models</b></summary>
+<table>
+  <tr>
+    <th>Model Name</th>
+    <th>Pre-training Language Model</th>
+    <th>HF Link</th>
+  </tr>
+  <tr>
+    <td>CycleReviewer-ML-Llama3.1-8B</td>
+    <td><a href="https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct">Llama3.1-8B-Instruct</a></td>
+    <td><a href="https://huggingface.co/WestlakeNLP/CycleReviewer-ML-Llama3.1-8B">🤗 link</a></td>
+  </tr>
+  <tr>
+    <td>CycleReviewer-ML-Llama3.1-70B</td>
+    <td><a href="https://huggingface.co/meta-llama/Meta-Llama-3.1-70B-Instruct">Llama3.1-70B-Instruct</a></td>
+    <td><a href="https://huggingface.co/WestlakeNLP/CycleReviewer-ML-Llama3.1-70B">🤗 link</a></td>
+  </tr>
+  <tr>
+    <td>CycleReviewer-ML-Pro-123B</td>
+    <td><a href="https://huggingface.co/mistralai/Mistral-Large-Instruct-2407">Mistral-Large-2</a></td>
+    <td><a href="https://huggingface.co/WestlakeNLP/CycleReviewer-ML-Pro-123B">🤗 link</a></td>
+  </tr>
+</table>
+</details>
+
+<details open>
+<summary><b>DeepReviewer Models</b></summary>
+<table>
+  <tr>
+    <th>Model Name</th>
+    <th>Parameters</th>
+    <th>HF Link</th>
+  </tr>
+  <tr>
+    <td>DeepReviewer-7B</td>
+    <td>7B</td>
+    <td><a href="https://huggingface.co/WestlakeNLP/DeepReviewer-7B">🤗 link</a></td>
+  </tr>
+  <tr>
+    <td>DeepReviewer-14B</td>
+    <td>14B</td>
+    <td><a href="https://huggingface.co/WestlakeNLP/DeepReviewer-14B">🤗 link</a></td>
+  </tr>
+</table>
+</details>
+
+<h3>Datasets</h3>
+<div align="center">
+  <img src="img/dataset.png" alt="Datasets Overview" width="80%">
+</div>
+
+<table>
+  <tr>
+    <th>Dataset Name</th>
+    <th>Train Data</th>
+    <th>Test Data</th>
+    <th>Description</th>
+    <th>HF Link</th>
+  </tr>
+  <tr>
+    <td>Review-5K</td>
+    <td>4,189</td>
+    <td>781</td>
+    <td>Peer review dataset for CycleReviewer training</td>
+    <td><a href="https://huggingface.co/datasets/WestlakeNLP/Review-5K">🤗 link</a></td>
+  </tr>
+  <tr>
+    <td>Research-14K</td>
+    <td>12,696</td>
+    <td>802</td>
+    <td>Research paper dataset for CycleResearcher training</td>
+    <td><a href="https://huggingface.co/datasets/WestlakeNLP/Research-14K">🤗 link</a></td>
+  </tr>
+  <tr>
+    <td>DeepReview-13K</td>
+    <td>13,378</td>
+    <td>1,286</td>
+    <td>Multi-perspective review dataset for DeepReviewer training</td>
+    <td><a href="https://huggingface.co/datasets/WestlakeNLP/DeepReview-13K">🤗 link</a></td>
+  </tr>
+</table>
+
+<h2>💡 Features</h2>
+<h3>DeepReviewer Review Modes</h3>
+<p>DeepReviewer offers three distinct review modes to accommodate different use cases:</p>
+<div class="feature-cards">
+  <div class="feature-card">
+    <h4>🏃‍♂️ Fast Mode</h4>
+    <p>Quick review generation for rapid feedback. Provides essential evaluation without multi-reviewer simulation.</p>
+  </div>
+
+  <div class="feature-card">
+    <h4>🔄 Standard Mode</h4>
+    <p>Default mode that simulates multiple reviewers and includes self-verification to ensure reliable assessments.</p>
+  </div>
+
+  <div class="feature-card">
+    <h4>⭐ Best Mode</h4>
+    <p>Most comprehensive mode with background knowledge search, multi-reviewer simulation, and self-verification for in-depth analysis.</p>
+  </div>
+</div>
+
+<h3>AI Detection</h3>
+<p>Detect if content was generated by AI models:</p>
+<pre><code class="language-python">from ai_researcher import AIDetector
+
+# Initialize AI detector
+detector = AIDetector(device='cpu')
+
+# Analyze the generated paper
+detection_result = detector.analyze_paper(paper)
+
+print(&quot;Detection Results:&quot;)
+print(f&quot;Probability of AI generation: {detection_result['probability'] * 100:.2f}%&quot;)
+print(f&quot;Confidence Level: {detection_result['confidence_level']}&quot;)
+</code></pre>
+<h2>📚 Tutorials and Demos</h2>
+<p>We have prepared comprehensive tutorials to help users understand and utilize our models:</p>
+<ul>
+<li><a href="https://github.com/zhu-minjun/Researcher/blob/main/Tutorial/tutorial_1.ipynb">Tutorial 1:</a> Getting Started with CycleResearcher 🚀</li>
+<li><a href="https://github.com/zhu-minjun/Researcher/blob/main/Tutorial/tutorial_2.ipynb">Tutorial 2:</a> Understanding CycleReviewer 📝</li>
+<li><a href="https://github.com/zhu-minjun/Researcher/blob/main/Tutorial/tutorial_3.ipynb">Tutorial 3:</a> Mastering DeepReviewer 🔍</li>
+<li><a href="https://github.com/zhu-minjun/Researcher/blob/main/Tutorial/tutorial_4.ipynb">Tutorial 4:</a> Creating an End-to-End Research Workflow 🔄</li>
+</ul>
+<h2>📄 License</h2>
+<p>This code and the models' weights are provided under the <em>CycleResearcher-License</em>. See the <a href="LICENSE.md">LICENSE.md</a> file for details.</p>
+<h2>📚 Citation</h2>
+<p>If CycleResearcher is helpful to your work, please cite our paper:</p>
+<pre><code class="language-bibtex">@inproceedings{
+weng2025cycleresearcher,
+title={CycleResearcher: Improving Automated Research via Automated Review},
+author={Yixuan Weng and Minjun Zhu and Guangsheng Bao and Hongbo Zhang and Jindong Wang and Yue Zhang and Linyi Yang},
+booktitle={The Thirteenth International Conference on Learning Representations},
+year={2025},
+url={https://openreview.net/forum?id=bjcsVLoHYs}
+}
+</code></pre>
+<p>if DeepReviewer is helpful to your work, please cite our paper:</p>
+<pre><code class="language-bibtex">@misc{zhu2025deepreviewimprovingllmbasedpaper,
+      title={DeepReview: Improving LLM-based Paper Review with Human-like Deep Thinking Process}, 
+      author={Minjun Zhu and Yixuan Weng and Linyi Yang and Yue Zhang},
+      year={2025},
+      eprint={2503.08569},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2503.08569}, 
+}
+</code></pre>
+<h2>📮 Contact</h2>
+<ul>
+<li><a href="https://github.com/zhu-minjun/Researcher/issues">Submit an Issue</a></li>
+<li>Email: zhuminjun@westlake.edu.cn</li>
+</ul><footer>由 <code>CycleResearcher/code/readme.md</code> 转换生成 · Literature 文献调研档案分享站</footer></div></body></html>

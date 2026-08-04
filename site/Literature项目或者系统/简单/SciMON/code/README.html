@@ -1,0 +1,152 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SciMON 官方 README</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}img{max-width:100%}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../SciMON_精读与代码审计.html">← 返回精读页</a>
+<h1>SciMON: Scientific Inspiration Machines Optimized for Novelty</h1>
+<h1>Table of Contents</h1>
+<ul>
+<li>
+<p><a href="#overview">Overview</a></p>
+</li>
+<li>
+<p><a href="#requirements">Requirements</a></p>
+</li>
+<li>
+<p><a href="#quickstart">Quickstart</a></p>
+</li>
+<li>
+<p><a href="#citation">Citation</a></p>
+</li>
+</ul>
+<h2>Overview</h2>
+<p align="center">
+  <img src="https://eaglew.github.io/images/ai2_.png?raw=true" alt="Photo" style="width: 100%;"/>
+</p>
+
+<h2>Requirements</h2>
+<h3>Environment</h3>
+<ul>
+<li>
+<p>Python 3.8.5</p>
+</li>
+<li>
+<p>Ubuntu 22.04</p>
+</li>
+</ul>
+<h3>Environment Setup Instructions for NLP</h3>
+<p>To set up the environment for this repository, please follow the steps below:</p>
+<p>Step 1: Create a Python environment (optional)<br />
+If you wish to use a specific Python environment, you can create one using the following:</p>
+<pre><code class="language-bash">conda create -n pyt1.11 python=3.8.5
+</code></pre>
+<p>Step 2: Install PyTorch with CUDA (optional)<br />
+If you want to use PyTorch with CUDA support, you can install it using the following:</p>
+<pre><code class="language-bash">conda install pytorch==1.11 torchvision torchaudio cudatoolkit=11.3 -c pytorch
+</code></pre>
+<p>Step 3: Install Python dependencies<br />
+To install the required Python dependencies, run the following command:</p>
+<pre><code class="language-bash">pip install -r requirements.txt
+</code></pre>
+<h3>Environment Setup Instructions for biochemical</h3>
+<p>To set up the environment for this repository, please follow the steps below:</p>
+<p>Step 1: Create a Python environment (optional)<br />
+If you wish to use a specific Python environment, you can create one using the following:</p>
+<pre><code class="language-bash">conda create -n pyt2.2 python=3.10
+</code></pre>
+<p>Step 2: Install PyTorch with CUDA (optional)<br />
+If you want to use PyTorch with CUDA support, you can install it using the following:</p>
+<pre><code class="language-bash">conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
+</code></pre>
+<p>Step 3: Install Python dependencies<br />
+To install the required Python dependencies, run the following command:</p>
+<pre><code class="language-bash">pip install -r requirements1.txt
+</code></pre>
+<h3>Data Setup</h3>
+<ol>
+<li>Unzip all the zip files located in the data folder, including its subfolders.</li>
+<li>Place the following folders, extracted from their respective zip files, under the data folder: <code>kg</code>,<code>ct</code>, and <code>gold_subset</code></li>
+<li>Locate the <code>local_context_dataset</code> folder unzipped from <code>data/local_context_dataset.zip</code>.Move it to <code>models/T5</code>.</li>
+<li>Copy the file <code>e2t.json</code> and paste it into the following folders:   <code>models\GPT*\</code>, <code>models\Iterative\</code>, and <code>preprocess\</code></li>
+<li>Locate the <code>og</code>, <code>sim</code>, <code>kg</code>, and <code>ct</code> folder under the biomedical folder, copy them to the corresponding folder under <code>biomedical_models\*\data</code></li>
+</ol>
+<h3>Data Preprocess</h3>
+<ol>
+<li>Navigate to the <code>preprocess</code> and run the <code>bash preprocess.sh</code></li>
+<li>Navigate to the <code>models\GPTFS</code> and run <code>process.py</code></li>
+<li>Navigate to the <code>biomedical_models\*</code> and run <code>preprocess.py</code></li>
+</ol>
+<h3>Data and Code Description</h3>
+<p>The project data includes the following components:</p>
+<ol>
+<li><code>data/local_context_dataset.zip</code>: This folder contains the training, validation, and testing files for our task.</li>
+<li><code>data/kg/*.json</code>: The <code>data/kg</code> directory contains files that store the original Information Extraction (IE) results for all paper abstracts.</li>
+<li><code>data/ct/*.csv</code>: The <code>data/ct</code> directory contains files that represent the citation network for all papers.</li>
+<li><code>data/gold_subset</code>: This directory contains our gold annotation subsets.</li>
+<li><code>data/biomedical.zip</code>: This directory contains our biochemical datasets.</li>
+<li><code>evaluation</code> contain sample evaluation code.</li>
+</ol>
+<h3>Results</h3>
+<p><code>result/sentence_generation.zip</code>: This zip file contains GPT3.5/GPT4 for initial round results<br />
+<code>result/iterative_novelty_boosting.zip</code>: This zip file contains GPT3.5/GPT4 for iterative novelty boosting results</p>
+<h2>Quickstart for NLP domain</h2>
+<p>Set up environment first:</p>
+<pre><code class="language-bash">conda activate pyt1.11
+</code></pre>
+<h3>Training</h3>
+<p>To train the T5 model under <code>models\T5*</code>, run the following command:</p>
+<pre><code class="language-bash">bash finetune_*.sh 
+</code></pre>
+<h4>Test</h4>
+<p>To test the T5 model under <code>models\T5*</code>, run the following command:</p>
+<pre><code class="language-bash">bash eval_*.sh 
+</code></pre>
+<p>To test the GPT3.5 model under <code>models\GPT*</code>, run the following command:</p>
+<pre><code class="language-bash">bash eval3.sh 
+</code></pre>
+<p>After getting GPT3.5 results, we can also get GPT4 results using same input by running the following command:</p>
+<pre><code class="language-bash">python gpt4.py
+</code></pre>
+<p>After gettubg GPT4 results, first copy all GPT4 results under the <code>iterative</code> folder, you can then run the first two iterations of iterative novelty boosting by running the following command: </p>
+<pre><code class="language-bash">python calculate_sim.py
+python gpt4_iter1.py
+python calculate_sim1.py
+python gpt4_iter2.py
+</code></pre>
+<h2>Quickstart for biochemical domain</h2>
+<p>Set up environment first:</p>
+<pre><code class="language-bash">conda activate pyt2.2
+</code></pre>
+<p>Download <code>Meditron-7b</code> model from huggingface and put it under <code>biomedical_models\model</code></p>
+<h3>Training</h3>
+<p>To train the T5 model under <code>biomedical_models\*\</code>, run the following command:</p>
+<pre><code class="language-bash">bash train.sh 
+</code></pre>
+<h4>Test</h4>
+<p>To test the trained model under <code>biomedical_models\*\</code>, run the following command:</p>
+<pre><code class="language-bash">python inf_generator.py 
+</code></pre>
+<h1>Citation</h1>
+<pre><code>@article{wang2023learning,
+  title={SciMON: Scientific Inspiration Machines Optimized for Novelty},
+  author={Wang, Qingyun and Downey, Doug and Ji, Heng and Hope, Tom},
+  journal={arXiv preprint arXiv:2305.14259},
+  year={2023}
+}
+</code></pre><footer>由 <code>SciMON/code/README.md</code> 转换生成 · Literature 文献调研档案分享站</footer></div></body></html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VirSci 官方 README</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}img{max-width:100%}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../VirSci_精读与代码审计.html">← 返回精读页</a>
+<div align="center"><img src=".gitbook/assets/logo.png" alt="" width="700"></div>
+
+<h2>[ACL 2025 Main] Many Heads Are Better Than One: Improved Scientific Idea Generation by A LLM-Based Multi-Agent System.</h2>
+<h3>👀 Introduction</h3>
+<p>This repository contains the code for our paper <code>Many Heads Are Better Than One: Improved Scientific Idea Generation by A LLM-Based Multi-Agent System</code>.</p>
+<ul>
+<li>To the best of our knowledge, we propose the first multi-agent system with a scientific research ecosystem for conducting and benchmarking scientific collaborations, named VirSci, where real data is used for role-playing and objective evaluation.</li>
+<li>To simulate a reliable scientific collaboration process, we propose an end-to-end pipeline that spans team organization to idea generation. A novel inter- and intra-team discussion mechanism is introduced to promote communication topology and enhance the simulation realism.</li>
+<li>Extensive experiments demonstrate that multi-agent collaboration improves outcome quality, surpassing existing methods. We also conduct systematic experiments to investigate factors influencing the system, with findings aligning with established principles from the Science of Science, such as fresh teams tend to generate more innovative research, underscoring VirSci's reliability as a powerful tool for autonomous scientific discovery.</li>
+</ul>
+<p>Our project website is <a href="https://renqichen.github.io/Virtual-Scientists/">Website</a>.</p>
+<h3>📆 Updates</h3>
+<h4>[2025-05]</h4>
+<ol>
+<li>Our new paper <code>AI-Driven Automation Can Become the Foundation of Next-Era Science of Science Research</code> has been posted on <a href="https://arxiv.org/abs/2505.12039">Arxiv</a>.</li>
+</ol>
+<h4>[2025-05]</h4>
+<ol>
+<li>VirSci has been accepted by ACL 2025 Main Conference. Congratulations 🎉!</li>
+</ol>
+<h4>[2025-04]</h4>
+<ol>
+<li>We release a more powerful version, <a href="https://github.com/RenqiChen/Virtual-Scientists-v2">Virtual Scientists 2.0</a>, which supports a million-agent-level scientific collaboration simulation 😊.</li>
+</ol>
+<h4>[2025-02]</h4>
+<ol>
+<li>We update our paper with Appendix on <a href="https://arxiv.org/pdf/2410.09403">Arxiv</a>.</li>
+</ol>
+<h4>[2024-10]</h4>
+<ol>
+<li>We propose the VirSci, a multi-agent system has the potential to improve scientific idea generation.</li>
+<li>Watch demo video for our project at <a href="https://www.youtube.com/watch?v=p_Vdpq8ImeE">YouTube</a>.</li>
+<li>Full paper with Appendix is available on <a href="https://arxiv.org/abs/2410.09403">Arxiv</a>.</li>
+<li>VirSci code and data are available for Research community.</li>
+</ol>
+<h3>💡 Run</h3>
+<h4>Environment</h4>
+<p>We tested our codebase with PyTorch 2.3.1 and CUDA 12.1. Please install the corresponding versions of PyTorch and CUDA based on your computational resources.</p>
+<p>To install the required packages, run:</p>
+<pre><code class="language-bash">pip install -r requirements.txt
+</code></pre>
+<p><strong>Note</strong></p>
+<p>If you encounter any errors while setting up the environment, do not panic, as our environment is deployed on the ARM architecture, which may cause some package versions to be unavailable. The most important thing is to install agentscope in <code>editable mode</code> 😀, which can be easily installed using the command:</p>
+<pre><code>cd agentscope-main
+pip install -e .
+</code></pre>
+<p>Another kind advice is that our code uses <code>faiss</code> during execution, and we highly recommend installing <code>faiss-gpu</code>.</p>
+<h4>Setup</h4>
+<p>The raw data is based on the <a href="https://www.aminer.cn/aminernetwork">AMiner Computer Science Dataset</a>.</p>
+<p>After preprocessing, the used data is publicly available at <a href="https://drive.google.com/drive/folders/1ZwWMBQ5oK-l4VuzMa60GbMND0g2EIxIu?usp=sharing">Google Drive</a>.</p>
+<ul>
+<li>Past paper database is put in the <code>Papers/papers.tar.gz</code>, which is used in <code>paper_folder_path</code> of Line 34 in <code>sci_platform/sci_platform.py</code>. The corresponding embedding database is put in the <code>Embeddings/faiss_index.index</code>, which is used in <code>cpu_index</code> of Line 135 in <code>sci_platform/sci_platform.py</code>.</li>
+<li>Contemporary paper database is put in the <code>Papers/papers_future.tar.gz</code>, which is used in <code>future_paper_folder_path</code> of Line 35 in <code>sci_platform/sci_platform.py</code>. The corresponding embedding database is put in the <code>Embeddings/faiss_index_future.index</code>, which is used in <code>cpu_future_index</code> of Line 139 in <code>sci_platform/sci_platform.py</code>.</li>
+<li>Author knowledge bank is put in the <code>Authors/books.tar</code>, which is used in in <code>input_dir</code> of Line 13 in <code>sci_platform/configs/knowledge_config.json</code> and <code>author_info_dir</code> of Line 36 in <code>sci_platform/sci_platform.py</code>.</li>
+<li>Adjacency matrix is put in the <code>adjacency.txt</code>, which is used in <code>adjacency_matrix_dir</code> of Line 37 in <code>sci_platform/sci_platform.py</code>.</li>
+</ul>
+<p><strong>Note</strong></p>
+<p>Please replace all paths in <code>sci_platform/sci_platform.py</code> with your own settings after download the data.</p>
+<h4>Code</h4>
+<p>Here we explain the roles of several critial files.</p>
+<ul>
+<li><code>agentscope-main/src/agentscope/agents/sci_agent.py</code> defines the customized scientist agent in this project.</li>
+<li><code>sci_platform/run.py</code> is the main execution file.</li>
+<li><code>sci_platform/sci_platform.py</code> defines the platform for the initialization of our multi-agent system.</li>
+<li><code>sci_platform/utils/prompt.py</code> contains all the prompts used.</li>
+<li><code>sci_platform/utils/scientist_utils.py</code> contains all the common functions used.</li>
+<li><code>sci_platform/sci_team/SciTeam.py</code> defines the execution mechanism of each scientist team.</li>
+</ul>
+<h4>Usage</h4>
+<p><strong>Ollama</strong></p>
+<p>In our experiments, we use <code>ollama</code> to deploy the <code>llama3.1-8b</code> and <code>llama3.1-70b</code> language models and <code>mxbai-embed-large</code> embedding model. The details of deployment could refer to <a href="https://github.com/ollama/ollama-python">URL</a>. Here we show some key steps:</p>
+<ol>
+<li>Ollama should be installed. The linux version:</li>
+</ol>
+<pre><code>curl -fsSL https://ollama.com/install.sh | sh
+</code></pre>
+<ol>
+<li>Run ollama in the path where ollama is installed:</li>
+</ol>
+<pre><code>./ollama serve
+</code></pre>
+<ol>
+<li>Pull a model to use with the library:</li>
+</ol>
+<pre><code>./ollama pull llama3.1
+./ollama pull llama3.1:70b
+./ollama pull mxbai-embed-large
+</code></pre>
+<ol>
+<li>Install the ollama python library in your environment:</li>
+</ol>
+<pre><code>pip install ollama
+</code></pre>
+<ol>
+<li>Complete the installation and close the terminal.</li>
+</ol>
+<p><strong>Run</strong></p>
+<p>After pull all models, you need to open the ollama server before running our codes:</p>
+<pre><code>./ollama serve
+</code></pre>
+<p>Then, run our codes:</p>
+<pre><code>cd sci_platform/
+python run.py
+</code></pre>
+<p>Our code support different collaboration settings. The commonly used arguments:</p>
+<p><code>--runs</code>: how many times does the program run</p>
+<p><code>--team_limit</code>: the max number of teams for a scientist</p>
+<p><code>--max_discuss_iteration</code>: the max discussion iterations for a team in a step</p>
+<p><code>--max_team_member</code>: the max team member of a team (including the team leader)</p>
+<p><code>--epochs</code>: the allowed time steps for one program run (default value is 6, which is enough for a scientist to finish all steps)</p>
+<h4>Results</h4>
+<ul>
+<li><code>{info_dir}/{current_time}_{self.team_name}_dialogue.json</code> saves the team information: <strong>all team members, selected topic, generated idea and abstract</strong>, where <code>info_dir</code> denotes the storage path, <code>current_time</code> denotes the start running time, and <code>self.team_name</code> is the name of the team.</li>
+<li><code>{log_dir}/{current_time}_{self.team_name}_dialogue.log</code> saves the log record of the team, where <code>log_dir</code> denotes the storage path.</li>
+</ul>
+<h3>🙏 Acknowledgements</h3>
+<p>This project is supported by Shanghai Artificial Intelligence Laboratory.</p>
+<p>The multi-agent framework in this work is based on the <a href="https://github.com/modelscope/agentscope">AgentScope</a>.</p>
+<p>The raw data is based on the <a href="https://www.aminer.cn/aminernetwork">AMiner Computer Science Dataset</a>.</p>
+<h3>📧 Contact</h3>
+<p>If you have any questions, please contact at [rqchen23@m.fudan.edu.cn, shy228199751@gmail.com].</p>
+<h3>⚖ License</h3>
+<p>This repository is licensed under the <a href="LICENSE/">Apache-2.0 License</a>.</p>
+<h3>📌 BibTeX &amp; Citation</h3>
+<p>If you find this code useful, please consider citing our work:</p>
+<pre><code class="language-bibtex">@inproceedings{su2025headsbetteroneimproved,
+  title={Many Heads Are Better Than One: Improved Scientific Idea Generation by A LLM-Based Multi-Agent System},
+  author={Haoyang Su and Renqi Chen and Shixiang Tang and Zhenfei Yin and Xinzhe Zheng and Jinzhe Li and Biqing Qi and Qi Wu and Hui Li and Wanli Ouyang and Philip Torr and Bowen Zhou and Nanqing Dong},
+  booktitle={Proceedings of the 63nd Annual Meeting of the Association for Computational Linguistics},
+  year = {2025},
+  month = {July},
+  volume = {1},
+  pages = {28201--28240}
+}
+</code></pre>
+<pre><code class="language-bibtex">@misc{su2025headsbetteroneimproved,
+      title={Many Heads Are Better Than One: Improved Scientific Idea Generation by A LLM-Based Multi-Agent System}, 
+      author={Haoyang Su and Renqi Chen and Shixiang Tang and Zhenfei Yin and Xinzhe Zheng and Jinzhe Li and Biqing Qi and Qi Wu and Hui Li and Wanli Ouyang and Philip Torr and Bowen Zhou and Nanqing Dong},
+      year={2025},
+      eprint={2410.09403},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2410.09403}
+}
+</code></pre><footer>由 <code>VirSci/code/README.md</code> 转换生成 · Literature 文献调研档案分享站</footer></div></body></html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="SciMON (ACL 2024) 精读与代码审计：三路 inspiration 检索 + 迭代新颖性提升的 idea 生成早期代表作。">
+<title>SciMON 精读与代码审计</title>
+<style>
+:root {
+  --ink: #1f2421; --muted: #5c635d; --paper: #f7f4ef; --panel: #fbf9f5; --white: #fff;
+  --line: #e7e1d7; --accent: #c4612f; --accent-dark: #a94e22; --accent-pale: #f2e3d6;
+  --green: #315b45; --green-pale: #edf2ee; --blue: #355f78; --blue-pale: #edf4f7;
+  --warning: #8a641c; --warning-pale: #fff7e6; --danger: #934958; --danger-pale: #fff0f2;
+  --shadow: 0 2px 8px rgba(31,36,33,0.06); --figure-shadow: 0 4px 14px rgba(31,36,33,0.11);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { color: var(--ink); background: var(--paper); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 16px; line-height: 1.72; overflow-x: hidden; }
+.container { width: min(920px, calc(100% - 44px)); margin: 0 auto; padding: 52px 18px 76px; }
+header { margin-bottom: 34px; padding-bottom: 34px; border-bottom: 1px solid var(--line); text-align: center; }
+.status-row, .resource-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.status-row { margin-bottom: 18px; }
+.resource-row { margin-top: 22px; }
+.badge, .evidence { display: inline-flex; align-items: center; width: fit-content; border-radius: 999px; white-space: nowrap; }
+.badge { padding: 4px 11px; color: var(--accent-dark); background: var(--accent-pale); font-size: 0.79rem; font-weight: 650; }
+.resource-link { display: inline-block; padding: 7px 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent-dark); background: var(--panel); font-size: 0.84rem; font-weight: 620; text-decoration: none; transition: box-shadow 0.2s ease, transform 0.2s ease; }
+.resource-link.primary { border-color: var(--accent); color: var(--white); background: var(--accent); }
+.resource-link:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+h1 { margin-bottom: 12px; font-size: clamp(2.35rem, 7vw, 3.25rem); font-weight: 670; letter-spacing: -0.035em; line-height: 1.08; }
+.subtitle { max-width: 720px; margin: 0 auto; color: var(--muted); font-size: 1.08rem; font-weight: 360; }
+.meta { margin-top: 12px; color: var(--muted); font-size: 0.91rem; font-weight: 360; }
+h2 { margin: 56px 0 24px; padding-bottom: 11px; border-bottom: 2px solid var(--accent); font-size: 1.78rem; font-weight: 630; line-height: 1.3; }
+h3 { margin: 30px 0 14px; color: var(--accent); font-size: 1.25rem; font-weight: 630; }
+h4 { margin-bottom: 8px; color: var(--accent-dark); font-size: 1.01rem; font-weight: 650; }
+p { margin-bottom: 17px; font-weight: 360; }
+strong { font-weight: 660; }
+a { color: var(--accent-dark); }
+.lead { color: #343b37; font-size: 1.02rem; }
+.toc { position: sticky; top: 10px; z-index: 20; display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin: 24px 0 34px; padding: 10px; border: 1px solid rgba(231,225,215,0.9); border-radius: 16px; background: rgba(247,244,239,0.93); box-shadow: 0 8px 24px rgba(31,36,33,0.06); backdrop-filter: blur(10px); }
+.toc a { padding: 6px 10px; border-radius: 999px; color: var(--muted); font-size: 0.8rem; font-weight: 620; text-decoration: none; }
+.toc a:hover { color: var(--accent-dark); background: var(--accent-pale); }
+.highlight-box, .source-note, .warning-note, .critical-note, .code-note { margin: 26px 0; padding: 21px 25px; border-left: 4px solid var(--accent); border-radius: 5px; background: var(--panel); box-shadow: var(--shadow); }
+.source-note { border-left-color: var(--green); background: var(--green-pale); }
+.code-note { border-left-color: var(--blue); background: var(--blue-pale); }
+.warning-note { border-left-color: var(--warning); background: var(--warning-pale); }
+.critical-note { border-left-color: var(--danger); background: var(--danger-pale); }
+.highlight-box p:last-child, .source-note p:last-child, .warning-note p:last-child, .critical-note p:last-child, .code-note p:last-child { margin-bottom: 0; }
+.key-insight { margin: 32px 0; padding: 28px 31px; border-radius: 8px; color: var(--white); background: linear-gradient(135deg, var(--accent), var(--accent-dark)); box-shadow: 0 4px 12px rgba(196,97,47,0.22); }
+.key-insight h3, .key-insight p { color: var(--white); }
+.key-insight h3 { margin-top: 0; }
+.key-insight p:last-child { margin-bottom: 0; }
+.card-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 15px; margin: 24px 0; }
+.card-grid.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.card { padding: 21px 23px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+.card h3 { margin-top: 0; font-size: 1.08rem; }
+.card p:last-child, .card ul:last-child { margin-bottom: 0; }
+.evidence { margin-bottom: 10px; padding: 3px 9px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; }
+.evidence.paper { color: var(--accent-dark); background: var(--accent-pale); }
+.evidence.code { color: var(--blue); background: var(--blue-pale); }
+.evidence.inference { color: var(--warning); background: var(--warning-pale); }
+.evidence.audit { color: var(--danger); background: var(--danger-pale); }
+.figure { margin: 30px 0; text-align: center; }
+.figure a, .figure-frame { display: block; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--white); box-shadow: var(--figure-shadow); }
+.figure img { display: block; width: 100%; height: auto; }
+.figure figcaption { max-width: 760px; margin: 11px auto 0; color: var(--muted); font-size: 0.86rem; font-style: italic; line-height: 1.55; }
+.comparison-table { width: 100%; margin: 26px 0; border-collapse: collapse; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+.comparison-table th { padding: 13px 15px; color: var(--white); background: var(--accent); font-size: 0.88rem; font-weight: 620; text-align: left; }
+.comparison-table td { padding: 13px 15px; border-bottom: 1px solid var(--line); font-size: 0.89rem; font-weight: 360; vertical-align: top; }
+.comparison-table tr:last-child td { border-bottom: 0; }
+.comparison-table .focus-row td { background: #f8ede4; font-weight: 590; }
+.table-scroll { width: 100%; margin: 26px 0; border-radius: 8px; overflow-x: auto; }
+.table-scroll .comparison-table { min-width: 680px; margin: 0; }
+.flow-diagram { margin: 29px 0; padding: 27px 31px; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+.flow-step { position: relative; margin: 16px 0; padding: 18px 22px; border-left: 4px solid var(--accent); border-radius: 4px; background: var(--white); }
+.flow-step::before { content: "▼"; position: absolute; bottom: -28px; left: 50%; color: var(--accent); font-size: 18px; transform: translateX(-50%); }
+.flow-step:last-child::before { content: ""; }
+.flow-step p { margin-bottom: 0; }
+ul { margin: 15px 0 19px 2px; list-style: none; }
+li { position: relative; margin-bottom: 9px; padding-left: 22px; font-weight: 360; }
+li::before { content: "•"; position: absolute; left: 2px; color: var(--accent); font-size: 1.2rem; font-weight: 700; }
+details { margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+summary { display: flex; align-items: center; gap: 12px; padding: 17px 20px; cursor: pointer; font-weight: 630; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "＋"; margin-left: auto; color: var(--accent); font-size: 1.1rem; }
+details[open] summary::after { content: "−"; }
+.details-body { padding: 18px 22px 22px; border-top: 1px solid var(--line); }
+code { padding: 2px 5px; border-radius: 4px; color: var(--accent-dark); background: var(--accent-pale); font-size: 0.88em; }
+pre { margin: 22px 0; padding: 20px 22px; border: 1px solid #343b37; border-radius: 8px; color: #edf2ee; background: var(--ink); font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 0.84rem; line-height: 1.65; overflow-x: auto; }
+pre code { padding: 0; color: inherit; background: transparent; }
+.code-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin: 22px 0; }
+.code-item { padding: 16px 18px; border: 1px solid var(--line); border-radius: 7px; background: var(--white); }
+.code-item code { display: inline-block; margin-bottom: 7px; color: var(--blue); background: var(--blue-pale); font-weight: 660; }
+.code-item p { margin-bottom: 0; color: var(--muted); font-size: 0.86rem; }
+footer { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.86rem; font-weight: 360; text-align: center; }
+@media (max-width: 760px) {
+  .container { width: min(100% - 28px, 920px); padding: 34px 8px 56px; }
+  .card-grid, .card-grid.three, .code-list { grid-template-columns: 1fr; }
+  .toc { position: static; }
+  h2 { margin-top: 46px; font-size: 1.55rem; }
+}
+</style>
+</head>
+<body>
+<main class="container">
+
+<header>
+  <div class="status-row">
+    <span class="badge">ACL 2024 主会</span>
+    <span class="badge">arXiv:2305.14259 v7（2024-06-03，21 页）</span>
+    <span class="badge">代码 + 全部模型输出公开</span>
+  </div>
+  <h1>SciMON</h1>
+  <p class="subtitle">Scientific Inspiration Machines Optimized for Novelty —— 把文献假设生成从"概念链接预测"推向"自然语言 idea 生成"，并首次把新颖性作为显式优化目标</p>
+  <p class="meta">Qingyun Wang, Doug Downey, Heng Ji, Tom Hope · UIUC + AI2 + 希伯来大学 · 2023-05 首发，ACL 2024 录用</p>
+  <div class="resource-row">
+    <a class="resource-link primary" href="paper/SciMON_arXiv_2305.14259.pdf">论文 PDF（v7，21 页）</a>
+    <a class="resource-link" href="paper/tex_source/acl_latex.tex">TeX source</a>
+    <a class="resource-link" href="code/README.html">本地代码</a>
+    <a class="resource-link" href="https://github.com/EagleW/Scientific-Inspiration-Machines-Optimized-for-Novelty">官方 GitHub（eaglew/clbd 重定向至此）</a>
+  </div>
+</header>
+
+<div class="highlight-box">
+  <p><strong>一句话：</strong>输入一段"背景问题描述 + 一个种子术语"，SciMON 从旧文献里检索三类"灵感"（语义近邻 / KG 近邻 / 引文近邻）拼进 prompt 让 LLM 生成一句 idea；再用"检索相似旧 idea → 超过相似度阈值就要求 LLM 改写得更不一样"的循环显式提升新颖性。结论诚实：方法有效提升了新颖性（约 55% 的迭代产生更新颖的 idea），但 85% 的人评仍认为真实论文的 idea 显著更有深度。</p>
+</div>
+
+<nav class="toc" aria-label="页面导航">
+  <a href="#task">任务设定</a>
+  <a href="#data">数据构建</a>
+  <a href="#method">三路检索 + 生成</a>
+  <a href="#novelty">新颖性迭代</a>
+  <a href="#eval">实验与人评</a>
+  <a href="#code">代码审计</a>
+  <a href="#context">档案关联</a>
+  <a href="#verdict">归档建议</a>
+</nav>
+
+<section id="task">
+  <h2>任务设定：从链接预测到自然语言 idea</h2>
+  <p class="lead">四十年的 Literature-Based Discovery（Swanson 的 ABC 模型）只预测"概念 A—概念 C 是否有链接"。SciMON 把输出换成一整句自然语言 idea，把输入换成带上下文的问题描述。</p>
+
+  <figure class="figure">
+    <a href="assets/fig1_overview.png" target="_blank"><img src="assets/fig1_overview.png" alt="SciMON 总体框架"></a>
+    <figcaption>Fig 1：背景上下文 → 灵感检索 → idea 生成 → 迭代新颖性提升。"Prior Literature" 以 (background_i, idea_i) 对的形式同时供给检索与新颖性比对。</figcaption>
+  </figure>
+
+  <p><span class="evidence paper">论文声称</span> 输入是背景 <code>B</code> =（问题/动机/实验设定 <code>M</code>）+ 种子术语 <code>v</code>（模拟用户给助手的提示词，实际从 ground truth 关系中取）；输出是一句 idea <code>I</code>，要求相对 <code>B</code> 和整个文献库都新颖。任务分 forward（<code>[v used-for ?]</code>，给方法找任务）和 backward（<code>[? used-for u]</code>，给任务找方法）两个方向。</p>
+  <div class="warning-note">
+    <p><strong>注意任务的"温和"边界：</strong>种子术语取自 ground truth，是给定答案关键词的"半开卷"设定（论文 Limitations 自己承认这是模拟用户引导，无种子设定更难、留作未来）。评测目标也只是一句话级别的 idea，不是完整 proposal。</p>
+  </div>
+</section>
+
+<section id="data">
+  <h2>数据构建：IE 流水线自动挖训练对</h2>
+  <p class="lead">没有人工标注的训练集——用现成科学 IE 系统从 6.7 万篇 ACL 论文摘要里自动抽出 11 万条 (背景, idea) 训练对。</p>
+
+  <figure class="figure">
+    <a href="assets/fig3_ie_data.png" target="_blank"><img src="assets/fig3_ie_data.png" alt="IE 数据构建示例"></a>
+    <figcaption>Fig 3：摘要句子先分类成 Background（背景句）与其余（目标句），再从目标句里抽 used-for 关系得到种子（Task）与目标实体（Method）。</figcaption>
+  </figure>
+
+  <div class="card-grid">
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h3>流水线四步</h3>
+      <ul>
+        <li>句子分类（Cohan et al. 2019）：摘要句 → Background / 其余为目标句 T</li>
+        <li>PL-Marker（SciERC 预训练）：从 T 抽 Task/Method/Metric/Material 实体 + used-for 关系</li>
+        <li>SciCo 共指合并同义节点；ScispaCy 展开缩写</li>
+        <li>只保留高置信输出；人工抽检各步精度 91–100%，唯关系抽取仅 65%，总通过率 79.7%</li>
+      </ul>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h3>规模与切分</h3>
+      <ul>
+        <li>67,408 篇 ACL Anthology 论文（S2ORC，1952–2022.6）</li>
+        <li>按年份切分：train &lt;2021（114,310 对）/ valid 2021（16,195）/ test 2022（5,309）</li>
+        <li>挑战集：背景与 GT 余弦相似度 ≤0.074（第 10 百分位），防表面复制</li>
+        <li>金标子集：人工再清洗，仅 <strong>194 条</strong> —— 所有人评都在这上面抽样</li>
+      </ul>
+    </article>
+  </div>
+  <p><span class="evidence paper">论文声称</span> 时间切分同时用作防数据污染手段：T5/GPT-3.5/GPT-4（0314）的预训练截止都在 2022 年测试论文之前，另做过 GPT-4 记忆抽查未见复述。生物医学扩展实验同理（Meditron-7b 截止 2023-08，测试集全部取 2023-08 之后的 PubMed 论文）。</p>
+</section>
+
+<section id="method">
+  <h2>方法：三路灵感检索 + 生成模块</h2>
+  <p class="lead">核心假设来自创新认知科学：研究者提出新 idea 时踩在一张旧概念/旧论文之网上。SciMON 把这张网具体化成三种可检索的"灵感"。</p>
+
+  <figure class="figure">
+    <a href="assets/fig2_architecture.png" target="_blank"><img src="assets/fig2_architecture.png" alt="SciMON 架构总览">
+    </a>
+    <figcaption>Fig 2（主图）：左 = 输入（背景 + 种子术语），中 = 三路灵感检索（语义近邻 / KG 近邻 / 引文近邻），右 = 生成 + 两轮新颖性迭代的真实样例。</figcaption>
+  </figure>
+
+  <h3>三路检索的具体机制</h3>
+  <div class="card-grid three">
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h3>SN 语义近邻</h3>
+      <p>把（模板化种子 + 背景）拼成查询 <code>b</code>，用 SentenceBERT 在训练集里找 top-k 相似的旧背景，取其对应旧 idea 里的<strong>目标实体</strong>（不是整句）作灵感。平均每条 10.8 个，上限 20。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h3>KG 近邻</h3>
+      <p>用同一 IE 流程在全语料上建全局背景 KG（19.7 万节点 / 26.1 万 used-for 边），取种子术语的<strong>一跳邻居</strong>作灵感，数量不设限（平均 8.3 个）。</p>
+    </article>
+    <article class="card">
+      <span class="evidence paper">论文声称</span>
+      <h3>CT 引文近邻</h3>
+      <p>假设已知背景出处论文 <code>d</code>，从 <code>d</code> 引用的 2021 年前论文里取与 <code>d</code> 最相似的 top-5 <strong>标题</strong>作灵感。论文自认这是"更强的信息假设"。</p>
+    </article>
+  </div>
+  <p><span class="evidence paper">论文声称</span> 检索底库规模：5.9 万篇论文、37.4 万句、8.7 万条引文标题。三路灵感以 <code>The retrieval results are: i1,…,ik</code> 的形式直接拼进 prompt / T5 输入。</p>
+
+  <h3>生成模块：两条腿</h3>
+  <ul>
+    <li><span class="evidence paper">论文声称</span> <strong>in-context 一族</strong>：GPT-3.5（davinci-003）与 GPT-4（gpt-4-0314）的 ZS / FS（随机 5 例）/ Retr（相似例）变体，prompt 模板为 <code>Consider the following context: M. In that context, which [type] can be used for [seed], and why?</code></li>
+    <li><span class="evidence paper">论文声称</span> <strong>微调一族</strong>：T5-large + 新的 <strong>in-context 对比目标</strong>（CL）——负例直接取自输入里出现的句子，用 InfoNCE 惩罚"复制背景"的解码状态，与交叉熵联合训练。动机：微调模型爱从背景里抄短语。</li>
+    <li><span class="evidence code">代码确认</span> T5 用 <code>google-t5/t5-large</code>，lr 6e-6、4×A6000、10 epochs、beam 5–20、负例 2 个（<code>finetune_lm.sh --neg_num 2</code>，与附录一致）。CL 实现为 <code>ContrastiveHead</code>（线性层 + sigmoid + 按目标长度平均池化）后对 [正, 负…] logits 做 CrossEntropy（等价 InfoNCE，τ 固定为 1，代码里没有温度超参）。</li>
+  </ul>
+</section>
+
+<section id="novelty">
+  <h2>迭代新颖性提升：retrieve–compare–update</h2>
+  <p class="lead">这是标题里 "Optimized for Novelty" 的落点，也是被后续工作引用最多的机制。本质是一个以检索相似度为"新颖性惩罚"的拒绝—重写循环。</p>
+
+  <div class="flow-diagram">
+    <div class="flow-step"><p><strong>1. 检索</strong>：把当前生成的 idea <code>I_t</code> 作为查询，用 SentenceBERT 在训练集全部旧 idea（参考库 R）里取 top-20 相似句。</p></div>
+    <div class="flow-step"><p><strong>2. 比对</strong>：每条相似句的余弦分 <code>S_i</code> 与阈值 <code>μ=0.6</code> 比较；全部低于阈值 → 判定"足够新颖"，停止。</p></div>
+    <div class="flow-step"><p><strong>3. 重写</strong>：把超阈值的旧 idea 原文塞回对话，指令 LLM："你的想法与这 j 句已有研究相似……请确保你建议的想法与上述研究显著不同。Let's give it another try."，回到第 1 步。</p></div>
+  </div>
+
+  <p><span class="evidence code">代码确认</span> 重写 prompt 与论文逐字一致（<code>models/Iterative/gpt4_iter1.py</code> 的 <code>query2_template</code>）；对话按 system → 原 prompt → 首次回答 → 重写指令 的多轮消息构造，<code>gpt-4-0314</code>、temperature=1、<strong>max_tokens=100</strong>（生成与重写都是，idea 长度被硬性掐短）。</p>
+
+  <div class="critical-note">
+    <p><strong>审计发现：循环 ≠ 循环。</strong>论文说"迭代直到所有 S_i 低于 μ"，但代码里没有循环——只有两个手工跑的脚本 <code>gpt4_iter1.py</code> / <code>gpt4_iter2.py</code>（二者 diff 仅目录名），即实际上限 2 轮。这与实验只人评两轮一致，但"直到收敛"的表述在实现层面不存在。</p>
+  </div>
+</section>
+
+<section id="eval">
+  <h2>实验与评测：人评为主，结论克制</h2>
+  <p class="lead">自动指标（ROUGE-L / BERTScore-SciBERT / BARTScore）只作参考——论文自己指出 T5 靠套模板 + 短输出在自动指标上占便宜（金标集 R-L：T5+SN+CL 0.258 vs GPT4FS 0.151），而人评完全反过来。真正的证据是四个人评实验。</p>
+
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <tr><th>人评</th><th>设置</th><th>关键数字</th></tr>
+    <tr><td><strong>Study I</strong> 变体对比</td><td>6 名 NLP 研究生，金标集抽 50 条，8 个系统盲评"是否有帮助"（相关 + 新颖 + 清晰 + 合理）</td><td>GPT4FS <strong>73%</strong> ≫ GPT4FS+KG 66% ≫ T5+SN+CL 48% &gt; GPT3.5FS 33% &gt; T5 22%。GPT-3.5 全面差于微调 T5</td></tr>
+    <tr><td><strong>Study II</strong> 对比真论文</td><td>GPT4FS vs GPT4FS+KG 排序 + 对照 ground truth</td><td>+KG 在 48% 对里技术细节更多、45% 更不 incremental（其余基本平手）；但 <strong>85%</strong> 的对比中真论文 idea 被判"显著更高的技术水平与新颖性"</td></tr>
+    <tr class="focus-row"><td><strong>Study III</strong> 新颖性迭代</td><td>5 名标注者，70 条，比较迭代前后</td><td>SN 变体：第 1 轮 88.9% 的改写"实质不同"、<strong>55.6%</strong> 更新颖；第 2 轮再有 57.8% 更新颖；未观察到新颖性下降（只升或持平）</td></tr>
+    <tr><td><strong>生物医学泛化</strong></td><td>换 PubTator 3 做 IE，微调 Meditron-7b，2 名领域专家评</td><td>Meditron+SN <strong>80%</strong> helpful（基线 35%）；45% 场合被认为好于 ground truth —— 与 NLP 域相反</td></tr>
+  </table>
+  </div>
+
+  <div class="key-insight">
+    <h3>这篇论文最值得记住的不是方法，而是负结果的诚实度</h3>
+    <p>摘要原话："GPT-4 tends to generate ideas with overall low technical depth and novelty, while our methods partially mitigate this issue"。错误分析指出模型爱输出通用配方（"data augmentation and transfer learning"）、直接改写背景（"high latency"→"low latency"）、以及把流行概念堆在一起的"新词"（如 Dynamic Syntax-Aware Graph Fusion Networks）。2023 年就把这些 LLM 生成 idea 的病症说透了，后续 idea 生成论文基本都在重复验证这些观察。</p>
+  </div>
+
+  <p><span class="evidence inference">合理推断</span> KG 灵感在 Study I 里反而略拖后腿（66% vs 73%）但在 Study II 里赢技术深度——说明"灵感注入"提升的是内容具体性而非人评第一印象，这也是后续工作（如 SciPIP）把检索信号做得更复杂的动机之一。</p>
+</section>
+
+<section id="code">
+  <h2>代码审计</h2>
+  <p class="lead">仓库 <code>EagleW/Scientific-Inspiration-Machines-Optimized-for-Novelty</code>（论文脚注 <code>eaglew/clbd</code> 301 重定向至此，已核实）。89 个 Python 文件共约 13.1k 行；无统一入口，是"每个模型变体一个目录 + 手工按序跑脚本"的研究代码。数据（<code>data/*.zip</code>）与全部模型输出（<code>result/*.zip</code>，含 GPT-4 各变体每条测试样本的原始输出）都在仓库里，复现人评分析不需要重新调 API。</p>
+
+  <div class="code-list">
+    <div class="code-item"><code>preprocess/</code><p>t5_sn / t5_kg / t5_ct：为 T5 数据集注入三路灵感；gpt3.5_process 构造 few-shot prompt</p></div>
+    <div class="code-item"><code>models/T5, T5+CL, T5+CL+NBR</code><p>微调一族；modeling_t5.py 里的 ContrastiveT5ForConditionalGeneration 是 CL 的全部实现</p></div>
+    <div class="code-item"><code>models/GPTZS/FS/Retr, GPTFS+NBR</code><p>in-context 一族，openai 0.x 旧 SDK，gpt-4-0314 硬编码</p></div>
+    <div class="code-item"><code>models/Iterative/</code><p>calculate_sim(1).py 检索相似旧 idea → gpt4_iter1/2.py 执行两轮重写</p></div>
+    <div class="code-item"><code>evaluation/</code><p>BLEU/ROUGE/BERTScore(SciBERT)/BARTScore 脚本</p></div>
+    <div class="code-item"><code>biomedical_models/</code><p>og/sn/kg/ct 四变体，HF Trainer 风格微调（Meditron 路径由 --model_name_or_path 传入）</p></div>
+  </div>
+
+  <h3>论文—代码不一致与缺陷</h3>
+  <div class="critical-note">
+    <p><strong>1. 检索编码器不一致（影响所有检索结果的解读）。</strong>论文正文与附录明确写 SentenceBERT <code>all-mpnet-base-v2</code>（"performs best in semantic search"），但代码中 6 处检索实现（<code>preprocess/t5_sn.py</code>、<code>t5_ct.py</code>、<code>gpt3.5_process.py</code>、<code>models/Iterative/calculate_sim*.py</code>、<code>models/GPTFS/process.py</code>）全部硬编码更小的 <code>all-MiniLM-L6-v2</code>。新颖性阈值 μ=0.6 是在哪个嵌入空间上调的因此存疑。</p>
+    <p><strong>2. <code>gpt4_iter1.py</code>/<code>iter2.py</code> 有未定义变量 bug。</strong>当某条 idea 检索不到超阈值相似句（<code>number == 0</code> 分支）时执行 <code>writer.write(...)</code>，但 <code>writer</code> 直到循环结束才定义 → 必然 NameError；即使修掉，该分支也没有把未重写样本加入 <code>new_pp</code>，输出文件会静默丢失所有"已足够新颖"的样本。发布版脚本照原样跑不出论文结果，作者实跑的应是另一版本。</p>
+    <p><strong>3. 限速逻辑同样带病。</strong><code>from time import time</code> 之后调用 <code>time.sleep(60)</code>（函数没有 sleep 属性），触发限速分支即崩溃；该 bug 在 GPTFS/GPTZS/Iterative 各脚本中复制粘贴存在。</p>
+  </div>
+  <div class="warning-note">
+    <p><strong>较轻的偏差：</strong>(a) 论文说"迭代直到全部低于阈值"，代码上限 2 轮（见上文）；(b) GPT4FS 把整个 few-shot prompt 放进 system 角色单条消息，与论文描述的 few-shot 语义等价但非常规；(c) CL 公式里的温度 τ 在代码中不存在（恒为 1）、sigmoid 在 ContrastiveHead 内而非公式位置，属实现级简化；(d) <code>param.py</code> 默认 <code>neg_num=10</code>/<code>lr=1e-5</code> 与论文不符，但随附 shell 脚本以 <code>--neg_num 2 --lr 6e-6</code> 覆盖，与论文一致——看默认值会被误导。</p>
+  </div>
+  <p><span class="evidence code">代码确认</span> 与论文一致的关键项：新颖性阈值 0.6 与 top-20 检索（<code>calculate_sim.py</code>）、重写 prompt 逐字一致、T5-large + 4 GPU + 10 epochs、SN/CT 的检索数上限（20/5）、时间切分数据目录结构。最后提交 2024-04-13（HEAD <code>2dc17a1</code>），README 引用本论文，无后续维护。</p>
+</section>
+
+<section id="context">
+  <h2>档案关联：idea 生成线的参照原点</h2>
+  <ul>
+    <li><strong><a href="../SciPIP/SciPIP_精读与代码审计.html">SciPIP</a></strong>：ICLR 撤稿版曾设 "SciMON 检索对比实验"，评审（6bY3）认为与 SciMON 差距边际，v2 版删除了该对比。SciPIP 的语义/实体/引文三路检索结构与 SciMON 的 SN/KG/CT 三路灵感高度同构——SciMON 是这套三路信号的原型。</li>
+    <li><strong><a href="../ResearchAgent/ResearchAgent_精读与代码审计.html">ResearchAgent</a></strong>：以 SciMON 为直接 baseline（其精读里注明与链接预测式方法的对比是"迁就式"的），把 SciMON 的"一句话 idea"扩展为问题/方法/实验三段式 proposal + 多 agent 互评。</li>
+    <li>更晚的 AI Scientist / Sakana 一线把 novelty check 做成对外部检索（Semantic Scholar API）的判断，机制上是 SciMON iterative novelty boosting 的直系后代。</li>
+  </ul>
+  <p><span class="evidence inference">合理推断</span> SciMON 的持久贡献是三件事：任务定义（背景→自然语言 idea）、自动构造训练对的 IE 流水线、以及"检索—比对—重写"的新颖性优化范式。它的实验结论（LLM idea 浅、爱重组热词、离真论文远）则成为整条线的共识起点。</p>
+</section>
+
+<section id="verdict">
+  <h2>归档档位建议（待用户定夺）</h2>
+  <div class="source-note">
+    <p><strong>建议：复杂。</strong>理由：(1) ACL 2024 主会 + idea 生成线公认的参照原点，档案里 SciPIP、ResearchAgent 都以它为对照，值得保留完整可查的方法与数字细节；(2) 有真实可审计的系统性工程——11 万对 IE 自动构造数据、三路检索、对比学习微调、两轮新颖性迭代、四个人评实验，且数据与全部模型输出公开，诚意远超"包装的好看"档；(3) 但代码是无入口的研究脚本堆，发布版关键脚本带致命 bug、检索编码器与论文不符，不属于"能跑起来的复杂系统"，如果"复杂"档要求工程可复现性，也可以降为"简单"档并以本页审计记录为准。倾向前者，请定夺。</p>
+  </div>
+</section>
+
+<footer>
+  <p>SciMON 精读与代码审计 · 依据 arXiv:2305.14259v7 TeX source 与 GitHub HEAD 2dc17a1（2024-04-13）· 归档于 2026-08</p>
+</footer>
+
+</main>
+</body>
+</html>

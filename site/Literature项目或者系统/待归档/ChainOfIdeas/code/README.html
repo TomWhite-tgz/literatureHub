@@ -1,0 +1,113 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex, nofollow, noarchive"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chain-of-Ideas 官方 README</title><style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a}
+*{box-sizing:border-box}body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.7;margin:0}
+.wrap{max-width:900px;margin:0 auto;padding:36px 26px 70px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:22px}
+.back:hover{background:var(--accent);color:#fff}
+h1{font-size:26px;border-bottom:3px double var(--line);padding-bottom:12px;margin:0 0 18px}
+h2{font-size:20px;border-left:5px solid var(--accent);padding-left:12px;margin:30px 0 10px}
+h3{font-size:16.5px;color:var(--accent);margin:22px 0 8px}h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#8f4208}img{max-width:100%}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style></head><body><div class="wrap"><a class="back" href="../ChainOfIdeas_精读与代码审计.html">← 返回精读页</a>
+<p align="center">
+    <img src="assets/logo.jpg" width="16%" height="25%">
+    <img src="assets/title.png" width="55%" height="55%">
+</p>
+
+<h3 align="center">
+Chain-of-Ideas Agent: Revolutionizing Research Via Novel Idea Development with LLM Agents
+</h3>
+
+<p><font size=3><div align='center' > [<a href="https://arxiv.org/pdf/2410.13185">📖 arXiv Paper</a>] [<a href="https://huggingface.co/spaces/DAMO-NLP-SG/CoI_Agent">📊 Online Demo</a>] </div></font></p>
+<p align="center">
+<a href="https://opensource.org/license/apache-2-0"><img src="https://img.shields.io/badge/Code%20License-Apache_2.0-green.svg"></a>
+<a href="https://github.com/DAMO-NLP-SG"><img src="https://img.shields.io/badge/Institution-DAMO-red"></a>
+<a><img src="https://img.shields.io/badge/PRs-Welcome-red"></a>
+</p>
+
+<h2>🔥 News</h2>
+<ul>
+<li><strong>[2024.10.12]</strong>  The first version of CoI Agent!</li>
+</ul>
+<h2>🛠️ Requirements and Installation</h2>
+<p><strong>Step 1</strong>:</p>
+<pre><code class="language-bash">git clone https://github.com/DAMO-NLP-SG/CoI-Agent.git
+cd CoI-Agent
+pip install -r requirements.txt
+</code></pre>
+<p><strong>Step 2</strong>:<br />
+Install <a href="https://github.com/titipata/scipdf_parser">SciPDF Parser</a> for PDF parsing.</p>
+<pre><code class="language-bash">git clone https://github.com/titipata/scipdf_parser.git
+pip install git+https://github.com/titipata/scipdf_parser
+python -m spacy download en_core_web_sm
+</code></pre>
+<p><strong>Step 3</strong>:<br />
+Install java for grobid</p>
+<pre><code class="language-bash">wget  https://download.oracle.com/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
+tar -zxvf openjdk-11.0.2_linux-x64_bin.tar.gz
+export JAVA_HOME=Your_path/jdk-11.0.2
+</code></pre>
+<p><strong>Step 4</strong>:<br />
+set config.yaml to use the LLM APIs.</p>
+<pre><code class="language-yaml"># Sementic scholor api, it should be filled
+SEMENTIC_SEARCH_API_KEY: &quot;&quot;
+
+is_azure : True # if false, it is openai
+
+# set it if you set is_azure to True
+AZURE_OPENAI_ENDPOINT : &quot;&quot;
+AZURE_OPENAI_KEY : &quot;&quot;
+AZURE_OPENAI_API_VERSION : &quot;&quot;
+
+# set it if you set is_azure to False
+OPENAI_API_KEY: &quot;&quot;
+OPENAI_BASE_URL: &quot;&quot;
+
+# if not set it will be set to the same as main llm
+EMBEDDING_API_KEY: &quot;&quot;
+EMBEDDING_API_ENDPOINT: &quot;&quot;
+EMBEDDING_MODEL: &quot;&quot;
+
+MAIN_LLM_MODEL: &quot;&quot; # &quot;gpt-4o&quot; or ...
+
+CHEAP_LLM_MODEL: &quot;&quot; # &quot;gpt-4o&quot; or ...
+</code></pre>
+<h2>🚀 Quick Start</h2>
+<p><strong>Step 1</strong>: Run grobid</p>
+<p>If you can successfully start grobid in <a href="https://github.com/titipata/scipdf_parser.git">SciPDF Parser</a>, run the following commands:</p>
+<pre><code class="language-bash">cd scipdf_parser
+bash serve_grobid.sh
+</code></pre>
+<p>(Optional) Or, you can refer to the following process to install grobid if the previous commands fail:</p>
+<pre><code class="language-bash">git clone https://github.com/kermitt2/grobid.git
+cd grobid
+./gradlew clean install
+./gradlew run
+</code></pre>
+<p><strong>Step 2</strong>: Generate idea</p>
+<pre><code class="language-python">python main.py --topic {your research topic}
+</code></pre>
+<h2>📖 Evaluation Data</h2>
+<p>All evaluation data as well CoI generated results can be found in <code>dataset</code> fold.</p>
+<h2>:black_nib: Citation</h2>
+<p>If you find our work helpful for your research, please consider starring the repo and citing our work.   </p>
+<pre><code class="language-bibtex">@article{li2024chain,
+  title={Chain of Ideas: Revolutionizing Research in Novel Idea Development with LLM Agents},
+  author={Li, Long and Xu, Weiwen and Guo, Jiayan and Zhao, Ruochen and Li, Xinxuan and Yuan,
+            Yuqian and Zhang, Boqiang and Jiang, Yuming and Xin, Yifei and Dang, Ronghao and 
+            Rong, Yu and Zhao, Deli and Feng, Tian and Bing, Lidong},
+  journal={arXiv preprint arXiv:2410.13185},
+  year={2024},
+  url={https://arxiv.org/abs/2410.13185}
+}
+</code></pre><footer>由 <code>ChainOfIdeas/code/README.md</code> 转换生成 · Literature 文献调研档案分享站</footer></div></body></html>
