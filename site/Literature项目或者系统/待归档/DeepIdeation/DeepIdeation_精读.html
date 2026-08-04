@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Deep Ideation（ICLR 2026 Withdrawn, arXiv:2511.02238）中文精读：科学概念网络 + explore-expand-evolve 工作流 + critic model 的机制拆解与评审质疑核对。代码未放出，无法做代码审计。">
+    <title>Deep Ideation 精读 · 概念网络上的 LLM Ideation Agent</title>
+
+    <style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: min(920px, calc(100% - 44px));
+            margin: 0 auto;
+            padding: 52px 18px 76px;
+        }
+
+        header {
+            margin-bottom: 34px;
+            padding-bottom: 34px;
+            border-bottom: 1px solid var(--line);
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-size: 0.93rem;
+            font-weight: 650;
+            text-decoration: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--accent-dark);
+            transform: translateX(-2px);
+        }
+
+        .status-row,
+        .resource-row,
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-row,
+        .resource-row {
+            justify-content: center;
+        }
+
+        .status-row {
+            margin-bottom: 18px;
+        }
+
+        .resource-row {
+            margin-top: 22px;
+        }
+
+        .badge,
+        .tag,
+        .evidence {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .badge {
+            padding: 4px 11px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.79rem;
+            font-weight: 650;
+        }
+
+        .badge.red {
+            color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .badge.gray {
+            color: var(--muted);
+            background: #eceae4;
+        }
+
+        .resource-link {
+            display: inline-block;
+            padding: 7px 13px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent-dark);
+            background: var(--panel);
+            font-size: 0.84rem;
+            font-weight: 620;
+            text-decoration: none;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .resource-link.primary {
+            border-color: var(--accent);
+            color: var(--white);
+            background: var(--accent);
+        }
+
+        .resource-link:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        h1 {
+            margin-bottom: 12px;
+            font-size: clamp(2.35rem, 7vw, 3.25rem);
+            font-weight: 670;
+            letter-spacing: -0.035em;
+            line-height: 1.08;
+        }
+
+        .subtitle {
+            max-width: 720px;
+            margin: 0 auto;
+            color: var(--muted);
+            font-size: 1.08rem;
+            font-weight: 360;
+        }
+
+        .meta {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.91rem;
+            font-weight: 360;
+        }
+
+        h2 {
+            margin: 56px 0 24px;
+            padding-bottom: 11px;
+            border-bottom: 2px solid var(--accent);
+            font-size: 1.78rem;
+            font-weight: 630;
+            line-height: 1.3;
+        }
+
+        h3 {
+            margin: 30px 0 14px;
+            color: var(--accent);
+            font-size: 1.25rem;
+            font-weight: 630;
+        }
+
+        h4 {
+            margin-bottom: 8px;
+            color: var(--accent-dark);
+            font-size: 1.01rem;
+            font-weight: 650;
+        }
+
+        p {
+            margin-bottom: 17px;
+            font-weight: 360;
+        }
+
+        strong {
+            font-weight: 660;
+        }
+
+        a {
+            color: var(--accent-dark);
+        }
+
+        .lead {
+            color: #343b37;
+            font-size: 1.02rem;
+        }
+
+        .eyebrow {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 720;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .toc {
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 7px;
+            margin: 24px 0 34px;
+            padding: 10px;
+            border: 1px solid rgba(231, 225, 215, 0.9);
+            border-radius: 16px;
+            background: rgba(247, 244, 239, 0.93);
+            box-shadow: 0 8px 24px rgba(31, 36, 33, 0.06);
+            backdrop-filter: blur(10px);
+        }
+
+        .toc a {
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 620;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .highlight-box,
+        .source-note,
+        .warning-note,
+        .critical-note,
+        .code-note {
+            margin: 26px 0;
+            padding: 21px 25px;
+            border-left: 4px solid var(--accent);
+            border-radius: 5px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .source-note {
+            border-left-color: var(--green);
+            background: var(--green-pale);
+        }
+
+        .code-note {
+            border-left-color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .warning-note {
+            border-left-color: var(--warning);
+            background: var(--warning-pale);
+        }
+
+        .critical-note {
+            border-left-color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .highlight-box p:last-child,
+        .source-note p:last-child,
+        .warning-note p:last-child,
+        .critical-note p:last-child,
+        .code-note p:last-child {
+            margin-bottom: 0;
+        }
+
+        .key-insight {
+            margin: 32px 0;
+            padding: 28px 31px;
+            border-radius: 8px;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 4px 12px rgba(196, 97, 47, 0.22);
+        }
+
+        .key-insight h3,
+        .key-insight p {
+            color: var(--white);
+        }
+
+        .key-insight h3 {
+            margin-top: 0;
+        }
+
+        .key-insight p:last-child {
+            margin-bottom: 0;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            margin: 24px 0;
+        }
+
+        .card-grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            padding: 21px 23px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1.08rem;
+        }
+
+        .card p:last-child,
+        .card ul:last-child {
+            margin-bottom: 0;
+        }
+
+        .evidence {
+            margin-bottom: 10px;
+            padding: 3px 9px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .evidence.paper {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .evidence.code {
+            color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .evidence.inference {
+            color: var(--warning);
+            background: var(--warning-pale);
+        }
+
+        .evidence.audit {
+            color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .figure,
+        .figure-grid {
+            margin: 30px 0;
+        }
+
+        .figure {
+            text-align: center;
+        }
+
+        .figure-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .figure-grid .figure {
+            margin: 0;
+        }
+
+        .figure a,
+        .figure-frame {
+            display: block;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: var(--figure-shadow);
+        }
+
+        .figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .figure figcaption {
+            max-width: 760px;
+            margin: 11px auto 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-style: italic;
+            line-height: 1.55;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin: 26px 0;
+            border-collapse: collapse;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            padding: 13px 15px;
+            color: var(--white);
+            background: var(--accent);
+            font-size: 0.88rem;
+            font-weight: 620;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 13px 15px;
+            border-bottom: 1px solid var(--line);
+            font-size: 0.89rem;
+            font-weight: 360;
+            vertical-align: top;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .comparison-table .focus-row td {
+            background: #f8ede4;
+            font-weight: 590;
+        }
+
+        .table-scroll {
+            width: 100%;
+            margin: 26px 0;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .table-scroll .comparison-table {
+            min-width: 680px;
+            margin: 0;
+        }
+
+        .flow-diagram {
+            margin: 29px 0;
+            padding: 27px 31px;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .flow-step {
+            position: relative;
+            margin: 16px 0;
+            padding: 18px 22px;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            background: var(--white);
+        }
+
+        .flow-step::before {
+            content: "▼";
+            position: absolute;
+            bottom: -28px;
+            left: 50%;
+            color: var(--accent);
+            font-size: 18px;
+            transform: translateX(-50%);
+        }
+
+        .flow-step:last-child::before {
+            content: "";
+        }
+
+        .flow-step p {
+            margin-bottom: 0;
+        }
+
+        .formula {
+            margin: 25px 0;
+            padding: 21px 23px;
+            border-radius: 7px;
+            color: var(--paper);
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.96rem;
+            overflow-x: auto;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        ul {
+            margin: 15px 0 19px 2px;
+            list-style: none;
+        }
+
+        li {
+            position: relative;
+            margin-bottom: 9px;
+            padding-left: 22px;
+            font-weight: 360;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 2px;
+            color: var(--accent);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        details {
+            margin: 16px 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 17px 20px;
+            cursor: pointer;
+            font-weight: 630;
+            list-style: none;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: "＋";
+            margin-left: auto;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        details[open] summary::after {
+            content: "−";
+        }
+
+        .details-body {
+            padding: 18px 22px 22px;
+            border-top: 1px solid var(--line);
+        }
+
+        code {
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.88em;
+        }
+
+        pre {
+            margin: 22px 0;
+            padding: 20px 22px;
+            border: 1px solid #343b37;
+            border-radius: 8px;
+            color: #edf2ee;
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.84rem;
+            line-height: 1.65;
+            overflow-x: auto;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+        }
+
+        .tag-list {
+            margin: 13px 0 22px;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            color: var(--green);
+            background: var(--green-pale);
+            font-size: 0.78rem;
+            font-weight: 630;
+        }
+
+        footer {
+            margin-top: 72px;
+            padding-top: 28px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-weight: 360;
+            text-align: center;
+        }
+
+        @media (max-width: 760px) {
+            .container {
+                width: min(100% - 28px, 920px);
+                padding: 34px 8px 56px;
+            }
+
+            .card-grid,
+            .card-grid.three,
+            .figure-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toc {
+                position: static;
+            }
+
+            .flow-diagram {
+                padding: 20px 16px;
+            }
+
+            h2 {
+                margin-top: 46px;
+                font-size: 1.55rem;
+            }
+
+            .highlight-box,
+            .key-insight {
+                padding: 22px;
+            }
+
+            .subtitle,
+            .meta {
+                overflow-wrap: anywhere;
+            }
+        }
+
+        @media print {
+            .toc,
+            .back-link {
+                display: none;
+            }
+
+            body {
+                background: white;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 24px;
+            }
+
+            .figure a,
+            .card,
+            details {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <header>
+            <a class="back-link" href="../../../index.html">← 返回 Literature 调研档案首页</a>
+            <div class="status-row">
+                <span class="badge red">ICLR 2026 Withdrawn（2/6/2/2，无 rebuttal）</span>
+                <span class="badge">arXiv:2511.02238（2025-11）</span>
+                <span class="badge red">代码未放出（仓库仅 README）</span>
+                <span class="badge gray">归档：待归档 · 仅论文精读</span>
+            </div>
+            <h1>Deep Ideation</h1>
+            <p class="subtitle">在 10.7 万篇顶会论文构建的「科学概念网络」上做图游走：explore–expand–evolve 迭代扩展关键词集 → 写成 idea proposal，由 LoRA 微调的 critic 打分驱动进化</p>
+            <p class="meta">Keyu Zhao · Weiquan Lin · Qirui Zheng · Fengli Xu · Yong Li<br>清华大学 FIB Lab 系 · ICLR 2026 Submission #20167 · GitHub: kyZhao-1/Deep-Ideation</p>
+            <div class="resource-row">
+                <a class="resource-link primary" href="paper/DeepIdeation_arXiv_2511.02238.pdf">论文 PDF（本地）</a>
+                <a class="resource-link" href="https://arxiv.org/abs/2511.02238">arXiv 页面</a>
+                <a class="resource-link" href="openreview/OpenReview_讨论存档.html">OpenReview 评审存档（本地）</a>
+                <a class="resource-link" href="https://github.com/kyZhao-1/Deep-Ideation">官方 GitHub（空仓库）</a>
+            </div>
+        </header>
+
+        <div class="highlight-box">
+            <p><strong>这篇论文做了什么：</strong>把「文献组织」这件事做成一张<strong>关键词共现图</strong>——节点是 LLM 从 107,443 篇 AI 顶会论文抽取的关键词，边上挂着 LLM 写的「这两个词在这篇论文里如何被联系起来」的 2–4 句摘要。然后让 GPT-4o-mini 在图上逐步游走：每轮取邻居、选一个新词加入关键词集、把关键词集写成 idea proposal，由微调过的 Qwen3-8B critic 打 novelty/feasibility 分数决定继续扩展还是替换重写。声称 LLM-judge 均分超最佳基线 10.25%、达到顶会接收论文水平。</p>
+            <p style="margin-top:12px"><strong>为什么值得精读：</strong>它是「概念网络组织文献」路线的一个<strong>失败样本</strong>——ICLR 2026 得分 2/6/2/2，作者未答辩直接撤稿。三个 2 分共同指向的问题（概念网络的机制价值未论证、critic 训练数据可疑、人类评估细节为零）正是这条路线的通病清单。</p>
+        </div>
+
+        <div class="critical-note">
+            <p><strong>⚠ 可信度前提：代码未放出，本页无法做代码审计。</strong>官方仓库 <code>kyZhao-1/Deep-Ideation</code> 截至 2026-08-04 仅有一个 README 占位文件；论文承诺公开的 10 万篇概念网络数据集与 4278 条 review 训练数据也均未发布。评审 Dots 亦点名缺代码。因此本页所有涉及实现的判断只能标注 <span class="evidence paper" style="margin:0">论文声称</span> 或 <span class="evidence inference" style="margin:0">合理推断</span>，不存在「代码确认」档；结果数字全部无法独立复现。</p>
+        </div>
+
+        <nav class="toc" aria-label="页面导航">
+            <a href="#network">① 概念网络机制</a>
+            <a href="#compare">② 与 CoI / ResearchAgent 对比</a>
+            <a href="#workflow">③ explore–expand–evolve</a>
+            <a href="#critic">④ Critic 训练数据疑点</a>
+            <a href="#eval">⑤ 实验与数字审计</a>
+            <a href="#reviews">⑥ 评审质疑 vs 原文核对</a>
+            <a href="#verdict">⑦ 为什么撤稿</a>
+        </nav>
+
+        <section id="network">
+            <h2>① 科学概念网络：真实机制比宣传朴素得多</h2>
+            <p class="lead">论文的核心卖点是「不只共现，还有上下文关系」。拆开看，整个网络的构建只有三步，全部由 LLM prompt 完成，没有任何图学习或信息抽取模型。</p>
+
+            <figure class="figure">
+                <a href="assets/figure1.png" target="_blank">
+                    <img src="assets/figure1.png" alt="Deep Ideation 总览：概念网络构建与工作流">
+                </a>
+                <figcaption>论文 Fig. 1：下半部分是概念网络的实际形态——AlphaEdit 等论文被抽出 "Model Editing"、"Large Language Model" 两个关键词，边上的 "Context" 是 LLM 对这篇论文如何联系两词的一段摘要。上半部分是工作流全景（火焰标记的 Critic Model 是唯一微调组件）。</figcaption>
+            </figure>
+
+            <h3>构建流程（论文 §2.1 + §3.2 + 附录 A.2）</h3>
+            <ul>
+                <li><span class="evidence paper" style="margin:0">论文声称</span> <strong>语料</strong>：近十年 10 个 AI 顶会共 107,443 篇论文（ICLR/NeurIPS/ICML → DL；ACL/NAACL → NLP；CVPR/ICCV → CV；AAAI/IJCAI → General AI），只用 title + abstract + introduction。</li>
+                <li><span class="evidence paper" style="margin:0">论文声称</span> <strong>节点</strong>：LLM 按「先选后补」（select first, then supplement）从每篇论文抽 3–4 个关键词。</li>
+                <li><span class="evidence paper" style="margin:0">论文声称</span> <strong>边</strong>：同一篇论文内共现的关键词两两连边；边特征 F<sub>ij</sub> 定义为对所有共现论文中两词关系的聚合。</li>
+            </ul>
+
+            <div class="formula">F<sub>ij</sub> = g( { relation(v<sub>i</sub>, v<sub>j</sub>, p) | p ∈ P<sub>i,j</sub> } )</div>
+
+            <div class="warning-note">
+                <p><strong>g(·) 到底定义了没有？——核对结论：没有。</strong>评审 gb37 与 hrL1 都质疑聚合函数 g 未定义。逐字核对原文：§2.1 说 g 是 "a function that aggregates or processes these relationships"，§3.3.1 说 "g is a function that aggregate the relationship together"——两处都只是同义反复。附录 A.1.1 给出了 <code>relation(v_i, v_j, p)</code> 的实现（一个 prompt：给 LLM 两个关键词 + 单篇论文的 title/abstract/intro，让它用 2–4 句话解释这篇论文如何联系两词），但<strong>跨论文聚合的 g 连 prompt 都没给</strong>。合理推断 g 就是把多篇论文的摘要串接后再让 Relation Analysis Module 总结，但这只能算猜测。<span class="evidence inference" style="margin:0 0 0 4px">合理推断</span></p>
+            </div>
+
+            <div class="key-insight">
+                <h3>「上下文关系边」的实际含金量</h3>
+                <p>剥掉叙事，这张图 = <strong>关键词共现图 + 每条边挂一段 LLM 生成的 2–4 句自由文本</strong>。没有关系类型、没有方向、没有权重、没有实体消歧，也没有验证这段文本比「共现计数」多带了什么信息——评审 DTQ4（唯一给 6 分的人）索要的「复杂边特征 vs 简单边特征」对照实验，论文里不存在。核心卖点从头到尾没有被隔离验证。</p>
+            </div>
+        </section>
+
+        <section id="compare">
+            <h2>② 同路线对照：CoI 的引用链 vs ResearchAgent 的实体库 vs 本文的共现图</h2>
+            <p class="lead">三者都在回答同一个问题：给 LLM 喂什么结构的文献组织，才能生成有据可依的 idea。差异在组织单元、检索时机和反馈来源。</p>
+
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead>
+                        <tr><th>维度</th><th>Chain-of-Ideas（引用链）</th><th>ResearchAgent（实体共现库）</th><th class="focus-col">Deep Ideation（概念网络）</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>组织单元</td>
+                            <td>沿引用关系串起的论文链，保留一条研究脉络的<strong>时间演化</strong></td>
+                            <td>核心论文的引用邻域 + 全库<strong>实体共现统计</strong>（entity linking 后计数）</td>
+                            <td>关键词共现图，边上挂 LLM 写的<strong>逐论文关系摘要</strong></td>
+                        </tr>
+                        <tr>
+                            <td>检索时机</td>
+                            <td>一次性构链，之后在链上推演</td>
+                            <td>一次性检索实体与相关论文，进入迭代评审</td>
+                            <td><strong>逐步图游走</strong>：每轮取邻居→选词→重写 idea（这是本文真正的差异点）</td>
+                        </tr>
+                        <tr>
+                            <td>「关系」的语义</td>
+                            <td>引用 = 明确的学术承继关系</td>
+                            <td>共现计数，无语义内容</td>
+                            <td>共现 + 自由文本摘要；语义丰富但<strong>无类型、无验证</strong></td>
+                        </tr>
+                        <tr>
+                            <td>反馈信号</td>
+                            <td>无内环反馈（生成后由人/LLM 评）</td>
+                            <td>多个 prompted 人格化 reviewer agent 互评</td>
+                            <td>LoRA 微调的 Qwen3-8B critic 打 novelty/feasibility 1–5 分</td>
+                        </tr>
+                        <tr class="focus-row">
+                            <td>实质增量</td>
+                            <td colspan="2">——</td>
+                            <td>相对 ResearchAgent 的真增量只有两点：边上的 LLM 文本、以及把一次性检索改成图游走 + 图距离启发式。两点都没有对照实验支撑；「邻居关键词扩展」的思路 ResearchAgent / SciMON 已提出（评审 Dots 点名）</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p><span class="evidence paper" style="margin:0">论文声称</span> 图距离在系统里被显式当作 novelty/feasibility 的代理：Keyword Selection prompt（附录 A.1.2）明示「novelty 不足时可考虑<strong>最短路更长</strong>的候选词，feasibility 不足时偏好<strong>最短路更短</strong>的词」；critic 的输入也包含邻居数、连通性、最短路。这正是评审 gb37「把 novelty 和图距离混同」质疑的出处——它不是评审的过度解读，而是系统的设计本身。</p>
+        </section>
+
+        <section id="workflow">
+            <h2>③ explore–expand–evolve 工作流与 Idea Stack</h2>
+            <p class="lead">除 critic 外全部由 GPT-4o-mini + prompt 完成（评审 Dots「纯 prompting」的判断成立）。每步的可复述版本如下。</p>
+
+            <figure class="figure">
+                <a href="assets/figure2.png" target="_blank">
+                    <img src="assets/figure2.png" alt="Deep Ideation 框架总览">
+                </a>
+                <figcaption>论文 Fig. 2（L<sub>max</sub>=4 的示例）：左侧是两个外部状态——概念网络（查询）与 Idea Stack（读写）；右侧主环路按 K&lt;4 走「选词加入」、K≥4 走「选词替换」，Idea Formulation 产出三段式 proposal，Router 决定下一轮进化对象。</figcaption>
+            </figure>
+
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <h4>Explore：取邻居 + 生成关系摘要</h4>
+                    <p>对当前关键词集 K<sub>t</sub> 中每个词，从概念网络取至多 m 个邻居（附录调参：m=12 最优）。对每对 (k<sub>i</sub>, k<sub>j</sub>)，Relation Analysis Module 用附录 A.1.1 的 prompt 逐篇生成 2–4 句关系解释。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>Expand：选一个新词 → 重写 idea → critic 打分</h4>
+                    <p>Keyword Selection Module 读入完整 Idea Stack + 候选词（带关系摘要和到现有词集的最短路长度），按「分低补 novelty 选远词 / 补 feasibility 选近词」的启发式选<strong>恰好一个</strong>新词加入。Idea Formulation Module 把新词集写成 proposal（research background / research idea / general implementation approach 三段）。critic 打 novelty、feasibility 各 1–5 分并附描述，全部压入 Idea Stack。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>Evolve：词集满员后由 Router 二选一</h4>
+                    <p>当 |K| 达到 L<sub>max</sub>（调参：4 最优）时触发。Router prompt 根据当前分数判断问题出在哪：关键词质量不行 → <strong>Keyword_Replacement</strong>（从「flexible 子集」里换掉一个词，用户初始词不可动——这点仅见于 prompt，正文未提）；词集好但写得差 → <strong>Idea_Rewrite</strong>（重写 proposal）。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>终止：Stop Triggering——准则从未给出</h4>
+                    <p>Fig. 1 里画了 "Stop Triggering"，§2.2 说迭代进行到「novelty/feasibility 达到满意水平或满足停止准则」，但满意阈值、最大轮数、由谁判停，<strong>全文（含附录）没有任何一处定义</strong>。评审 hrL1 直接问了这个问题，无 rebuttal。<span class="evidence audit" style="margin:0 0 0 4px">核对发现</span></p>
+                </div>
+            </div>
+
+            <p><strong>Idea Stack</strong> 是唯一的记忆结构：一个按轮次追加的记录栈，每轮存（关键词集、proposal、novelty/feasibility 分数与描述、本轮加/换了哪个词及理由）。它整体注入后续每个 prompt，作用等价于一份结构化的对话历史——没有检索、没有压缩，也没有消融（评审 hrL1 指出只消融了 Evolve 和 Critic 两个组件）。</p>
+
+            <figure class="figure">
+                <a href="assets/performance.png" target="_blank">
+                    <img src="assets/performance.png" alt="超参数分析：邻居数与关键词集大小">
+                </a>
+                <figcaption>论文 Fig. A.1（附录）：邻居数 m=12、关键词集上限 4 时性能最佳（纵轴为 novelty+feasibility 之和）。曲线全距只有约 0.2–0.3 分（约 3%），且无方差棒——与主表 10% 的提升声称放在一起看，这个量级的波动很难说明什么。</figcaption>
+            </figure>
+        </section>
+
+        <section id="critic">
+            <h2>④ Critic Model：「真实评审训练」的成色核查</h2>
+            <p class="lead">摘要说 critic "trained on real-world reviewer feedback"，贡献清单说 "review dataset derived from real-world reviewer feedback"。评审 gb37 指控：训练的其实是 <strong>LLM 生成的 paper–review 对</strong>。谁对？答案在 Fig. 3 和方法 §3.4 的措辞里。</p>
+
+            <figure class="figure">
+                <a href="assets/figure3.png" target="_blank">
+                    <img src="assets/figure3.png" alt="Critic Model 训练数据构建流程">
+                </a>
+                <figcaption>论文 Fig. 3：训练数据构建。左栏是 OpenReview 真实论文 + 真实评审；中栏经 GPT "Extract" 得到 idea proposal 和 novelty/feasibility 分数+描述；右栏经 "Simulate Reasoning" 生成推理链，连同关键词和图特征构成最终训练样本。注意：<strong>真实评审只出现在最左端</strong>。</figcaption>
+            </figure>
+
+            <h3>逐字核对的结果</h3>
+            <ul>
+                <li><span class="evidence paper" style="margin:0">论文声称</span> §3.4 原文："we designed a 'Scientific Reasoning Simulation' prompt to enable the LLM to provide review feedback… <strong>This simulated reasoning is structured into training data</strong> to fine-tune the LLM."——训练目标里的推理链是 LLM 模拟的，论文自己写明了。</li>
+                <li><span class="evidence audit" style="margin:0">核对发现</span> OpenReview 评审并没有 novelty/feasibility 的 1–5 分（只有 rating/soundness 等）。Fig. 3 显示这些数值标签是 GPT 从「论文+评审」中 "Extract" 出来的，<strong>从真实评审到数值标签的映射规则全文未说明</strong>。也就是说标签本身也是 LLM 产物。</li>
+                <li><span class="evidence paper" style="margin:0">论文声称</span> 规模：4278 条样本，LoRA 微调 Qwen3-8B（附录 A.4）。评审 DTQ4 质疑这个量级跨 4 个领域的泛化，论文无回应。</li>
+                <li><span class="evidence audit" style="margin:0">核对发现</span> Fig. 3 中栏抽取的 proposal 含 <strong>Effectiveness 字段</strong>，但 critic 的评分 rubric（附录 A.1.5）只有 novelty/feasibility 两维——恰好是 gb37 点名缺失的 Si et al. 2024 Effectiveness 维度，数据里有、模型却不评，进一步说明流水线各环节没有对齐。</li>
+            </ul>
+
+            <div class="critical-note">
+                <p><strong>裁定：gb37 的指控实质成立，且论文存在过度声称。</strong>真实评审只是数据流水线的<strong>上游条件输入</strong>；critic 实际学习的监督信号——数值分数、评价描述、推理链——全部是 LLM 生成/转换的文本。"trained on real-world reviewer feedback"（摘要、结论各出现一次）相对 §3.4 的自述是拔高了的说法；"derived from" 勉强站得住，但整个从评审到标签的转换质量没有任何人工校验或一致性报告。配合「critic 消融只带来 0.23 分（约 6%）提升、且仅由 LLM judge 衡量」，这个组件的证据链条相当薄弱。</p>
+            </div>
+        </section>
+
+        <section id="eval">
+            <h2>⑤ 实验：LLM judge + 54 人人类评估的可信度，附数字审计</h2>
+            <p class="lead">评估设置：生成 idea 由 5 个 LLM judge（GPT-4o、Gemini-2.5-Flash、Grok-3、DeepSeek-V3.1、Qwen3-235B）按自造的 novelty/feasibility 1–5 rubric 打分取平均；另有 54 位研究者做人类评估。<strong>每种方法评了多少条 idea、初始关键词怎么选，全文没有说</strong>（评审 Dots 问「评估数据集是什么」，无解）。</p>
+
+            <figure class="figure">
+                <a href="assets/table1_llm_judge.png" target="_blank">
+                    <img src="assets/table1_llm_judge.png" alt="Table 1 LLM judge 主结果">
+                </a>
+                <figcaption>论文 Table 1（LLM judge）：Deep Ideation 全线加粗，整体 Avg 3.82 vs 最佳基线 3.47，声称提升 10.25%；绿色行是「把顶会接收论文重排成 proposal 格式」的参照，被反超（3.82 vs 3.81）。但这张表内部数字自相矛盾，见下。</figcaption>
+            </figure>
+
+            <div class="critical-note">
+                <p><strong>数字审计：Table 1 至少有三处内部矛盾（本页独立重算，非评审发现）。</strong><span class="evidence audit" style="margin:0 0 0 4px">核对发现</span></p>
+                <ul style="margin-bottom:0">
+                    <li>SciMON 的 CV 列：Nov 2.50、Fea 3.02，Avg 却写 3.76（应为 2.76）；NLP 列 Avg 写 3.24（应为 3.48）。有趣的是 Improvement 行是按<strong>修正后的值</strong>算的——NLP Avg 提升 9.48% 恰好等于 3.81/3.48−1，说明作者手里有正确数据，表格是誊写错乱。</li>
+                    <li>ResearchAgent 的 Overall Fea 3.47 与其四个分域值（3.22/3.33/3.28/3.25，均值 3.27）对不上；而 10.25% 的总提升正是拿这个存疑的 3.47 当分母算出来的。</li>
+                    <li>摘要写提升 <strong>10.67%</strong>，正文和 Table 1 写 <strong>10.25%</strong>，两处不一致，无解释。</li>
+                    <li>附带一条：介绍里 "reaching the acceptance level of eight out of ten AI conferences" 没有任何分会议数据支撑（全文只有 4 个领域组的聚合数），且 NLP 域 3.81 &lt; Accepted Papers 3.83，本身就与该说法冲突。</li>
+                </ul>
+            </div>
+
+            <div class="figure-grid">
+                <figure class="figure">
+                    <a href="assets/table2_human_eval.png" target="_blank">
+                        <img src="assets/table2_human_eval.png" alt="Table 2 人类评估结果">
+                    </a>
+                    <figcaption>论文 Table 2（人类评估，54 人）：Deep Ideation 3.69 又一次全线最优，甚至超过真实顶会论文（3.66）。</figcaption>
+                </figure>
+                <figure class="figure">
+                    <a href="assets/table3_ablation.png" target="_blank">
+                        <img src="assets/table3_ablation.png" alt="Table 3 消融实验">
+                    </a>
+                    <figcaption>论文 Table 3（消融）：去掉 Evolve 掉 0.11 分（−2.9%），去掉 Critic 掉 0.23 分（−6.0%）。只消融了这两个组件；概念网络本身、Idea Stack、Relation Analysis 均未消融。</figcaption>
+                </figure>
+            </div>
+
+            <h3>两套评估各自的问题</h3>
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence audit">核对发现</span>
+                    <h3>人类评估：细节几乎为零</h3>
+                    <p>附录 A.6 全部内容只有三句话：54 位研究者、按 novelty/feasibility 打分、对感兴趣的 proposal 写简评。<strong>没有</strong>：招募与遴选标准、专业背景、是否盲评、每人评多少条、评审者间一致性、显著性检验。正文引用的唯一定性证据是一条匿名好评。评审 gb37/hrL1 的质疑完全成立。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence inference">合理推断</span>
+                    <h3>LLM judge：与训练信号同源的裁判</h3>
+                    <p>系统内环用 LLM critic 按同一套 novelty/feasibility rubric 优化，外环再用 5 个 LLM 按几乎相同的 rubric 评分——生成过程实质是在<strong>对着评估指标直接优化</strong>，基线则没有这层内环。judge 间一致性未报告（hrL1 问了）；污染问题（生成的 idea 是否只是 judge/生成器训练截止后见过论文的换皮）也无任何日期分析（gb37、hrL1 都问了）。</p>
+                </article>
+            </div>
+
+            <div class="warning-note">
+                <p><strong>「超过顶会接收论文」这个 headline 怎么读：</strong>Accepted Papers 基线是把真实论文的 title/abstract/intro 让 LLM <strong>重新组织成 proposal 格式</strong>再评分。人类评估里系统生成的 idea（3.69）也高于真论文（3.66）——更合理的解释不是系统超越了人类科研，而是这套 rubric + proposal 格式偏好为其量身生成的文本；真论文经二次转写反而失分。</p>
+            </div>
+        </section>
+
+        <section id="reviews">
+            <h2>⑥ 评审质疑 vs 论文原文：逐条核对</h2>
+            <p class="lead">四份评审（gb37: 2 / DTQ4: 6 / Dots: 2 / hrL1: 2），作者未做任何 rebuttal，2025-11-27 撤稿。下表把主要质疑逐条与 tex 源码核对后裁定。</p>
+
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead>
+                        <tr><th style="width:24%">评审质疑</th><th style="width:46%">论文原文核对</th><th>裁定</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr class="focus-row">
+                            <td>gb37：critic 训练的是 LLM 生成的 paper–review 对，不是真实人类评审</td>
+                            <td>§3.4 自述训练数据是 "simulated reasoning"；Fig. 3 显示数值标签由 GPT 从论文+评审中 "Extract"，映射规则未说明。真实评审仅为上游输入（详见本页 ④）</td>
+                            <td><strong>实质成立</strong>，且摘要 "trained on real-world reviewer feedback" 构成过度声称</td>
+                        </tr>
+                        <tr class="focus-row">
+                            <td>gb37 / hrL1：聚合函数 g(·) 未定义；F<sub>ij</sub> 如何从多篇论文计算不明</td>
+                            <td>§2.1 与 §3.3.1 两处都只说 g "aggregates the relationships"；附录只有单篇论文的 relation 提取 prompt，无跨论文聚合的任何实现描述</td>
+                            <td><strong>成立</strong>。gb37 问 relation() 是 LLM 解析还是 embedding——这一小问附录可答（LLM 生成文本）；g 本身确实缺失</td>
+                        </tr>
+                        <tr class="focus-row">
+                            <td>gb37 / hrL1 / Dots：54 人人类评估细节严重缺失（盲法、招募、专业、一致性、显著性）</td>
+                            <td>附录 A.6 仅三句话，上述信息一项都没有；正文只引一条匿名好评</td>
+                            <td><strong>完全成立</strong></td>
+                        </tr>
+                        <tr>
+                            <td>DTQ4：缺「复杂上下文边特征 vs 简单共现边」对照实验（核心卖点未验证）</td>
+                            <td>消融只有 w/o Evolve 和 w/o Critic（Table 3），概念网络与边文本从未被隔离验证</td>
+                            <td><strong>成立</strong>，是全文最致命的缺口：卖点没有证据</td>
+                        </tr>
+                        <tr>
+                            <td>gb37：novelty 可能与图距离混同</td>
+                            <td>Keyword Selection prompt 明写「长最短路→novelty、短最短路→feasibility」；critic 输入含最短路。混同是设计使然</td>
+                            <td><strong>成立</strong>（且比评审说的更严重：这是显式启发式，不是隐性偏差）</td>
+                        </tr>
+                        <tr>
+                            <td>gb37 / hrL1：数据污染与时间线未分析（语料/评审数据/参照论文 vs LLM 训练截止日期）</td>
+                            <td>全文无任何 checkpoint 日期、语料截止时间或去重去污染措施</td>
+                            <td><strong>成立</strong></td>
+                        </tr>
+                        <tr>
+                            <td>gb37：提升幅度可能在方差范围内；数据集统计未报告</td>
+                            <td>无方差/显著性；且 Table 1 存在三处内部矛盾（本页 ⑤ 审计），摘要 10.67% vs 正文 10.25% 不一致。数据集有总量（107,443 篇、3–4 词/篇）但无节点/边数、领域分布、评估集规模</td>
+                            <td><strong>成立并加重</strong>（数字矛盾是评审没抓到的新证据）；统计缺失部分成立</td>
+                        </tr>
+                        <tr>
+                            <td>Dots：evolve 节写得混乱；停止准则、关键词何时删除不明</td>
+                            <td>Router 逻辑有 prompt 可查（还算清楚），但 "Stop Triggering" 的判停准则全文未定义；flexible 关键词子集只在 prompt 里出现、正文未提</td>
+                            <td><strong>大部分成立</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Dots：框架纯靠 prompting；邻居扩展思路 ResearchAgent/SciMON 已有</td>
+                            <td>除 critic LoRA 外全部为 GPT-4o-mini + prompt；邻居检索确为已有思路（本页 ②）</td>
+                            <td><strong>成立</strong>。「为什么不用科学 IE 系统抽关系」属于合理的路线偏好建议，不算硬伤</td>
+                        </tr>
+                        <tr>
+                            <td>gb37：基线不公平（MOOSE-Chem 是化学方法）；缺多智能体基线</td>
+                            <td>MOOSE-Chem 确为化学假设生成框架被移植到 AI 领域；但 SciMON/ResearchAgent/SciAgents 等主力基线对口</td>
+                            <td><strong>部分成立</strong>。缺基线的批评对一篇 2025 年的 ideation 论文属合理要求，但非致命</td>
+                        </tr>
+                        <tr>
+                            <td>hrL1：附录 A.1.3 与 A.1.7 两个 prompt 基本重复（编辑疏漏）</td>
+                            <td>核对属实：「keyword replacement」与「Keyword Replace」两节几乎逐句相同，仅一个占位符名不同（idea_stack vs status_bar）</td>
+                            <td><strong>成立</strong>，反映定稿仓促</td>
+                        </tr>
+                        <tr>
+                            <td>Dots：缺 LLM 使用声明、缺代码、缺伦理声明</td>
+                            <td>arXiv 版附录已有 "The Use of Large Language Models" 一节（或为投稿版后补）；代码至今未放出，承诺公开的数据集也未发布</td>
+                            <td>LLM 声明<strong>存疑/或已修复</strong>；缺代码<strong>持续成立</strong>（截至 2026-08）</td>
+                        </tr>
+                        <tr>
+                            <td>gb37：缺 Si et al. 2024 的 Effectiveness 评估维度</td>
+                            <td>rubric 只有 novelty/feasibility；但 Fig. 3 的训练数据抽取里其实含 Effectiveness 字段，模型却不评</td>
+                            <td><strong>成立</strong>，且暴露流水线内部不对齐</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p><strong>哪些质疑偏苛刻？</strong>整体看几乎没有。最接近「过苛」的是 Dots 要求改用科学 IE 系统和领域 LLM（属于另一条技术路线的偏好）和 gb37 的基线扩充清单（Many Heads、ResearchTown、IdeaSynth 等，合理但非一票否决项）。四份评审的事实性指控经核对<strong>无一被冤枉</strong>；唯一的 6 分（DTQ4）也在 weakness 里点中了同样的两个要害（边特征形式化、critic 泛化），只是给了更善意的分数。</p>
+        </section>
+
+        <section id="verdict">
+            <h2>⑦ 为什么 2/6/2/2 撤稿：问题出在 idea 还是执行？</h2>
+
+            <figure class="figure">
+                <a href="assets/figure4.png" target="_blank">
+                    <img src="assets/figure4.png" alt="Case study：生成的 idea proposal 示例">
+                </a>
+                <figcaption>论文 Fig. 4（case study）：两条生成的 idea——「RL 驱动的多人脸伪造检测双任务模型」和「NCE 增强的偏好对齐」。右例引用了一篇真实论文（黄色高亮）。以领域眼光看，两条都是常见概念的组合式缝合，恰好落在评审对「关键词拼接式 novelty」的担忧区间。</figcaption>
+            </figure>
+
+            <p><strong>Idea 层面（约三成责任）：</strong>「概念网络 + 图游走 + critic 反馈」不是坏方向，DTQ4 给 6 分正是认可这一点——上下文关系边比纯统计关联更有依据、Idea Stack 模拟人类迭代认知、微调 critic 优于裸 prompt 评审。但这个 idea 的<strong>增量空间本身就窄</strong>：邻居扩展（ResearchAgent/SciMON）、迭代评审（ResearchAgent/CycleResearcher）、知识图谱假设生成（SciAgents/MOOSE-Chem）都已存在，留给本文的只有「边上挂 LLM 文本」和「游走式检索」两个可辩护点。</p>
+
+            <p><strong>执行层面（约七成责任）：</strong>恰恰是这两个可辩护点，论文都没有给出证据——g(·) 没定义、边文本 vs 共现计数没对照、概念网络没消融。再叠加 critic 训练数据的过度声称、人类评估三句话交差、主表数字自相矛盾、摘要与正文提升数字不一致、prompt 附录复制粘贴出错、承诺开放的代码与数据集全部没有兑现。这些不是「方向错了」的问题，而是<strong>验证纪律和写作纪律的全面缺失</strong>。作者面对四份评审零 rebuttal 直接撤稿，与其说是被冤枉，不如说是自知证据链撑不起声称。</p>
+
+            <div class="key-insight">
+                <h3>对「文献组织路线」档案的启示</h3>
+                <p>这是概念网络路线的一个典型失败样本：把文献压成「关键词 + LLM 自由文本边」的图，检索层面确实比一次性 RAG 多了可游走的结构，但如果不能证明<strong>图结构本身</strong>（而非背后那个 LLM）贡献了 novelty/feasibility，它与「换皮 RAG」不可区分。与 CoI 的引用链（关系语义明确但只有单脉络）、ResearchAgent 的实体共现库（无语义但可验证）相比，本文选了语义最丰但最不可验证的表示——而验证恰恰是它没做的事。后续读同路线论文时，「边特征对照消融 + 判停准则 + judge 与内环 critic 是否同源」可以直接当三连筛查项。</p>
+            </div>
+
+            <div class="source-note">
+                <p><strong>来源与证据边界：</strong>本页方法拆解基于 arXiv:2511.02238 的 tex 源码（0Main + 1–6 章 + Appendix），评审内容基于本地 OpenReview 存档（ICLR 2026 #20167，存档日 2026-08-04），表格数字审计为本页独立重算。代码未放出，所有实现细节均为论文声称或推断，不存在代码确认档。</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>Deep Ideation 中文精读 · 论文 + OpenReview 评审交叉核对（无代码，未做代码审计）</p>
+            <p>整理日期：2026-08-04 · 代码版本：kyZhao-1/Deep-Ideation 仅 README 占位，未放出</p>
+        </footer>
+    </main>
+</body>
+</html>

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VirSci（Many Heads Are Better Than One）中文精读与代码审计：真实作者档案驱动的多智能体科研 idea 生成系统。">
+    <title>VirSci 精读与代码审计</title>
+    <style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+
+        .container { width: min(920px, calc(100% - 44px)); margin: 0 auto; padding: 52px 18px 76px; }
+
+        header { margin-bottom: 34px; padding-bottom: 34px; border-bottom: 1px solid var(--line); text-align: center; }
+
+        .back-link { display: inline-block; margin-bottom: 20px; color: var(--accent); font-size: 0.93rem; font-weight: 650; text-decoration: none; transition: color 0.2s ease, transform 0.2s ease; }
+        .back-link:hover { color: var(--accent-dark); transform: translateX(-2px); }
+
+        .status-row, .resource-row, .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .status-row, .resource-row { justify-content: center; }
+        .status-row { margin-bottom: 18px; }
+        .resource-row { margin-top: 22px; }
+
+        .badge, .tag, .evidence { display: inline-flex; align-items: center; width: fit-content; border-radius: 999px; white-space: nowrap; }
+        .badge { padding: 4px 11px; color: var(--accent-dark); background: var(--accent-pale); font-size: 0.79rem; font-weight: 650; }
+
+        .resource-link { display: inline-block; padding: 7px 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent-dark); background: var(--panel); font-size: 0.84rem; font-weight: 620; text-decoration: none; transition: box-shadow 0.2s ease, transform 0.2s ease; }
+        .resource-link.primary { border-color: var(--accent); color: var(--white); background: var(--accent); }
+        .resource-link:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+
+        h1 { margin-bottom: 12px; font-size: clamp(2.35rem, 7vw, 3.25rem); font-weight: 670; letter-spacing: -0.035em; line-height: 1.08; }
+        .subtitle { max-width: 720px; margin: 0 auto; color: var(--muted); font-size: 1.08rem; font-weight: 360; }
+        .meta { margin-top: 12px; color: var(--muted); font-size: 0.91rem; font-weight: 360; }
+
+        h2 { margin: 56px 0 24px; padding-bottom: 11px; border-bottom: 2px solid var(--accent); font-size: 1.78rem; font-weight: 630; line-height: 1.3; }
+        h3 { margin: 30px 0 14px; color: var(--accent); font-size: 1.25rem; font-weight: 630; }
+        h4 { margin-bottom: 8px; color: var(--accent-dark); font-size: 1.01rem; font-weight: 650; }
+        p { margin-bottom: 17px; font-weight: 360; }
+        strong { font-weight: 660; }
+        a { color: var(--accent-dark); }
+        .lead { color: #343b37; font-size: 1.02rem; }
+
+        .eyebrow { display: block; margin-bottom: 7px; color: var(--muted); font-size: 0.75rem; font-weight: 720; letter-spacing: 0.08em; text-transform: uppercase; }
+
+        .toc { position: sticky; top: 10px; z-index: 20; display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin: 24px 0 34px; padding: 10px; border: 1px solid rgba(231, 225, 215, 0.9); border-radius: 16px; background: rgba(247, 244, 239, 0.93); box-shadow: 0 8px 24px rgba(31, 36, 33, 0.06); backdrop-filter: blur(10px); }
+        .toc a { padding: 6px 10px; border-radius: 999px; color: var(--muted); font-size: 0.8rem; font-weight: 620; text-decoration: none; }
+        .toc a:hover { color: var(--accent-dark); background: var(--accent-pale); }
+
+        .highlight-box, .source-note, .warning-note, .critical-note, .code-note { margin: 26px 0; padding: 21px 25px; border-left: 4px solid var(--accent); border-radius: 5px; background: var(--panel); box-shadow: var(--shadow); }
+        .source-note { border-left-color: var(--green); background: var(--green-pale); }
+        .code-note { border-left-color: var(--blue); background: var(--blue-pale); }
+        .warning-note { border-left-color: var(--warning); background: var(--warning-pale); }
+        .critical-note { border-left-color: var(--danger); background: var(--danger-pale); }
+        .highlight-box p:last-child, .source-note p:last-child, .warning-note p:last-child, .critical-note p:last-child, .code-note p:last-child { margin-bottom: 0; }
+
+        .key-insight { margin: 32px 0; padding: 28px 31px; border-radius: 8px; color: var(--white); background: linear-gradient(135deg, var(--accent), var(--accent-dark)); box-shadow: 0 4px 12px rgba(196, 97, 47, 0.22); }
+        .key-insight h3, .key-insight p { color: var(--white); }
+        .key-insight h3 { margin-top: 0; }
+        .key-insight p:last-child { margin-bottom: 0; }
+
+        .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; margin: 24px 0; }
+        .card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .card { padding: 21px 23px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+        .card h3 { margin-top: 0; font-size: 1.08rem; }
+        .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+
+        .evidence { margin-bottom: 10px; padding: 3px 9px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; }
+        .evidence.paper { color: var(--accent-dark); background: var(--accent-pale); }
+        .evidence.code { color: var(--blue); background: var(--blue-pale); }
+        .evidence.inference { color: var(--warning); background: var(--warning-pale); }
+        .evidence.audit { color: var(--danger); background: var(--danger-pale); }
+
+        .figure, .figure-grid { margin: 30px 0; }
+        .figure { text-align: center; }
+        .figure-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .figure-grid .figure { margin: 0; }
+        .figure a, .figure-frame { display: block; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--white); box-shadow: var(--figure-shadow); }
+        .figure img { display: block; width: 100%; height: auto; }
+        .figure figcaption { max-width: 760px; margin: 11px auto 0; color: var(--muted); font-size: 0.86rem; font-style: italic; line-height: 1.55; }
+
+        .comparison-table { width: 100%; margin: 26px 0; border-collapse: collapse; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+        .comparison-table th { padding: 13px 15px; color: var(--white); background: var(--accent); font-size: 0.88rem; font-weight: 620; text-align: left; }
+        .comparison-table td { padding: 13px 15px; border-bottom: 1px solid var(--line); font-size: 0.89rem; font-weight: 360; vertical-align: top; }
+        .comparison-table tr:last-child td { border-bottom: 0; }
+        .comparison-table .focus-row td { background: #f8ede4; font-weight: 590; }
+
+        .table-scroll { width: 100%; margin: 26px 0; border-radius: 8px; overflow-x: auto; }
+        .table-scroll .comparison-table { min-width: 680px; margin: 0; }
+
+        .flow-diagram { margin: 29px 0; padding: 27px 31px; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+        .flow-step { position: relative; margin: 16px 0; padding: 18px 22px; border-left: 4px solid var(--accent); border-radius: 4px; background: var(--white); }
+        .flow-step::before { content: "▼"; position: absolute; bottom: -28px; left: 50%; color: var(--accent); font-size: 18px; transform: translateX(-50%); }
+        .flow-step:last-child::before { content: ""; }
+        .flow-step p { margin-bottom: 0; }
+
+        .formula { margin: 25px 0; padding: 21px 23px; border-radius: 7px; color: var(--paper); background: var(--ink); font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 0.96rem; overflow-x: auto; text-align: center; white-space: nowrap; }
+
+        ul { margin: 15px 0 19px 2px; list-style: none; }
+        li { position: relative; margin-bottom: 9px; padding-left: 22px; font-weight: 360; }
+        li::before { content: "•"; position: absolute; left: 2px; color: var(--accent); font-size: 1.2rem; font-weight: 700; }
+
+        details { margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+        summary { display: flex; align-items: center; gap: 12px; padding: 17px 20px; cursor: pointer; font-weight: 630; list-style: none; }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: "＋"; margin-left: auto; color: var(--accent); font-size: 1.1rem; }
+        details[open] summary::after { content: "−"; }
+        .details-body { padding: 18px 22px 22px; border-top: 1px solid var(--line); }
+
+        code { padding: 2px 5px; border-radius: 4px; color: var(--accent-dark); background: var(--accent-pale); font-size: 0.88em; }
+
+        pre { margin: 22px 0; padding: 20px 22px; border: 1px solid #343b37; border-radius: 8px; color: #edf2ee; background: var(--ink); font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 0.84rem; line-height: 1.65; overflow-x: auto; }
+        pre code { padding: 0; color: inherit; background: transparent; }
+
+        .code-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
+        .code-item { padding: 16px 18px; border: 1px solid var(--line); border-radius: 7px; background: var(--white); }
+        .code-item code { display: inline-block; margin-bottom: 7px; color: var(--blue); background: var(--blue-pale); font-weight: 660; }
+        .code-item p { margin-bottom: 0; color: var(--muted); font-size: 0.86rem; }
+
+        .tag-list { margin: 13px 0 22px; }
+        .tag { padding: 4px 10px; color: var(--green); background: var(--green-pale); font-size: 0.78rem; font-weight: 630; }
+
+        footer { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.86rem; font-weight: 360; text-align: center; }
+
+        @media (max-width: 760px) {
+            .container { width: min(100% - 28px, 920px); padding: 34px 8px 56px; }
+            .card-grid, .card-grid.three, .figure-grid, .code-list { grid-template-columns: 1fr; }
+            .toc { position: static; }
+            .flow-diagram { padding: 20px 16px; }
+            h2 { margin-top: 46px; font-size: 1.55rem; }
+            .highlight-box, .key-insight { padding: 22px; }
+            .subtitle, .meta { overflow-wrap: anywhere; }
+        }
+
+        @media print {
+            .toc, .back-link { display: none; }
+            body { background: white; }
+            .container { width: 100%; max-width: none; padding: 24px; }
+            .figure a, .card, details { box-shadow: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <header>
+            <a class="back-link" href="../../../index.html">← 返回 Literature 调研档案首页</a>
+            <div class="status-row">
+                <span class="badge">ACL 2025 Main（camera-ready）</span>
+                <span class="badge">曾投 ICLR 2025 → Withdrawn（5/5/3/3）</span>
+                <span class="badge">arXiv:2410.09403（40 页，与 ACL 版同步）</span>
+                <span class="badge">代码开源（AgentScope 定制）</span>
+            </div>
+            <h1>VirSci</h1>
+            <p class="subtitle">用真实 AMiner 作者档案初始化虚拟科学家团队，走完"组队→选题→出 idea→查新→写摘要"五阶段，再用"与过去/未来论文库的 embedding 距离 + 引用数"自动度量新颖性——并宣称复现了 Science of Science 的经典结论。</p>
+            <p class="meta">Haoyang Su*, Renqi Chen*, Shixiang Tang, …, Philip Torr, Bowen Zhou, Nanqing Dong · 上海人工智能实验室 / 牛津 / 港中文 / 清华 / 上海科学学研究所 · ICLR 版题为 "Two Heads Are Better Than One"，ACL 终版改题 "Many Heads Are Better Than One"</p>
+            <div class="resource-row">
+                <a class="resource-link primary" href="paper/VirSci_arXiv_2410.09403.pdf">论文 PDF（本地）</a>
+                <a class="resource-link" href="paper/tex_source/acl_camera.tex">TeX source（ACL camera）</a>
+                <a class="resource-link" href="https://github.com/RenqiChen/Virtual-Scientists">本地代码</a>
+                <a class="resource-link" href="openreview/OpenReview_讨论存档.html">OpenReview 存档</a>
+                <a class="resource-link" href="https://github.com/RenqiChen/Virtual-Scientists">官方 GitHub</a>
+            </div>
+        </header>
+
+        <div class="highlight-box">
+            <p><strong>这篇论文做了什么：</strong>把 AMiner 上 156 位（CS 数据集）/ 3,169 位（OAG 数据集）真实科学家的档案（研究兴趣、引用数、合作史）灌进 LLM agent 做人设，用真实合作网络的邻接矩阵驱动组队，让团队按固定轮转讨论产出论文摘要；然后以 <code>y_bound</code> 年为界把论文库切成"过去库/当代库"，用生成摘要相对两个库的 embedding 距离和相似论文引用数计算 Overall Novelty。<strong>本页四个重点：</strong>①文献在这条多智能体路线里的角色；②Science of Science 复现结论的证据强度；③novelty 指标的方法论问题；④代码与论文的差距（逐条审计）。</p>
+        </div>
+
+        <nav class="toc" aria-label="页面导航">
+            <a href="#versions">版本演化与定位</a>
+            <a href="#ecosystem">生态系统=数据即人设</a>
+            <a href="#pipeline">五阶段流水线</a>
+            <a href="#metrics">Novelty 指标</a>
+            <a href="#scisci">实验与 SciSci 复现</a>
+            <a href="#audit">代码审计</a>
+            <a href="#openreview">OpenReview 交锋</a>
+            <a href="#verdict">总评</a>
+        </nav>
+
+        <section id="versions">
+            <h2>1 · 版本演化：从 ICLR 撤稿到 ACL 2025 Main</h2>
+            <p class="lead">本地材料横跨三个版本节点：OpenReview 存档记录 ICLR 2025 投稿版（撤稿），tex 源码是 ACL camera-ready（<code>acl_camera.tex</code>），arXiv PDF 与 ACL 版同步。理解这条演化线，才能正确评估"哪些实验是被评审逼出来的"。</p>
+
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <h4>2024-10 · arXiv v1 + ICLR 2025 投稿（"Two Heads Are Better Than One"）</h4>
+                    <p>只有 AMiner CS 单数据集（2000–2014）、无人类评估、baseline 只有 AI Scientist。评分 5/5/3/3，四位评审集中质疑：novelty 指标自证、老语料数据泄漏、无可用性指标。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>2024-11 · rebuttal 补实验 → 2024-12-11 撤稿</h4>
+                    <p>rebuttal 中补做 OAG 3.1 跨域数据集、10 位 CS 博士生盲评、LLaMA3-8b 对照、正态分布 explore 增量、自适应轮数——未能翻盘（6tUq 明确维持原分），作者撤稿转投。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>2025-05 · ACL 2025 Main 录用（"Many Heads Are Better Than One"）</h4>
+                    <p>rebuttal 材料全部转正进正文/附录；新增 HypoGen baseline、人类评估三列（Nov/Fea/Eff）、OAG 3.2（2024–2025 当代库）数据泄漏对照实验；作者列表扩充（Torr、周伯文等）。ACL Anthology pp. 28201–28240。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>2025-04 起 · 后续</h4>
+                    <p>发布 Virtual-Scientists v2（宣称百万 agent 规模）与立场论文 "AI-Driven Automation Can Become the Foundation of Next-Era Science of Science Research"（arXiv:2505.12039）——VirSci 被团队定位为 AI for Science of Science 的基础设施，而非单纯的 idea 生成工具。</p>
+                </div>
+            </div>
+
+            <h3>它在多智能体 idea 生成路线中的位置（重点①）</h3>
+            <p>VirSci 对"文献"的用法与同类工作截然不同：<strong>论文库不做任何深度组织</strong>——没有引用链、没有概念图、没有跨文献综合。它只在两处消费文献：(a) idea 生成/查新时按 embedding 相似度从过去库检索 top-k 摘要塞进 prompt 当参考；(b) 评测时把两个论文库当作 novelty 的对照分布。真正的独特资产是<strong>真实作者档案 + 真实合作网络</strong>：文献在这里的角色是"人设原料与评测标尺"，而非"知识结构"。</p>
+
+            <div class="table-scroll">
+            <table class="comparison-table">
+                <thead><tr><th>系统</th><th>文献的角色</th><th>协作形态</th><th>评测方式</th></tr></thead>
+                <tbody>
+                    <tr class="focus-row"><td><strong>VirSci</strong></td><td>作者档案做 agent 人设；论文库做检索参考 + novelty 对照分布（不组织文献）</td><td>真实合作网络驱动组队，5 阶段轮转讨论</td><td>自定义 embedding 距离指标（HD/CD/CI/ON）+ LLM review + 人类盲评</td></tr>
+                    <tr><td>CoI（Chain-of-Ideas）</td><td>沿引用链组织文献演化脉络，是方法核心</td><td>单 agent</td><td>LLM 对战评分（Idea Arena）</td></tr>
+                    <tr><td>AI Scientist</td><td>Semantic Scholar 查新过滤</td><td>单 agent 自我反思 50 轮</td><td>LLM review（NeurIPS 指南）</td></tr>
+                    <tr><td>ResearchTown / HypoGen</td><td>合成人设或 PubMed 检索</td><td>简化多 agent（固定成员）</td><td>LLM 评分为主</td></tr>
+                </tbody>
+            </table>
+            </div>
+
+            <div class="key-insight">
+                <h3>真正的卖点不是"生成了更好的 idea"，而是"模拟器复现了科学社会学规律"</h3>
+                <p>与 baseline 的对比（+13.8% CD、+44.1% CI）只是及格线证明；论文投入最大篇幅的是团队规模 / 轮数 / 新鲜度 / 多样性四组变量实验，并把"8 人 × 5 轮达峰、50% 新成员最优"与 Nature/Science 上的 SciSci 结论对齐。作者在 ICLR rebuttal 里也明确承认：可用性不是本文重点，定位是 Science of Science 模拟平台。</p>
+            </div>
+        </section>
+
+        <section id="ecosystem">
+            <h2>2 · 科研生态系统：数据即人设</h2>
+            <p class="lead">系统的"世界"由一个时间点 <code>y_bound</code> 切开：之前的论文构成过去库 B<sub>past</sub>（agent 能看的知识），之后的论文构成当代库 B<sub>con</sub>（评测用的"未来答案"，agent 不可见）。作者档案与合作网络从过去库抽取。</p>
+
+            <figure class="figure">
+                <a href="assets/fig2_components.png"><img src="assets/fig2_components.png" alt="VirSci 系统组件图"></a>
+                <figcaption>论文 Fig. 2：左=队长按合作网络组队；中=以"任务 prompt + K 轮轮转讨论"为基本单元的团队讨论例程；右=作者知识库（姓名/机构/兴趣/引用/合作史五字段）与论文库（ID/标题/摘要/引用数四字段）。字段之简单说明这是"档案卡"级别的人设，不是深度知识建模。</figcaption>
+            </figure>
+
+            <figure class="figure">
+                <a href="assets/fig16_agent_prompt.png"><img src="assets/fig16_agent_prompt.png" alt="科学家 agent 系统提示词"></a>
+                <figcaption>论文 Fig. 16：agent 的完整 system prompt——真实姓名被匿名为 Scientist0，但机构（Naval Research Laboratory 等）、研究兴趣关键词、372 篇论文 / 4230 引用、合作者 ID 都来自 AMiner 真实数据。<strong>这就是"真实数据 role-play"的全部内容。</strong></figcaption>
+            </figure>
+
+            <h3>两个生态系统的构建参数</h3>
+            <div class="table-scroll">
+            <table class="comparison-table">
+                <thead><tr><th>参数</th><th>AMiner Computer Science（主实验）</th><th>Open Academic Graph 3.1（跨域，rebuttal 补做）</th></tr></thead>
+                <tbody>
+                    <tr><td>原始规模</td><td>171 万作者 / 209 万论文（1948–2014）</td><td>3577 万作者 / 1.3 亿论文（至 2023，物理/化学/CS/生物）</td></tr>
+                    <tr class="focus-row"><td>时间切分 y<sub>start</sub> / y<sub>bound</sub> / y<sub>end</sub></td><td>2000 / 2010 / 2014</td><td>2010 / 2020 / 2023</td></tr>
+                    <tr><td>论文过滤</td><td>过去库 ≥10 引用、当代库 ≥5 引用、须有摘要</td><td>过去库 ≥200 引用、当代库 ≥50 引用、须有摘要</td></tr>
+                    <tr><td>作者过滤</td><td>≥50 篇论文且 ≥50 位合作者</td><td>≥40 篇论文且 ≥50 位合作者</td></tr>
+                    <tr class="focus-row"><td>最终规模</td><td><strong>156 位作者</strong>；过去库 85,217 / 当代库 92,980 篇</td><td><strong>3,169 位作者</strong>；过去库 139,646 / 当代库 61,485 篇</td></tr>
+                    <tr><td>作者兴趣来源</td><td>AMiner 自带 topic 字段</td><td>OAG 无作者级兴趣 → 用 GPT-4o 从其论文关键词摘要总结</td></tr>
+                    <tr><td>Embedding</td><td colspan="2">mxbai-embed-large（ollama 本地部署），FAISS 建索引</td></tr>
+                </tbody>
+            </table>
+            </div>
+
+            <div class="warning-note">
+                <p><strong>容易忽略的口径问题：</strong>"156 位作者"意味着主实验的 agent 池极小，且全部是 2000–2010 年发文 ≥50 篇的 CS 高产作者——这是一个高度筛选后的精英子群。ICLR 评审 poux 批评的"领域窄、年代旧"在 ACL 版靠 OAG 缓解了领域问题，但 CS 主实验的全部 SciSci 结论仍建立在这 156 人的合成社会上。</p>
+            </div>
+
+            <h3>合作网络：邻接矩阵与"探索-利用"</h3>
+            <p><span class="evidence paper">论文声称</span>邻接矩阵 A<sub>ij</sub> 记录科学家 i、j 的历史合作次数；为了让从未合作的人也有机会被选中（对应 SciSci 的 fresh-team 效应），<strong>全矩阵 +1</strong> 构成探索机制，再按行归一化为选人概率 P<sub>ij</sub> = A<sub>ij</sub>/ΣA<sub>ij</sub>；附录 D.4 还试了正态分布增量 |x|~N(1,1)，结论略有正效应。</p>
+            <p><span class="evidence audit">审计发现</span>发布代码里看不到 +1：<code>sci_platform.py:91</code> 直接 <code>np.loadtxt('adjacency.txt')</code>（Google Drive 提供的成品文件），而 <code>preprocess_data/CS_data/data_extraction/extract_data_in_range.py</code> 产出的是 0/1 的 k-hop 可达矩阵（<code>np.clip(..., a_max=1)</code>）与单独的 weight 矩阵——若加载的是 0/1 矩阵，"合作次数概率"退化为"k-hop 邻居均匀抽样"。此外代码在每次成功组队后给双方连边 <strong>+0.2</strong>（<code>sci_platform.py:277-281</code>，"connection between collaborators will be closer"），这个动态演化网络论文完全没提。</p>
+        </section>
+
+        <section id="pipeline">
+            <h2>3 · 五阶段流水线：论文描述 vs 代码控制流</h2>
+            <p class="lead">五阶段共用一个"讨论例程"：团队成员按固定顺序（round-table sequential 模式）各说一轮，队长在每轮结束时做总结，重复 K 轮（默认 5）。代码实现为 <code>Team</code> 状态机（<code>sci_team/SciTeam.py</code>）：WAIT→TOPIC→IDEA→CHECK→ABSTRACT→(REVIEW)→FINISH，每个 epoch 推进一个状态。</p>
+
+            <figure class="figure">
+                <a href="assets/fig1_pipeline.png"><img src="assets/fig1_pipeline.png" alt="VirSci 五阶段流水线"></a>
+                <figcaption>论文 Fig. 1：五阶段全景。注意第 3/4/5 阶段都会访问中央论文库（检索参考、查新对照、自审相似度），这是它比"纯聊天式多智能体"多出的接地设计。</figcaption>
+            </figure>
+
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <h4>① Collaborator Selection · 组队</h4>
+                    <p><span class="evidence paper">论文</span>随机选队长 s₀，按邻接矩阵概率迭代发邀请，被邀者结合队长与现有成员档案用 CoT 决定接受与否，<strong>直到凑满预设团队规模 n</strong>。<br><span class="evidence audit">代码</span><code>sci_platform.py:221</code> 是<strong>一次性</strong> <code>np.random.choice</code> 抽出全部候选人再逐个询问——被拒就缺员，没有"补邀到满员"的循环；且组队前队长先被问"要不要干脆单干"（Action 2，论文未提）；还有 team_limit=2、重复团队去重等论文没有的工程约束。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>② Topic Discussion · 选题</h4>
+                    <p><span class="evidence paper">论文</span>K 轮讨论；多数人未达成共识则"终止并重启"；不感兴趣的科学家可以离队。<br><span class="evidence audit">代码</span><code>SciTeam.py:232</code> 只问队长一次"是否准备好出题"（action 1），而且 <code>or team_history.size()>=1</code> 意味着第二个 epoch 起<strong>无条件出题</strong>——没有共识判定、没有重启、没有离队逻辑。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>③ Idea Generation · 出 idea</h4>
+                    <p><span class="evidence code">代码确认</span>用选定 topic 检索过去库 top-8 摘要作参考；每人产出含 Idea/Title/Experiment + Clarity/Feasibility/Novelty 三项 1–10 自评分的 JSON；下一位可改进或另起炉灶，参考文献随最新 idea 的关键词滚动更新（<code>SciTeam.py:280-310</code>）。K 轮结束保留自评分最高的 3 个 idea。<br><span class="evidence audit">审计</span>这段是全仓库 bug 最密集处，见第 6 节 A3/A4。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>④ Novelty Assessment · 查新投票</h4>
+                    <p><span class="evidence paper">论文</span>每个 idea 检索相关论文，团队成员<strong>盲投</strong>（prompt 不含对话记忆，模拟盲审）选最新颖的一个。<br><span class="evidence code">代码确认</span><code>use_memory=False, use_RAG=False</code> 确实盲评；<span class="evidence audit">但投票跑满 K 轮 × 每人</span>（<code>SciTeam.py:400</code>），每人实际投 K 票再取众数，论文描述是单轮投票。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>⑤ Abstract Generation · 写摘要</h4>
+                    <p><span class="evidence code">代码确认</span>队长起草，成员按 8 项标准（Clarity/Relevance/…/Overall）轮流评分并改写，K 轮后定稿；随后检索过去库+当代库各 4 篇最相似论文，让队长打 0–100 相似度分（阈值 70）。<br><span class="evidence audit">审计</span>相似度自检结果 <code>abstract_use</code> 算完即弃，代码注释掉了"过高则重新生成 idea"的整个 self-review 循环，直接 <code>state=7</code> 结束（<code>SciTeam.py:547-574</code>）——论文附录 C.1 的两轮自审机制在发布代码中不可达。</p>
+                </div>
+            </div>
+
+            <h3>Invitation Mechanism：论文的"亮点机制"，代码里的字符串匹配</h3>
+            <div class="critical-note">
+                <p><strong>这是论文声称与实现落差最大的一处。</strong>论文说：讨论中 agent 可通过 RAG 访问作者知识库，提到相关的非团队科学家时，系统临时初始化该科学家参与讨论，但"为保持固定团队规模，<strong>该 agent 不加入团队</strong>"。代码（<code>SciTeam.py:152-162</code>）的实际逻辑是：正则抓取回复里的 <code>Scientist\d+</code> 名字，且回复文本<strong>字面包含 "by the way"</strong> 才触发；被邀请者回复后<strong>被永久 append 进 <code>self.teammate</code></strong>——团队规模就地膨胀，与"固定规模"的声明直接矛盾。消融表（Tab. 5，ON 约 +0.1）测的究竟是"临时外援"还是"团队扩编"，从代码看是后者。</p>
+            </div>
+
+            <figure class="figure">
+                <a href="assets/fig7_topology.png"><img src="assets/fig7_topology.png" alt="两种讨论拓扑"></a>
+                <figcaption>论文 Fig. 7：默认 sequential（左，圆桌顺序发言）vs random（右，随机点名）。附录 Tab. 8 显示 sequential 略优——作者解释为随机模式下轮数有限时部分 agent 会全程沉默。</figcaption>
+            </figure>
+
+            <div class="code-note">
+                <p><strong>RAG 的真实使用范围比论文窄：</strong>论文称 RAG"贯穿全部五个步骤"帮助 agent 了解队友背景，但代码里 idea 生成、查新、摘要三个阶段全部显式 <code>use_RAG=False</code>（<code>SciTeam.py:300/408/463</code>）；作者知识库检索实际只在选题讨论（<code>group_discuss</code> 默认开 RAG）和组队应邀时生效。检索分数 &lt;0.4 时还会让 LLM 自判相关性、不相关则置空（<code>sci_agent.py:171-189</code>）。</p>
+            </div>
+        </section>
+
+        <section id="metrics">
+            <h2>4 · Novelty 指标：HD / CD / CI / ON 与它的方法论问题（重点③）</h2>
+            <p class="lead">这是全文最有争议的部分：所有 SciSci 结论都建立在一个自定义代理指标 ON 上，而 ON 与人类评估的相关性只有 0.52。</p>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence paper">HD · Historical Dissimilarity ↑</span>
+                    <p>生成摘要 embedding 与<strong>过去库</strong> top-5 最相似摘要的平均欧氏距离。距离越大 = 越不像已有工作 = 越可能新颖。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">CD · Contemporary Dissimilarity ↓</span>
+                    <p>与<strong>当代库</strong>（y_bound 之后的"未来"论文）top-5 的平均距离。距离越小 = 越贴近后来真实出现的研究 = 越可能新颖。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">CI · Contemporary Impact ↑</span>
+                    <p>当代库 top-5 相似论文的平均引用数。相似的未来论文被引越多 = 生成的 idea 越可能有影响力。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">归一化</span>
+                    <p>三个指标都除以"相似论文发表当年该库全体论文的均值"，消除年份效应（引用随年代累积）。</p>
+                </article>
+            </div>
+
+            <div class="formula">ON = (HD × CI) / CD　　（论文原话："Mathematically, the expected value of ON is proportional to the novelty"——无任何证明）</div>
+
+            <figure class="figure">
+                <a href="assets/fig3_human_metric.png"><img src="assets/fig3_human_metric.png" alt="ON 与人类评分的相关性"></a>
+                <figcaption>论文 Fig. 3：200 篇生成摘要上 ON vs 人类专家评分（si2024can 框架，三人独立评均分），Pearson r = 0.52；附录 Fig. 10 中 ON vs GPT-4o review 为 0.57。散点肉眼可见地发散——同一 ON 值对应的人类评分能横跨 2–10 分。</figcaption>
+            </figure>
+
+            <h3>四个层面的方法论问题</h3>
+            <div class="critical-note">
+                <p><strong>(1) 内在张力与借来的影响力。</strong>ON 同时奖励"远离过去论文"（HD↑）和"贴近未来论文"（CD↓），但未来论文本身是过去研究的延续——一个真正超前于 2010–2014 年趋势的 idea 会被 CD 惩罚；ON 实际度量的更接近"<strong>预测了未来热点</strong>"而非"新颖"。CI 则直接把<em>别人论文</em>的引用数记在生成摘要头上，度量的是"撞上了高引方向"。</p>
+                <p><strong>(2) 自证循环。</strong>系统在生成阶段用同一个过去库检索、同一个 embedding 模型（mxbai-embed-large）做查新过滤，评测阶段再用同一空间的距离打分——优化目标与评测标尺同源。ICLR 评审 wXAg 对"严重依赖 LLM/embedding 自评"的批评正中此处；0.52 的人类相关性是唯一的外部锚点，且是弱-中等强度。</p>
+                <p><strong>(3) 数据泄漏。</strong>CS 主实验的"未来"（2011–2014）和 OAG 的"未来"（2021–2023）都在 LLaMA3.1/GPT-4o 训练语料范围内：模型可能在复述见过的论文而非创造。作者的辩护是"泄漏对所有对比条件均匀，相对结论不受影响"+ OAG 3.2 对照（见下表），前者对<em>相对</em>比较基本成立，但意味着 ON 的<em>绝对值</em>和"贴近未来 = 新颖"的解释都不可靠。</p>
+                <p><strong>(4) 评测脚本未发布。</strong>代码只把 FAISS 距离和相似论文引用数写进日志（<code>SciTeam.py:510-517</code>），按年归一化、ON 汇总、Pearson 校验全部不在 repo 中，第三方无法端到端复算论文数字（详见第 6 节 A8）。</p>
+            </div>
+
+            <h3>ACL 版新增的泄漏对照实验</h3>
+            <p>用 OAG 3.2 把当代库换成 2024–2025 论文（LLaMA3.1 训练截止 2023-12，确保"未来"未见过），4 人团队 / LLaMA3.1-8b：</p>
+            <table class="comparison-table">
+                <thead><tr><th>当代库</th><th>Turn 1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr></thead>
+                <tbody>
+                    <tr><td>OAG 3.1（2021–2023，可能泄漏）</td><td>1.75</td><td>0.90</td><td>2.36</td><td>2.00</td><td><strong>3.40</strong></td><td>2.91</td><td>2.53</td></tr>
+                    <tr><td>OAG 3.2（2024–2025，无泄漏）</td><td>1.72</td><td>0.91</td><td>2.31</td><td>1.94</td><td><strong>3.35</strong></td><td>2.94</td><td>2.49</td></tr>
+                </tbody>
+            </table>
+            <p><span class="evidence inference">合理推断</span>ON 几乎不变、5 轮峰值模式保持，说明<strong>趋势性结论</strong>对泄漏不敏感——这是 rebuttal 里最有力的一张牌。但它只覆盖了一个团队规模 × 一个模型的设置，且恰好也可以反过来解读：ON 对"当代库里装的是什么论文"如此不敏感，令人怀疑该指标对语料本身的分辨率。</p>
+        </section>
+
+        <section id="scisci">
+            <h2>5 · 实验与 Science of Science 复现（重点②）</h2>
+
+            <h3>与 baseline 的对比：及格线证明</h3>
+            <p>为公平比较（AI Scientist 只能在预设 topic 上生成），三个系统统一在 NanoGPT 主题下、推理成本对齐（VirSci 4 人 × 5 轮 ≈ AI Scientist 50 轮自反思 ≈ HypoGen 12 轮），检索统一换成 Semantic Scholar API：</p>
+            <div class="table-scroll">
+            <table class="comparison-table">
+                <thead><tr><th>GPT-4o 下</th><th>LLM review ↑</th><th>CD ↓</th><th>CI ↑</th><th>人类 Novelty ↑</th><th>人类 Feasibility ↑</th><th>人类 Effectiveness ↑</th></tr></thead>
+                <tbody>
+                    <tr><td>HypoGen</td><td>3.02</td><td>0.36</td><td>3.10</td><td>4.78</td><td>4.24</td><td>4.43</td></tr>
+                    <tr><td>AI Scientist</td><td>3.10</td><td>0.38</td><td>3.22</td><td>4.94</td><td>4.18</td><td>4.77</td></tr>
+                    <tr class="focus-row"><td><strong>VirSci</strong></td><td><strong>3.34</strong></td><td><strong>0.34</strong></td><td><strong>3.78</strong></td><td><strong>5.24</strong></td><td><strong>4.52</strong></td><td><strong>4.95</strong></td></tr>
+                </tbody>
+            </table>
+            </div>
+            <p>LLaMA3.1-8b/70b 两组同趋势全面占优（论文 Tab. 1）。人类评估来自 10 位 CS 博士生盲评、10 分制——注意所有人类分数都在 3.5–5.3 的中低区间，三系统差距约 0.3–0.5 分，没有报告显著性检验。摘要级 +13.8%（CD）/ +44.1%（CI）的标题数字是相对<strong>单 agent</strong>的提升，不是相对 baseline 系统。</p>
+
+            <h3>团队规模 × 讨论轮数：8 人 × 5 轮峰值</h3>
+            <figure class="figure">
+                <a href="assets/fig4_teamsize_turns.png"><img src="assets/fig4_teamsize_turns.png" alt="团队规模与讨论轮数对 ON 的影响"></a>
+                <figcaption>论文 Fig. 4（上 CS / 下 OAG）：横轴为推理成本（规模 × 轮数，log 刻度），团队 1/4/8/10/100 人各画一条线。8 人队（绿）整体最高、5 轮达峰；100 人队（紫）掉回单人水平——对应 SciSci 中"大团队做渐进式工作，小团队做颠覆式工作"（Wu et al. 2019）。</figcaption>
+            </figure>
+
+            <div class="figure-grid">
+                <figure class="figure">
+                    <a href="assets/fig5_freshness.png"><img src="assets/fig5_freshness.png" alt="团队新鲜度对 novelty 的影响"></a>
+                    <figcaption>论文 Fig. 5：新鲜度（无合作史成员占比）50% 时 HD/CI/ON 达峰，8 人队效应更强——对应 Zeng et al. 2021 "fresh teams 更具原创性"。</figcaption>
+                </figure>
+                <figure class="figure">
+                    <a href="assets/fig6_diversity.png"><img src="assets/fig6_diversity.png" alt="团队研究多样性对 novelty 的影响"></a>
+                    <figcaption>论文 Fig. 6：研究方向多样性呈倒 U 型，4 人队 25–50%、8 人队 50–75% 最优——对应 Uzzi et al. 2013 "非典型组合提升影响力"。</figcaption>
+                </figure>
+            </div>
+
+            <figure class="figure">
+                <a href="assets/fig9_llm_compare.png"><img src="assets/fig9_llm_compare.png" alt="LLaMA3 与 LLaMA3.1 对比"></a>
+                <figcaption>论文 Fig. 9：换成更弱的 LLaMA3-8b，绝对值整体下降（如 8 人队均值 3.69→3.62），但"中等规模 + 中等轮数最优"的形状不变——rebuttal 补做的跨模型稳健性证据，也是回应"结论是否随底层 LLM 漂移"质疑的直接实验。</figcaption>
+            </figure>
+
+            <h3>组件消融（附录，全部以 ON 计）</h3>
+            <ul>
+                <li><strong>论文库接地</strong>贡献最大：idea 生成 + 查新都不给数据库时 ON 从 4.23 跌到 2.60（CS，8 人 × 5 轮）——检索接地是系统的真正支柱。</li>
+                <li><strong>Invitation / 查新投票 / self-review</strong> 三个机制各贡献 +0.1～0.25，方向一致但幅度小（Tab. 5–7）。</li>
+                <li><strong>自适应轮数</strong>（队长决定是否继续讨论）成本降 28% 的同时 ON 反升（4 人：80→57.2 成本，3.26→3.49），说明固定 K=5 并非最优，只是为了实验可比。</li>
+            </ul>
+
+            <div class="key-insight">
+                <h3>证据强度评判：方向一致 ≠ 机制复现</h3>
+                <p>正面：峰值模式在 2 个数据集 × 3+ 个 LLM 上重复出现，每个设置跑 20 次，趋势鲁棒性是认真做过的。反面：(a) 全部结论以 ON 计——一个与人类判断相关仅 0.52 的代理指标；(b) 图中 error bar 普遍与组间差距同量级，无显著性检验；(c) 4 人队在 turn=2 处 ON 骤降到 0.90（不足 turn=1 的一半）这类异常点无解释，暗示指标噪声很大；(d) freshness/diversity 实验的控制代码未随 repo 发布，无法检验"新鲜度"如何操作化；(e) 更根本地，LLM agent 的"团队规模效应"可能只是 prompt 里视角数量/上下文长度的函数，与人类团队的社会学机制（协调成本、群体思维）只有表面同构。<strong>结论：这是"模式匹配级"的 SciSci 复现，可以当作有趣的一致性证据，不能当作多智能体系统涌现了人类科研社会动力学的证明。</strong></p>
+            </div>
+        </section>
+
+        <section id="audit">
+            <h2>6 · 代码审计：论文 vs 实现的差距清单（重点④）</h2>
+            <p class="lead">仓库 = 定制版 AgentScope（新增 <code>SciAgent</code>）+ <code>sci_platform</code>（约 1600 行核心逻辑）+ 预处理脚本。代码能跑通"组队到摘要"的模拟本体，但<strong>评测流水线、SciSci 实验控制、GPT-4o 配置均未发布</strong>，且多处实现与论文描述不符。</p>
+
+            <pre><code>code/
+├── agentscope-main/src/agentscope/agents/sci_agent.py   # 定制 RAG agent：prompt_reply / summarize / reply
+├── sci_platform/
+│   ├── run.py                    # 入口：循环建 Platform 直到攒够团队数
+│   ├── sci_platform.py           # Platform：加载邻接矩阵/FAISS 双索引/作者档案，组队逻辑
+│   ├── sci_team/SciTeam.py       # Team 状态机：选题/出idea/查新/摘要/评审 全部控制流
+│   ├── utils/prompt.py           # 全部 prompt 硬编码于此（与论文附录 Fig.16-25 对应）
+│   └── configs/model_configs.json# 仅 ollama llama3/3.1 配置，无 GPT-4o
+└── preprocess_data/              # AMiner/OAG 抽取、SQLite 建库、k-hop 邻接矩阵</code></pre>
+
+            <h3>逐条差距（A1–A12）</h3>
+            <div class="table-scroll">
+            <table class="comparison-table">
+                <thead><tr><th>#</th><th>论文声称 / 预期</th><th>代码实际（位置）</th><th>影响</th></tr></thead>
+                <tbody>
+                    <tr class="focus-row"><td>A1</td><td>Invitation Mechanism：外援临时参与，"不加入团队以保持固定规模"</td><td>回复含字面 <code>"by the way"</code> + 正则名字才触发；外援被<strong>永久加入</strong> <code>self.teammate</code>（SciTeam.py:152-162）</td><td>与声明直接矛盾；"固定团队规模"的实验变量被污染；机制本身是脆弱的字符串匹配</td></tr>
+                    <tr><td>A2</td><td>组队：迭代邀请直到凑满 n 人</td><td>一次性按概率抽全部候选，被拒即缺员；另有论文未提的"单干"选项与 team_limit 约束（sci_platform.py:194-257）</td><td>实际团队规模 ≤ n 且随机，"团队规模"自变量的操作化与论文不符</td></tr>
+                    <tr class="focus-row"><td>A3</td><td>idea 迭代按 Clarity+Feasibility+2×Novelty 加权比较新旧 idea</td><td>循环变量拼写错误 <code>split_keywork</code>（SciTeam.py:324），循环体读的 <code>split_keyword</code> 是上一个循环遗留值（恒为 'Novelty'）→ 实际比较 6×Novelty vs 3×Novelty；且新 idea 的 Novelty 乘 2、best idea 不乘（:328-333），比较天然偏向替换</td><td>idea 择优逻辑与论文/注释均不符；"保留最高分 3 个 idea"的池子构成失真</td></tr>
+                    <tr><td>A4</td><td>自评分全部 &gt;8 时提前结束讨论（代码注释原话）</td><td>判定写成 <code>metrics[k] &lt; 11</code>——1–10 分制下恒真，early-exit 永不按分数触发；唯一提前退出是新旧 idea 字符串完全相同（SciTeam.py:341-350）</td><td>死代码；讨论轮数恒为 K，与"分数驱动收敛"的设计意图不符</td></tr>
+                    <tr><td>A5</td><td>查新：单轮盲投，得票最高者入选</td><td>盲评属实（无记忆无 RAG），但投票循环跑满 K 轮 × 每人，每人投 K 票再取众数（SciTeam.py:400-417）</td><td>推理成本核算（"团队规模×轮数"）与论文口径不一致</td></tr>
+                    <tr class="focus-row"><td>A6</td><td>Self-review：相似度过高则修订，两次不过则弃稿重来（附录 C.1 + Tab. 7 消融）</td><td>相似度打分照做，但判定结果 <code>abstract_use</code> 计算后被丢弃，直接 <code>state=7</code> 结束；整个修订/弃稿分支被注释掉（SciTeam.py:547-574）</td><td>Tab. 7 的 self-review 消融无法用发布代码复现</td></tr>
+                    <tr><td>A7</td><td>五阶段到摘要为止</td><td>存在隐藏第 6 阶段：2 个 LLaMA3.1-70b reviewer 打分，均分 ≥5 则"接收"并把生成摘要<strong>写回过去论文库 + FAISS 索引</strong>（SciTeam.py:584-627）；默认路径 stop early 使其仅在检索失败分支可达</td><td>一个论文未描述的"自增生态"残留；侧面说明系统曾按"模拟学术圈"更大蓝图开发</td></tr>
+                    <tr class="focus-row"><td>A8</td><td>HD/CD/CI/ON 指标、按年归一化、Pearson 校验、freshness/diversity 实验</td><td>代码只把 FAISS L2 距离、cosine 相似度、相似论文引用数写日志（SciTeam.py:502-517）；无任何评测/归一化/统计脚本；无 freshness、diversity 控制参数</td><td><strong>论文全部定量结果无法端到端复现</strong>，只能复现"生成摘要"这一步</td></tr>
+                    <tr><td>A9</td><td>主表实验含 GPT-4o</td><td><code>model_configs.json</code> 只有 ollama llama3/3.1 配置</td><td>GPT-4o 组实验需自行补配置，发布物不完整</td></tr>
+                    <tr><td>A10</td><td>RAG 贯穿五阶段</td><td>idea/查新/摘要阶段显式 <code>use_RAG=False</code>（SciTeam.py:300/408/463）</td><td>作者知识库的实际作用范围远小于论文表述</td></tr>
+                    <tr><td>A11</td><td>邻接矩阵 = 合作次数，全矩阵 +1 探索</td><td>直接加载成品 adjacency.txt（+1 不可见）；预处理产出 0/1 k-hop 矩阵；运行时每次组队给连边 +0.2 动态强化（sci_platform.py:277-281，论文未提）</td><td>合作网络的操作化与论文描述存在多处出入</td></tr>
+                    <tr><td>A12</td><td>共识机制：未达成共识终止重启；不感兴趣可离队</td><td>无重启、无离队；第二个 epoch 起无条件出题（SciTeam.py:232）</td><td>论文描绘的"自治协商"实为固定脚本推进</td></tr>
+                </tbody>
+            </table>
+            </div>
+
+            <details>
+                <summary>A3 拼写错误 bug 现场（SciTeam.py:322-333）</summary>
+                <div class="details-body">
+                    <pre><code>best_metrics = extract_metrics(best_idea, split_keywords)
+old_count = 0
+best_count = 0
+for split_keywork in split_keywords:          # ← 循环变量拼错：split_keywork
+    if metrics[split_keyword]==None:          # ← 体内用的是 split_keyword（上一循环遗留，恒为 'Novelty'）
+        break
+    if split_keyword=='Novelty':
+        old_count = old_count + 2*metrics[split_keyword]   # 新 idea：Novelty×2，累加 3 次
+    else:
+        old_count = old_count + metrics[split_keyword]
+    if best_metrics[split_keyword]==None:
+        break
+    best_count = best_count + best_metrics[split_keyword]  # best idea：从不 ×2</code></pre>
+                    <p>三次迭代读写的都是同一个 'Novelty' 键：实际比较 <code>6×新Novelty vs 3×旧Novelty</code>。只要新 idea 自评 Novelty ≥ 旧的一半就会入池/替换——所谓"综合三维度择优"从未发生过。</p>
+                </div>
+            </details>
+
+            <details>
+                <summary>其他工程观察（不影响结论，但影响复现）</summary>
+                <div class="details-body">
+                    <ul>
+                        <li>所有数据路径硬编码为作者集群内网路径（<code>/home/bingxing2/ailab/group/ai4agr/crq/SciSci/...</code>），需按 README 从 Google Drive 下载后手工替换。</li>
+                        <li><code>scientist_utils.py:165-168</code> 泄漏了内网 HTTP 代理的<strong>明文账号密码</strong>（<code>u-cEoRwn:EDvFuZTe@172.16.4.9:3128</code>）。</li>
+                        <li>评测用相似论文数：代码取过去/当代库各 <code>cite_number/2 = 4</code> 篇（SciTeam.py:475-476），论文说 top-5。</li>
+                        <li>论文正文的代码链接指向 <code>open-sciencelab/Virtual-Scientists</code>，实际维护仓库是 <code>RenqiChen/Virtual-Scientists</code>；本地 clone 为后者（commit 07097fd, 2025-07-26）。</li>
+                        <li>温度 0.5 + 固定 seed=123（model_configs.json）：同配置多次 run 的随机性主要来自组队抽样而非 LLM 采样。</li>
+                    </ul>
+                </div>
+            </details>
+
+            <div class="source-note">
+                <p><strong>公允地说：</strong>模拟本体（组队 → 讨论 → 摘要）与论文附录的 prompt 逐字一致（<code>utils/prompt.py</code> vs 论文 Fig. 16–25 完全对得上），日志里也确实记录了算指标所需的原始量。差距集中在：机制描述的美化（A1/A2/A12）、无人发现的实现 bug（A3/A4）、以及评测半边完全缺失（A8/A9）。按"声称-实现"严重度排序：A8 &gt; A1 &gt; A3 &gt; A6 &gt; 其余。</p>
+            </div>
+        </section>
+
+        <section id="openreview">
+            <h2>7 · OpenReview 交锋：质疑、rebuttal 与本页评判</h2>
+            <p class="lead">ICLR 2025 #1763，评分 5（2X9t，conf 4）/ 5（6tUq，conf 3）/ 3（poux，conf 3）/ 3（wXAg，conf 5，附 ethics flag），2024-12-11 撤稿。四位评审的火力高度集中，而作者的应对策略是"补实验 + 重新定位"。</p>
+
+            <div class="table-scroll">
+            <table class="comparison-table">
+                <thead><tr><th>评审共性质疑</th><th>作者 rebuttal</th><th>本页评判（结合代码与 ACL 终版）</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><strong>novelty 指标自证循环</strong>：embedding 距离 + 引用数 + LLM judge，无人类验证（wXAg、poux）</td>
+                        <td>补 10 位博士生盲评；ON 与人类 Pearson 0.51（终版 0.52）、与 LLM review 0.57</td>
+                        <td>方向正确但强度不够：0.52 意味着 ON 只解释人类判断约 27% 的方差，撑不起"以 ON 为唯一因变量"的全部 SciSci 结论。指标的结构性问题（借来的 CI、HD/CD 张力）未被回应</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2000–2014 语料数据泄漏</strong>：LLM 见过这些论文，可能在复述而非创造（wXAg）</td>
+                        <td>①泄漏对所有条件均匀，相对比较公平；②目标是研究协作策略而非绝对新颖性；③OAG 3.2（2024–25 当代库）对照 ON 几乎不变</td>
+                        <td>对"相对比较"的辩护基本成立，OAG 3.2 是 rebuttal 最硬的证据；但绝对 novelty 声明（如与 baseline 的对比表）仍受泄漏威胁，且对照只覆盖单一设置</td>
+                    </tr>
+                    <tr>
+                        <td><strong>可用性/可行性无指标</strong>："相对致命"（2X9t、6tUq、poux 三人齐发）</td>
+                        <td>承认不是重点；补人类 Feasibility/Effectiveness 评分 + 两个"生成摘要 vs 真实近期论文"案例（AI 龋齿管理、癌症手术机器人）</td>
+                        <td>补丁性质：Feasibility 4.52/10 的绝对水平其实印证了评审担忧——生成的 idea 平均可行性偏低；案例是相似度展示而非可行性验证</td>
+                    </tr>
+                    <tr>
+                        <td><strong>领域窄、数据旧</strong>：只有 CS、2000–2014（poux）</td>
+                        <td>补 OAG 3.1 四领域，8 人 × 5 轮峰值跨域复现</td>
+                        <td>被最完整解决的一条；跨域一致性也成了 ACL 版的主要增量</td>
+                    </tr>
+                    <tr>
+                        <td><strong>框架创新有限</strong>：像通用多智能体系统在科研场景的应用（wXAg）</td>
+                        <td>重新定位：主贡献是"首个真实数据 role-play 的学术协作模拟平台"，服务 Science of Science</td>
+                        <td>诚实的定位收缩，且与代码事实吻合（invitation 机制的实现之简陋印证"机制创新"确实不是重心）。这个定位下 ACL 录用是合理结果</td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+
+            <div class="warning-note">
+                <p><strong>值得注意的时间线细节：</strong>ICLR 版宣传语是 "Two Heads"（谦虚版），ACL 版改成 "Many Heads"（自信版），但支撑"many"的关键证据——8 人优于 4 人——恰恰是 ON 指标下 error bar 相互重叠的那组曲线。评审压力促成的 OAG/人类评估/泄漏对照让论文变得更可信了，但四位评审都没有看过代码；本页第 6 节的 A1/A3/A6/A8 在两轮评审中均未被发现。</p>
+            </div>
+        </section>
+
+        <section id="verdict">
+            <h2>8 · 总评：四问四答</h2>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence paper">① 文献的角色</span>
+                    <h3>人设原料 + 评测标尺，不做知识组织</h3>
+                    <p>真实作者档案（五字段卡片）做 agent 人设，真实合作网络做组队先验；论文库仅作 top-k 检索参考与 novelty 对照分布。与 CoI 的引用链、Deep Ideation 的概念网络相比，VirSci 对文献内容的利用是四条路线中最浅的——它深的是<strong>作者侧</strong>数据。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence inference">② SciSci 复现的证据强度</span>
+                    <h3>趋势鲁棒，机制存疑</h3>
+                    <p>8 人 × 5 轮峰值、50% 新鲜度最优、多样性倒 U 在 2 数据集 × 3+ 模型上重复，20 runs/设置；但全部以 r=0.52 的代理指标计、误差棒与效应量同级、无显著性检验、实验控制代码未发布。定性为"模式匹配级复现"。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence audit">③ novelty 指标的方法论</span>
+                    <h3>度量的是"预测未来热点"</h3>
+                    <p>ON = HD×CI/CD 无理论根据；CD↓ 奖励贴近未来论文、CI 挪用他人引用数，加上训练语料泄漏，ON 高分的最佳解释是"生成物落在了 LLM 已知的未来高引方向上"。作为相对比较的内部标尺勉强可用，作为"新颖性"的操作化定义不成立。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence audit">④ 代码与论文的差距</span>
+                    <h3>模拟可跑，评测缺失，机制注水</h3>
+                    <p>Prompt 与流水线骨架忠实；但 invitation 机制是 "by the way" 字符串匹配且违背固定规模声明（A1），idea 择优有拼写 bug（A3），self-review 被注释禁用（A6），HD/CD/CI/ON 全套评测与 SciSci 实验控制未发布（A8）——论文定量结果无法端到端复现。</p>
+                </article>
+            </div>
+
+            <div class="key-insight">
+                <h3>归档定位</h3>
+                <p>VirSci 是"多智能体协作生成 idea"路线的代表作与最早期工作之一，其不可替代的贡献是把<strong>真实作者数据 + 时间切分论文库</strong>做成了可复用的实验范式，并率先把 Science of Science 文献当作多智能体系统的外部效度检验。它的教训同样典型：当评测指标（ON）与生成机制共享同一 embedding 空间、且代理指标与人类判断相关性偏弱时，系统性结论的解释力会被打大折扣。后续工作（VirSci 2.0 的百万 agent、2505.12039 立场论文）表明团队自己也把它当作 AI for Science of Science 的起点而非 idea 生成的终点。</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>VirSci（Many Heads Are Better Than One）中文精读与代码审计 · Literature 调研档案 · 归档分类：复杂（论文 + 代码 + OpenReview 三源交叉）</p>
+            <p>整理日期：2026-08-04 · 论文版本：arXiv:2410.09403（ACL 2025 camera-ready 同步版）· 代码版本：RenqiChen/Virtual-Scientists@07097fd（2025-07-26）</p>
+        </footer>
+    </main>
+</body>
+</html>

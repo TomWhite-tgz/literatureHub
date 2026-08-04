@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CycleResearcher (ICLR 2025) 中文精读与代码审计：把写论文变成 RL 问题的代表作，reward hacking 与 LLM-judge 失效的活教材。">
+    <title>CycleResearcher 精读与代码审计</title>
+
+    <style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: min(920px, calc(100% - 44px));
+            margin: 0 auto;
+            padding: 52px 18px 76px;
+        }
+
+        header {
+            margin-bottom: 34px;
+            padding-bottom: 34px;
+            border-bottom: 1px solid var(--line);
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-size: 0.93rem;
+            font-weight: 650;
+            text-decoration: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--accent-dark);
+            transform: translateX(-2px);
+        }
+
+        .status-row,
+        .resource-row,
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-row,
+        .resource-row {
+            justify-content: center;
+        }
+
+        .status-row {
+            margin-bottom: 18px;
+        }
+
+        .resource-row {
+            margin-top: 22px;
+        }
+
+        .badge,
+        .tag,
+        .evidence {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .badge {
+            padding: 4px 11px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.79rem;
+            font-weight: 650;
+        }
+
+        .resource-link {
+            display: inline-block;
+            padding: 7px 13px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent-dark);
+            background: var(--panel);
+            font-size: 0.84rem;
+            font-weight: 620;
+            text-decoration: none;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .resource-link.primary {
+            border-color: var(--accent);
+            color: var(--white);
+            background: var(--accent);
+        }
+
+        .resource-link:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        h1 {
+            margin-bottom: 12px;
+            font-size: clamp(2.35rem, 7vw, 3.25rem);
+            font-weight: 670;
+            letter-spacing: -0.035em;
+            line-height: 1.08;
+        }
+
+        .subtitle {
+            max-width: 720px;
+            margin: 0 auto;
+            color: var(--muted);
+            font-size: 1.08rem;
+            font-weight: 360;
+        }
+
+        .meta {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.91rem;
+            font-weight: 360;
+        }
+
+        h2 {
+            margin: 56px 0 24px;
+            padding-bottom: 11px;
+            border-bottom: 2px solid var(--accent);
+            font-size: 1.78rem;
+            font-weight: 630;
+            line-height: 1.3;
+        }
+
+        h3 {
+            margin: 30px 0 14px;
+            color: var(--accent);
+            font-size: 1.25rem;
+            font-weight: 630;
+        }
+
+        h4 {
+            margin-bottom: 8px;
+            color: var(--accent-dark);
+            font-size: 1.01rem;
+            font-weight: 650;
+        }
+
+        p {
+            margin-bottom: 17px;
+            font-weight: 360;
+        }
+
+        strong {
+            font-weight: 660;
+        }
+
+        a {
+            color: var(--accent-dark);
+        }
+
+        .lead {
+            color: #343b37;
+            font-size: 1.02rem;
+        }
+
+        .eyebrow {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 720;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .toc {
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 7px;
+            margin: 24px 0 34px;
+            padding: 10px;
+            border: 1px solid rgba(231, 225, 215, 0.9);
+            border-radius: 16px;
+            background: rgba(247, 244, 239, 0.93);
+            box-shadow: 0 8px 24px rgba(31, 36, 33, 0.06);
+            backdrop-filter: blur(10px);
+        }
+
+        .toc a {
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 620;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .highlight-box,
+        .source-note,
+        .warning-note,
+        .critical-note,
+        .code-note {
+            margin: 26px 0;
+            padding: 21px 25px;
+            border-left: 4px solid var(--accent);
+            border-radius: 5px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .source-note {
+            border-left-color: var(--green);
+            background: var(--green-pale);
+        }
+
+        .code-note {
+            border-left-color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .warning-note {
+            border-left-color: var(--warning);
+            background: var(--warning-pale);
+        }
+
+        .critical-note {
+            border-left-color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .highlight-box p:last-child,
+        .source-note p:last-child,
+        .warning-note p:last-child,
+        .critical-note p:last-child,
+        .code-note p:last-child {
+            margin-bottom: 0;
+        }
+
+        .key-insight {
+            margin: 32px 0;
+            padding: 28px 31px;
+            border-radius: 8px;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 4px 12px rgba(196, 97, 47, 0.22);
+        }
+
+        .key-insight h3,
+        .key-insight p {
+            color: var(--white);
+        }
+
+        .key-insight h3 {
+            margin-top: 0;
+        }
+
+        .key-insight p:last-child {
+            margin-bottom: 0;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            margin: 24px 0;
+        }
+
+        .card-grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            padding: 21px 23px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1.08rem;
+        }
+
+        .card p:last-child,
+        .card ul:last-child {
+            margin-bottom: 0;
+        }
+
+        .evidence {
+            margin-bottom: 10px;
+            padding: 3px 9px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .evidence.paper {
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+        }
+
+        .evidence.code {
+            color: var(--blue);
+            background: var(--blue-pale);
+        }
+
+        .evidence.inference {
+            color: var(--warning);
+            background: var(--warning-pale);
+        }
+
+        .evidence.audit {
+            color: var(--danger);
+            background: var(--danger-pale);
+        }
+
+        .figure,
+        .figure-grid {
+            margin: 30px 0;
+        }
+
+        .figure {
+            text-align: center;
+        }
+
+        .figure-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .figure-grid .figure {
+            margin: 0;
+        }
+
+        .figure a,
+        .figure-frame {
+            display: block;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: var(--figure-shadow);
+        }
+
+        .figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .figure figcaption {
+            max-width: 760px;
+            margin: 11px auto 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-style: italic;
+            line-height: 1.55;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin: 26px 0;
+            border-collapse: collapse;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            padding: 13px 15px;
+            color: var(--white);
+            background: var(--accent);
+            font-size: 0.88rem;
+            font-weight: 620;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 13px 15px;
+            border-bottom: 1px solid var(--line);
+            font-size: 0.89rem;
+            font-weight: 360;
+            vertical-align: top;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .comparison-table .focus-row td {
+            background: #f8ede4;
+            font-weight: 590;
+        }
+
+        .table-scroll {
+            width: 100%;
+            margin: 26px 0;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .table-scroll .comparison-table {
+            min-width: 680px;
+            margin: 0;
+        }
+
+        .flow-diagram {
+            margin: 29px 0;
+            padding: 27px 31px;
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .flow-step {
+            position: relative;
+            margin: 16px 0;
+            padding: 18px 22px;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            background: var(--white);
+        }
+
+        .flow-step::before {
+            content: "▼";
+            position: absolute;
+            bottom: -28px;
+            left: 50%;
+            color: var(--accent);
+            font-size: 18px;
+            transform: translateX(-50%);
+        }
+
+        .flow-step:last-child::before {
+            content: "";
+        }
+
+        .flow-step p {
+            margin-bottom: 0;
+        }
+
+        .formula {
+            margin: 25px 0;
+            padding: 21px 23px;
+            border-radius: 7px;
+            color: var(--paper);
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.96rem;
+            overflow-x: auto;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        ul {
+            margin: 15px 0 19px 2px;
+            list-style: none;
+        }
+
+        li {
+            position: relative;
+            margin-bottom: 9px;
+            padding-left: 22px;
+            font-weight: 360;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 2px;
+            color: var(--accent);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        details {
+            margin: 16px 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 17px 20px;
+            cursor: pointer;
+            font-weight: 630;
+            list-style: none;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: "＋";
+            margin-left: auto;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        details[open] summary::after {
+            content: "−";
+        }
+
+        .details-body {
+            padding: 18px 22px 22px;
+            border-top: 1px solid var(--line);
+        }
+
+        code {
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: var(--accent-dark);
+            background: var(--accent-pale);
+            font-size: 0.88em;
+        }
+
+        pre {
+            margin: 22px 0;
+            padding: 20px 22px;
+            border: 1px solid #343b37;
+            border-radius: 8px;
+            color: #edf2ee;
+            background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.84rem;
+            line-height: 1.65;
+            overflow-x: auto;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+        }
+
+        .code-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 22px 0;
+        }
+
+        .code-item {
+            padding: 16px 18px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: var(--white);
+        }
+
+        .code-item code {
+            display: inline-block;
+            margin-bottom: 7px;
+            color: var(--blue);
+            background: var(--blue-pale);
+            font-weight: 660;
+        }
+
+        .code-item p {
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .tag-list {
+            margin: 13px 0 22px;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            color: var(--green);
+            background: var(--green-pale);
+            font-size: 0.78rem;
+            font-weight: 630;
+        }
+
+        footer {
+            margin-top: 72px;
+            padding-top: 28px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-weight: 360;
+            text-align: center;
+        }
+
+        @media (max-width: 760px) {
+            .container {
+                width: min(100% - 28px, 920px);
+                padding: 34px 8px 56px;
+            }
+
+            .card-grid,
+            .card-grid.three,
+            .figure-grid,
+            .code-list {
+                grid-template-columns: 1fr;
+            }
+
+            .toc {
+                position: static;
+            }
+
+            .flow-diagram {
+                padding: 20px 16px;
+            }
+
+            h2 {
+                margin-top: 46px;
+                font-size: 1.55rem;
+            }
+
+            .highlight-box,
+            .key-insight {
+                padding: 22px;
+            }
+
+            .subtitle,
+            .meta {
+                overflow-wrap: anywhere;
+            }
+        }
+
+        @media print {
+            .toc,
+            .back-link {
+                display: none;
+            }
+
+            body {
+                background: white;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 24px;
+            }
+
+            .figure a,
+            .card,
+            details {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <header>
+            <a class="back-link" href="../../../index.html">← 返回论文 / Benchmark 首页</a>
+            <div class="status-row">
+                <span class="badge">ICLR 2025 Poster（AC「带保留接收」）</span>
+                <span class="badge">arXiv:2411.00816 · 评分 6/6/6/8</span>
+                <span class="badge">权重/数据公开 · 训练代码未公开</span>
+            </div>
+            <h1>CycleResearcher</h1>
+            <p class="subtitle">把「写论文」建模成 RL 问题：自产 Reviewer 当 reward model，SimPO 迭代优化自产 Researcher——分数确实涨了，但涨的是谁的分数？</p>
+            <p class="meta">Weng, Zhu, Bao, Zhang, Wang, Zhang, Yang · 西湖大学 NLP / 浙大 / William&amp;Mary / UCL · Improving Automated Research via Automated Review</p>
+            <div class="resource-row">
+                <a class="resource-link primary" href="paper/CycleResearcher_arXiv_2411.00816.pdf">论文 PDF（41页）</a>
+                <a class="resource-link" href="paper/tex_source/iclr2025_conference.tex">TeX 源码</a>
+                <a class="resource-link" href="https://github.com/zhu-minjun/Researcher">本地代码</a>
+                <a class="resource-link" href="openreview/OpenReview_讨论存档.html">OpenReview 存档</a>
+                <a class="resource-link" href="https://github.com/zhu-minjun/Researcher">官方 GitHub</a>
+                <a class="resource-link" href="https://openreview.net/forum?id=bjcsVLoHYs">OpenReview</a>
+            </div>
+        </header>
+
+        <div class="highlight-box">
+            <p><strong>一句话：</strong>用开源 LLM 训练两个模型——CycleResearcher 读一堆 BibTeX 参考文献直接生成完整论文（含<em>编造的</em>实验结果），CycleReviewer 模仿 ICLR 评审给它打分；再用打分构造偏好对做迭代 SimPO，让"论文"分数一轮轮上涨。<strong>AC 的判词</strong>：这套自我评价循环（对自产评委优化、再让它当裁判）无法支撑"接近人类 preprint 质量"的声明——初版里连实验结果都是幻觉的论文也拿了高分。本页把方法、证据链裂缝、OpenReview 攻防和代码落差逐层拆开。</p>
+        </div>
+
+        <nav class="toc" aria-label="页面导航">
+            <a href="#overview">速览</a>
+            <a href="#literature">文献的角色</a>
+            <a href="#training">SFT→迭代SimPO</a>
+            <a href="#evidence">证据链与裂缝</a>
+            <a href="#openreview">OpenReview 攻防</a>
+            <a href="#audit">代码审计</a>
+            <a href="#takeaway">定位与启示</a>
+        </nav>
+
+        <section id="overview">
+            <h2>一、速览：一个闭环，两个模型，一处致命依赖</h2>
+            <p class="lead">整个系统模仿学术界的「投稿—评审—修改」循环，但把三个环节全部内化成模型行为：研究由 policy model 写，评审由 reward model 打，"修改"是参数更新而不是改稿。</p>
+
+            <figure class="figure">
+                <a href="assets/fig2_iterative_framework.png" target="_blank">
+                    <img src="assets/fig2_iterative_framework.png" alt="迭代训练框架">
+                </a>
+                <figcaption>Fig. 2 迭代训练框架：CycleResearcher 从文献库生成论文（O=大纲，M=正文），采样多份 → CycleReviewer 打 soundness/presentation/contribution 分 → 最高/最低分构成偏好对 → SimPO 更新 policy 进入下一轮。注意图中画了 "Humans/AIs as Experimenters"，但训练时实验环节被跳过（见下）。</figcaption>
+            </figure>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence paper">论文声称</span>
+                    <h3>CycleReviewer（reward）</h3>
+                    <p>Mistral-Large-2 123B 在 Review-5k（ICLR 2024 真实评审）上 SFT，一次生成多个 reviewer 意见 + meta review。Proxy MAE 0.92，比单个人类评审（1.16）低 26.89%。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">论文声称</span>
+                    <h3>CycleResearcher（policy）</h3>
+                    <p>12B/72B/123B 三档，在 Research-14k（三年顶会接收论文）上 SFT 后做迭代 SimPO。生成论文模拟评审分 5.36，介于人类 preprint（5.24）与 accepted（5.69）之间。</p>
+                </article>
+            </div>
+
+            <div class="critical-note">
+                <p><strong>致命依赖：</strong>关于 CycleResearcher 的所有主结果都由 CycleReviewer 打分产生——而 policy 恰恰是对这个 reward 直接优化的，且 CycleReviewer 只在人类论文上训过，AI 论文对它是 OOD。论文自己在 Limitations 里承认：训练与推理中生成论文的实验结果<strong>全部由模型编造（原文 "Hallucinated"）</strong>，"为了加速训练，我们要求实验结果是 fabricated 的"。这三点叠加，就是 AC「带保留接收」的全部理由。</p>
+            </div>
+        </section>
+
+        <section id="literature">
+            <h2>二、文献的角色：references 直接作为生成条件</h2>
+            <p class="lead">这条路线对文献的处理方式是本文最值得记录的设计决策：不做检索、不做实体抽取、不做 idea 图谱——把一个 BibTeX 文件（含每篇引文摘要）整个塞进上下文，「文献 → 研究缺口 → idea」的映射完全交给端到端训练去学。</p>
+
+            <figure class="figure">
+                <a href="assets/fig1_data_construction.png" target="_blank">
+                    <img src="assets/fig1_data_construction.png" alt="数据构造流水线">
+                </a>
+                <figcaption>Fig. 1 数据构造：Review-5k 抓 ICLR 2024 论文+评审（4,991 篇 / 16k+ 条意见，4,189 训 / 782 测）；Research-14k 抓 2022–24 年 ICLR/NeurIPS/ICML/ACL/EMNLP/CVPR/ICCV 接收论文的 LaTeX（12,696 训 / 802 测，按时间切分），用 Mistral-Large-2 抽出大纲（O：Motivation→Main Idea→实验设置→结果）与正文（M）交替排列。注意图里还写着旧名 "Research-8k"。</figcaption>
+            </figure>
+
+            <h3>训练样本长什么样</h3>
+            <p>Research-14k 的每条样本：<strong>输入</strong> = 该论文 bib 文件里所有参考文献 + 用 Semantic Scholar API 补齐的摘要（平均 58 篇/文）；<strong>输出</strong> = 大纲与正文交替的完整论文（平均 28K tokens）。也就是说模型学的是「给定这批文献，某篇顶会接收论文长什么样」——idea 的新颖性没有任何显式监督，全靠模仿接收论文的分布。</p>
+
+            <h3>推理时的两轮式设计（以及它的真相）</h3>
+            <p><span class="evidence code">代码确认</span> 推理 prompt（<code>code/ai_researcher/cycle_researcher.py</code>）与 rebuttal 公开的版本一致，名义上是两轮协议：</p>
+            <pre><code># system prompt（节选，共 7 步）
+1. Analyze the given References.
+2. Identify gaps in existing research → motivation
+3. Propose a main idea
+4. Write Title/Abstract/Intro/Related Work/Methods (LaTeX)
+5. Generate experimental setup details in JSON   ← 名义上交给实验者执行
+6. After receiving experimental results in JSON, analyze them
+7. Complete: Results / Discussion / Conclusion
+
+# user prompt = topic + 整个 BibTeX 文件 +
+"analyze it and provide the motivation and main idea..."</code></pre>
+            <div class="warning-note">
+                <p><strong>但实现是一轮：</strong><code>generate_paper()</code> 单次调用 vLLM，<code>max_tokens=19000, ignore_eos=True</code>，第 6 步"收到的实验结果 JSON"由模型在同一段输出里自己编出来，解析函数从<strong>同一条</strong>生成文本中切出 <code>Experimental_Setup</code> 和 <code>Experimental_results</code> 两个 JSON。repo 中不存在注入真实实验结果的第二轮接口。</p>
+            </div>
+
+            <h3>与检索式路线的对比</h3>
+            <div class="table-scroll">
+            <table class="comparison-table">
+                <thead><tr><th>维度</th><th>检索式 idea agent（ResearchAgent / AI Scientist 等）</th><th>CycleResearcher（端到端后训练）</th></tr></thead>
+                <tbody>
+                    <tr><td>文献如何进入系统</td><td>显式检索/实体链接/引文图扩展，prompt 工程组织上下文</td><td>用户给定一个 bib 文件（+摘要）整体作为条件，无检索环节</td></tr>
+                    <tr class="focus-row"><td>文献→idea 的映射</td><td>由 prompt 规则和商业 LLM 的 zero-shot 能力承担</td><td>由 12k 条「references→接收论文」样本的 SFT + RL 学出，可被梯度优化</td></tr>
+                    <tr><td>可优化性</td><td>商业模型冻结，只能改 prompt / 加迭代评审</td><td>开源权重可训练——这是全文立论的出发点（policy optimization）</td></tr>
+                    <tr><td>产出粒度</td><td>idea / proposal（实验另做或不做）</td><td>一次性输出全文（实验结果编造），28K token 级长文生成</td></tr>
+                    <tr><td>新颖性来源</td><td>检索多样性 + 显式 novelty 评审</td><td>无显式机制；reviewer 分数间接施压（contribution 分项）</td></tr>
+                </tbody>
+            </table>
+            </div>
+            <p><span class="evidence paper">论文声称</span> 这种输入设计带来一个可量化的好处：生成论文平均引用 37.8 篇文献，是 AI Scientist（8.2 篇）的 4.6 倍（Table 7）——因为引文和摘要就在上下文里，"related work" 有真实素材可用。</p>
+        </section>
+
+        <section id="training">
+            <h2>三、训练流程：SFT → 迭代 SimPO（+NLL 锚定）</h2>
+            <p class="lead">方法本体不复杂，工程重点全在「长输出偏好优化」上：输出 1–3 万 token 的论文，DPO 的 reference model 开销太大，所以选了免 reference 的 SimPO。</p>
+
+            <div class="flow-diagram">
+                <div class="flow-step"><h4>Step 0 · 两侧 SFT</h4><p>CycleReviewer：Mistral-Large-2 + LoRA-GA，Review-5k 上 12 epochs，学会「从最低分 reviewer 到最高分 reviewer 依次生成，再出 meta review」。CycleResearcher：12B 训 32K 上下文 / 72B、123B 只有 24K（截断），batch 2×8，lr 4e-5，12,000 步。</p></div>
+                <div class="flow-step"><h4>Step 1 · 采样构造偏好对</h4><p>另取 4,152 篇 arXiv 新论文，只保留 references 作输入；温度 0.4 采样 3 篇论文 M₁..M₃ → CycleReviewer 打分取平均 rᵢ → 最高分为 y_w、最低分为 y_l，得偏好数据 D_t。</p></div>
+                <div class="flow-step"><h4>Step 2 · SimPO+NLL 更新，循环</h4><p>每轮只用全集 1/3（防过拟合），lr 5e-7，RL 阶段 12B 文本长 18K / 72B、123B 仅 10K。P_t → P_{t+1} 后重新采样，形成近似 online 的迭代（模型逐轮适应"评委口味"）。</p></div>
+            </div>
+
+            <div class="formula">L = −E[ log σ( β/|y_w|·logπ(y_w|x) − β/|y_l|·logπ(y_l|x) − γ ) ] − λ·E[ logπ(y_w|x) ]　（SimPO + NLL）</div>
+            <p>NLL 项是稳定器：消融显示去掉它平均分 5.36→4.91、接受率 35%→12%，长文生成会出现重复和崩坏——比去掉整个 RL（→5.12）伤害还大。去掉迭代（只做一轮 SimPO）只掉 0.15 分，说明<strong>迭代的边际收益其实很小</strong>，大头来自第一轮偏好优化。</p>
+
+            <div class="key-insight">
+                <h3>「Refinement」不是改稿</h3>
+                <p>循环里没有任何一步是"根据评审意见修改这篇论文"——反馈只以偏好对形式进入梯度。Reviewer GAvj 专门批评了这个误导性用词，作者在 rebuttal 中把 revision 改成了 refinement。理解这点才能看清：这是标准的 RLHF 式对齐流程套在论文生成上，不是 agent 式的评审-修改循环。</p>
+            </div>
+
+            <p><span class="evidence paper">论文声称</span> 伦理配套：Fast-DetectGPT（Llama-3-8B 打分模型）检测生成文本、输出带"水印"声明、下载权重需登记机构与用途的许可制度、开源前过 SafetyLock 红队。落实程度见第六节审计。</p>
+        </section>
+
+        <section id="evidence">
+            <h2>四、证据链与它的裂缝：分数是真的，「质量」未必</h2>
+            <p class="lead">论文的论证是一条两段式链条：先证明 CycleReviewer 打分准（对齐人类），再用它给 CycleResearcher 发成绩单。两段各有一条裂缝，叠加后主结论被 AC 判定为未被支撑。</p>
+
+            <h3>第一段：CycleReviewer 真的「超过人类评审」吗</h3>
+            <figure class="figure">
+                <a href="assets/table1_reviewer_comparison.png" target="_blank">
+                    <img src="assets/table1_reviewer_comparison.png" alt="Reviewer 对比表">
+                </a>
+                <figcaption>Table 1：Proxy MSE/MAE（以其余 n−1 个人类评审均分为"真值"）。CycleReviewer-123B 1.43/0.92，优于单个人类专家 2.34/1.16 与全部商业模型；决策准确率 74.24% ≈ 人类 75.40%。</figcaption>
+            </figure>
+            <ul>
+                <li><span class="evidence paper">论文声称</span> Proxy 指标的偏置项（目标方差）在比较两个 estimator 时抵消，所以对比公平（附录 E 有推导，方法沿自 Su et al. 对 ICML 2023 的分析）。</li>
+                <li><span class="evidence audit">审计发现</span> Reviewer CzSX 的反驳依然成立：该指标衡量的是<strong>与评审均值的一致性</strong>。一个学会输出"安全中间分"的模型天然占优，而人类评审的分歧本是同行评审的功能而非噪声；且指标完全不看评审文本质量（能否指出真错误）。作者补了分布分析（非中位数塌缩、Spearman 0.51）作辩护，并删掉了"超过人类专家"的措辞。</li>
+                <li><span class="evidence inference">合理推断</span> 更关键的隐患：Review-5k 全是<strong>人类写的真论文</strong>。在这个分布上打分准，不代表能审 AI 生成的、实验可能是编的论文——第二段链条恰恰把它用在这个 OOD 场景上。</li>
+            </ul>
+
+            <h3>第二段：用自家评委给自家选手发成绩单</h3>
+            <figure class="figure">
+                <a href="assets/table2_paper_scores.png" target="_blank">
+                    <img src="assets/table2_paper_scores.png" alt="主结果表">
+                </a>
+                <figcaption>Table 2（主结果）：CycleReviewer 打分下，CycleResearcher-12B 平均 5.36、接受率 35.13%，高于人类 preprint（5.24/29.63%），AI Scientist 仅 4.31/0%。† 注意"Conference Accept Papers 100%"是定义使然（本来就全是接收论文）。</figcaption>
+            </figure>
+            <p>这张表就是摘要里"接近 preprint 水平"声明的全部来源。它的效度取决于两点：CycleReviewer 对 AI 论文打分是否有效（OOD 问题），以及 policy 是否只是学会了讨好这个特定评委（reward hacking）。两条质疑各有一个实验回应，都只能算部分挡住：</p>
+
+            <div class="figure-grid">
+                <figure class="figure">
+                    <a href="assets/table9_reward_exploit.png" target="_blank">
+                        <img src="assets/table9_reward_exploit.png" alt="独立reward model对比">
+                    </a>
+                    <figcaption>附录 G.1（rebuttal 补做）：用 Review-5k <em>测试集</em>在 Mistral-Large-2 上另训一个隔离 reward model 重评：5.36→5.29、31.07%→28.65%，差距小。</figcaption>
+                </figure>
+                <figure class="figure">
+                    <a href="assets/table5_human_eval.png" target="_blank">
+                        <img src="assets/table5_human_eval.png" alt="人类评估">
+                    </a>
+                    <figcaption>Table 5 人类评估（3 位 NLP 专家，各评 20 篇）：CycleResearcher 4.8，低于 ICLR'24 submitted 5.5 与 accepted 6.4；仍高于 AI Scientist 3.6。</figcaption>
+                </figure>
+            </div>
+            <ul>
+                <li><span class="evidence audit">审计发现</span> "独立" reward model 的独立性很弱：同一基座（Mistral-Large-2）、同一数据分布（Review-5k 的另一半）、同一训练配方。它检验的是"换一份同源评委是否翻脸"，检验不了 Gao et al. 意义上的 reward 过优化——真正的 held-out 检验应换数据源或换评价机制。</li>
+                <li><span class="evidence paper">论文声称</span> 人类评估里自动分与人类分的落差被摆上台面：自动 5.36 ≈ preprint，人类只给 4.8（连 borderline 都不到）。作者在 rebuttal 中承认"未达 ICLR 提交平均水平"。<strong>换掉裁判，"接近人类"的结论就消失了。</strong></li>
+                <li><span class="evidence audit">审计发现</span> 人类评估自身也有折扣：CycleResearcher 用了 best-of-100 rejection sampling（AI Scientist 是 50 idea×3 迭代，作者辩称 API 调用量对等）；样本只有 10+10 篇、3 位评审，且被评论文的实验结果仍是编造的——评审被要求"批判性检查实验设计"，但无法验证数据真伪。</li>
+            </ul>
+
+            <figure class="figure">
+                <a href="assets/fig3_rejection_sampling.png" target="_blank">
+                    <img src="assets/fig3_rejection_sampling.png" alt="Rejection sampling 曲线">
+                </a>
+                <figcaption>Fig. 3：对同一评委做 best-of-N，N=100 时平均分 7.02，"超过"人类接收论文（5.69）。论文把它当增益卖点，反过来读它正是 reward 可刷性的直接演示——只要采样够多，就能在这个裁判手里拿任意高分。</figcaption>
+            </figure>
+
+            <div class="critical-note">
+                <p><strong>裂缝的总和（AC meta review 的逻辑）：</strong>①评委只见过人类论文，AI 论文是 OOD；②选手直接对评委优化，得分高不足为奇；③初版论文里<strong>实验结果全是幻觉仍拿高分</strong>——人类评审隐含"作者真做了实验"的信任前提，自动评审没有任何机制验证这一点。三条合起来：高分论文 ≠ 好研究，本文真正证明的是"可以批量生成在自动评审指标上得高分、但结果未必正确的论文"。AC 明确建议按这个 framing 重写，并"敦促作者慎重考虑公开模型的伦理问题"。</p>
+            </div>
+        </section>
+
+        <section id="openreview">
+            <h2>五、OpenReview 攻防：6/6/6/8 与一份罕见的「带保留接收」</h2>
+            <p class="lead">四位评审最终全部非负分，但过程是一场关于「这项工作对社区是正资产还是负资产」的辩论。AC 的 meta review 没有跟着评分走，而是逐条复核了方法论，最后写下 "recommend acceptance but with reservations"。</p>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence paper">7LzG · 6分</span>
+                    <h3>Reward hacking 与泛化</h3>
+                    <p>担心 policy 钻 reward 空子、只做 ML 领域。作者回应：隔离 reward model 实验（Δ0.14）+ 人类评估。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">CzSX · 6分</span>
+                    <h3>评价指标之争</h3>
+                    <p>"n−1 均分当真值"不成立：评审分歧是功能不是噪声，输出中间分即可刷 MAE，且只看分数不看评审内容。作者以 proxy 指标推导+分布分析+削减声明回应；CzSX "in good faith" 接受，但特别叮嘱许可监管要真落实——"低质量科研内容的泛滥对学术界是可怕结局"。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">GAvj · 6分 · 标记伦理风险</span>
+                    <h3>最尖锐的一份</h3>
+                    <p>"幻觉出实验结果再为其写论文"不为科学贡献真知识，是 dual-use 甚至恶意技术，"当前形态下论文很可能是 net-negative"；建议重新 framing 为"向社区报警：评审系统即将失灵"。引 Gao et al. 要求 held-out reward 检验。作者补了端到端流水线（附录 H）+ 独立 reward 实验后，GAvj 提分。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">5wHA · 8分 · 标记伦理风险</span>
+                    <h3>最友好但也抓到实锤</h3>
+                    <p>指出附录样例论文"明显幻觉与不实（声称超 SOTA 却无证据）"；12B 比 72B/123B 分高反直觉——作者解释为上下文长度差异（12B 训 32K/RL 18K，大模型只有 24K/10K），并称扩数据后 72B 反超（5.38）。</p>
+                </article>
+            </div>
+
+            <h3>Rebuttal 期间补进论文的两块「补丁」</h3>
+            <ul>
+                <li><strong>附录 G.1 独立 reward model</strong>（回应 reward 过优化）：见上节，独立性存疑。</li>
+                <li><strong>附录 H 端到端真实实验流水线</strong>（回应"实验全是编的"）：CycleResearcher 输出 JSON 实验设计 → GPT-o1 生成并执行代码（复用 AI Scientist 基建）→ 结果回填论文。作者称每篇约 $20 + 6 A100·时，承诺 MIT 开源，正文附录还收录了一篇由此产生的 grokking 论文。AC 的评价：<strong>无代码正确性分析，"需大幅加强才能令人信服"</strong>。</li>
+            </ul>
+
+            <div class="warning-note">
+                <p><strong>为什么最后还是收了：</strong>AC 认可问题本身重要、数据集有价值、作者响应认真（削减声明、补实验、改用词），且四位评审都愿意给正分。但 meta review 把接收条件说得很清楚——结论只能按"高分可以被生成出来"来读，而不是"AI 能写出 preprint 质量的论文"。这份 meta review 本身就是对 LLM-judge 评价范式的一页判例。</p>
+            </div>
+        </section>
+
+        <section id="audit">
+            <h2>六、代码审计：一个推理壳 + 一个真检测器，训练与流水线全部缺席</h2>
+            <p class="lead">审计对象：<code>code/</code>（clone 自 zhu-minjun/Researcher，commit 8c1b253，2026-03-05）。repo 现在是三合一生态（CycleResearcher / CycleReviewer / DeepReviewer），其中 <code>OpenScholar/</code> 与 <code>evaluate/</code> 属于后续论文 DeepReviewer 的组件，与本文无关。真正对应本论文的代码不到 700 行。</p>
+
+            <pre><code>code/
+├── ai_researcher/
+│   ├── cycle_researcher.py   # 推理壳：vLLM 加载 HF 权重 + 上文 system prompt（118 行）
+│   ├── cycle_reviewer.py     # 推理壳：固定 prompt "fill out 4 review opinions"（132 行）
+│   ├── utils.py              # 字符串切分式解析（'## Motivation'、'### Rating'…）
+│   ├── detector.py + detect/ # Fast-DetectGPT 完整实现（Bao 原版 MIT 代码，~1200 行）
+│   └── deep_reviewer.py      # 后续工作 DeepReviewer
+├── Tutorial/                 # 1-3 号 notebook；readme 链接的 tutorial_4 不存在
+├── OpenScholar/, evaluate/   # DeepReviewer 的检索与评测组件
+└── LICENSE.md                # CycleResearcher-License 全文
+# 没有的东西：SFT 脚本、SimPO/偏好对构造、迭代训练循环、
+# 数据集构造流水线、o1 实验执行、水印、SafetyLock</code></pre>
+
+            <h3>论文概念 ↔ 代码对照</h3>
+            <div class="table-scroll">
+            <table class="comparison-table">
+                <thead><tr><th>论文声明</th><th>repo 中的实际情况</th><th>核对</th></tr></thead>
+                <tbody>
+                    <tr><td>SFT→迭代 SimPO 训练框架（全文方法核心）</td><td>无任何训练代码。仅 <code>detect/get_score.py</code> 里残留硬编码路径 <code>'simpo_large_300_merge_latex_review'</code>，证明内部存在 SimPO 产物但未发布</td><td><span class="evidence audit">缺失</span></td></tr>
+                    <tr><td>两轮输入输出（references→设计；结果 JSON→成文）</td><td>prompt 写了两轮协议，实现是一轮连续生成（<code>ignore_eos=True</code>），实验结果由模型当场编造后被同一解析器切出</td><td><span class="evidence audit">名实不符</span></td></tr>
+                    <tr><td>附录 H：o1 执行真实实验的端到端流水线（rebuttal 承诺 MIT 开源）</td><td>不存在。无实验执行、无 AI Scientist 集成；readme 里 "Tutorial 4: End-to-End Research Workflow" 链接指向不存在的文件</td><td><span class="evidence audit">缺失</span></td></tr>
+                    <tr><td>Fast-DetectGPT 检测工具（95–99% Acc）</td><td>真实存在且完整：条件概率曲率 + <code>llama-8B-ref.json</code> 预置参考分布，<code>AIDetector</code> 一行可用。伦理措施中唯一足额兑现的一项</td><td><span class="evidence code">代码确认</span></td></tr>
+                    <tr><td>"所有输出嵌入水印"</td><td>无任何水印代码。所谓水印只是样例 PDF 页面上的可见文字（页眉 "This paper was generated by CycleResearcher" + 斜排底纹），编辑 LaTeX 即可移除</td><td><span class="evidence audit">名实不符</span></td></tr>
+                    <tr><td>许可制度：登记机构/用途，出版商可查询访问记录</td><td>LICENSE.md 确有条款；HF 仓库为 <code>gated: auto</code>——填表即自动放行，无人工审核；"出版商查询"无任何系统实现，只是承诺</td><td><span class="evidence inference">形同虚设</span></td></tr>
+                    <tr><td>SafetyLock 红队加固后才开源</td><td>repo 无相关代码（SafetyLock 是作者另一篇论文），无法核验权重是否处理过</td><td><span class="evidence inference">不可核验</span></td></tr>
+                    <tr><td>推理超参（温度 0.4 采样）</td><td>researcher 与 reviewer 推理温度均为 0.4，与论文一致</td><td><span class="evidence code">代码确认</span></td></tr>
+                </tbody>
+            </table>
+            </div>
+
+            <div class="figure-grid">
+                <figure class="figure">
+                    <a href="assets/generated_paper_page1.png" target="_blank">
+                        <img src="assets/generated_paper_page1.png" alt="生成论文样例首页">
+                    </a>
+                    <figcaption>附录收录的生成论文（grokking 题材）首页：页眉声明 + 斜排 "Generated by CycleResearcher" 底纹——这就是论文所说"水印"的全部实体。</figcaption>
+                </figure>
+                <figure class="figure">
+                    <a href="assets/table6_detect.png" target="_blank">
+                        <img src="assets/table6_detect.png" alt="检测性能表">
+                    </a>
+                    <figcaption>Table 6：Fast-DetectGPT 对自家模型输出的检测 95–99% Acc。注意这是对<em>未改写</em>原始输出的检测；对轻度人工改写的鲁棒性未测。</figcaption>
+                </figure>
+            </div>
+
+            <h3>解析层的脆弱性（复现要点）</h3>
+            <ul>
+                <li><span class="evidence audit">审计发现</span> Rating 解析取首字符转 float：<code>review.split('## Rating\n\n')[1].split('##')[0][0]</code>——若模型给出满分 "10"，会被解析成 <strong>1.0</strong>。评分范围 1–10 下这是真实可触发的 bug。</li>
+                <li><span class="evidence code">代码确认</span> 全部结构化输出靠 <code>'## Motivation'</code>、<code>'### Strengths'</code> 等标记字符串切分，7B 与 123B 两套格式互为 fallback，任何一处失配整条静默返回 <code>None</code>（裸 <code>except</code> 吞错）。</li>
+                <li><span class="evidence code">代码确认</span> reviewer 数量固定写在 prompt 里（"fill out 4 review opinions"），review 生成上限 7000 tokens；论文"从最低分到最高分依次模拟 reviewer"是训练出的行为，代码不做控制。</li>
+            </ul>
+
+            <h3>论文自身的不一致（笔误层）</h3>
+            <figure class="figure">
+                <a href="assets/table8_model_card.png" target="_blank">
+                    <img src="assets/table8_model_card.png" alt="Model Card 表">
+                </a>
+                <figcaption>附录 F Model Card：模型名仍是改名前的 WhizResearcher/WhizReviewer（CzSX 指出后正文改了，附录漏改），且 123B 两行参数量都写成 "12B"。</figcaption>
+            </figure>
+            <ul>
+                <li><span class="evidence audit">审计发现</span> 接受率两个版本并存：贡献列表/摘要与附录 G.1 用 31.07%，Table 2 与消融表用 35.13/35.14%——同一模型同一指标，未说明口径差异（推测为不同批次评估）。</li>
+                <li><span class="evidence audit">审计发现</span> Fig. 1 图注把两个数据集名字写反（"Review-8k 包含正文与大纲…Research-5k 提供 3 评审+1 meta review"），图中还保留旧名 Research-8k；正文 Research-14k 才是终版。</li>
+                <li><span class="evidence inference">合理推断</span> 这些 WhizResearcher/Research-8k 残留说明项目经历过一次仓促的改名扩容（8k→14k 数据、Whiz→Cycle），camera-ready 校对不严——与"评审驱动补实验"的时间线吻合。</li>
+            </ul>
+        </section>
+
+        <section id="takeaway">
+            <h2>七、定位与启示：这篇论文真正证明了什么</h2>
+            <p class="lead">在自动化科研的谱系里，CycleResearcher 是「端到端可训练」路线的代表作：它证明了开源模型 + 偏好优化能稳定生成形态上接近顶会论文的长文本，也用自己当反面教材演示了这条路线的评价危机。</p>
+
+            <div class="card-grid three">
+                <article class="card">
+                    <h3>真实的贡献</h3>
+                    <p>Review-5k / Research-14k 两个数据集（HF 可下载，auto-gated）；「references 作条件 + 大纲/正文交替」的长文 SFT 配方；SimPO+NLL 在 28K token 级输出上可行的工程证据。</p>
+                </article>
+                <article class="card">
+                    <h3>作为活教材</h3>
+                    <p>Fig. 3 的 best-of-N 曲线 + 自动 5.36 vs 人类 4.8 的落差 + 初版幻觉高分事件，构成一条完整的 reward hacking / LLM-judge OOD 失效证据链，比任何综述里的抽象警告都具体。</p>
+                </article>
+                <article class="card">
+                    <h3>对文献路线的启发</h3>
+                    <p>「文献→idea 交给端到端训练」换来了可优化性与引用密度，代价是 idea 生成过程完全黑箱、新颖性无显式机制——与检索式路线（可解释、不可训练）恰成互补的两极。</p>
+                </article>
+            </div>
+
+            <div class="key-insight">
+                <h3>读这篇论文的正确姿势（AC 版）</h3>
+                <p>不要把 5.36 读作"AI 论文接近人类 preprint 质量"，要读作"存在一类论文：自动评审给高分、人类专家不买账、实验结果未必真实——而且它们可以被批量生产"。GAvj 的 reframing 建议至今适用：这项工作最大的公共价值，是提前演示了投稿系统在生成模型时代将面临什么。凡是「用 LLM judge 当 reward / 评估器」的系统（包括我们自己的），都应该用本文的三连问自检：评委见过这种分布吗？选手对评委优化过吗？评委能验证内容真伪吗？</p>
+            </div>
+
+            <div class="source-note">
+                <p><strong>后续脉络：</strong>该团队沿"评审侧"继续推进——DeepReviewer（2025，加入多视角模拟与自校验）、DeepReviewer-v2 与 deepscientist.cc 在线平台（2026），repo 已演化为三合一生态。本文的 CycleResearcher 生成侧此后未见训练代码或流水线开源。</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>CycleResearcher（ICLR 2025 Poster）中文精读与代码审计 · 材料：arXiv PDF + TeX 源码 + OpenReview 全存档 + GitHub repo 本地 clone</p>
+            <p>整理日期：2026-08-04 · 代码版本：zhu-minjun/Researcher @ 8c1b253（2026-03-05） · 页面图片均裁自论文 PDF</p>
+        </footer>
+    </main>
+</body>
+</html>

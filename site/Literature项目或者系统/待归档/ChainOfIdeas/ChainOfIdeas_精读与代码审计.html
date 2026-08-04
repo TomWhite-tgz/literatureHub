@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Chain of Ideas (CoI Agent) 中文精读与代码审计：链式文献组织机制、Idea Arena 评价设计、论文与代码的差距、ICLR 2025 被拒始末。">
+    <title>Chain of Ideas (CoI Agent) 精读与代码审计</title>
+
+    <style>
+        :root {
+            --ink: #1f2421;
+            --muted: #5c635d;
+            --paper: #f7f4ef;
+            --panel: #fbf9f5;
+            --white: #fff;
+            --line: #e7e1d7;
+            --accent: #c4612f;
+            --accent-dark: #a94e22;
+            --accent-pale: #f2e3d6;
+            --green: #315b45;
+            --green-pale: #edf2ee;
+            --blue: #355f78;
+            --blue-pale: #edf4f7;
+            --warning: #8a641c;
+            --warning-pale: #fff7e6;
+            --danger: #934958;
+            --danger-pale: #fff0f2;
+            --shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+            --figure-shadow: 0 4px 14px rgba(31, 36, 33, 0.11);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                sans-serif;
+            font-size: 16px;
+            line-height: 1.72;
+            overflow-x: hidden;
+        }
+
+        .container { width: min(920px, calc(100% - 44px)); margin: 0 auto; padding: 52px 18px 76px; }
+
+        header { margin-bottom: 34px; padding-bottom: 34px; border-bottom: 1px solid var(--line); text-align: center; }
+
+        .back-link {
+            display: inline-block; margin-bottom: 20px; color: var(--accent);
+            font-size: 0.93rem; font-weight: 650; text-decoration: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+        .back-link:hover { color: var(--accent-dark); transform: translateX(-2px); }
+
+        .status-row, .resource-row, .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .status-row, .resource-row { justify-content: center; }
+        .status-row { margin-bottom: 18px; }
+        .resource-row { margin-top: 22px; }
+
+        .badge, .tag, .evidence {
+            display: inline-flex; align-items: center; width: fit-content;
+            border-radius: 999px; white-space: nowrap;
+        }
+        .badge { padding: 4px 11px; color: var(--accent-dark); background: var(--accent-pale); font-size: 0.79rem; font-weight: 650; }
+
+        .resource-link {
+            display: inline-block; padding: 7px 13px; border: 1px solid var(--line);
+            border-radius: 999px; color: var(--accent-dark); background: var(--panel);
+            font-size: 0.84rem; font-weight: 620; text-decoration: none;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .resource-link.primary { border-color: var(--accent); color: var(--white); background: var(--accent); }
+        .resource-link:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+
+        h1 { margin-bottom: 12px; font-size: clamp(2.35rem, 7vw, 3.25rem); font-weight: 670; letter-spacing: -0.035em; line-height: 1.08; }
+        .subtitle { max-width: 720px; margin: 0 auto; color: var(--muted); font-size: 1.08rem; font-weight: 360; }
+        .meta { margin-top: 12px; color: var(--muted); font-size: 0.91rem; font-weight: 360; }
+
+        h2 { margin: 56px 0 24px; padding-bottom: 11px; border-bottom: 2px solid var(--accent); font-size: 1.78rem; font-weight: 630; line-height: 1.3; }
+        h3 { margin: 30px 0 14px; color: var(--accent); font-size: 1.25rem; font-weight: 630; }
+        h4 { margin-bottom: 8px; color: var(--accent-dark); font-size: 1.01rem; font-weight: 650; }
+        p { margin-bottom: 17px; font-weight: 360; }
+        strong { font-weight: 660; }
+        a { color: var(--accent-dark); }
+        .lead { color: #343b37; font-size: 1.02rem; }
+
+        .eyebrow {
+            display: block; margin-bottom: 7px; color: var(--muted);
+            font-size: 0.75rem; font-weight: 720; letter-spacing: 0.08em; text-transform: uppercase;
+        }
+
+        .toc {
+            position: sticky; top: 10px; z-index: 20; display: flex; flex-wrap: wrap;
+            justify-content: center; gap: 7px; margin: 24px 0 34px; padding: 10px;
+            border: 1px solid rgba(231, 225, 215, 0.9); border-radius: 16px;
+            background: rgba(247, 244, 239, 0.93);
+            box-shadow: 0 8px 24px rgba(31, 36, 33, 0.06); backdrop-filter: blur(10px);
+        }
+        .toc a { padding: 6px 10px; border-radius: 999px; color: var(--muted); font-size: 0.8rem; font-weight: 620; text-decoration: none; }
+        .toc a:hover { color: var(--accent-dark); background: var(--accent-pale); }
+
+        .highlight-box, .source-note, .warning-note, .critical-note, .code-note {
+            margin: 26px 0; padding: 21px 25px; border-left: 4px solid var(--accent);
+            border-radius: 5px; background: var(--panel); box-shadow: var(--shadow);
+        }
+        .source-note { border-left-color: var(--green); background: var(--green-pale); }
+        .code-note { border-left-color: var(--blue); background: var(--blue-pale); }
+        .warning-note { border-left-color: var(--warning); background: var(--warning-pale); }
+        .critical-note { border-left-color: var(--danger); background: var(--danger-pale); }
+        .highlight-box p:last-child, .source-note p:last-child, .warning-note p:last-child,
+        .critical-note p:last-child, .code-note p:last-child { margin-bottom: 0; }
+
+        .key-insight {
+            margin: 32px 0; padding: 28px 31px; border-radius: 8px; color: var(--white);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 4px 12px rgba(196, 97, 47, 0.22);
+        }
+        .key-insight h3, .key-insight p { color: var(--white); }
+        .key-insight h3 { margin-top: 0; }
+        .key-insight p:last-child { margin-bottom: 0; }
+
+        .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; margin: 24px 0; }
+        .card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .card { padding: 21px 23px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+        .card h3 { margin-top: 0; font-size: 1.08rem; }
+        .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+
+        .evidence { margin-bottom: 10px; padding: 3px 9px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; }
+        .evidence.paper { color: var(--accent-dark); background: var(--accent-pale); }
+        .evidence.code { color: var(--blue); background: var(--blue-pale); }
+        .evidence.inference { color: var(--warning); background: var(--warning-pale); }
+        .evidence.audit { color: var(--danger); background: var(--danger-pale); }
+
+        .figure, .figure-grid { margin: 30px 0; }
+        .figure { text-align: center; }
+        .figure-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .figure-grid .figure { margin: 0; }
+        .figure a, .figure-frame {
+            display: block; overflow: hidden; border: 1px solid var(--line);
+            border-radius: 8px; background: var(--white); box-shadow: var(--figure-shadow);
+        }
+        .figure img { display: block; width: 100%; height: auto; }
+        .figure figcaption { max-width: 760px; margin: 11px auto 0; color: var(--muted); font-size: 0.86rem; font-style: italic; line-height: 1.55; }
+
+        .comparison-table {
+            width: 100%; margin: 26px 0; border-collapse: collapse; border-radius: 8px;
+            background: var(--panel); box-shadow: var(--shadow); overflow: hidden;
+        }
+        .comparison-table th { padding: 13px 15px; color: var(--white); background: var(--accent); font-size: 0.88rem; font-weight: 620; text-align: left; }
+        .comparison-table td { padding: 13px 15px; border-bottom: 1px solid var(--line); font-size: 0.89rem; font-weight: 360; vertical-align: top; }
+        .comparison-table tr:last-child td { border-bottom: 0; }
+        .comparison-table .focus-row td { background: #f8ede4; font-weight: 590; }
+
+        .table-scroll { width: 100%; margin: 26px 0; border-radius: 8px; overflow-x: auto; }
+        .table-scroll .comparison-table { min-width: 680px; margin: 0; }
+
+        .flow-diagram { margin: 29px 0; padding: 27px 31px; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); }
+        .flow-step { position: relative; margin: 16px 0; padding: 18px 22px; border-left: 4px solid var(--accent); border-radius: 4px; background: var(--white); }
+        .flow-step::before { content: "▼"; position: absolute; bottom: -28px; left: 50%; color: var(--accent); font-size: 18px; transform: translateX(-50%); }
+        .flow-step:last-child::before { content: ""; }
+        .flow-step p { margin-bottom: 0; }
+
+        .formula {
+            margin: 25px 0; padding: 21px 23px; border-radius: 7px; color: var(--paper);
+            background: var(--ink); font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.96rem; overflow-x: auto; text-align: center; white-space: nowrap;
+        }
+
+        ul { margin: 15px 0 19px 2px; list-style: none; }
+        li { position: relative; margin-bottom: 9px; padding-left: 22px; font-weight: 360; }
+        li::before { content: "•"; position: absolute; left: 2px; color: var(--accent); font-size: 1.2rem; font-weight: 700; }
+
+        details { margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+        summary { display: flex; align-items: center; gap: 12px; padding: 17px 20px; cursor: pointer; font-weight: 630; list-style: none; }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: "＋"; margin-left: auto; color: var(--accent); font-size: 1.1rem; }
+        details[open] summary::after { content: "−"; }
+        .details-body { padding: 18px 22px 22px; border-top: 1px solid var(--line); }
+
+        code { padding: 2px 5px; border-radius: 4px; color: var(--accent-dark); background: var(--accent-pale); font-size: 0.88em; }
+        pre {
+            margin: 22px 0; padding: 20px 22px; border: 1px solid #343b37; border-radius: 8px;
+            color: #edf2ee; background: var(--ink);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 0.84rem; line-height: 1.65; overflow-x: auto;
+        }
+        pre code { padding: 0; color: inherit; background: transparent; }
+
+        .code-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
+        .code-item { padding: 16px 18px; border: 1px solid var(--line); border-radius: 7px; background: var(--white); }
+        .code-item code { display: inline-block; margin-bottom: 7px; color: var(--blue); background: var(--blue-pale); font-weight: 660; }
+        .code-item p { margin-bottom: 0; color: var(--muted); font-size: 0.86rem; }
+
+        .tag-list { margin: 13px 0 22px; }
+        .tag { padding: 4px 10px; color: var(--green); background: var(--green-pale); font-size: 0.78rem; font-weight: 630; }
+
+        footer { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.86rem; font-weight: 360; text-align: center; }
+
+        @media (max-width: 760px) {
+            .container { width: min(100% - 28px, 920px); padding: 34px 8px 56px; }
+            .card-grid, .card-grid.three, .figure-grid, .code-list { grid-template-columns: 1fr; }
+            .toc { position: static; }
+            .flow-diagram { padding: 20px 16px; }
+            h2 { margin-top: 46px; font-size: 1.55rem; }
+            .highlight-box, .key-insight { padding: 22px; }
+            .subtitle, .meta { overflow-wrap: anywhere; }
+        }
+
+        @media print {
+            .toc, .back-link { display: none; }
+            body { background: white; }
+            .container { width: 100%; max-width: none; padding: 24px; }
+            .figure a, .card, details { box-shadow: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <header>
+            <a class="back-link" href="../../../index.html">← 返回 Literature 调研档案首页</a>
+            <div class="status-row">
+                <span class="badge">arXiv 2410.13185</span>
+                <span class="badge">ICLR 2025 Reject（5/5/5/8）</span>
+                <span class="badge">代码公开 · 评测脚本未公开</span>
+                <span class="badge">DAMO Academy + 浙大 + 中科大</span>
+            </div>
+            <h1>Chain of Ideas</h1>
+            <p class="subtitle">把检索到的文献沿引用关系拉成一条「发展链」，让 LLM 先读懂领域怎么一步步演化，再外推出下一步 idea；并用成对对战 + ELO 的 Idea Arena 做评价</p>
+            <p class="meta">Long Li, Weiwen Xu, ..., Lidong Bing · 2024-10 首发 · 主模型 GPT-4o (05-13) · 检索源 Semantic Scholar</p>
+            <div class="resource-row">
+                <a class="resource-link primary" href="paper/ChainOfIdeas_arXiv_2410.13185.pdf">论文 PDF</a>
+                <a class="resource-link" href="paper/tex_source/main.tex">TeX 源码</a>
+                <a class="resource-link" href="https://github.com/DAMO-NLP-SG/CoI-Agent">本地代码</a>
+                <a class="resource-link" href="https://github.com/DAMO-NLP-SG/CoI-Agent">官方 GitHub</a>
+                <a class="resource-link" href="openreview/OpenReview_讨论存档.html">OpenReview 存档</a>
+            </div>
+        </header>
+
+        <div class="highlight-box">
+            <p><strong>这篇论文做了什么：</strong>已有 idea 生成系统（RAG、ResearchAgent 等）把一堆检索到的论文直接塞进 prompt，LLM 容易被弱相关文献带偏。CoI Agent 改为：选一篇 anchor 论文，沿引用关系<strong>向前（谁引用它）向后（它建立在谁之上）</strong>各延伸成一条最长 5 篇的链，逐篇提取 idea / 实验 / 实体，再总结相邻两篇之间的「演化趋势」，让 LLM 沿趋势预测未来方向并固化成完整 idea + 实验设计。单个 idea 成本约 $0.50。评价用自建的 Idea Arena（round-robin 成对对战 + ELO），CoI 在 LLM 和人类评审下均排自动方法第一、Novelty 甚至超过真实论文。但 ICLR 2025 以 5/5/5/8 被拒——评审的核心质疑落在「CoI 是不是 CoT 的换皮」和「ELO 评价是否可靠」上。</p>
+        </div>
+
+        <nav class="toc" aria-label="页面导航">
+            <a href="#overview">一图看懂</a>
+            <a href="#chain">链的构建机制</a>
+            <a href="#ideagen">Idea 生成与查新</a>
+            <a href="#arena">Idea Arena</a>
+            <a href="#results">结果与消融</a>
+            <a href="#audit">论文↔代码审计</a>
+            <a href="#openreview">为什么被拒</a>
+            <a href="#takeaways">对本档案的启示</a>
+        </nav>
+
+        <section id="overview">
+            <h2>一图看懂：从「乱塞文献」到「链式组织」</h2>
+            <p class="lead">论文的全部动机浓缩在 Figure 1 里：同一个 topic，Vanilla RAG 把 CoT、GraphGPT、LawyerGPT 等一堆论文平铺给 LLM，产出的「新 idea」把 prompting 方法（GoT）和微调方法（GraphGPT）强行缝合；CoI 只保留 CoT→SC→ToT→GoT 这条真实演化路径，产出的 idea（动态调整推理结构）逻辑上顺着这条路径自然外推。</p>
+
+            <figure class="figure">
+                <a href="assets/fig1_intro.png"><img src="assets/fig1_intro.png" alt="Vanilla RAG 与 CoI 的对比"></a>
+                <figcaption>Figure 1：上半 Vanilla RAG 被弱相关文献带偏（红字为缝合痕迹）；下半 CoI 沿 CoT→…→GoT 链外推出 DPSTN。这是全文唯一的失败案例论证——注意它是精心挑选的示例而非统计证据。</figcaption>
+            </figure>
+
+            <figure class="figure">
+                <a href="assets/fig2_pipeline.png"><img src="assets/fig2_pipeline.png" alt="CoI Agent 三阶段框架"></a>
+                <figcaption>Figure 2：三阶段框架。Stage 1 从 Semantic Scholar 检索并构建 K 条链（每篇提取 Idea/Experiment/Entities，相邻两篇总结 Current Trends）；Stage 2 预测未来趋势→逐步固化 idea→novelty 检查→K 条链的候选 idea 互相对战选优；Stage 3 以已有论文的实验为 few-shot 生成实验设计，review agent 迭代精炼。</figcaption>
+            </figure>
+
+            <div class="card-grid three">
+                <article class="card">
+                    <span class="evidence paper">Stage 1</span>
+                    <h3>CoI 构建</h3>
+                    <p>topic → K 个查询 → K 篇 anchor → 每篇向前后延伸成链（最长 5 篇），提取 idea/实验/实体 + 趋势总结。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">Stage 2</span>
+                    <h3>Idea 生成</h3>
+                    <p>预测未来趋势 → 依次产出 motivation / novelty / method → 固化 final idea → novelty checker 查重，不过关就带着「撞车案例」重生成。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">Stage 3</span>
+                    <h3>实验设计</h3>
+                    <p>链上论文的实验设计当 few-shot 示例；review agent 提修改意见 + 补充检索，迭代 1 轮（省钱）。</p>
+                </article>
+            </div>
+
+            <div class="key-insight">
+                <h3>本质：把「文献综述的时间结构」变成 prompt 的组织结构</h3>
+                <p>CoI 不改模型、不做训练，它的全部机制是一个检索 + 排序 + 摘要的文献组织管线。核心赌注是：对 idea 生成而言，<strong>5 篇按演化顺序排列的论文 &gt; 10 篇乱序论文</strong>。论文的长度消融（0→3 篇链带来最大涨幅）支持这一点。这正是本档案关心的问题——idea 系统的文献模块可以只做「选对 + 排对」两件事。</p>
+            </div>
+        </section>
+
+        <section id="chain">
+            <h2>链的构建机制：代码逐步核对</h2>
+            <p class="lead">这是本档案最关心的部分。论文 §3.2 的描述比较抽象，下面按代码实际执行顺序拆开（核心实现在 <code>code/agents.py</code> 的 <code>DeepResearchAgent.generate_idea_with_chain</code> 与 <code>deep_research_paper_with_chain</code>，检索封装在 <code>code/searcher/sementic_search.py</code>）。</p>
+
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <h4>① topic → K 个检索查询</h4>
+                    <p><span class="evidence code">代码确认</span> GPT-4o 把 topic 改写为 ≤5 个查询（1 个整体 + 若干侧面视角），每个查询将孕育一条链（<code>get_deep_search_query_prompt</code>）。论文主实验 K=3；<code>main.py</code> 默认 <code>max_chain_numbers=1</code>。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>② 每个查询检索 anchor 论文</h4>
+                    <p><span class="evidence code">代码确认</span> Semantic Scholar relevance search 取 6 篇 → <strong>只保留有开放获取 PDF 的</strong>（后续要用 grobid 解析全文）→ 用 <code>text-embedding-3-large</code> 对「标题+摘要」与 topic 算余弦相似度重排 → 取第一篇能下载解析成功的作为 anchor。检索失败会让 LLM 改写查询重试（≤10 次）。也支持 <code>--anchor_paper_path</code> 直接指定本地 PDF。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>③ 向前延伸（谁引用了它）</h4>
+                    <p><span class="evidence code">代码确认</span> 用当前论文标题在 S2 搜索（limit=3，取第一个命中结果），拿它的 <code>citations</code> 列表（&gt;200 时随机采样 200），按「topic + 当前论文标题 + 摘要」的 embedding 相似度重排，取第一篇能下载全文的引用者；让 GPT-4o 判断相关性（0/1），相关则入链、并以它为新的「当前论文」继续，直到链满 5 篇或判不相关。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>④ 向后延伸（它建立在谁之上）</h4>
+                    <p><span class="evidence code">代码确认</span> 关键一步不靠引用图，而靠<strong>让 GPT-4o-mini 通读全文</strong>：解析出的全文（含 References 列表）交给 mini，按「方法相关 / 同任务 / 作 baseline」三条标准输出<strong>按相关性排序的 top-3 参考文献标题</strong>。代码逐个拿标题去 S2 搜索，取第一篇能下载且 GPT-4o 判相关的，入链后对它重复此过程。终止条件：链满 5 篇，或遇到引用数 &gt;1000 的「里程碑论文」（<code>citations_conut &gt; 1000</code>，字段名的拼写错误也原样写进了代码）。</p>
+                </div>
+                <div class="flow-step">
+                    <h4>⑤ 逐篇提取 + 趋势总结</h4>
+                    <p><span class="evidence code">代码确认</span> 每篇入链论文由 mini 一次性提取 idea（Background/Novelty/Contribution/Reason/Limitation 五段）、实验设计、实体（模型/数据集/指标名），提取 prompt 即 <code>get_deep_reference_prompt</code>。链建完后 GPT-4o 汇总「Paper i → Paper i+1」的逐步演化趋势（trend），实体列表另行合并去重。链、趋势、实体、历史实验四样东西就是后续 idea 生成的全部上下文。</p>
+                </div>
+            </div>
+
+            <h3>论文没说、但代码里真实存在的三个细节</h3>
+            <div class="critical-note">
+                <p><strong>审计 ①：向前延伸的「相关性把关」判错了对象。</strong>论文说“LLM 发现没有有价值的后续工作时停止”（§3.2 + 附录 Table 6 prompt）。但 <code>agents.py:307</code> 传给判断 prompt 的是 <code>current_title, current_abstract</code>——即<strong>已在链中的当前论文</strong>，而不是新找到的候选引用者 <code>citation_paper</code>：</p>
+                <pre><code># agents.py L302-311（向前延伸循环内）
+citation_paper = await self.reader.search_related_paper_async(current_title, ...)
+title = citation_paper.title
+prompt = get_deep_judge_relevant_prompt(current_title, current_abstract, self.topic)
+#                                       ^^^^^^^^^^^^^ 判的是链内旧论文，不是候选者</code></pre>
+                <p>结果是：只要「已入链论文」与 topic 相关（几乎恒真），embedding 重排后的第一篇引用者就<strong>无条件入链</strong>。论文声称的 LLM 质量闸门在向前方向从未真正生效，链的向前质量实际只由 embedding 相似度保证。向后延伸的 fallback 分支（<code>agents.py:368</code>）有同样的判错对象问题（主路径 <code>agents.py:342</code> 判的才是候选论文）。</p>
+            </div>
+
+            <div class="warning-note">
+                <p><strong>审计 ②：链长不足 3 时强行凑链。</strong><code>agents.py:346</code> 的入链条件是 <code>relevant != "0" <strong>or</strong> len(idea_chain) &lt; self.min_chain_length</code>——链短于 <code>min_chain_length=3</code> 时即使 LLM 判定不相关也照样加入。论文从未提到这个「保底凑链」逻辑，它意味着弱相关领域里链的头部可能就是噪声。</p>
+            </div>
+
+            <div class="warning-note">
+                <p><strong>审计 ③：链只可能由开放获取论文组成。</strong>向前向后的每一步都要求能下载 PDF 并用 grobid 解析全文（<code>search_async</code> 里非 OA 论文被直接 <code>continue</code> 跳过）。这带来论文未讨论的系统性可得性偏差：闭源出版物再重要也进不了链——对 AI 领域（arXiv 覆盖高）影响小，对论文声称「理论上适用于任何领域」影响大。</p>
+            </div>
+
+            <h3>论文概念 ↔ 代码位置</h3>
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>论文概念</th><th>代码位置</th><th>实际实现</th><th>核对</th></tr></thead>
+                    <tbody>
+                        <tr><td>K 个视角查询</td><td><code>agents.py:get_search_query</code></td><td>GPT-4o 输出 ≤5 个查询，逐个检索</td><td><span class="evidence code">一致</span></td></tr>
+                        <tr><td>anchor 检索 + 重排</td><td><code>sementic_search.py:search_async</code></td><td>S2 搜 6 篇 → OA 过滤 → embedding 重排取 top-1</td><td><span class="evidence code">基本一致</span></td></tr>
+                        <tr class="focus-row"><td>向前延伸的 LLM 把关</td><td><code>agents.py:300-325</code></td><td>判断对象传错，闸门失效</td><td><span class="evidence audit">不一致</span></td></tr>
+                        <tr><td>向后「LLM 选最相关引用」</td><td><code>agents.py:331-403</code></td><td>mini 提取时已排序 top-3，代码按序取第一篇可下载者，非单独比选</td><td><span class="evidence inference">弱化实现</span></td></tr>
+                        <tr><td>里程碑论文终止（&gt;1000 引）</td><td><code>agents.py:402</code></td><td><code>citations_conut &gt; 1000</code>，仅在链长 ≥3 后检查</td><td><span class="evidence code">一致</span></td></tr>
+                        <tr><td>embedding 排序</td><td><code>LLM.py:get_embbeding</code></td><td>默认 <code>text-embedding-3-large</code>，与论文一致</td><td><span class="evidence code">一致</span></td></tr>
+                        <tr><td>GPT-4o-mini 只做全文摘要</td><td><code>agents.py:get_cheap_openai_response_async</code></td><td>mini 还负责 novelty 查重判定与实验设计评审</td><td><span class="evidence audit">超出声明</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="source-note">
+                <p><strong>来源说明：</strong>代码 = GitHub <code>DAMO-NLP-SG/CoI-Agent</code> @ <code>ac94317</code>（2025-01-15，本地 clone）。LLM 调用统一 temperature 0.7、max_tokens 4000（mini 全文摘要 16000）——论文均未报告。<code>dataset/all_case.json</code> 附 50 个 topic 的完整 CoI 输出（链、趋势、future、idea、实验），可直接查看链的真实质量。</p>
+            </div>
+        </section>
+
+        <section id="ideagen">
+            <h2>Idea 生成、novelty checker 与分支选优</h2>
+            <p class="lead">每条链独立跑一遍「趋势外推 → idea 固化 → 查重」，K 条链的最终 idea 再互相对战选出一个。</p>
+
+            <h3>逐步固化：先预测趋势，再写 idea</h3>
+            <p><span class="evidence code">代码确认</span> 生成不是一步到位：① <code>get_deep_generate_future_direciton_prompt</code> 输入链 + 趋势 + 实体，要求 LLM 模仿「人类研究者从前作推进到后作的推理方式」，输出未来方向（<code>&lt;future&gt;</code>）和它总结的人类推理模式（<code>&lt;human&gt;</code>，论文未提这个输出）；② <code>get_deep_generate_idea_prompt</code> 依次产出 motivation / novelty / method；③ <code>get_deep_final_idea_prompt</code> 汇总成带标题的 final idea。prompt 里鼓励四种思维模式：Reflection、Analogy、Deep Dive、<strong>Imitate（代码标注 "Most recommended"，论文附录只写了前三种）</strong>。</p>
+
+            <h3>novelty checker：题目摘要级查重，不过关就带案例重写</h3>
+            <p><span class="evidence code">代码确认</span> <code>check_novel</code> 的实现相当轻量：让 GPT-4o 为 idea 生成 ≤3 个查重查询 → 每个查询从 S2 取 5 篇（<strong>不下载全文，只用标题+摘要</strong>）→ 交给 <strong>GPT-4o-mini</strong> 判断是否「相似到可视为同一 idea（plagiarism）」并给出最像的论文 id。判撞车则把「原 idea 摘要 + 撞车论文标题摘要」作为 bad case 注入生成 prompt 重来一轮。</p>
+            <div class="warning-note">
+                <p><strong>注意边界：</strong>这个查重只能挡「与已索引论文标题摘要明显同构」的 idea，挡不住深层撞车；而且 <code>while not novel:</code> 循环<strong>没有最大轮数</strong>（论文说 "determines if another round of generation is necessary"，暗示有限轮），理论上可能死循环。查重判定交给 mini 而非 GPT-4o，与论文「mini 仅用于读论文摘要」的分工声明不符。作者在 rebuttal 中还把这个模块宣传为「防数据污染」的机制——它同时是查新器和防污染器，全部押在 mini 的一次 0/1 判断上。</p>
+            </div>
+
+            <h3>K 条链对战选优：名义上的 ELO，实际是胜点计数</h3>
+            <p><span class="evidence code">代码确认</span> K 个候选 idea 两两对战（双向各一次），judge prompt（<code>prompts/juder_prompts.py</code>）按 Novelty/Significance/Feasibility/Clarity/Effectiveness 五维各输出 0/1/2（胜/负/平）。代码按 胜=1、平=0.5 累加，变量名叫 <code>elo_scores</code> 但并不是 ELO。更有趣的是一个幽灵维度：</p>
+            <pre><code># agents.py L28-38: judge_idea 提取 6 个维度
+novelty  = extract(response, "novelty")
+relevance = extract(response, "relevance")   # judge prompt 里根本没有这个标签!
+...
+# utils.py: extract() 找不到标签时 hard=True → 返回整段回复
+# change_winner_to_score: int(整段文本) 抛异常 → 双方各 +0.5</code></pre>
+            <p><span class="evidence inference">合理推断</span> 由于双方各得 0.5，幽灵 relevance 维度不改变排序结果，属无害 bug——但它说明这段「内部 Arena」代码没有被仔细校对过，是评估管线可信度的一个负面信号。</p>
+
+            <h3>实验设计阶段（Stage 3）</h3>
+            <p><span class="evidence code">代码确认</span> 把链上论文的实验设计作为 few-shot、加上 idea 和实体表生成实验方案；<code>ReviewAgent.review_experiment</code>（由 <strong>mini</strong> 执行）提修改建议 → 由建议生成检索查询、抓 2 篇论文提取相关信息 → 精炼实验方案。论文与代码一致地只迭代 1 轮（<code>improve_cnt=1</code>，省成本）。</p>
+        </section>
+
+        <section id="arena">
+            <h2>Idea Arena：评价设计与可信度</h2>
+            <p class="lead">开放式 idea 没有 ground truth。作者放弃主流的 Likert 打分（引 Si et al. 2024：pointwise 打分与人类偏好对齐差），改用<strong>round-robin 成对对战 + ELO</strong>：任意两个方法就同一 topic 生成的 idea 交给裁判排序，换序各评一次以消位置偏置，胜负平记录换算 ELO。</p>
+
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence paper">测试集</span>
+                    <h3>50 个 topic，来自 HF Daily Papers</h3>
+                    <p>2024-08-01 ~ 09-15（晚于 GPT-4o 数据截止）间的论文，10 位 AI 研究者（2 硕 8 博，覆盖 CV/具身/NLP，rebuttal 补充）各选 5 篇感兴趣的，GPT-4o 抽取 topic / idea / 实验设计，研究者回验 topic 合理性。原论文的 idea 与实验设计构成 <strong>Real Paper</strong> 基线。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">基线与公平性</span>
+                    <h3>5 个对手，统一底模</h3>
+                    <p>RAG、ResearchAgent、GPT-Researcher、AI-Scientist（抽取其 idea+实验两步）、Real Paper。所有自动方法统一用 GPT-4o + Semantic Scholar，统一输出格式以避免「格式更漂亮」的偏置。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">指标</span>
+                    <h3>idea 五维 / 实验三维</h3>
+                    <p>idea：Novelty、Significance、Clarity、Feasibility、Expected Effectiveness（改编自 ICML 2020 评审指南 + Si et al.）。实验设计：Feasibility、Technical Quality、Clarity。每个维度独立对战、独立算 ELO。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence paper">双裁判</span>
+                    <h3>LLM 裁判 + 人类裁判</h3>
+                    <p>LLM 裁判 GPT-4o（另测 Gemini-1.5-Pro、Claude-3.5-Sonnet）；人类裁判即上述 10 位研究者，匿名成对排序。人机一致率作为协议可信度论据。</p>
+                </article>
+            </div>
+
+            <div class="critical-note">
+                <p><strong>审计 ④：Idea Arena 的评测代码与 baseline 复现代码不在仓库里。</strong>GitHub 仓库只有 CoI 生成管线 + 内部分支对战的 judge prompt；50-topic 的对战调度、ELO 计算、换序去偏、四个 baseline 的复现脚本一概未开源（README 只承诺 dataset 目录里有评测数据和 CoI 输出）。论文的核心实验结果<strong>无法从公开代码复现</strong>，只能核对 prompt 文本与论文附录一致。</p>
+            </div>
+
+            <h3>可信度的正反两面</h3>
+            <div class="figure-grid">
+                <figure class="figure">
+                    <a href="assets/table1_agreement.png"><img src="assets/table1_agreement.png" alt="人机一致率分维度"></a>
+                    <figcaption>Table 1：GPT-4o 与人类分维度一致率，平均 70.8%。注意 <strong>Novelty 只有 66.5%，是所有维度最低</strong>——恰是论文主打的维度。</figcaption>
+                </figure>
+                <figure class="figure">
+                    <a href="assets/fig5_agreement.png"><img src="assets/fig5_agreement.png" alt="人与各 LLM 裁判一致率热图"></a>
+                    <figcaption>Figure 5：人-GPT-4o 70.8%、人-Gemini 69.3%、人-Claude 70.1%，而 <strong>LLM 之间互相 90%+</strong>——三个 LLM 裁判高度同质，换裁判并不构成独立验证。</figcaption>
+                </figure>
+            </div>
+            <p><strong>支持方论据</strong><span class="evidence paper"> 论文+rebuttal</span>：Si et al. 统计的人-人一致率也只有 71.9%（ICLR）/ 66%（NeurIPS），所以 70.8% 的人机一致已达「人类水平」；rebuttal 补充 ELO 分数的 Pearson/Spearman 相关（Human–GPT-4o 89.3%/80.6%）。<strong>质疑方论据</strong><span class="evidence inference"> 推断</span>：①一致率是三分类（胜/负/平）下的命中率，基线并非 50%，单独一个 70.8% 缺乏效力量化；②所有被评方法（除 Real Paper）都由 GPT-4o 生成，再由 GPT-4o 当裁判，风格自偏好无法排除——「CoI Novelty 超过人类论文」这一头条结论恰好出现在人机一致率最低的维度上；③ LLM 互评 90%+ 的同质性意味着「三个 LLM 裁判都同意」提供的额外证据很少。</p>
+        </section>
+
+        <section id="results">
+            <h2>结果与消融：链结构本身贡献最大</h2>
+
+            <div class="figure-grid">
+                <figure class="figure">
+                    <a href="assets/fig3_llm_judge.png"><img src="assets/fig3_llm_judge.png" alt="LLM 裁判下的 idea ELO 雷达图"></a>
+                    <figcaption>Figure 3（GPT-4o 裁判）：CoI（红）总分仅次于 Real Paper，Novelty/Significance/Effectiveness 反超 Real Paper；AI-Scientist（紫）全面垫底。</figcaption>
+                </figure>
+                <figure class="figure">
+                    <a href="assets/fig4_human_eval.png"><img src="assets/fig4_human_eval.png" alt="人类裁判下的 idea ELO 雷达图"></a>
+                    <figcaption>Figure 4（人类裁判）：格局与 LLM 裁判一致，CoI 领先第二名自动方法（RAG）56 ELO；但 Clarity/Feasibility/Effectiveness 仍明显落后 Real Paper。</figcaption>
+                </figure>
+            </div>
+            <p>两种裁判下 CoI 都是自动方法第一（LLM 裁判下领先 GPT-Researcher 108 ELO，人类裁判下领先 RAG 56 ELO），Novelty/Significance 与人类论文持平或反超；但 <strong>Feasibility 是所有自动方法的共同瓶颈</strong>——人类裁判下 CoI Feasibility 1065 vs Real Paper 1127。有趣的细节（附录 Table 9）：裁判越强，对 CoI 的 Feasibility 越不客气（Claude-3.5 只给 953），说明「新颖但难落地」是稳定判断。</p>
+
+            <figure class="figure">
+                <a href="assets/table2_ablation.png"><img src="assets/table2_ablation.png" alt="组件消融表"></a>
+                <figcaption>Table 2（消融，对战原版 CoI 的得分，50 平 = 打平自己）：去掉 CoI 链结构掉分最狠（50→42.4）；去掉未来趋势预测主要伤 Novelty（40）；去掉实体表主要伤 Clarity（42）。</figcaption>
+            </figure>
+
+            <div class="figure-grid">
+                <figure class="figure">
+                    <a href="assets/fig6_length.png"><img src="assets/fig6_length.png" alt="链长消融"></a>
+                    <figcaption>Figure 6（链长）：0→3 涨幅最大（长度 0 = 同样 5 篇论文但不组织成链），5 之后饱和——<strong>「组织成链」比「多喂论文」更重要</strong>，这是全文对本档案最有价值的定量结论。</figcaption>
+                </figure>
+                <figure class="figure">
+                    <a href="assets/fig7_width.png"><img src="assets/fig7_width.png" alt="链数消融"></a>
+                    <figcaption>Figure 7（分支数 K）：1→4 单调小幅上升，作者解释为多分支只是对冲单条烂链的风险。K 的边际价值远小于链长。</figcaption>
+                </figure>
+            </div>
+
+            <figure class="figure">
+                <a href="assets/table4_expdesign.png"><img src="assets/table4_expdesign.png" alt="实验设计评价表"></a>
+                <figcaption>Table 4（实验设计 ELO）：CoI 在自动方法中最佳（人类评审下领先 RAG 70 ELO），Technical Quality 甚至超过 Real Paper，但 Feasibility 同样落后——实验方案「写得像回事，未必跑得起来」。</figcaption>
+            </figure>
+
+            <h3>自指案例：让 CoI 研究「如何自动生成 idea」</h3>
+            <figure class="figure">
+                <a href="assets/table3_case.png"><img src="assets/table3_case.png" alt="案例研究：EvoResearchAgent"></a>
+                <figcaption>Table 3：链为 分子生成(GCT)→LLM 自动实验→MOOSE 假设生成→ResearchAgent→Si et al. 人类对比研究；趋势提取出「从假设到 idea、从生成到实证验证」的演化；最终 idea 是把进化算法（选择/交叉/变异）引入 idea 生成的 EvoResearchAgent。链上五篇论文确实构成一条真实的领域演化路径——但产出的 idea 本质仍是「已有框架 + 经典算法」的组合式创新。</figcaption>
+            </figure>
+        </section>
+
+        <section id="audit">
+            <h2>论文 ↔ 代码审计清单</h2>
+            <p class="lead">通读 <code>main.py / agents.py / LLM.py / searcher / prompts</code>（共约 1900 行）后的完整不一致清单，按严重程度排序。前文已展开的条目此处只列结论。</p>
+
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th style="width:34%">论文声明</th><th>代码实际</th><th>严重度</th></tr></thead>
+                    <tbody>
+                        <tr class="focus-row">
+                            <td>向前延伸时「LLM 判断是否存在有价值的后续工作」作为质量闸门</td>
+                            <td><span class="evidence audit">audit</span> <code>agents.py:307</code> 把已入链论文（而非候选论文）送去判相关，闸门恒通过；向前扩链实际只靠 embedding 相似度。向后 fallback（<code>:368</code>）同病</td>
+                            <td>高：链质量的核心声明与实现不符</td>
+                        </tr>
+                        <tr class="focus-row">
+                            <td>Idea Arena：round-robin + ELO，换序双评，四个 baseline 复现</td>
+                            <td><span class="evidence audit">audit</span> 仓库无任何 Arena 评测/ELO/baseline 代码，主实验不可复现；仓库内「ELO」仅是分支选优的胜点计数（胜1/平0.5）</td>
+                            <td>高：核心实验证据不可核验</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-4o-mini 仅用于「读论文并摘要核心内容」</td>
+                            <td><span class="evidence audit">audit</span> mini 还承担 novelty 查重判定（<code>check_novel</code>）和实验设计评审（<code>review_experiment</code>）两个关键判断</td>
+                            <td>中：影响查新与评审质量的解读</td>
+                        </tr>
+                        <tr>
+                            <td>向后延伸「LLM 从候选 references 中确定最相关的一篇」</td>
+                            <td><span class="evidence audit">audit</span> mini 提取时一次性输出排序 top-3，代码顺序取第一篇「可下载且判相关」者；另有论文未提的 S2-references + embedding 重排 fallback</td>
+                            <td>中：弱化实现 + 未披露路径</td>
+                        </tr>
+                        <tr>
+                            <td>（未提及）链的准入约束</td>
+                            <td><span class="evidence audit">audit</span> ①仅开放获取 PDF 可入链；②链长 &lt;3 时跳过相关性检查强行凑链（<code>relevant != "0" or len&lt;min_chain_length</code>）</td>
+                            <td>中：未披露的选择偏差</td>
+                        </tr>
+                        <tr>
+                            <td>novelty checker「决定是否需要再来一轮」</td>
+                            <td><span class="evidence audit">audit</span> <code>while not novel:</code> 无轮数上限；查重仅用标题+摘要（不读全文）；<code>similar_paper</code> 有未初始化即返回的潜在 NameError</td>
+                            <td>中：鲁棒性与能力边界</td>
+                        </tr>
+                        <tr>
+                            <td>附录 prompt 原文（3 种思维模式；纯文本输出格式）</td>
+                            <td><span class="evidence audit">audit</span> 代码为 4 种思维模式（新增 Imitate "Most recommended"）、XML 标签输出、额外的 <code>&lt;human&gt;</code> 输出——附录 prompt 与实际 prompt 存在漂移</td>
+                            <td>低：影响精确复现</td>
+                        </tr>
+                        <tr>
+                            <td>分支选优「与 Idea Arena 相同的成对比较」</td>
+                            <td><span class="evidence audit">audit</span> judge 提取了 prompt 中不存在的幽灵维度 <code>relevance</code>（每场双方 +0.5，不影响排序但暴露代码未校对）</td>
+                            <td>低：无害 bug</td>
+                        </tr>
+                        <tr>
+                            <td>（工程配置）</td>
+                            <td><span class="evidence audit">audit</span> ① <code>main.py</code> 参数名 <code>"--max_chain_length t"</code> 多了空格，CLI 设不了链长（永远默认 5）；② <code>LLM.py</code> 用 <code>os.environ.get("is_azure", True)</code> 读布尔，配置 <code>is_azure: False</code> 写入环境变量后是非空字符串 <code>"False"</code>，恒为真——非 Azure 用户按 README 配置会直接报错；③ <code>main.py</code> 默认 <code>max_chain_numbers=1</code>，论文主实验 K=3</td>
+                            <td>低：可用性/默认值与论文设置不一致</td>
+                        </tr>
+                        <tr>
+                            <td>temperature / 采样设置</td>
+                            <td><span class="evidence code">code</span> 全流程 temperature 0.7、max_tokens 4000（mini 摘要 16000），论文未报告</td>
+                            <td>低：未披露超参</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="code-note">
+                <p><strong>总体判断：</strong>生成管线（链构建 → idea → 实验设计）与论文框架图基本对得上，prompt 主体与附录一致，属于「诚实但粗糙」的开源：没有藏关键模块，但存在一个实质性的实现 bug（向前闸门判错对象）、评测部分整体缺失、以及多处论文措辞比代码更「智能」的美化（LLM 比选 → 顺序取第一；有限轮查重 → 无限循环）。</p>
+            </div>
+        </section>
+
+        <section id="openreview">
+            <h2>为什么被拒：ICLR 2025 评审复盘</h2>
+            <p class="lead">评分 5 (wMda) / 8 (AfFY) / 5 (E21D) / 5 (6L2R)，avg 5.75，AC 判「恰在录取线下」。评审过程创纪录地有 45 条回帖：作者投诉 wMda 全程失联（AC 认可）、投诉 E21D 用 LLM 写评审（AC："确实像"）、投诉 6L2R 先提分至 6 又因「自己投的同类论文收到负面反馈」降回 5（AC 认为不构成违规）。给 8 分的 AfFY 甚至公开反对 E21D 的 ethics flag。</p>
+
+            <h3>两个实质性质疑，以及 rebuttal 的回应</h3>
+            <div class="card-grid">
+                <article class="card">
+                    <span class="evidence inference">质疑 1 · 部分成立</span>
+                    <h3>「CoI 只是 CoT 的换皮」（wMda、E21D）</h3>
+                    <p>作者辩护：CoT 让模型自己生成推理步，CoI 是把<strong>真实文献</strong>重组为演化证据链，粒度与信息来源完全不同。从代码看这个辩护成立——CoI 的实体是检索/排序/摘要管线，跟 prompting 技巧不是一类东西。但「贡献单薄」的底层担忧仍然合理：机制上就是结构化 RAG，四篇同期工作（SciAgents、ResearchAgent 等）都在做文献结构化，链只是其中最简单的一种结构。</p>
+                </article>
+                <article class="card">
+                    <span class="evidence inference">质疑 2 · 大体成立</span>
+                    <h3>「ELO + LLM 裁判可靠性不足」（wMda、AfFY、6L2R）</h3>
+                    <p>作者用「人-人一致率也只有 71.9%」+ 补充相关系数回应，说服了 AfFY（提到 8 分）。但三点未被真正回应：Novelty 维度一致率最低（66.5%）却承载头条结论；GPT-4o 既当运动员又当裁判；一种评价协议、一个领域（AI）、50 个 topic 的证据面偏窄。meta review 把「评价指标需要更好的论证」列为第一条弱点。</p>
+                </article>
+            </div>
+
+            <h3>rebuttal 里比正文更有信息量的两张表</h3>
+            <p>评审逼出了两组补充实验，数据只存在于 OpenReview（已随本档案存档），对判断 CoI 真实价值很关键：</p>
+
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>补充实验 1：对战 CoI 的得分（胜2/平1/负0，满分 100，50=打平）</th><th>Novelty</th><th>Significance</th><th>Clarity</th><th>Feasibility</th><th>Effectiveness</th></tr></thead>
+                    <tbody>
+                        <tr><td>CoT（直接链式思考出 idea）</td><td>4</td><td>1</td><td>14</td><td>25</td><td>0</td></tr>
+                        <tr><td>RAG</td><td>8</td><td>7</td><td>23</td><td>44</td><td>7</td></tr>
+                        <tr><td>CoT + RAG</td><td>20</td><td>21</td><td>40</td><td>48</td><td>18</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p><span class="evidence paper">rebuttal</span> CoT 被打到近乎零胜——支持「链的价值在真实文献证据，不在链式推理形式」。当然裁判仍是 GPT-4o，上节的自偏好保留条款同样适用。</p>
+
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>补充实验 2：加入并行工作后的 ELO 均分</th><th>ELO</th></tr></thead>
+                    <tbody>
+                        <tr><td>Real Paper</td><td>1130</td></tr>
+                        <tr class="focus-row"><td>CoI Agent</td><td>1129</td></tr>
+                        <tr><td>AI-Researcher（Si et al.）</td><td>1095</td></tr>
+                        <tr><td>GPT-Researcher</td><td>1019</td></tr>
+                        <tr><td>ResearchAgent</td><td>1017</td></tr>
+                        <tr><td>RAG</td><td>952</td></tr>
+                        <tr><td>SciAgents</td><td>836</td></tr>
+                        <tr><td>AI-Scientist</td><td>822</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p><span class="evidence paper">rebuttal</span> 应 wMda 要求补测 SciAgents（知识图谱路径采样流派），结果大幅落后——对本档案是个有用的横向数据点：<strong>在 idea 质量对战里，「链式演化叙事」压过了「本体图随机游走」</strong>。其他要点：作者试过 Graph-of-Ideas，表现不如链（归因于推理复杂度）；无相关文献时 CoI 退化为普通 RAG；约 $0.1 用于选优、$0.5 生成一个 idea。</p>
+
+            <div class="key-insight">
+                <h3>被拒的真正原因</h3>
+                <p>不是方法有错，而是<strong>贡献的天花板</strong>：一个诚实但简单的结构化 RAG 管线 + 一套本身可信度就受质疑的评价协议，互相无法为对方背书。评审驱动的补充实验（CoT 对战、SciAgents 对比）反而是全文最有说服力的证据，可惜出现在 rebuttal 而非正文。这份 OpenReview 记录本身也是「LLM 时代同行评审失灵」的样本：疑似 LLM 写的评审、全程失联的评审、因个人投稿受挫而降分的评审，集中出现在同一篇论文上。</p>
+            </div>
+        </section>
+
+        <section id="takeaways">
+            <h2>对本档案的启示：idea 系统怎么「做文献」</h2>
+            <p class="lead">把 CoI 放进本档案的坐标系（idea 生成系统的文献组织方式），它代表「时间线/演化链」这一派的最简实现。</p>
+
+            <div class="table-scroll">
+                <table class="comparison-table">
+                    <thead><tr><th>系统</th><th>文献组织结构</th><th>结构怎么用</th><th>代价</th></tr></thead>
+                    <tbody>
+                        <tr class="focus-row"><td>CoI Agent（本篇）</td><td>线性演化链（anchor ± 引用扩展，≤5 篇 × K 条）</td><td>提取相邻演化趋势 → 外推未来方向</td><td>~$0.50/idea；强依赖 OA 全文</td></tr>
+                        <tr><td>ResearchAgent</td><td>引用图 + 实体共现知识库</td><td>核心论文扩邻居 + 实体注入</td><td>需预建实体库</td></tr>
+                        <tr><td>SciAgents</td><td>本体知识图谱路径采样</td><td>图上随机游走产生概念组合</td><td>rebuttal 对战中大幅落后</td></tr>
+                        <tr><td>Vanilla RAG / GPT-Researcher</td><td>无结构（top-k 平铺）</td><td>直接塞 prompt</td><td>便宜但易被弱相关文献带偏</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <ul>
+                <li><strong>最值钱的实验结论：</strong>同样 5 篇论文，「按演化顺序组织 + 显式趋势摘要」对 idea 质量的贡献大于把文献数量翻倍（Fig 6 的 0→3 跳变 + Table 2 的 -CoI 消融）。文献模块的投入应优先花在「排序与关系提取」上。</li>
+                <li><strong>趋势提取是链的灵魂：</strong>链本身只是论文序列，真正进入生成 prompt 的关键信号是逐对「Paper i → i+1 为什么演化」的摘要。这一步把引文关系翻译成了可外推的因果叙事。</li>
+                <li><strong>向后靠 LLM 读全文、向前靠 embedding：</strong>一个务实的不对称设计——参考文献在全文里有语境（LLM 能判断哪篇是真正的 intellectual parent），而引用者列表没有语境（只能靠相似度）。但审计 ① 表明向前方向的质量把关实际失效，照搬此设计时应把候选论文（而非当前论文）送去判相关。</li>
+                <li><strong>查新模块的示范意义有限：</strong>标题摘要级 + 单 LLM 0/1 判定 + 无上限重试，是最低配的 novelty checker；它更多是心理安慰和防污染声明，不构成可靠的查重。</li>
+                <li><strong>评价是所有 idea 系统的公共软肋：</strong>Idea Arena 的成对对战 + 换序 + 多裁判已是同类工作里较认真的设计，仍被三位评审集火。任何后续系统若以「LLM 裁判 ELO」为主证据，需预答三问：裁判与生成器同源怎么办？关键维度（Novelty）一致率最低怎么办？效力基线是多少？</li>
+            </ul>
+
+            <div class="source-note">
+                <p><strong>档案定位建议：</strong>方法可信度——链构建管线真实可跑（有 50 个 case 的完整输出佐证），但主实验不可复现、向前把关有实现 bug；结论可信度——「链式组织优于平铺」方向上证据一致（消融 + rebuttal 对战），具体 ELO 数字宜打七折看待。</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>Chain of Ideas (CoI Agent) 中文精读与代码审计 · Literature 调研档案 · 材料：arXiv 2410.13185 (TeX 源码) + GitHub DAMO-NLP-SG/CoI-Agent + OpenReview ICLR 2025 #6109 存档</p>
+            <p>整理日期：2026-08-04 · 代码版本：commit ac94317（2025-01-15）</p>
+        </footer>
+    </main>
+</body>
+</html>
