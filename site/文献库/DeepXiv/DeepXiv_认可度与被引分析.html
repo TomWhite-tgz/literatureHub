@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta name="robots" content="noindex, nofollow, noarchive">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
 <title>DeepXiv-SDK 认可度与被引分析</title>
 <style>
         :root {
@@ -770,6 +770,7 @@
   <a href="#citations">4 两次引用的真实语境</a>
   <a href="#profile">5 关键反差：捞得到但排不出来</a>
   <a href="#risk">6 依赖风险</a>
+  <a href="#impl">7 实现核实（08-04 补测）</a>
 </nav>
 
 <section id="what">
@@ -914,6 +915,7 @@
   <h2>6 依赖风险：先验数据新鲜度</h2>
   <div class="critical-note">
     <p><strong>维护有放缓迹象。</strong>repo 最后一次 push 是 <b>2026-05-22</b>，PyPI 最新版 0.3.1 同日，至今约 2.5 个月无更新。而论文核心卖点之一是"arXiv 全量 + <b>每日同步</b>"以及"后续扩展 PubMed Central / bioRxiv"。一个宣称 daily sync 的托管服务停更两个多月 —— <b>如果要把它作为依赖，先自己验 <code>data.rag.ac.cn</code> 的数据新鲜度和接口可用性</b>，别信论文里的 daily。</p>
+    <p><strong>2026-08-04 补测修正：</strong>repo 停更属实，但<b>数据管道仍在运转</b> —— live <code>/api/status</code> 最新收录 <code>2608.02567</code>（2026-08-03 发布），自带监控连续 75 天全 PASS（详见第 7 节）。同步是<b>仅工作日</b>：跨周末实测为 T+2，工作日约 T+1，论文的 "T+0" 不成立。风险应从"服务可能失修"修正为：<b>代码维护停滞、数据服务存活，但论文的实现描述已开始与线上脱节</b>（后端已从 Elasticsearch 换为 Qdrant）。</p>
   </div>
 
   <div class="card-grid">
@@ -937,7 +939,58 @@
   <div class="source-note">
     <p><strong>证据等级说明。</strong><span class="evidence paper">论文声称</span> 来自本地 PDF 与 <code>assets/2603.00084_fulltext.md</code>；引用/下载/star 数为 2026-08-02 实测（Semantic Scholar Graph API、OpenAlex API、GitHub API、pypistats）；<span class="evidence audit">审计发现</span> 为对两篇施引论文全文（含 SciAtlas 的 LaTeX 源码，因其 arXiv HTML 参考文献渲染为空）逐句核对后的认定；<span class="evidence inference">合理推断</span> 为跨论文比较得出、两篇论文均未言明。</p>
     <p><strong>提醒：</strong>引用数据库有 1–3 个月滞后，Google Scholar 口径通常略高于 S2（本次未能取到 GS 数据），故真实引用可能是个位数偏高一点，但不改变"引用尚未起量"的判断。</p>
-    <p><strong>归档日期</strong>：2026-08-03 · 论文版本 v2（2026-03-03）· <code>Fig*/Table*_p*.png</code> 由本地 PDF 按图注区域裁切；<code>fig1_architecture.png</code> / <code>fig2_evaluation.png</code> 为先前归档的同源图片。</p>
+    <p><strong>归档日期</strong>：2026-08-03 · 论文版本 v2（2026-03-03）· <code>Fig*/Table*_p*.png</code> 由本地 PDF 按图注区域裁切；<code>fig1_architecture.png</code> / <code>fig2_evaluation.png</code> 为先前归档的同源图片。<b>2026-08-04 增补第 7 节</b>（实现核实）并修正第 6 节的停更判断。</p>
+  </div>
+</section>
+
+<section id="impl">
+  <h2>7 实现核实：2026-08-04 补测</h2>
+  <p class="lead">归档次日，以 <b>OpenAPI 文档 + 真实 API 调用为准、论文为次</b>，对论文的实现描述做了逐条核对。三处论文描述与线上现状脱节，一处我的转述被打了回票，另有若干此前未报的事实。</p>
+
+  <h3>逐条裁定</h3>
+  <div class="table-scroll">
+  <table class="comparison-table">
+    <thead><tr><th>论文 / 此前的说法</th><th>裁定</th><th>证据（2026-08-04 实测）</th></tr></thead>
+    <tbody>
+      <tr><td>检索后端是 Elasticsearch（§A.2 "We build Elasticsearch indexes"）</td><td><b>与线上矛盾</b></td><td>live <code>/api/status</code>：<code>retrieval_backend = qdrant</code>、<code>qdrant_collection = arxiv_papers_hybrid_v1</code>（status green）。<b>已迁移</b>；ES 是否仍兼管词法层，未定论</td></tr>
+      <tr class="focus-row"><td>稠密索引 "without indexing full text"（只索 title+abstract+章节 TL;DR）</td><td><b>实测证实</b></td><td>用该论文<b>标题词</b>检索 → 以 score 1.0 召回；用其<b>结论节原句</b>、<b>附录 A 原句</b>检索 → top-10 均无此文。佐证：<code>search_funcs</code> 仅 <code>metadata / section / roc</code> 三档，OpenAPI 无 fulltext 选项</td></tr>
+      <tr><td>"每日同步"、"T+0"（论文）/ "T+1"（README）</td><td><b>部分证伪</b></td><td>同步<b>仅工作日</b>（§A.2 "weekday syncs Mon–Fri"）：周日（08-02）实测收录前沿停在周五（07-31）、2608 段 ID 全 404；周二（08-04）补齐到 08-03。<b>工作日 ≈T+1，跨周末 T+2，"T+0" 不成立</b></td></tr>
+      <tr><td>语料 2,949,129 篇（附录 B，2026-03）</td><td><b>实测证实且已增长</b></td><td>live <code>served_papers = indexed_points = 3,050,978</code>，5 个月 +101,849 ≈ 2 万/月，与 arXiv 自然增速吻合 —— <b>反向印证同步管道一直在跑</b></td></tr>
+      <tr><td>embedding = BGE-m3</td><td><b>论文自述 + 行为印证</b></td><td>API 不暴露模型名，但跨语言探针独立印证多语言 embedder：中文 query「用深度学习预测蛋白质结构」与英文 query 召回<b>同一批英文论文</b>（top-1 完全一致，score 仅从 0.74 降到 0.69）—— 纯英文的 bge-large-en-v1.5 做不到。佐证：collection 名 <code>hybrid_v1</code> 与 BGE-m3 的稠密+稀疏双出能力吻合。注意 BGE-m3 <b>不是</b> bge-large-en-v1.5 的升级版，是 BGE 家族的并行产品线（多语言 + 多粒度）；此测试无法把 BGE-m3 与其他多语言模型（如 multilingual-e5）区分开</td></tr>
+      <tr><td>enrichment = Qwen3-4B-Instruct-2507；解析器 = MinerU；富化只读前 2048 token</td><td><b>仅论文自述</b></td><td>API 不暴露模型名与富化窗口，原则性不可验证</td></tr>
+      <tr><td>keywords "恒为 5 个"（我此前的转述）</td><td><b>我说重了</b></td><td>论文原文是 "extracts <b>up to five</b> keywords" —— 上限而非定值，"恒为 5" 只是抽样观察</td></tr>
+      <tr><td>持久化 provenance 字段（source type / extraction time / update time，§3.2）</td><td><b>论文声称但 API 未兑现</b></td><td>所有观测到的响应类型与 OpenAPI 字段中均无 provenance 痕迹；不排除是内部字段未外放</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>三处架构描述需要修正（来自 OpenAPI，非论文）</h3>
+  <div class="card-grid three">
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>retrieve 是独立微服务</h4>
+      <p><code>/arxiv/</code> 的 description 原文：retrieve 接入 <b>jianlv retrieval 服务</b>（<code>/api/retrieval</code>），支持 arxiv/biorxiv/medrxiv。这同时解释了分页排名漂移、间歇性 "Retrieval service is temporarily unavailable"、以及后端为何能脱离论文描述从 ES 迁到 qdrant。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>部署面不止"单台 64 核 + 热备"</h4>
+      <p>线上至少扇出到 4 处：<code>/api/retrieval</code>（jianlv）、<code>api2.rag.ac.cn</code>（websearch，OpenAPI 明写"使用第三方 API"）、<code>api.rag.ac.cn/trending</code>（SDK 源码）。论文的"单节点"只是 API 节点本身。</p>
+    </article>
+    <article class="card">
+      <span class="evidence audit">审计发现</span>
+      <h4>短信验证根本没实现</h4>
+      <p><code>/api/send_verification_code</code> 的 description 里挂着 "<b>TODO: 集成真实的短信服务（Twilio / 阿里云短信）</b>"。这解释了 SDK 为何在包里硬编码 shared secret 走 <code>/api/register/sdk</code> 静默注册。</p>
+    </article>
+  </div>
+
+  <h3>排序短板的机制层注脚（呼应第 5 节）</h3>
+  <div class="code-note">
+    <p><strong>返回的 score 不含语义置信度。</strong>retrieve 实测返回分数全是 <b>1.0 / 0.5 / 0.3333 / 0.25</b> 这类纯倒数 —— 是 RRF 融合的<b>名次分</b>，不是相关性分。调用方无法用它做阈值过滤，agent 拿到候选后必须自己重排。<code>top_k ≤ 100</code> / <code>offset ≤ 10000</code> 是 pydantic schema 的硬边界（越界返 422，非静默截断）。</p>
+    <p><strong>缓存与计价（文档明写 + 实测）：</strong>Redis <code>/cache/stats</code> 实测 keyspace_hits 641,458 / misses 3,402,486 ≈ <b>15.9% 命中率</b>，与"按需抓取"架构一致。<code>/webrag/search</code> 每次扣 <b>1000</b> 额度、<code>/websearch</code> 扣 <b>50</b>、注册默认日限额 <b>10000</b>，均为 OpenAPI 原文。另有未文档化的 <code>/webrag/search/stream</code>（NDJSON 流，含 billing 事件）。</p>
+  </div>
+
+  <div class="source-note">
+    <p><strong>本节证据等级。</strong>"实测"= 2026-08-04 对 <code>data.rag.ac.cn</code> 的真实调用（<code>/api/status</code>、<code>/cache/stats</code>、三组 retrieve 探针：标题词对照 / 结论节原句 / 附录 A 原句）与 OpenAPI 快照（<code>assets/openapi_snapshot_2026-08-02.json</code>）的 description/schema 原文；模型栈、2048 token 富化窗口、11,008 H100 工时等仍为论文自述，API 面上不可验证。<code>queue_pending</code>（8-02: 2,990,129 → 8-04: 2,993,794，缓慢增长且与 served_papers 解耦）性质未定论。</p>
   </div>
 </section>
 </main>
