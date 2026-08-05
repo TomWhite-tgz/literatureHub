@@ -101,6 +101,24 @@
   .feature h4 { font-size: 17px; color: var(--accent); margin-bottom: 6px; }
   .feature p { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 12px; }
 
+  /* 特色大卡·可折叠版 */
+  details.feature-fold {
+    margin-left: 19px; background: linear-gradient(135deg, #fdf6ea, #f8e9d4);
+    border: 1px solid #e6cdaa; border-radius: 12px; margin-bottom: 14px; overflow: hidden;
+  }
+  details.feature-fold > summary {
+    cursor: pointer; list-style: none; padding: 14px 24px; display: flex; align-items: baseline; gap: 10px; user-select: none;
+  }
+  details.feature-fold > summary::-webkit-details-marker { display: none; }
+  details.feature-fold > summary::before { content: "▸"; color: var(--accent); font-size: 14px; transition: transform .15s; flex-shrink: 0; }
+  details.feature-fold[open] > summary::before { transform: rotate(90deg); }
+  details.feature-fold > summary:hover { background: rgba(255,255,255,.45); }
+  details.feature-fold > summary h4 { font-size: 16.5px; color: var(--accent); }
+  details.feature-fold > summary .fold-hint { margin-left: auto; font-size: 12px; color: var(--ink-soft); flex-shrink: 0; }
+  details.feature-fold[open] > summary .fold-hint { visibility: hidden; }
+  details.feature-fold .fold-body { padding: 2px 24px 18px; }
+  details.feature-fold .fold-body p { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 12px; }
+
   /* ---------- 选题讨论：折叠模块 ---------- */
   .key {
     margin-left: 19px; background: linear-gradient(135deg, #fdf6ea, #f8e9d4);
@@ -237,7 +255,7 @@
       <div class="map-title">② 领域调研 · 别人做了什么</div>
       <a class="map-item" href="#landscape">🗺 领域版图<span>约 130 篇八大类 + 56 个系统分类</span></a>
       <a class="map-item" href="#systems">📚 项目与系统<span>13 个项目深读 · 复杂/简单/包装三档</span></a>
-      <a class="map-item sub" href="#compare">⚖️ 横向对比<span>文献搜索四系统横评</span></a>
+      <a class="map-item sub" href="#compare">⚖️ 横向对比<span>文献搜索四系统横评 · Idea 生成八篇可视化</span></a>
       <a class="map-item" href="#ideation">💡 Idea 生成<span>8 个已精读 · 五条"用文献喂出 idea"的路线 + 评估</span></a>
       <a class="map-item" href="#benchmark">🎯 Benchmark<span>7 张卡 · 4 篇已深读</span></a>
       <a class="map-item" href="#datalib">📖 文献库 · 数据接口<span>DeepXiv 等</span></a>
@@ -1207,6 +1225,14 @@ return timeout_answer</div>
     </div>
   </div>
 
+  <div class="feature">
+    <h4>Idea 生成系统横向可视化 —— CoI · Deep Ideation · SciMON → ResearchAgent → SciPIP · CycleResearcher · VirSci · Tree-of-Debate</h4>
+    <p>八篇精读论文用一套统一视觉语言拆开：总范式「一条流水线五个槽位」→ 三大生成类（结构增强 / 训练内化 / 社会模拟）+ 一个评估件 → 每类对比图 + 每篇流程图 + 全维度矩阵。与下方「💡 Idea 生成」一簇的精读页互链。</p>
+    <div class="links">
+      <a href="Literature项目或者系统/横向对比/Idea生成系统/Idea生成系统_横向可视化.html">横向可视化报告 (html)</a>
+    </div>
+  </div>
+
 </div>
 </details>
 </section>
@@ -1216,7 +1242,18 @@ return timeout_answer</div>
 <details class="sec-fold">
 <summary>  <div class="sec-head"><h2>💡 Idea 生成</h2><span class="count">8 个（7 生成 + 1 评估）· 全部精读+代码审计</span></div><span class="open-hint">点开阅读 ▾</span></summary>
 <div class="sec-body">
-  <p class="sec-note">很多 literature 工作最终是服务于 idea 生成的——这一簇专门看「idea 生成系统<b>是怎么做文献的</b>」。五条路线：<b>引用链</b>（CoI）、<b>概念网络</b>（Deep Ideation）、<b>知识图/实体检索</b>（SciMON → ResearchAgent → SciPIP 一条演化线）、<b>端到端训练语料</b>（CycleResearcher）、<b>agent 人设+新颖性对照库</b>（VirSci）；另收 <b>Tree-of-Debate</b> 补这条线缺的评估环节（论文对→辩论树，不产 idea）。每篇均已通读论文全文+代码并写成精读页（论文原图 + 论文↔代码审计 + 评审意见对照）。</p>
+  <p class="sec-note">很多 literature 工作最终是服务于 idea 生成的——这一簇专门看「idea 生成系统<b>是怎么做文献的</b>」。五条路线：<b>引用链</b>（CoI）、<b>概念网络</b>（Deep Ideation）、<b>知识图/实体检索</b>（SciMON → ResearchAgent → SciPIP 一条演化线）、<b>端到端训练语料</b>（CycleResearcher）、<b>agent 人设+新颖性对照库</b>（VirSci）；另收 <b>Tree-of-Debate</b> 补这条线缺的评估环节（论文对→辩论树，不产 idea）。每篇均已通读论文全文+代码并写成精读页（论文原图 + 论文↔代码审计 + 评审意见对照）。八篇的横向对比见 <a href="Literature项目或者系统/横向对比/Idea生成系统/Idea生成系统_横向可视化.html">⚖️ Idea 生成系统横向可视化</a>（总范式五槽位 → 三大类 → 每类/每篇流程图 → 全维度矩阵）。</p>
+
+  <details class="feature-fold">
+    <summary><h4>🗺️ 八篇横向可视化 —— 一条流水线五个槽位，三大类 + 一个评估件</h4><span class="fold-hint">点开看导览 ▾</span></summary>
+    <div class="fold-body">
+      <p>把这 8 篇用一套统一视觉语言拆开：<b>① 总范式</b>——所有系统都在填同一条流水线的五个槽位（输入 / 知识组织 / 生成机制 / 新颖性保障 / 评估协议），8×5 填充矩阵一眼看全；<b>② 大类划分</b>——按"知识栖身在哪"分为结构增强（CoI 链 · Deep Ideation 共现图 · SciMON→ResearchAgent→SciPIP 实体/KG 演化线）、训练内化（CycleResearcher）、社会模拟（VirSci）+ 评估件（Tree-of-Debate），配定位地图标出没人做过的空白象限；<b>③–⑥ 每类对比图 + 每篇流程图</b>（含演化线 ▶继承/▲改变/✗丢弃 三泳道表，嵌论文原图）；<b>⑦ 全维度矩阵</b>（10 维 × 8 篇）；<b>⑧ 共同软肋</b>（评价协议同源、无下游执行验证、结构增益拆不干净、三种新颖性哲学未同台）。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/横向对比/Idea生成系统/Idea生成系统_横向可视化.html">打开横向可视化报告 (html)</a>
+      </div>
+    </div>
+  </details>
+
   <div class="grid">
     <div class="card">
       <h4>SciMON <span class="verdict v-ok">文献→实体灵感</span></h4>

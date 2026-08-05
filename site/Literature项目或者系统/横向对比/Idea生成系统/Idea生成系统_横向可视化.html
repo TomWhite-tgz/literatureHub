@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Idea 生成系统横向可视化 —— 文献如何变成 Idea</title>
+<style>
+:root{
+  --ink:#1f2421; --muted:#5c635d; --paper:#f7f4ef; --panel:#fbf9f5; --white:#fff;
+  --line:#e7e1d7; --accent:#c4612f; --accent-dark:#a94e22; --accent-pale:#f2e3d6;
+  --green:#315b45; --green-pale:#edf2ee; --blue:#355f78; --blue-pale:#edf4f7;
+  --warning:#8a641c; --warning-pale:#fff7e6; --danger:#934958; --danger-pale:#fff0f2;
+  --violet:#64507c; --violet-pale:#f1edf6; --slate:#5b5544; --slate-pale:#ece7da;
+  --shadow:0 2px 8px rgba(31,36,33,.06); --figure-shadow:0 4px 14px rgba(31,36,33,.11);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{color:var(--ink);background:var(--paper);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;font-size:16px;line-height:1.72}
+.container{width:min(1180px,calc(100% - 44px));margin:0 auto;padding:52px 18px 76px}
+a{color:var(--accent-dark)}
+header{margin-bottom:30px;padding-bottom:30px;border-bottom:1px solid var(--line);text-align:center}
+.back-link{display:inline-block;margin-bottom:18px;color:var(--accent);font-size:.93rem;font-weight:650;text-decoration:none}
+h1{font-size:2.0rem;letter-spacing:.5px}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:10px;font-size:.98rem;max-width:900px;margin-left:auto;margin-right:auto}
+.toc{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:20px}
+.toc a{text-decoration:none;font-size:.85rem;color:var(--accent-dark);background:var(--accent-pale);border:1px solid #e6cdb2;padding:5px 14px;border-radius:999px}
+.toc a:hover{background:var(--accent);color:#fff}
+
+section{margin-top:48px}
+.sec-head{display:flex;align-items:baseline;gap:12px;border-left:5px solid var(--accent);padding-left:14px;margin-bottom:8px}
+.sec-head h2{font-size:1.45rem}
+.sec-head .en{color:var(--muted);font-size:.85rem}
+.sec-note{color:var(--muted);font-size:.92rem;margin:2px 0 18px 19px;max-width:1000px}
+h3.block-title{font-size:1.12rem;margin:26px 0 10px;display:flex;align-items:center;gap:10px}
+h3.block-title .num{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:8px;background:var(--accent);color:#fff;font-size:.85rem;padding:0 6px}
+
+.card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:20px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+
+/* ---------- 图例 ---------- */
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.legend .chip{cursor:default}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:999px;font-size:.8rem;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.c-input{background:var(--slate-pale);color:var(--slate);border-color:#d4cdb8}
+.c-corpus{background:var(--blue-pale);color:var(--blue);border-color:#c3d4de}
+.c-struct{background:var(--green-pale);color:var(--green);border-color:#c2d2c6}
+.c-llm{background:var(--accent-pale);color:var(--accent-dark);border-color:#e6cdb2}
+.c-train{background:var(--violet-pale);color:var(--violet);border-color:#d3cade}
+.c-review{background:var(--warning-pale);color:var(--warning);border-color:#e8d9ae}
+.c-novel{background:var(--danger-pale);color:var(--danger);border-color:#e8c4cc}
+.c-output{background:#e4e7e4;color:var(--ink);border-color:#c9cfc9}
+.c-eval{background:#fff;color:var(--ink);border:1.5px dashed #a89f8d}
+
+/* ---------- 流程图通用 ---------- */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:12px 0}
+.node{border-radius:10px;padding:9px 13px;font-size:.85rem;line-height:1.45;border:1.5px solid;max-width:230px;display:flex;flex-direction:column;justify-content:center;background:#fff}
+.node b{font-size:.88rem;display:block}
+.node small{font-size:.74rem;color:inherit;opacity:.85;font-weight:400}
+.n-input{border-color:#c9c0ab;background:var(--slate-pale);color:var(--slate)}
+.n-corpus{border-color:#a9c2d0;background:var(--blue-pale);color:var(--blue)}
+.n-struct{border-color:#a8c2b0;background:var(--green-pale);color:var(--green)}
+.n-llm{border-color:#e0b490;background:var(--accent-pale);color:var(--accent-dark)}
+.n-train{border-color:#c0b3d1;background:var(--violet-pale);color:var(--violet)}
+.n-review{border-color:#dcc57f;background:var(--warning-pale);color:var(--warning)}
+.n-novel{border-color:#dfa9b6;background:var(--danger-pale);color:var(--danger)}
+.n-output{border-color:#9aa39b;background:#e4e7e4;color:var(--ink)}
+.n-eval{border:1.5px dashed #a89f8d;background:#fff;color:var(--slate)}
+.arrow{display:flex;align-items:center;padding:0 7px;color:#b0a892;font-size:1.15rem;font-weight:700;flex:0 0 auto}
+.arrow.down{justify-content:center;padding:4px 0}
+.loop-tag{font-size:.72rem;font-weight:700;color:var(--danger);background:var(--danger-pale);border:1px solid #e8c4cc;border-radius:6px;padding:1px 7px;margin-left:6px}
+.flow-col{display:flex;flex-direction:column;gap:0}
+
+/* ---------- 槽位矩阵 ---------- */
+.slot-matrix{overflow-x:auto}
+.slot-grid{display:grid;grid-template-columns:150px repeat(5,minmax(168px,1fr));gap:6px;min-width:1020px}
+.slot-grid .gh{font-size:.82rem;font-weight:700;color:var(--muted);text-align:center;padding:6px 4px;border-bottom:2px solid var(--line)}
+.slot-grid .rh{font-size:.86rem;font-weight:700;display:flex;align-items:center;gap:6px;padding:8px 6px}
+.slot-grid .cell{padding:7px 9px;border-radius:8px;font-size:.78rem;line-height:1.5;border:1px solid;background:#fff}
+.slot-grid .cell.none{color:#b9b2a2;background:transparent;border-style:dashed;text-align:center}
+.pdot{display:inline-block;width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+
+/* ---------- 定位地图 ---------- */
+.map-wrap{display:flex;justify-content:center}
+.map-note{font-size:.82rem;color:var(--muted);text-align:center;margin-top:6px}
+
+/* ---------- 范式卡 ---------- */
+.paradigm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:14px}
+.pcard{border-radius:12px;padding:18px;border:1.5px solid;background:#fff;box-shadow:var(--shadow)}
+.pcard h4{font-size:1.02rem;margin-bottom:4px}
+.pcard .essence{font-size:.86rem;color:var(--muted);margin-bottom:10px}
+.pcard .members{display:flex;flex-direction:column;gap:5px;font-size:.85rem}
+.pcard .members a{text-decoration:none;font-weight:650}
+.pa{border-color:#a8c2b0;background:linear-gradient(160deg,#f4f8f4,#edf2ee)}
+.pb{border-color:#c0b3d1;background:linear-gradient(160deg,#f6f3f9,#f1edf6)}
+.pc{border-color:#dfa9b6;background:linear-gradient(160deg,#faf1f3,#fff0f2)}
+.pd{border-color:#c9c0ab;background:linear-gradient(160deg,#f2efe8,#ece7da)}
+
+/* ---------- 泳道对比（演化线） ---------- */
+.lanes{overflow-x:auto}
+.lane-grid{display:grid;grid-template-columns:118px repeat(3,minmax(250px,1fr));gap:6px;min-width:920px}
+.lane-grid .gh{font-size:.82rem;font-weight:700;text-align:center;padding:7px 4px;border-bottom:2px solid var(--line)}
+.lane-grid .lh{font-size:.8rem;font-weight:700;color:var(--muted);display:flex;align-items:center;padding:6px}
+.lane-grid .cell{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.79rem;line-height:1.55}
+.lane-grid .cell .mark{font-weight:700;margin-right:4px}
+.mark.same{color:var(--green)} .mark.diff{color:var(--accent-dark)} .mark.gone{color:var(--danger)}
+.evo-arrow{text-align:center;font-size:.8rem;color:var(--accent-dark);font-weight:700;padding:2px 0}
+
+/* ---------- 论文原图 ---------- */
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid var(--line);border-radius:10px;box-shadow:var(--figure-shadow);background:#fff}
+figcaption{font-size:.8rem;color:var(--muted);margin-top:6px}
+.fig-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start}
+
+/* ---------- 对比表 ---------- */
+table.cmp{width:100%;border-collapse:collapse;font-size:.82rem;background:#fff;border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+table.cmp th,table.cmp td{border:1px solid var(--line);padding:7px 9px;vertical-align:top;text-align:left}
+table.cmp thead th{background:var(--panel);font-size:.8rem}
+table.cmp tbody th{background:var(--panel);font-weight:700;white-space:nowrap;font-size:.8rem}
+.tbl-scroll{overflow-x:auto}
+
+/* ---------- 其他 ---------- */
+.callout{border-left:4px solid var(--accent);background:var(--accent-pale);border-radius:0 10px 10px 0;padding:12px 16px;font-size:.9rem;margin:14px 0}
+.callout.warn{border-color:var(--danger);background:var(--danger-pale)}
+.callout.green{border-color:var(--green);background:var(--green-pale)}
+.kv{font-size:.86rem;color:var(--muted)}
+.kv b{color:var(--ink)}
+.readlink{display:inline-block;font-size:.8rem;text-decoration:none;color:var(--accent-dark);border:1px solid #ddb894;background:#fdf3e7;padding:2px 10px;border-radius:6px;margin-top:8px}
+.readlink:hover{background:var(--accent);color:#fff}
+.two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:.82rem}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <a class="back-link" href="../../../index.html">← 返回 Literature 总览</a>
+  <h1>Idea 生成系统 <span>横向可视化</span></h1>
+  <p class="subtitle">八篇精读论文（CoI · Deep Ideation · SciMON · ResearchAgent · SciPIP · CycleResearcher · VirSci · Tree-of-Debate）用一套统一的视觉语言拆开：文献从哪进、知识怎么组织、idea 怎么生成、新颖性在哪一环保障、最后谁来评判。</p>
+  <div class="toc">
+    <a href="#paradigm">① 总范式：五个槽位</a>
+    <a href="#taxonomy">② 三大类 + 一个评估件</a>
+    <a href="#classA">③ 大类A：结构增强</a>
+    <a href="#classB">④ 大类B：训练内化</a>
+    <a href="#classC">⑤ 大类C：社会模拟</a>
+    <a href="#classD">⑥ 评估件：辩论树</a>
+    <a href="#matrix">⑦ 全维度矩阵</a>
+    <a href="#takeaway">⑧ 共同软肋</a>
+  </div>
+  <div class="legend" style="justify-content:center">
+    <span class="chip c-input">输入</span>
+    <span class="chip c-corpus">文献库 / 语料</span>
+    <span class="chip c-struct">知识组织（结构）</span>
+    <span class="chip c-llm">LLM 生成（prompt）</span>
+    <span class="chip c-train">训练 / 权重</span>
+    <span class="chip c-review">评审 / 打分</span>
+    <span class="chip c-novel">新颖性检查</span>
+    <span class="chip c-output">输出</span>
+    <span class="chip c-eval">评估协议</span>
+  </div>
+  <p class="kv" style="margin-top:6px">全页所有流程图共用上面这套颜色 —— <b>同一个颜色 = 同一个角色</b>，因此各方法的差异可以直接用眼睛扫出来。</p>
+</header>
+
+<!-- ============================================================ -->
+<section id="paradigm">
+  <div class="sec-head"><h2>① 总范式：一条流水线，五个槽位</h2><span class="en">The Universal Paradigm</span></div>
+  <p class="sec-note">所有「文献 → idea」系统都在填同一条流水线的五个槽位。<b>方法与方法的全部区别，就是每个槽位里填了什么、以及哪个槽位空着。</b></p>
+
+  <div class="card">
+    <div class="flow" style="justify-content:center">
+      <div class="node n-input"><b>槽位1 · 输入</b><small>用户给什么：主题？种子论文？背景段落？关键词？参考文献？</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-struct"><b>槽位2 · 知识组织</b><small>文献被变成什么形态：链 / 图 / KG / 矩阵 / 训练语料 / 人设</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-llm"><b>槽位3 · 生成机制</b><small>谁产出 idea：prompt 编排 / 训练好的权重 / 多 agent 讨论</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-novel"><b>槽位4 · 新颖性保障</b><small>事前分工 / 事中打分 / 事后查重 / 没有</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-eval"><b>槽位5 · 评估协议</b><small>LLM 裁判 / 人评 / 对照库指标 / 辩论树</small></div>
+    </div>
+    <p class="kv" style="text-align:center;margin-top:8px">输出物（一句话 idea / 三段式 proposal / 完整论文 / 对比报告）由五个槽位的填法共同决定。</p>
+  </div>
+
+  <h3 class="block-title"><span class="num">1.1</span>八篇论文的槽位填充矩阵</h3>
+  <p class="sec-note">这张表是全页的总纲：竖着看是一篇论文的完整配方，横着看是同一槽位上八种不同答案。</p>
+  <div class="card slot-matrix">
+    <div class="slot-grid">
+      <div class="gh">论文 \ 槽位</div>
+      <div class="gh">① 输入</div><div class="gh">② 知识组织</div><div class="gh">③ 生成机制</div><div class="gh">④ 新颖性</div><div class="gh">⑤ 评估</div>
+
+      <div class="rh"><span class="pdot" style="background:var(--blue)"></span>CoI</div>
+      <div class="cell c-input">一个研究 topic<br><small>系统自检索 anchor 论文</small></div>
+      <div class="cell c-struct">K 条<b>引用演化链</b>（≤5篇）+ 链间趋势摘要</div>
+      <div class="cell c-llm">GPT-4o 分步：future→motivation→novelty→method</div>
+      <div class="cell c-novel"><b>事后查重</b>：S2 标题+摘要检索，撞车重写 ↺</div>
+      <div class="cell c-eval">Idea Arena：成对对战 + ELO，LLM+人类双裁判</div>
+
+      <div class="rh"><span class="pdot" style="background:var(--green)"></span>Deep Ideation</div>
+      <div class="cell c-input">一个种子<b>关键词</b></div>
+      <div class="cell c-struct">10.7万篇论文的<b>关键词共现图</b>，边挂 LLM 短文本</div>
+      <div class="cell c-llm">图上游走：explore→expand 挑词→重写 proposal ↺</div>
+      <div class="cell c-novel"><b>图距离=新颖性</b> + 微调 critic 打分（事中）</div>
+      <div class="cell c-eval">LLM judge + 54 人（仅三句话交代）；主表数字自相矛盾</div>
+
+      <div class="rh"><span class="pdot" style="background:var(--violet)"></span>SciMON</div>
+      <div class="cell c-input">背景段落 + <b>种子术语</b>（半开卷）</div>
+      <div class="cell c-struct">IE 流水线抽 19.7万节点 <b>used-for 知识图</b> + 11万训练对</div>
+      <div class="cell c-llm">三路检索（语义/KG/引文）+ GPT few-shot / 微调 T5</div>
+      <div class="cell c-novel"><b>事后查重</b>：retrieve–compare–update ↺（实际≤2轮）</div>
+      <div class="cell c-eval">自动指标 + 4 组人评；诚实的负结果（85% 真论文更深）</div>
+
+      <div class="rh"><span class="pdot" style="background:#7a6494"></span>ResearchAgent</div>
+      <div class="cell c-input">一篇<b>核心论文</b> l₀（引用&gt;20）</div>
+      <div class="cell c-struct">引用图 top-10 + <b>实体共现矩阵</b>（BLINK，贝叶斯打分）</div>
+      <div class="cell c-llm">Problem→Method→Experiment 三阶段，每阶段生成-评审 3 轮</div>
+      <div class="cell c-novel">靠评审 rubric 的 Originality 维度（<b>无外部查重</b>）</div>
+      <div class="cell c-eval">10 组真实评审诱导 rubric；GPT-4 机评 + 10 位专家人评</div>
+
+      <div class="rh"><span class="pdot" style="background:#4e3f66"></span>SciPIP</div>
+      <div class="cell c-input">纯<b>用户背景段落</b>（无种子，最真实）</div>
+      <div class="cell c-struct">GPT-4o 把 7.8万篇重摘要为<b>五元组</b>，存 Neo4j 二部图</div>
+      <div class="cell c-llm"><b>双路</b>：脑暴路 + 检索路 → 融合 ~5 个 idea</div>
+      <div class="cell c-novel"><b>事前分工</b>：脑暴管新颖、检索管可行（无查重）</div>
+      <div class="cell c-eval">v1 LLM 裁判被拒 → v2 改 12 位人类评审 + 成对比较</div>
+
+      <div class="rh"><span class="pdot" style="background:var(--accent)"></span>CycleResearcher</div>
+      <div class="cell c-input">一份 <b>references.bib</b>（≈58篇）+ topic</div>
+      <div class="cell c-struct">文献变成<b>训练语料</b>：Research-14k 大纲/正文交替 + Review-5k</div>
+      <div class="cell c-train">SFT + CycleReviewer 当 reward 做迭代 SimPO → <b>权重内一次性生成</b></div>
+      <div class="cell c-novel">无显式机制，仅 reward 的 contribution 分项间接施压</div>
+      <div class="cell c-eval">CycleReviewer 打分 + 独立 RM 重评 + 3 位专家；实验数据是编的</div>
+
+      <div class="rh"><span class="pdot" style="background:var(--danger)"></span>VirSci</div>
+      <div class="cell c-input">真实<b>作者档案</b> + 合作网络 + 根 topic</div>
+      <div class="cell c-struct">时间切分论文库（过去库/当代库）→ agent <b>人设与对照库</b></div>
+      <div class="cell c-llm">多 agent 五阶段：组队→选题→idea→查新投票→摘要</div>
+      <div class="cell c-novel">检索查新 + 自评 + <b>成员盲投</b>；对照库 HD/CD/CI/ON</div>
+      <div class="cell c-eval">对照库指标 + LLM review + 10 位博士盲评（r=0.52）</div>
+
+      <div class="rh"><span class="pdot" style="background:var(--slate)"></span>Tree-of-Debate</div>
+      <div class="cell c-input"><b>两篇论文</b> p₁,p₂ + 根话题</div>
+      <div class="cell c-struct">论文→辩手 persona；<b>辩论树</b>（节点=子话题回合）</div>
+      <div class="cell c-llm">self-deliberation → present/respond/revise → 扩展判定</div>
+      <div class="cell c-novel">本身就是新颖性评估器：对抗辩论诱导相对新颖性判断</div>
+      <div class="cell c-eval">不产 idea —— 它是给「两篇论文比谁更新颖」建的评估件</div>
+    </div>
+  </div>
+
+  <div class="callout">读法示例：竖着看 SciPIP 一列 —— 它的差异化全部来自槽位②（LLM 重摘要的高质量语料）和槽位④（事前双路分工，而不是 SciMON 的事后查重）；槽位③的 prompt 编排反而是最没有新意的部分。</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="taxonomy">
+  <div class="sec-head"><h2>② 八篇论文分成几大类？</h2><span class="en">Taxonomy</span></div>
+  <p class="sec-note">按「<b>文献知识最终栖身在哪里</b>」这个最根本的分歧，八篇分成三个生成大类 + 一个评估件。槽位②（知识组织）的形态决定大类归属。</p>
+
+  <div class="paradigm-grid">
+    <div class="pcard pa">
+      <h4>大类 A · 结构增强生成</h4>
+      <div class="essence">文献 → <b>显式结构</b>（链/图/KG/矩阵）→ 塞进 prompt。<br>知识活在「上下文」里；模型本身不动。</div>
+      <div class="members">
+        <a href="#coi">▸ CoI —— 结构 = 引用演化链</a>
+        <a href="#di">▸ Deep Ideation —— 结构 = 关键词共现图</a>
+        <a href="#evo">▸ SciMON → ResearchAgent → SciPIP —— 结构 = 实体/KG 检索（一条演化线）</a>
+      </div>
+    </div>
+    <div class="pcard pb">
+      <h4>大类 B · 训练内化生成</h4>
+      <div class="essence">文献 → <b>训练语料</b> → 蒸进模型权重。<br>知识活在「参数」里；推理时不再需要检索。</div>
+      <div class="members">
+        <a href="#cr">▸ CycleResearcher —— SFT + 评审模型做 reward 的偏好优化</a>
+      </div>
+    </div>
+    <div class="pcard pc">
+      <h4>大类 C · 社会模拟生成</h4>
+      <div class="essence">文献 → <b>agent 人设 + 时间对照库</b> → 多智能体讨论。<br>知识活在「社会过程」里；idea 是互动的涌现物。</div>
+      <div class="members">
+        <a href="#virsci">▸ VirSci —— 真实作者档案 role-play 的虚拟科研团队</a>
+      </div>
+    </div>
+    <div class="pcard pd">
+      <h4>补 · 评估件（不产 idea）</h4>
+      <div class="essence">这条线缺「事后怎么判断两个 idea/论文谁更新颖」的环节。</div>
+      <div class="members">
+        <a href="#tod">▸ Tree-of-Debate —— 论文对 → 辩论树 → 相对新颖性判断</a>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="block-title"><span class="num">2.1</span>定位地图：两个决策轴上的八篇论文</h3>
+  <p class="sec-note">横轴 = <b>知识载体</b>（越靠右，知识离 prompt 越远、越沉进系统内部）；纵轴 = <b>新颖性干预时机</b>（越靠上越偏"事后检查"，越靠下越偏"事前设计"）。右上和右下两个象限基本空着 —— 那是没人做过的组合。</p>
+  <div class="card map-wrap">
+    <svg viewBox="0 0 860 470" width="860" height="470" role="img" aria-label="八篇论文定位地图">
+      <!-- axes -->
+      <line x1="90" y1="400" x2="810" y2="400" stroke="#b0a892" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="90" y1="400" x2="90" y2="40" stroke="#b0a892" stroke-width="1.5" marker-end="url(#arr)"/>
+      <defs><marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#b0a892"/></marker></defs>
+      <text x="450" y="440" text-anchor="middle" font-size="14" fill="#5c635d">知识载体：prompt 上下文 → agent 社会过程 → 模型权重</text>
+      <text x="40" y="230" text-anchor="middle" font-size="14" fill="#5c635d" transform="rotate(-90 40 230)">新颖性干预：事前设计 → 事中打分 → 事后查重</text>
+      <!-- quadrant labels -->
+      <text x="200" y="70" font-size="12" fill="#c2bba9">事后查重 × 上下文结构</text>
+      <text x="640" y="70" font-size="12" fill="#c2bba9">事后查重 × 权重（空）</text>
+      <text x="200" y="385" font-size="12" fill="#c2bba9">事前设计 × 上下文结构</text>
+      <text x="620" y="385" font-size="12" fill="#c2bba9">事前设计 × 权重（空）</text>
+      <line x1="90" y1="225" x2="810" y2="225" stroke="#e7e1d7" stroke-dasharray="5 5"/>
+      <line x1="450" y1="40" x2="450" y2="400" stroke="#e7e1d7" stroke-dasharray="5 5"/>
+      <!-- dots: (x: knowledge 100-800, y: novelty 60-390, 上=事后) -->
+      <!-- CoI: context chain, post-check -->
+      <circle cx="210" cy="120" r="11" fill="#355f78"/><text x="228" y="125" font-size="14" font-weight="700" fill="#355f78">CoI</text>
+      <!-- SciMON: context KG, post-check -->
+      <circle cx="150" cy="165" r="11" fill="#64507c"/><text x="168" y="170" font-size="14" font-weight="700" fill="#64507c">SciMON</text>
+      <!-- ResearchAgent: context, mid (rubric) -->
+      <circle cx="250" cy="215" r="11" fill="#7a6494"/><text x="268" y="220" font-size="14" font-weight="700" fill="#7a6494">ResearchAgent</text>
+      <!-- DeepIdeation: context graph, mid (critic, distance=prior-ish) -->
+      <circle cx="300" cy="250" r="11" fill="#315b45"/><text x="318" y="255" font-size="14" font-weight="700" fill="#315b45">Deep Ideation</text>
+      <!-- SciPIP: context, prior -->
+      <circle cx="230" cy="330" r="11" fill="#4e3f66"/><text x="248" y="335" font-size="14" font-weight="700" fill="#4e3f66">SciPIP</text>
+      <!-- VirSci: social, mixed -->
+      <circle cx="560" cy="225" r="11" fill="#934958"/><text x="578" y="230" font-size="14" font-weight="700" fill="#934958">VirSci</text>
+      <!-- CycleResearcher: weights, weak/no explicit -->
+      <circle cx="740" cy="280" r="11" fill="#c4612f"/><text x="620" y="284" font-size="14" font-weight="700" fill="#c4612f" text-anchor="end">CycleResearcher</text>
+      <!-- Tree-of-Debate: evaluation -->
+      <rect x="470" y="90" width="150" height="34" rx="9" fill="none" stroke="#5b5544" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="545" y="112" text-anchor="middle" font-size="13" font-weight="700" fill="#5b5544">Tree-of-Debate</text>
+      <text x="545" y="140" text-anchor="middle" font-size="11" fill="#8d8676">（评估件：事后相对新颖性）</text>
+    </svg>
+  </div>
+  <p class="map-note">位置为定性判断（依据各篇精读页的新颖性机制与知识组织方式），用于看格局而非精确坐标。</p>
+
+  <div class="callout green"><b>这张地图上的两个空格就是机会：</b>① 事后查重 × 训练内化（生成后用独立检索器兜底，再回灌训练）；② 事前设计 × 训练内化（把 SciPIP 式"双路分工"变成训练目标而非 prompt 技巧）。三个大类目前互不通讯：结构派不懂训练，训练派不做检索，模拟派自成一体。</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="classA">
+  <div class="sec-head"><h2>③ 大类 A · 结构增强生成</h2><span class="en">Structure-Augmented</span></div>
+  <p class="sec-note">五篇论文共享同一个骨架，区别只在「文献被组织成什么结构」这一层。先看骨架，再看三种结构形态，最后逐篇拆流程。</p>
+
+  <div class="card">
+    <div class="flow" style="justify-content:center">
+      <div class="node n-corpus"><b>文献库</b><small>S2 / 顶会语料</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-struct"><b>结构化组织 ★分歧点</b><small>链 / 共现图 / KG / 共现矩阵</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-llm"><b>上下文组装 + LLM prompt</b><small>零训练，编排 GPT-4 系列</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-output"><b>idea</b><small>一句话 → 三件套 → 五个带细节段落</small></div>
+    </div>
+    <p class="kv" style="text-align:center;margin-top:6px">共同软肋也来自骨架本身：增益有多少来自结构、多少来自底层 LLM，五篇都没有拆干净（ResearchAgent 的"随机材料也涨分"是最直接的证据）。</p>
+  </div>
+
+  <h3 class="block-title"><span class="num">3.0</span>三种知识形态一眼对比</h3>
+  <div class="card">
+    <div class="fig-row">
+      <div>
+        <svg viewBox="0 0 340 170" width="100%" role="img" aria-label="链形态">
+          <text x="170" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#355f78">链（CoI）：时间承继</text>
+          <g font-size="10.5" text-anchor="middle">
+            <rect x="8" y="70" width="56" height="30" rx="7" fill="#edf4f7" stroke="#355f78"/><text x="36" y="89" fill="#355f78">奠基作</text>
+            <rect x="76" y="70" width="56" height="30" rx="7" fill="#edf4f7" stroke="#355f78"/><text x="104" y="89" fill="#355f78">P i-1</text>
+            <rect x="144" y="64" width="56" height="42" rx="7" fill="#355f78"/><text x="172" y="82" fill="#fff" font-weight="700">anchor</text><text x="172" y="96" fill="#dbe7ee" font-size="9">系统检索</text>
+            <rect x="212" y="70" width="56" height="30" rx="7" fill="#edf4f7" stroke="#355f78"/><text x="240" y="89" fill="#355f78">P i+1</text>
+            <rect x="278" y="70" width="56" height="30" rx="7" fill="#edf4f7" stroke="#355f78"/><text x="306" y="89" fill="#355f78">最新</text>
+          </g>
+          <g stroke="#355f78" stroke-width="1.6" marker-end="url(#a2)"><line x1="64" y1="85" x2="74" y2="85"/><line x1="132" y1="85" x2="142" y2="85"/><line x1="200" y1="85" x2="210" y2="85"/><line x1="268" y1="85" x2="276" y2="85"/></g>
+          <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#355f78"/></marker></defs>
+          <text x="36" y="130" font-size="10" fill="#5c635d">←向后：LLM 读全文挑参考文献</text>
+          <text x="200" y="130" font-size="10" fill="#5c635d">向前：embedding 排引用者→</text>
+          <text x="170" y="158" text-anchor="middle" font-size="10.5" fill="#934958">关系语义最明确（承继），但只有单条脉络</text>
+        </svg>
+      </div>
+      <div>
+        <svg viewBox="0 0 340 170" width="100%" role="img" aria-label="共现图形态">
+          <text x="170" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#315b45">共现图（Deep Ideation）：邻域游走</text>
+          <g stroke="#9db8a6" stroke-width="1.4">
+            <line x1="170" y1="80" x2="90" y2="45"/><line x1="170" y1="80" x2="250" y2="45"/>
+            <line x1="170" y1="80" x2="70" y2="115"/><line x1="170" y1="80" x2="270" y2="115"/>
+            <line x1="90" y1="45" x2="250" y2="45" stroke-dasharray="3 3"/><line x1="70" y1="115" x2="150" y2="140" stroke-dasharray="3 3"/>
+          </g>
+          <g font-size="10" text-anchor="middle">
+            <circle cx="170" cy="80" r="16" fill="#315b45"/><text x="170" y="84" fill="#fff" font-weight="700">种子词</text>
+            <circle cx="90" cy="45" r="11" fill="#edf2ee" stroke="#315b45"/><text x="90" y="33" fill="#315b45">近邻</text>
+            <circle cx="250" cy="45" r="11" fill="#edf2ee" stroke="#315b45"/><text x="250" y="33" fill="#315b45">近邻</text>
+            <circle cx="70" cy="115" r="11" fill="#edf2ee" stroke="#315b45"/><text x="70" y="140" fill="#315b45">近邻</text>
+            <circle cx="270" cy="115" r="11" fill="#f1edf6" stroke="#64507c"/><text x="270" y="140" fill="#64507c">远邻=新颖?</text>
+            <circle cx="150" cy="140" r="9" fill="#edf2ee" stroke="#315b45"/>
+          </g>
+          <text x="170" y="163" text-anchor="middle" font-size="10.5" fill="#934958">边挂 LLM 短文本；"图距离 = 新颖性"是写死的规则</text>
+        </svg>
+      </div>
+      <div>
+        <svg viewBox="0 0 340 170" width="100%" role="img" aria-label="实体检索形态">
+          <text x="170" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#64507c">实体/KG 检索（SciMON 线）：三路信号</text>
+          <g font-size="10.5">
+            <rect x="10" y="42" width="100" height="34" rx="7" fill="#edf4f7" stroke="#355f78"/><text x="60" y="57" text-anchor="middle" fill="#355f78" font-weight="700">① 语义近邻</text><text x="60" y="70" text-anchor="middle" fill="#5c635d" font-size="9">embedding 相似</text>
+            <rect x="10" y="86" width="100" height="34" rx="7" fill="#f1edf6" stroke="#64507c"/><text x="60" y="101" text-anchor="middle" fill="#64507c" font-weight="700">② 实体/关键词</text><text x="60" y="114" text-anchor="middle" fill="#5c635d" font-size="9">KG邻居/共现/邻域</text>
+            <rect x="10" y="130" width="100" height="28" rx="7" fill="#fff7e6" stroke="#8a641c"/><text x="60" y="148" text-anchor="middle" fill="#8a641c" font-weight="700">③ 引文/共引</text>
+            <rect x="150" y="70" width="80" height="44" rx="8" fill="#f2e3d6" stroke="#c4612f"/><text x="190" y="89" text-anchor="middle" fill="#a94e22" font-weight="700">灵感材料</text><text x="190" y="103" text-anchor="middle" fill="#5c635d" font-size="9">实体→段落</text>
+            <rect x="262" y="70" width="70" height="44" rx="8" fill="#e4e7e4" stroke="#1f2421"/><text x="297" y="89" text-anchor="middle" font-weight="700">LLM</text><text x="297" y="103" text-anchor="middle" fill="#5c635d" font-size="9">生成 idea</text>
+          </g>
+          <g stroke="#8d8676" stroke-width="1.4" marker-end="url(#a3)"><line x1="110" y1="59" x2="148" y2="80"/><line x1="110" y1="103" x2="148" y2="95"/><line x1="110" y1="144" x2="148" y2="106"/><line x1="230" y1="92" x2="260" y2="92"/></g>
+          <defs><marker id="a3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#8d8676"/></marker></defs>
+          <text x="170" y="167" text-anchor="middle" font-size="10.5" fill="#934958">三路框架自 SciMON 起被原样继承 —— SciPIP 被判"差距边际"的依据</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------------- CoI ---------------- -->
+  <h3 class="block-title" id="coi"><span class="num" style="background:var(--blue)">3.1</span>CoI（Chain of Ideas）· 把综述的时间结构变成 prompt 结构</h3>
+  <div class="card">
+    <div class="flow-col">
+      <div class="flow">
+        <div class="node n-input"><b>topic</b><small>如 "LLM agent memory"</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-llm"><b>改写 ≤5 查询</b><small>GPT-4o</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-corpus"><b>S2 检索 anchor</b><small>embedding 重排，K=3 条链</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-struct"><b>双向延链 ≤5 篇</b><small>向后：mini 读全文挑 top-3 参考文献<br>向前：embedding 排引用者（代码闸门判错对象，实际只靠 embedding）</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-struct"><b>逐篇五段提取 + 链间趋势</b><small>Background/Novelty/Contribution/Reason/Limitation<br>GPT-4o 汇总"Paper i→i+1"演化 trend</small></div>
+      </div>
+      <div class="arrow down">↓ 上下文 = 链 + 趋势 + 实体 + 历史实验</div>
+      <div class="flow">
+        <div class="node n-llm"><b>① 预测 future</b><small>+ 四种思维模式：Reflection/Analogy/Deep Dive/Imitate</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-llm"><b>② motivation→novelty→method</b><small>汇总成带标题 idea</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-novel"><b>③ novelty checker<span class="loop-tag">↺ 循环</span></b><small>≤3 查重查询 × S2 各 5 篇（仅标题+摘要）<br>mini 判撞车 → 注入 bad case 重写</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-review"><b>④ K 条链对战选优</b><small>两两比较</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-output"><b>idea + 实验设计</b><small>链上实验当 few-shot；ReviewAgent 迭代 1 轮<br>单 idea ≈ $0.50</small></div>
+      </div>
+    </div>
+    <div class="fig-row">
+      <figure><img src="../../待归档/ChainOfIdeas/assets/fig2_pipeline.png" alt="CoI 三阶段框架"><figcaption>论文 Fig 2：三阶段框架（CoI 构建 → idea 生成 → 实验设计）</figcaption></figure>
+      <figure><img src="../../待归档/ChainOfIdeas/assets/fig6_length.png" alt="链长消融"><figcaption>论文 Fig 6：链长 0→3 的跳变 —— 本线最有价值的定量结论：<b>组织成链比多喂论文重要</b></figcaption></figure>
+    </div>
+    <p class="kv"><b>独到：</b>不训练，把"文献的时间结构"直接当 prompt 组织；评估用 Idea Arena（成对+ELO+双裁判）是全线最认真的协议设计。<b>短板：</b>向前扩链的相关性闸门判错对象（恒通过）；仅 OA 论文可入链；Idea Arena 复现代码未开源；ICLR 2025 被拒（5/5/5/8），AC 判"贡献天花板=结构化 RAG"。</p>
+    <a class="readlink" href="../../待归档/ChainOfIdeas/ChainOfIdeas_精读与代码审计.html">→ 精读与代码审计页</a>
+  </div>
+
+  <!-- ---------------- Deep Ideation ---------------- -->
+  <h3 class="block-title" id="di"><span class="num" style="background:var(--green)">3.2</span>Deep Ideation · 检索从"一次性"变成"图上游走"</h3>
+  <div class="card">
+    <div class="flow-col">
+      <div class="flow">
+        <div class="node n-corpus"><b>10.7 万篇顶会论文</b><small>LLM 每篇抽 3–4 关键词</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-struct"><b>关键词共现图</b><small>同篇共现连边；边挂 LLM 写的 2–4 句"两词如何被联系"<br>无方向/权重/消歧；跨论文聚合函数 g 未定义</small></div>
+      </div>
+      <div class="arrow down">↓</div>
+      <div class="flow">
+        <div class="node n-input"><b>种子关键词</b><small>如 Model Editing</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-struct"><b>explore</b><small>取邻居 ≤12 个 + 边文本 + 各词图距离</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-llm"><b>expand：挑恰好 1 个新词<span class="loop-tag">↺ 每轮</span></b><small>写死的规则：要新颖→挑图距离远的；要可行→挑近的</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-llm"><b>重写三段式 proposal</b><small>背景/idea/实现路径；压入 Idea Stack（历史全量累加）</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-review"><b>critic 打分</b><small>LoRA 微调 Qwen3-8B；novelty+feasibility 各 1–5</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-llm"><b>evolve</b><small>分低→换掉一个词（种子词不动）；否则重写</small></div>
+        <div class="arrow">→</div>
+        <div class="node n-output"><b>proposal</b><small>停止准则全文未定义</small></div>
+      </div>
+    </div>
+    <div class="fig-row">
+      <figure><img src="../../待归档/DeepIdeation/assets/figure2.png" alt="Deep Ideation 主环路"><figcaption>论文 Fig 2：explore–expand–evolve 主环路</figcaption></figure>
+      <figure><img src="../../待归档/DeepIdeation/assets/figure1.png" alt="概念网络"><figcaption>论文 Fig 1：概念网络与工作流总览</figcaption></figure>
+    </div>
+    <p class="kv"><b>真增量只有两点：</b>① 边挂 LLM 文本（比纯共现多语义）；② 游走式检索。<b>致命伤：</b>两点都没消融 —— 无法区分产出质量来自图还是 GPT-4o-mini（"与换皮 RAG 不可区分"）；"用真实评审训练 critic"系过度声称；主表数字自相矛盾；ICLR 2026 评分 2/6/2/2 零 rebuttal 撤稿；代码数据均未开源。</p>
+    <a class="readlink" href="../../待归档/DeepIdeation/DeepIdeation_精读.html">→ 精读页</a>
+  </div>
+
+  <!-- ---------------- 演化线 ---------------- -->
+  <h3 class="block-title" id="evo"><span class="num" style="background:var(--violet)">3.3</span>SciMON → ResearchAgent → SciPIP · 一条演化线</h3>
+  <p class="sec-note">三篇同构（三路检索信号 + LLM 生成），演化发生在四个维度：<b>任务粒度放大、知识基础设施升级、新颖性机制换向、评测回归人评</b>。<span class="mark same">▶</span>=继承自前作　<span class="mark diff">▲</span>=相对前作的改变　<span class="mark gone">✗</span>=被丢弃</p>
+
+  <div class="card lanes">
+    <div class="lane-grid">
+      <div class="gh">维度</div>
+      <div class="gh" style="color:var(--violet)">SciMON（ACL 2024）原点</div>
+      <div class="gh" style="color:#7a6494">ResearchAgent（NAACL 2025）</div>
+      <div class="gh" style="color:#4e3f66">SciPIP（ICLR 2025 撤稿→arXiv v2）</div>
+
+      <div class="lh">输入→输出</div>
+      <div class="cell">背景+种子术语（半开卷）→ <b>一句话 idea</b></div>
+      <div class="cell"><span class="mark diff">▲</span>一篇核心论文 → <b>Problem+Method+Experiment 三件套</b></div>
+      <div class="cell"><span class="mark diff">▲</span>纯用户背景（无种子）→ <b>~5 个带细节段落的 idea</b></div>
+
+      <div class="lh">知识基础设施</div>
+      <div class="cell">IE 流水线抽 <b>used-for KG</b>（19.7万节点，关系精度仅 65%）+ 11万训练对</div>
+      <div class="cell"><span class="mark diff">▲</span>BLINK 实体链接 → <b>共现矩阵</b> + 贝叶斯打分 top-30 实体</div>
+      <div class="cell"><span class="mark diff">▲</span><b>GPT-4o 整篇重摘要五元组</b> → Neo4j 二部图（7.8万篇，公开 dump）—— 用更强模型重做基础设施</div>
+
+      <div class="lh">检索信号</div>
+      <div class="cell">语义近邻 / KG 一跳 / 引文 top-5</div>
+      <div class="cell"><span class="mark same">▶</span>引用图相似 top-10 / 实体共现（两路）</div>
+      <div class="cell"><span class="mark same">▶</span>语义 / 关键词邻域 / 共引（SKC 三路互喂 + 聚类去冗余）</div>
+
+      <div class="lh">灵感单位</div>
+      <div class="cell">词条/实体级提示</div>
+      <div class="cell"><span class="mark same">▶</span>实体级（top-30 外部实体塞进 prompt）</div>
+      <div class="cell"><span class="mark diff">▲</span><b>段落级方法迁移</b>（"精简方法"→ inspiration）—— idea 细节量的来源</div>
+
+      <div class="lh">生成方式</div>
+      <div class="cell">GPT-3.5/4 few-shot + <b>微调 T5</b>（对比学习惩罚复制背景）</div>
+      <div class="cell"><span class="mark diff">▲</span>零训练，三阶段 × 生成-评审 3 轮，6 个 LLM agent，best-of-3 选优</div>
+      <div class="cell"><span class="mark diff">▲</span>零训练，<b>双路生成</b>（脑暴路 + 检索路）→ 融合</div>
+
+      <div class="lh">新颖性机制</div>
+      <div class="cell"><b>事后查重</b> retrieve–compare–update ↺（论文称迭代到收敛，代码只有两个手工脚本 ≤2 轮）</div>
+      <div class="cell"><span class="mark gone">✗</span>查重被丢 → 靠 rubric 的 Originality/Innovativeness 维度打分驱动重写</div>
+      <div class="cell"><span class="mark gone">✗</span>查重仍缺席 → <b>事前双路分工</b>：脑暴管新颖、检索管可行（消融数字方向相反，融合两头最高）</div>
+
+      <div class="lh">评估</div>
+      <div class="cell">自动指标 + 4 组人评；<b>诚实负结果</b>：85% 场合真论文 idea 更深</div>
+      <div class="cell"><span class="mark diff">▲</span>10 组真实评审诱导 rubric；GPT-4 机评+10 专家；人机 Spearman 0.49–0.64</div>
+      <div class="cell"><span class="mark diff">▲</span>v1 纯 LLM 裁判被四位评审齐轰 → v2 改 12 位人类评审 + 成对比较（无一致性报告）</div>
+
+      <div class="lh">工程/开源</div>
+      <div class="cell">研究脚本堆；发布版迭代脚本带必崩 bug</div>
+      <div class="cell"><span class="mark diff">▲</span>能跑的推理壳（~1100行），复现不了任何主表</div>
+      <div class="cell"><span class="mark diff">▲</span>7.5k 行完整系统 + Neo4j dump —— 工程完成度最高，也是审稿人唯一公认贡献</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <p class="kv"><b style="color:var(--violet)">SciMON 流程：</b>背景+种子 → 三路检索（语义/KG/引文）→ 实体级灵感 → GPT few-shot 或微调 T5 生成 → 查重迭代 ↺ → 一句话 idea。</p>
+      <figure><img src="../../简单/SciMON/assets/fig2_architecture.png" alt="SciMON 架构"><figcaption>论文 Fig 2：SciMON 架构（三路检索 + 生成 + 新颖性迭代）</figcaption></figure>
+      <a class="readlink" href="../../简单/SciMON/SciMON_精读与代码审计.html">→ 精读页</a>
+    </div>
+    <div class="card">
+      <p class="kv"><b style="color:#7a6494">ResearchAgent 流程：</b>核心论文 → 引用图 top-10 + 实体 top-30 → Problem→Method→Experiment 三阶段（每阶段生成→五维评审→低分重写 ×3 轮）→ 三件套 proposal。</p>
+      <figure><img src="../../简单/ResearchAgent/assets/concept_fig.png" alt="ResearchAgent 概念图"><figcaption>论文 Fig 1：三阶段 + ReviewingAgents 概念图</figcaption></figure>
+      <a class="readlink" href="../../简单/ResearchAgent/ResearchAgent_精读与代码审计.html">→ 精读页</a>
+    </div>
+  </div>
+  <div class="card">
+    <p class="kv"><b style="color:#4e3f66">SciPIP 流程：</b>用户背景 → SKC 三路互喂检索（语义→关键词邻域→共引→聚类凑 10 篇）→ 双路生成（脑暴 3–4 个 + 检索路逐篇提炼 inspiration 综合）→ 融合 ~5 个 idea 并借库存"精简方法"当格式示范扩写。</p>
+    <div class="fig-row">
+      <figure><img src="../../简单/SciPIP/assets/fig2_retrieval.png" alt="SciPIP SKC 检索"><figcaption>论文 Fig 2：SKC 三路检索</figcaption></figure>
+      <figure><img src="../../简单/SciPIP/assets/fig3_dualpath.png" alt="SciPIP 双路生成"><figcaption>论文 Fig 3：脑暴路 + 检索路双路生成</figcaption></figure>
+    </div>
+    <a class="readlink" href="../../简单/SciPIP/SciPIP_精读与代码审计.html">→ 精读页</a>
+  </div>
+
+  <div class="callout"><b>演化线一句话：</b>框架三代没变（三路检索+LLM），变的是基础设施（IE 抽取 → 共现矩阵 → LLM 重摘要）和新颖性哲学（事后查重 → 评审维度 → 事前分工）—— 三种新颖性机制互不包含，<b>理论上最强系统应三者兼取</b>。</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="classB">
+  <div class="sec-head"><h2>④ 大类 B · 训练内化生成</h2><span class="en">Training-Internalized</span></div>
+  <p class="sec-note">唯一代表：CycleResearcher（ICLR 2025 Poster，AC「带保留接收」）。和大类 A 的根本区别：文献不进 prompt，进<b>训练语料</b>；生成不靠编排，靠权重。</p>
+
+  <h3 class="block-title" id="cr"><span class="num" style="background:var(--accent)">4.1</span>CycleResearcher · 把"写论文"变成可训练的偏好优化问题</h3>
+  <div class="card">
+    <p class="kv" style="margin-bottom:8px"><b>训练侧（文献 → 语料 → 权重）：</b></p>
+    <div class="flow">
+      <div class="node n-corpus"><b>Review-5k</b><small>ICLR 2024 真实论文+评审<br>4,991 篇 / 16k+ 条意见</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-train"><b>CycleReviewer</b><small>Mistral-Large-2 123B + LoRA-GA SFT<br>学"从最低分到最高分依次生成评审"</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-review"><b>当 reward model</b><small>打 soundness/presentation/contribution</small></div>
+    </div>
+    <div class="flow">
+      <div class="node n-corpus"><b>Research-14k</b><small>七大会议接收论文 LaTeX<br>输入=全部参考文献+摘要；输出=大纲/正文交替全文</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-train"><b>CycleResearcher SFT</b><small>12B/72B/123B</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-llm"><b>采样 3 篇</b><small>4,152 篇 arXiv 新论文只留 references，温度 0.4</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-review"><b>Reviewer 打分取均值</b><small>最高=y_w，最低=y_l</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-train"><b>SimPO + NLL<span class="loop-tag">↺ 近似 online 迭代</span></b><small>免 reference model；NLL 是稳定器（去掉接受率 35%→12%）<br>但去掉迭代只掉 0.15 分，边际收益小</small></div>
+    </div>
+    <p class="kv" style="margin:10px 0 8px"><b>推理侧（一次性，黑箱）：</b></p>
+    <div class="flow">
+      <div class="node n-input"><b>references.bib + topic</b><small>S2 补摘要，≈58 篇</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-train"><b>单次 vLLM 调用</b><small>max_tokens=19000；名义 7 步协议实际一轮完成<br><b>实验结果由模型自己编造</b>，无注入真实结果的接口</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-output"><b>完整论文 ≈28K tokens</b><small>大纲与正文交替</small></div>
+    </div>
+    <div class="fig-row">
+      <figure><img src="../../待归档/CycleResearcher/assets/fig1_data_construction.png" alt="数据构造"><figcaption>论文 Fig 1：两个数据集的构造</figcaption></figure>
+      <figure><img src="../../待归档/CycleResearcher/assets/fig2_iterative_framework.png" alt="迭代框架"><figcaption>论文 Fig 2：SFT → 采样 → 评审打分 → SimPO 的迭代框架</figcaption></figure>
+    </div>
+    <div class="callout warn"><b>AC 三连问（也是大类的通病预告）：</b>① 评委只见过人类论文，AI 论文是 OOD；② policy 直接对评委优化 = reward hacking（best-of-100 能刷到 7.02 分即证据）；③ 实验全是幻觉仍拿 5.36 均分、35% 接受率。新颖性槽位几乎全空：无查重、无对照，仅靠 contribution 分项间接施压。</div>
+    <a class="readlink" href="../../待归档/CycleResearcher/CycleResearcher_精读与代码审计.html">→ 精读与代码审计页</a>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="classC">
+  <div class="sec-head"><h2>⑤ 大类 C · 社会模拟生成</h2><span class="en">Social Simulation</span></div>
+  <p class="sec-note">唯一代表：VirSci（ACL 2025 Main）。知识不进结构也不进权重，进<b>「人」</b>：真实作者档案变成 agent 人设，真实合作网络决定谁和谁讨论，idea 是社会互动的产物。</p>
+
+  <h3 class="block-title" id="virsci"><span class="num" style="background:var(--danger)">5.1</span>VirSci · 用真实作者数据 role-play 一个虚拟科研界</h3>
+  <div class="card">
+    <div class="flow" style="margin-bottom:4px">
+      <div class="node n-corpus"><b>AMiner/OAG 真实数据</b><small>作者档案五字段 + 合作网络邻接矩阵<br>按 y_bound 切分：过去库（agent 可见）/ 当代库（评测答案）</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-input"><b>虚拟科学家</b><small>156 / 3,169 位；姓名匿名但机构/兴趣/引用数全真实</small></div>
+    </div>
+    <div class="flow">
+      <div class="node n-llm"><b>① 组队</b><small>随机队长；按合作次数+1 归一化概率发邀请；被邀者 CoT 决定接受</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-llm"><b>② 选题讨论</b><small>round-table 轮转 K=5 轮，队长每轮总结</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-llm"><b>③ 出 idea</b><small>检索过去库 top-8 摘要参考；每人产 JSON + 三项自评；留自评最高 3 个</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-novel"><b>④ 查新投票</b><small>每个 idea 检索相关论文，成员<b>盲投</b>（无记忆无 RAG）选最新颖者</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-llm"><b>⑤ 写摘要</b><small>队长起草，成员按 8 项标准轮流评分改写</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-output"><b>idea + 论文摘要</b></div>
+    </div>
+    <div class="flow" style="margin-top:4px">
+      <div class="node n-eval"><b>对照库评估（本篇真正的贡献）</b><small>HD=与过去库距离↑　CD=与当代库距离↓　CI=相似论文平均引用↑<br>ON=(HD×CI)/CD；与人类评分 Pearson r=0.52</small></div>
+    </div>
+    <figure><img src="../../待归档/VirSci/assets/fig1_pipeline.png" alt="VirSci 五阶段流水线" style="max-width:900px"><figcaption>论文 Fig 1：五阶段流水线（组队 → 选题 → idea → 查新 → 摘要）</figcaption></figure>
+    <p class="kv"><b>独到：</b>首个真实作者数据驱动的学术协作模拟；时间切分对照库（B_past/B_con）是可复用的评测范式；还拿 Science of Science 文献做外部效度检验（8人×5轮达峰、50% 新鲜度最优、多样性倒 U）。<b>短板：</b>ON 无理论根据（同时奖励"远离过去+贴近未来"，实为预测热点）；生成/评测共享同一 embedding 空间的自证循环；代码审计发现"固定团队规模"被字符串匹配邀请机制破坏、择优有拼写 bug、HD/CD/CI 全套评测代码未发布。</p>
+    <a class="readlink" href="../../待归档/VirSci/VirSci_精读与代码审计.html">→ 精读与代码审计页</a>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="classD">
+  <div class="sec-head"><h2>⑥ 评估件 · Tree-of-Debate</h2><span class="en">Evaluation, not Generation</span></div>
+  <p class="sec-note">前七篇都在「产 idea」，但"两个候选谁更新颖"这件事全线都靠 LLM 一句话打分。Tree-of-Debate（ACL 2025 Main）把这个判断做成一棵<b>可检查的辩论树</b> —— 它是给上面所有系统补的评估环节。</p>
+
+  <h3 class="block-title" id="tod"><span class="num" style="background:var(--slate)">6.1</span>Tree-of-Debate · 树形即结论</h3>
+  <div class="card">
+    <div class="flow">
+      <div class="node n-input"><b>论文对 p₁, p₂ + 根话题 n₀</b><small>70/100 对互不引用、跨社区</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-llm"><b>实例化为两个辩手 persona</b><small>辩题="p₁ 对 nᵢ 的贡献比 p₂ <b>更好</b>"<br>（辩"更新颖"反而更表面）</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-struct"><b>每节点三阶段</b><small>① Self-Deliberation：各自检索 top-δ 段落提贡献声明 +  preempt 备弹药<br>② Debate：present → respond → revise<br>③ 主持人判扩展：(推进∨有疑问)∧无赢家 → 再裂一层</small></div>
+      <div class="arrow">→</div>
+      <div class="node n-output"><b>辩论树 + 主持人综合总结</b><small><b>树形即结论</b>：重叠想法辩出长子树，独有想法迅速封叶<br>先讲相似、重点讲差异</small></div>
+    </div>
+    <div class="fig-row">
+      <figure><img src="../../简单/Tree-of-Debate/assets/fig2_framework.png" alt="ToD 框架"><figcaption>论文 Fig 2：self-deliberation → debate → 扩展判定框架</figcaption></figure>
+      <figure><img src="../../简单/Tree-of-Debate/assets/fig1_hierarchy.png" alt="贡献层级"><figcaption>论文 Fig 1：贡献层级（ToD vs CoT 的结构性差异）</figcaption></figure>
+    </div>
+    <p class="kv"><b>结果：</b>Contextualization 95.21 vs 最强基线 75.57（+26%）；消融证明"<b>结构负责语境化、检索负责事实性</b>"。<b>对 idea 生成线的意义：</b>CoI 的 Arena 对战、SciPIP 的成对比较、VirSci 的查新投票，都可以换成/接上这棵辩论树 —— 判断过程从黑箱打分变成可追溯的论证结构。<b>短板：</b>标注者=评测者；基线全是裸 prompt（增益来自辩论还是更长输出分不清）；树深控制与论文不符。</p>
+    <a class="readlink" href="../../简单/Tree-of-Debate/Tree-of-Debate_精读与代码审计.html">→ 精读与代码审计页</a>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="matrix">
+  <div class="sec-head"><h2>⑦ 全维度对比矩阵</h2><span class="en">Master Matrix</span></div>
+  <div class="tbl-scroll card">
+    <table class="cmp">
+      <thead>
+        <tr><th>维度</th><th>CoI</th><th>Deep Ideation</th><th>SciMON</th><th>ResearchAgent</th><th>SciPIP</th><th>CycleResearcher</th><th>VirSci</th><th>Tree-of-Debate</th></tr>
+      </thead>
+      <tbody>
+        <tr><th>大类</th><td colspan="5">A · 结构增强</td><td>B · 训练内化</td><td>C · 社会模拟</td><td>评估件</td></tr>
+        <tr><th>知识形态</th><td>引用链</td><td>关键词共现图</td><td>used-for KG</td><td>实体共现矩阵</td><td>LLM 重摘要五元组</td><td>训练语料</td><td>人设+时间对照库</td><td>辩手 persona</td></tr>
+        <tr><th>输出粒度</th><td>idea+实验设计</td><td>三段式 proposal</td><td>一句话 idea</td><td>P/M/E 三件套</td><td>~5 个段落级 idea</td><td>完整论文 28K tok</td><td>idea+摘要</td><td>对比报告（无 idea）</td></tr>
+        <tr><th>训练成分</th><td>无</td><td>critic（LoRA Qwen3-8B）</td><td>微调 T5（可选）</td><td>无</td><td>无</td><td>SFT+迭代 SimPO</td><td>无</td><td>无</td></tr>
+        <tr><th>迭代</th><td>查重↺+对战</td><td>游走↺（停止未定义）</td><td>查重↺（≤2轮）</td><td>每阶段 3 轮评审</td><td>无迭代，双路融合</td><td>训练迭代，推理一轮</td><td>阶段内 K 轮</td><td>树逐层扩展</td></tr>
+        <tr><th>新颖性哲学</th><td>事后查重</td><td>图距离+事中打分</td><td>事后查重</td><td>评审维度</td><td>事前双路分工</td><td>基本空白</td><td>盲投+对照库</td><td>对抗辩论诱导</td></tr>
+        <tr><th>评估认真度</th><td>★★★ Arena+ELO 双裁判</td><td>★ 主表自相矛盾</td><td>★★ 诚实负结果</td><td>★★ rubric+人机一致</td><td>★★ v2 改人评</td><td>★★ 多口径但有幻觉</td><td>★★ 对照库+盲评</td><td>★★ 专家标注 100 对</td></tr>
+        <tr><th>工程完成度</th><td>评测代码未开源</td><td>仅 README</td><td>脚本堆带必崩 bug</td><td>推理壳不复现</td><td>★ 最高：7.5k 行+dump</td><td>权重数据公开，训练码缺</td><td>开源但评测码缺</td><td>论文/代码/数据齐全</td></tr>
+        <tr><th>评审命运</th><td>ICLR25 拒（5.75）</td><td>ICLR26 撤稿（2/6/2/2）</td><td>ACL24 ✓</td><td>NAACL25 ✓（三轮 ARR）</td><td>ICLR25 撤→arXiv</td><td>ICLR25 Poster ✓（保留）</td><td>ACL25 ✓</td><td>ACL25 ✓</td></tr>
+        <tr><th>一句话记住它</th><td>链比论文数量重要</td><td>游走式检索，验证缺席</td><td>任务定义的开山+诚实负结果</td><td>三件套+评审 rubric 的叙事模板</td><td>用更强模型重做基础设施</td><td>把写论文变成偏好优化</td><td>真实数据驱动的虚拟科研界</td><td>树形即结论的对比评估器</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="takeaway">
+  <div class="sec-head"><h2>⑧ 共同软肋（也是留给我们的空位）</h2><span class="en">Shared Weaknesses</span></div>
+  <div class="two-col">
+    <div class="callout warn" style="margin-top:0"><b>1 · 评价协议同源。</b>生成器和裁判共用同一个 LLM/embedding 空间（ResearchAgent 的 LLM 评 LLM、VirSci 的自证循环、CycleResearcher 的自己人打分）。Tree-of-Debate 是目前唯一把"判断"做成可追溯结构的尝试。</div>
+    <div class="callout warn" style="margin-top:0"><b>2 · 无下游执行验证。</b>八篇没有一篇回答"idea 被执行后是否成立"。Feasibility 是 CoI 评测里所有自动方法的共同瓶颈；CycleResearcher 干脆把实验结果编出来仍拿高分 —— 这恰好是 AutoSci 端到端闭环的天然切入点。</div>
+    <div class="callout warn" style="margin-top:0"><b>3 · 结构增益拆不干净。</b>ResearchAgent 随机材料也涨分、Deep Ideation 无图消融、SciPIP 被批"与 SciMON 差距边际"—— "结构化 RAG"的贡献天花板是 ICLR 评审的共识判词。</div>
+    <div class="callout green" style="margin-top:0"><b>4 · 三种新颖性哲学互不包含。</b>事后查重（CoI/SciMON）× 事前分工（SciPIP）× 事中打分（DeepIdeation/ResearchAgent）从未同台；再叠上 VirSci 的时间对照库与 ToD 的辩论树评估 —— 组合空间是全空的（见 §2.1 地图的空白象限）。</div>
+  </div>
+</section>
+
+<footer>
+  Idea 生成系统横向可视化 · 基于八篇精读页（论文全文 + 代码审计 + 评审对照）提炼 · 2026-08<br>
+  各篇细节、证据与代码审计记录请见对应精读页（每节末尾有链接）
+</footer>
+
+</div>
+</body>
+</html>
