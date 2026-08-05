@@ -698,7 +698,7 @@
                 <span class="badge gray">归档：待归档 · 仅论文精读</span>
             </div>
             <h1>Deep Ideation</h1>
-            <p class="subtitle">在 10.7 万篇顶会论文构建的「科学概念网络」上做图游走：explore–expand–evolve 迭代扩展关键词集 → 写成 idea proposal，由 LoRA 微调的 critic 打分驱动进化</p>
+            <p class="subtitle">本质：<strong>关键词共现图上的游走式 RAG</strong>——每轮从图里挑一个新关键词塞进 prompt，让 GPT-4o-mini 重写一版 idea，再由一个微调过的打分器决定继续还是换词</p>
             <p class="meta">Keyu Zhao · Weiquan Lin · Qirui Zheng · Fengli Xu · Yong Li<br>清华大学 FIB Lab 系 · ICLR 2026 Submission #20167 · GitHub: kyZhao-1/Deep-Ideation</p>
             <div class="resource-row">
                 <a class="resource-link primary" href="paper/DeepIdeation_arXiv_2511.02238.pdf">论文 PDF（本地）</a>
@@ -708,329 +708,263 @@
             </div>
         </header>
 
-        <div class="highlight-box">
-            <p><strong>这篇论文做了什么：</strong>把「文献组织」这件事做成一张<strong>关键词共现图</strong>——节点是 LLM 从 107,443 篇 AI 顶会论文抽取的关键词，边上挂着 LLM 写的「这两个词在这篇论文里如何被联系起来」的 2–4 句摘要。然后让 GPT-4o-mini 在图上逐步游走：每轮取邻居、选一个新词加入关键词集、把关键词集写成 idea proposal，由微调过的 Qwen3-8B critic 打 novelty/feasibility 分数决定继续扩展还是替换重写。声称 LLM-judge 均分超最佳基线 10.25%、达到顶会接收论文水平。</p>
-            <p style="margin-top:12px"><strong>为什么值得精读：</strong>它是「概念网络组织文献」路线的一个<strong>失败样本</strong>——ICLR 2026 得分 2/6/2/2，作者未答辩直接撤稿。三个 2 分共同指向的问题（概念网络的机制价值未论证、critic 训练数据可疑、人类评估细节为零）正是这条路线的通病清单。</p>
+        <div class="key-insight">
+            <h3>一句话本质</h3>
+            <p>剥掉「科学概念网络」「explore–expand–evolve」这些包装，这个系统就是：<strong>先把 10.7 万篇顶会论文压成一张关键词共现图（边上附一段 LLM 写的短文本），然后让 LLM 在图上一步步"捡词"——每捡一个新词就重写一版 research idea，由一个 8B 小模型打分决定要不要继续</strong>。没有新模型、没有图算法，全程是 prompt 工程；唯一训练过的组件是那个打分器（critic），而它的训练标签也是 LLM 转写出来的。</p>
         </div>
 
+        <p class="lead">下面这张「论文术语 → 实际是什么」对照表，是读懂全文的钥匙：</p>
+        <table class="comparison-table">
+            <thead><tr><th style="width:32%">论文里的说法</th><th>拆开之后实际是什么</th></tr></thead>
+            <tbody>
+                <tr><td><strong>科学概念网络</strong>（scientific concept network）</td><td>关键词共现图：LLM 从每篇论文抽 3–4 个关键词当节点；同一篇里一起出现的词连一条边；边上挂一段 LLM 写的 2–4 句话（"这篇论文是怎么把这两个词联系起来的"）。没有关系类型、方向、权重，也没做实体消歧</td></tr>
+                <tr><td><strong>explore</strong></td><td>查图：取当前关键词的邻居，把边上那段文本读出来</td></tr>
+                <tr><td><strong>expand</strong></td><td>加词：让 LLM 从邻居里挑<strong>一个</strong>新词加进关键词集，然后把整个词集重写成一版 idea proposal</td></tr>
+                <tr><td><strong>evolve</strong></td><td>换词或重写：词集满 4 个之后，由一个 prompt（Router）判断"是词不行还是写得不行"，对应换掉一个词或重写文案</td></tr>
+                <tr><td><strong>Idea Stack</strong></td><td>一份越攒越长的对话历史：每轮的词集、proposal、分数全部原样塞进下一轮 prompt，没有检索也没有压缩</td></tr>
+                <tr><td><strong>Critic Engine</strong>（"用真实评审反馈训练"）</td><td>LoRA 微调的 Qwen3-8B，给 idea 打 novelty / feasibility 各 1–5 分。训练数据只有 4278 条，且标签是 GPT 从 OpenReview 论文+评审里<strong>转写</strong>出来的（详见 ④），"真实评审"只是最上游的原料</td></tr>
+            </tbody>
+        </table>
+
         <div class="critical-note">
-            <p><strong>⚠ 可信度前提：代码未放出，本页无法做代码审计。</strong>官方仓库 <code>kyZhao-1/Deep-Ideation</code> 截至 2026-08-04 仅有一个 README 占位文件；论文承诺公开的 10 万篇概念网络数据集与 4278 条 review 训练数据也均未发布。评审 Dots 亦点名缺代码。因此本页所有涉及实现的判断只能标注 <span class="evidence paper" style="margin:0">论文声称</span> 或 <span class="evidence inference" style="margin:0">合理推断</span>，不存在「代码确认」档；结果数字全部无法独立复现。</p>
+            <p><strong>⚠ 可信度前提：代码未放出，无法做代码审计。</strong>官方仓库截至 2026-08 只有一个 README；论文承诺公开的概念网络数据集与 4278 条训练数据也都没发布。本页所有实现细节只能来自论文自述（<span class="evidence paper" style="margin:0">论文声称</span>）或推断（<span class="evidence inference" style="margin:0">合理推断</span>），全部数字无法独立复现——评审也点名了这一点。</p>
         </div>
 
         <nav class="toc" aria-label="页面导航">
-            <a href="#network">① 概念网络机制</a>
-            <a href="#compare">② 与 CoI / ResearchAgent 对比</a>
-            <a href="#workflow">③ explore–expand–evolve</a>
-            <a href="#critic">④ Critic 训练数据疑点</a>
-            <a href="#eval">⑤ 实验与数字审计</a>
-            <a href="#reviews">⑥ 评审质疑 vs 原文核对</a>
-            <a href="#verdict">⑦ 为什么撤稿</a>
+            <a href="#run">① 跟着例子跑一遍</a>
+            <a href="#position">② 和同类系统比，它新在哪</a>
+            <a href="#reviews">③ 评审关心的三件事</a>
+            <a href="#verdict">④ 为什么 2/6/2/2 撤稿</a>
         </nav>
 
-        <section id="network">
-            <h2>① 科学概念网络：真实机制比宣传朴素得多</h2>
-            <p class="lead">论文的核心卖点是「不只共现，还有上下文关系」。拆开看，整个网络的构建只有三步，全部由 LLM prompt 完成，没有任何图学习或信息抽取模型。</p>
-
-            <figure class="figure">
-                <a href="assets/figure1.png" target="_blank">
-                    <img src="assets/figure1.png" alt="Deep Ideation 总览：概念网络构建与工作流">
-                </a>
-                <figcaption>论文 Fig. 1：下半部分是概念网络的实际形态——AlphaEdit 等论文被抽出 "Model Editing"、"Large Language Model" 两个关键词，边上的 "Context" 是 LLM 对这篇论文如何联系两词的一段摘要。上半部分是工作流全景（火焰标记的 Critic Model 是唯一微调组件）。</figcaption>
-            </figure>
-
-            <h3>构建流程（论文 §2.1 + §3.2 + 附录 A.2）</h3>
-            <ul>
-                <li><span class="evidence paper" style="margin:0">论文声称</span> <strong>语料</strong>：近十年 10 个 AI 顶会共 107,443 篇论文（ICLR/NeurIPS/ICML → DL；ACL/NAACL → NLP；CVPR/ICCV → CV；AAAI/IJCAI → General AI），只用 title + abstract + introduction。</li>
-                <li><span class="evidence paper" style="margin:0">论文声称</span> <strong>节点</strong>：LLM 按「先选后补」（select first, then supplement）从每篇论文抽 3–4 个关键词。</li>
-                <li><span class="evidence paper" style="margin:0">论文声称</span> <strong>边</strong>：同一篇论文内共现的关键词两两连边；边特征 F<sub>ij</sub> 定义为对所有共现论文中两词关系的聚合。</li>
-            </ul>
-
-            <div class="formula">F<sub>ij</sub> = g( { relation(v<sub>i</sub>, v<sub>j</sub>, p) | p ∈ P<sub>i,j</sub> } )</div>
-
-            <div class="warning-note">
-                <p><strong>g(·) 到底定义了没有？——核对结论：没有。</strong>评审 gb37 与 hrL1 都质疑聚合函数 g 未定义。逐字核对原文：§2.1 说 g 是 "a function that aggregates or processes these relationships"，§3.3.1 说 "g is a function that aggregate the relationship together"——两处都只是同义反复。附录 A.1.1 给出了 <code>relation(v_i, v_j, p)</code> 的实现（一个 prompt：给 LLM 两个关键词 + 单篇论文的 title/abstract/intro，让它用 2–4 句话解释这篇论文如何联系两词），但<strong>跨论文聚合的 g 连 prompt 都没给</strong>。合理推断 g 就是把多篇论文的摘要串接后再让 Relation Analysis Module 总结，但这只能算猜测。<span class="evidence inference" style="margin:0 0 0 4px">合理推断</span></p>
-            </div>
-
-            <div class="key-insight">
-                <h3>「上下文关系边」的实际含金量</h3>
-                <p>剥掉叙事，这张图 = <strong>关键词共现图 + 每条边挂一段 LLM 生成的 2–4 句自由文本</strong>。没有关系类型、没有方向、没有权重、没有实体消歧，也没有验证这段文本比「共现计数」多带了什么信息——评审 DTQ4（唯一给 6 分的人）索要的「复杂边特征 vs 简单边特征」对照实验，论文里不存在。核心卖点从头到尾没有被隔离验证。</p>
-            </div>
-        </section>
-
-        <section id="compare">
-            <h2>② 同路线对照：CoI 的引用链 vs ResearchAgent 的实体库 vs 本文的共现图</h2>
-            <p class="lead">三者都在回答同一个问题：给 LLM 喂什么结构的文献组织，才能生成有据可依的 idea。差异在组织单元、检索时机和反馈来源。</p>
-
-            <div class="table-scroll">
-                <table class="comparison-table">
-                    <thead>
-                        <tr><th>维度</th><th>Chain-of-Ideas（引用链）</th><th>ResearchAgent（实体共现库）</th><th class="focus-col">Deep Ideation（概念网络）</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>组织单元</td>
-                            <td>沿引用关系串起的论文链，保留一条研究脉络的<strong>时间演化</strong></td>
-                            <td>核心论文的引用邻域 + 全库<strong>实体共现统计</strong>（entity linking 后计数）</td>
-                            <td>关键词共现图，边上挂 LLM 写的<strong>逐论文关系摘要</strong></td>
-                        </tr>
-                        <tr>
-                            <td>检索时机</td>
-                            <td>一次性构链，之后在链上推演</td>
-                            <td>一次性检索实体与相关论文，进入迭代评审</td>
-                            <td><strong>逐步图游走</strong>：每轮取邻居→选词→重写 idea（这是本文真正的差异点）</td>
-                        </tr>
-                        <tr>
-                            <td>「关系」的语义</td>
-                            <td>引用 = 明确的学术承继关系</td>
-                            <td>共现计数，无语义内容</td>
-                            <td>共现 + 自由文本摘要；语义丰富但<strong>无类型、无验证</strong></td>
-                        </tr>
-                        <tr>
-                            <td>反馈信号</td>
-                            <td>无内环反馈（生成后由人/LLM 评）</td>
-                            <td>多个 prompted 人格化 reviewer agent 互评</td>
-                            <td>LoRA 微调的 Qwen3-8B critic 打 novelty/feasibility 1–5 分</td>
-                        </tr>
-                        <tr class="focus-row">
-                            <td>实质增量</td>
-                            <td colspan="2">——</td>
-                            <td>相对 ResearchAgent 的真增量只有两点：边上的 LLM 文本、以及把一次性检索改成图游走 + 图距离启发式。两点都没有对照实验支撑；「邻居关键词扩展」的思路 ResearchAgent / SciMON 已提出（评审 Dots 点名）</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <p><span class="evidence paper" style="margin:0">论文声称</span> 图距离在系统里被显式当作 novelty/feasibility 的代理：Keyword Selection prompt（附录 A.1.2）明示「novelty 不足时可考虑<strong>最短路更长</strong>的候选词，feasibility 不足时偏好<strong>最短路更短</strong>的词」；critic 的输入也包含邻居数、连通性、最短路。这正是评审 gb37「把 novelty 和图距离混同」质疑的出处——它不是评审的过度解读，而是系统的设计本身。</p>
-        </section>
-
-        <section id="workflow">
-            <h2>③ explore–expand–evolve 工作流与 Idea Stack</h2>
-            <p class="lead">除 critic 外全部由 GPT-4o-mini + prompt 完成（评审 Dots「纯 prompting」的判断成立）。每步的可复述版本如下。</p>
-
-            <figure class="figure">
-                <a href="assets/figure2.png" target="_blank">
-                    <img src="assets/figure2.png" alt="Deep Ideation 框架总览">
-                </a>
-                <figcaption>论文 Fig. 2（L<sub>max</sub>=4 的示例）：左侧是两个外部状态——概念网络（查询）与 Idea Stack（读写）；右侧主环路按 K&lt;4 走「选词加入」、K≥4 走「选词替换」，Idea Formulation 产出三段式 proposal，Router 决定下一轮进化对象。</figcaption>
-            </figure>
+        <section id="run">
+            <h2>① 跟着一个例子把系统跑一遍</h2>
+            <p class="lead">假设用户输入初始关键词 <code>Model Editing</code>，想要一个新 idea。系统会这样运转（机制全部来自论文 §2–3 与附录 prompt，<span class="evidence paper" style="margin:0">论文声称</span>）：</p>
 
             <div class="flow-diagram">
                 <div class="flow-step">
-                    <h4>Explore：取邻居 + 生成关系摘要</h4>
-                    <p>对当前关键词集 K<sub>t</sub> 中每个词，从概念网络取至多 m 个邻居（附录调参：m=12 最优）。对每对 (k<sub>i</sub>, k<sub>j</sub>)，Relation Analysis Module 用附录 A.1.1 的 prompt 逐篇生成 2–4 句关系解释。</p>
+                    <h4>第 1 步 · 查图（explore）</h4>
+                    <p>在共现图里找到 <code>Model Editing</code> 的邻居（最多取 12 个，这是调参出来的最优值），比如 <code>Large Language Model</code>、<code>Knowledge Neurons</code>……并把每条边上那段"某某论文如何联系这两个词"的 LLM 短文本一起取出来。</p>
                 </div>
                 <div class="flow-step">
-                    <h4>Expand：选一个新词 → 重写 idea → critic 打分</h4>
-                    <p>Keyword Selection Module 读入完整 Idea Stack + 候选词（带关系摘要和到现有词集的最短路长度），按「分低补 novelty 选远词 / 补 feasibility 选近词」的启发式选<strong>恰好一个</strong>新词加入。Idea Formulation Module 把新词集写成 proposal（research background / research idea / general implementation approach 三段）。critic 打 novelty、feasibility 各 1–5 分并附描述，全部压入 Idea Stack。</p>
+                    <h4>第 2 步 · 挑一个词加进来（expand）</h4>
+                    <p>把候选词、边上的文本、每个词到当前词集的<strong>最短路长度</strong>，连同全部历史（Idea Stack）一起塞给 GPT-4o-mini，让它挑<strong>恰好一个</strong>新词。挑词规则写死在 prompt 里：<strong>嫌不够新颖就挑图上距离远的词，嫌不可行就挑距离近的词</strong>——注意，"novelty=图距离"是系统的显式设计，这一点后面评审会追杀。</p>
                 </div>
                 <div class="flow-step">
-                    <h4>Evolve：词集满员后由 Router 二选一</h4>
-                    <p>当 |K| 达到 L<sub>max</sub>（调参：4 最优）时触发。Router prompt 根据当前分数判断问题出在哪：关键词质量不行 → <strong>Keyword_Replacement</strong>（从「flexible 子集」里换掉一个词，用户初始词不可动——这点仅见于 prompt，正文未提）；词集好但写得差 → <strong>Idea_Rewrite</strong>（重写 proposal）。</p>
+                    <h4>第 3 步 · 重写 idea + 打分</h4>
+                    <p>用新词集写一版三段式 proposal（背景 / idea / 大致实现路径），交给 critic（微调的 Qwen3-8B）打 novelty、feasibility 各 1–5 分。词集、proposal、分数全部压进 Idea Stack。</p>
                 </div>
                 <div class="flow-step">
-                    <h4>终止：Stop Triggering——准则从未给出</h4>
-                    <p>Fig. 1 里画了 "Stop Triggering"，§2.2 说迭代进行到「novelty/feasibility 达到满意水平或满足停止准则」，但满意阈值、最大轮数、由谁判停，<strong>全文（含附录）没有任何一处定义</strong>。评审 hrL1 直接问了这个问题，无 rebuttal。<span class="evidence audit" style="margin:0 0 0 4px">核对发现</span></p>
+                    <h4>第 4 步 · 词满 4 个后，换词或重写（evolve）</h4>
+                    <p>词集到达上限 4 后，一个叫 Router 的 prompt 看分数决定：分低是词的问题 → 换掉一个词（用户给的初始词不能动）；词没问题是写得差 → 重写 proposal。然后回到第 1 步继续。</p>
                 </div>
-            </div>
-
-            <p><strong>Idea Stack</strong> 是唯一的记忆结构：一个按轮次追加的记录栈，每轮存（关键词集、proposal、novelty/feasibility 分数与描述、本轮加/换了哪个词及理由）。它整体注入后续每个 prompt，作用等价于一份结构化的对话历史——没有检索、没有压缩，也没有消融（评审 hrL1 指出只消融了 Evolve 和 Critic 两个组件）。</p>
-
-            <figure class="figure">
-                <a href="assets/performance.png" target="_blank">
-                    <img src="assets/performance.png" alt="超参数分析：邻居数与关键词集大小">
-                </a>
-                <figcaption>论文 Fig. A.1（附录）：邻居数 m=12、关键词集上限 4 时性能最佳（纵轴为 novelty+feasibility 之和）。曲线全距只有约 0.2–0.3 分（约 3%），且无方差棒——与主表 10% 的提升声称放在一起看，这个量级的波动很难说明什么。</figcaption>
-            </figure>
-        </section>
-
-        <section id="critic">
-            <h2>④ Critic Model：「真实评审训练」的成色核查</h2>
-            <p class="lead">摘要说 critic "trained on real-world reviewer feedback"，贡献清单说 "review dataset derived from real-world reviewer feedback"。评审 gb37 指控：训练的其实是 <strong>LLM 生成的 paper–review 对</strong>。谁对？答案在 Fig. 3 和方法 §3.4 的措辞里。</p>
-
-            <figure class="figure">
-                <a href="assets/figure3.png" target="_blank">
-                    <img src="assets/figure3.png" alt="Critic Model 训练数据构建流程">
-                </a>
-                <figcaption>论文 Fig. 3：训练数据构建。左栏是 OpenReview 真实论文 + 真实评审；中栏经 GPT "Extract" 得到 idea proposal 和 novelty/feasibility 分数+描述；右栏经 "Simulate Reasoning" 生成推理链，连同关键词和图特征构成最终训练样本。注意：<strong>真实评审只出现在最左端</strong>。</figcaption>
-            </figure>
-
-            <h3>逐字核对的结果</h3>
-            <ul>
-                <li><span class="evidence paper" style="margin:0">论文声称</span> §3.4 原文："we designed a 'Scientific Reasoning Simulation' prompt to enable the LLM to provide review feedback… <strong>This simulated reasoning is structured into training data</strong> to fine-tune the LLM."——训练目标里的推理链是 LLM 模拟的，论文自己写明了。</li>
-                <li><span class="evidence audit" style="margin:0">核对发现</span> OpenReview 评审并没有 novelty/feasibility 的 1–5 分（只有 rating/soundness 等）。Fig. 3 显示这些数值标签是 GPT 从「论文+评审」中 "Extract" 出来的，<strong>从真实评审到数值标签的映射规则全文未说明</strong>。也就是说标签本身也是 LLM 产物。</li>
-                <li><span class="evidence paper" style="margin:0">论文声称</span> 规模：4278 条样本，LoRA 微调 Qwen3-8B（附录 A.4）。评审 DTQ4 质疑这个量级跨 4 个领域的泛化，论文无回应。</li>
-                <li><span class="evidence audit" style="margin:0">核对发现</span> Fig. 3 中栏抽取的 proposal 含 <strong>Effectiveness 字段</strong>，但 critic 的评分 rubric（附录 A.1.5）只有 novelty/feasibility 两维——恰好是 gb37 点名缺失的 Si et al. 2024 Effectiveness 维度，数据里有、模型却不评，进一步说明流水线各环节没有对齐。</li>
-            </ul>
-
-            <div class="critical-note">
-                <p><strong>裁定：gb37 的指控实质成立，且论文存在过度声称。</strong>真实评审只是数据流水线的<strong>上游条件输入</strong>；critic 实际学习的监督信号——数值分数、评价描述、推理链——全部是 LLM 生成/转换的文本。"trained on real-world reviewer feedback"（摘要、结论各出现一次）相对 §3.4 的自述是拔高了的说法；"derived from" 勉强站得住，但整个从评审到标签的转换质量没有任何人工校验或一致性报告。配合「critic 消融只带来 0.23 分（约 6%）提升、且仅由 LLM judge 衡量」，这个组件的证据链条相当薄弱。</p>
-            </div>
-        </section>
-
-        <section id="eval">
-            <h2>⑤ 实验：LLM judge + 54 人人类评估的可信度，附数字审计</h2>
-            <p class="lead">评估设置：生成 idea 由 5 个 LLM judge（GPT-4o、Gemini-2.5-Flash、Grok-3、DeepSeek-V3.1、Qwen3-235B）按自造的 novelty/feasibility 1–5 rubric 打分取平均；另有 54 位研究者做人类评估。<strong>每种方法评了多少条 idea、初始关键词怎么选，全文没有说</strong>（评审 Dots 问「评估数据集是什么」，无解）。</p>
-
-            <figure class="figure">
-                <a href="assets/table1_llm_judge.png" target="_blank">
-                    <img src="assets/table1_llm_judge.png" alt="Table 1 LLM judge 主结果">
-                </a>
-                <figcaption>论文 Table 1（LLM judge）：Deep Ideation 全线加粗，整体 Avg 3.82 vs 最佳基线 3.47，声称提升 10.25%；绿色行是「把顶会接收论文重排成 proposal 格式」的参照，被反超（3.82 vs 3.81）。但这张表内部数字自相矛盾，见下。</figcaption>
-            </figure>
-
-            <div class="critical-note">
-                <p><strong>数字审计：Table 1 至少有三处内部矛盾（本页独立重算，非评审发现）。</strong><span class="evidence audit" style="margin:0 0 0 4px">核对发现</span></p>
-                <ul style="margin-bottom:0">
-                    <li>SciMON 的 CV 列：Nov 2.50、Fea 3.02，Avg 却写 3.76（应为 2.76）；NLP 列 Avg 写 3.24（应为 3.48）。有趣的是 Improvement 行是按<strong>修正后的值</strong>算的——NLP Avg 提升 9.48% 恰好等于 3.81/3.48−1，说明作者手里有正确数据，表格是誊写错乱。</li>
-                    <li>ResearchAgent 的 Overall Fea 3.47 与其四个分域值（3.22/3.33/3.28/3.25，均值 3.27）对不上；而 10.25% 的总提升正是拿这个存疑的 3.47 当分母算出来的。</li>
-                    <li>摘要写提升 <strong>10.67%</strong>，正文和 Table 1 写 <strong>10.25%</strong>，两处不一致，无解释。</li>
-                    <li>附带一条：介绍里 "reaching the acceptance level of eight out of ten AI conferences" 没有任何分会议数据支撑（全文只有 4 个领域组的聚合数），且 NLP 域 3.81 &lt; Accepted Papers 3.83，本身就与该说法冲突。</li>
-                </ul>
+                <div class="flow-step">
+                    <h4>第 5 步 · 什么时候停？——论文没说</h4>
+                    <p>流程图里画了个 "Stop Triggering"，正文说"达到满意水平或满足停止准则"就停，但满意阈值是多少、最多跑几轮、由谁判停，<strong>全文包括附录没有任何一处定义</strong>。评审 hrL1 直接问了，作者没有回答。<span class="evidence audit" style="margin:0 0 0 4px">核对发现</span></p>
+                </div>
             </div>
 
             <div class="figure-grid">
                 <figure class="figure">
-                    <a href="assets/table2_human_eval.png" target="_blank">
-                        <img src="assets/table2_human_eval.png" alt="Table 2 人类评估结果">
+                    <a href="assets/figure1.png" target="_blank">
+                        <img src="assets/figure1.png" alt="Deep Ideation 总览：概念网络与工作流">
                     </a>
-                    <figcaption>论文 Table 2（人类评估，54 人）：Deep Ideation 3.69 又一次全线最优，甚至超过真实顶会论文（3.66）。</figcaption>
+                    <figcaption>论文 Fig. 1。下半部分就是"网络"的真身：AlphaEdit 这篇论文被抽出 Model Editing、LLM 两个关键词，边上的 Context 是一段 LLM 摘要。</figcaption>
                 </figure>
                 <figure class="figure">
-                    <a href="assets/table3_ablation.png" target="_blank">
-                        <img src="assets/table3_ablation.png" alt="Table 3 消融实验">
+                    <a href="assets/figure2.png" target="_blank">
+                        <img src="assets/figure2.png" alt="Deep Ideation 框架流程图">
                     </a>
-                    <figcaption>论文 Table 3（消融）：去掉 Evolve 掉 0.11 分（−2.9%），去掉 Critic 掉 0.23 分（−6.0%）。只消融了这两个组件；概念网络本身、Idea Stack、Relation Analysis 均未消融。</figcaption>
+                    <figcaption>论文 Fig. 2：主环路。左侧两个外部状态（概念网络、Idea Stack），右侧按词数是否满 4 走"加词"或"换词/重写"两条分支。</figcaption>
                 </figure>
-            </div>
-
-            <h3>两套评估各自的问题</h3>
-            <div class="card-grid">
-                <article class="card">
-                    <span class="evidence audit">核对发现</span>
-                    <h3>人类评估：细节几乎为零</h3>
-                    <p>附录 A.6 全部内容只有三句话：54 位研究者、按 novelty/feasibility 打分、对感兴趣的 proposal 写简评。<strong>没有</strong>：招募与遴选标准、专业背景、是否盲评、每人评多少条、评审者间一致性、显著性检验。正文引用的唯一定性证据是一条匿名好评。评审 gb37/hrL1 的质疑完全成立。</p>
-                </article>
-                <article class="card">
-                    <span class="evidence inference">合理推断</span>
-                    <h3>LLM judge：与训练信号同源的裁判</h3>
-                    <p>系统内环用 LLM critic 按同一套 novelty/feasibility rubric 优化，外环再用 5 个 LLM 按几乎相同的 rubric 评分——生成过程实质是在<strong>对着评估指标直接优化</strong>，基线则没有这层内环。judge 间一致性未报告（hrL1 问了）；污染问题（生成的 idea 是否只是 judge/生成器训练截止后见过论文的换皮）也无任何日期分析（gb37、hrL1 都问了）。</p>
-                </article>
             </div>
 
             <div class="warning-note">
-                <p><strong>「超过顶会接收论文」这个 headline 怎么读：</strong>Accepted Papers 基线是把真实论文的 title/abstract/intro 让 LLM <strong>重新组织成 proposal 格式</strong>再评分。人类评估里系统生成的 idea（3.69）也高于真论文（3.66）——更合理的解释不是系统超越了人类科研，而是这套 rubric + proposal 格式偏好为其量身生成的文本；真论文经二次转写反而失分。</p>
+                <p><strong>一个此刻就能看出的裂缝：</strong>边特征 F<sub>ij</sub> 号称是"聚合多篇论文中两词的关系"，公式里写了个聚合函数 g(·)——但 g 在正文两处的定义都是同义反复（"a function that aggregates the relationships"），附录只给了单篇论文的关系提取 prompt，<strong>跨论文怎么聚合连 prompt 都没有</strong>。两个评审（gb37、hrL1）都抓到了这一点。<span class="evidence audit" style="margin:0 0 0 4px">核对发现</span></p>
+            </div>
+        </section>
+
+        <section id="position">
+            <h2>② 和同类系统比，它到底新在哪</h2>
+            <p class="lead">idea 生成的核心问题都是一个：<strong>给 LLM 喂什么结构的文献，它才能产出有据可依的 idea？</strong>三个代表系统给了三种答案：</p>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr><th>系统</th><th>文献被组织成什么</th><th>一句话点评</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Chain-of-Ideas</strong></td>
+                        <td>沿引用关系排成的论文<strong>链</strong>（保留时间脉络）</td>
+                        <td>关系语义最明确（引用=承继），但只有单条脉络</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ResearchAgent</strong></td>
+                        <td>实体<strong>共现统计库</strong>（entity linking 后计数）</td>
+                        <td>无语义但客观可验证；"取邻居实体扩展 idea"的思路就是它先提的</td>
+                    </tr>
+                    <tr class="focus-row">
+                        <td><strong>Deep Ideation（本文）</strong></td>
+                        <td>关键词共现<strong>图</strong>，边上挂 LLM 写的自由文本</td>
+                        <td>语义最丰富、也最不可验证；检索从"一次性"变成"逐步游走"</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>照这个对比，本文相对前人的<strong>真增量只有两点</strong>：</p>
+            <ul>
+                <li><strong>边上的 LLM 文本</strong>——比纯共现计数多了"这两个词是怎么被联系起来的"这层语义；</li>
+                <li><strong>游走式检索</strong>——不是一次检索完就写，而是每轮按图距离挑词、逐步逼近。</li>
+            </ul>
+
+            <div class="key-insight">
+                <h3>致命的一点：这两个增量，论文一个都没验证</h3>
+                <p>消融实验只做了"去掉 evolve"和"去掉 critic"两项；<strong>概念网络本身、边上的文本、图游走策略，从头到尾没有被单独验证过</strong>。唯一给 6 分的评审 DTQ4 点名索要"复杂边特征 vs 简单共现计数"的对照实验——不存在。所以严格地说：你无法区分这套系统的产出质量来自那张图，还是来自图背后那个本来就很强的 GPT-4o-mini。这就是"与换皮 RAG 不可区分"的确切含义。</p>
             </div>
         </section>
 
         <section id="reviews">
-            <h2>⑥ 评审质疑 vs 论文原文：逐条核对</h2>
-            <p class="lead">四份评审（gb37: 2 / DTQ4: 6 / Dots: 2 / hrL1: 2），作者未做任何 rebuttal，2025-11-27 撤稿。下表把主要质疑逐条与 tex 源码核对后裁定。</p>
+            <h2>③ 评审关心的三件事（以及核对下来谁对谁错）</h2>
+            <p class="lead">四份评审 2 / 6 / 2 / 2，作者一个字没答辩，直接撤稿。十几条意见看似零散，其实归拢起来评审只关心三件事——恰好对应这篇论文的三层结构：<strong>卖点、组件、证据</strong>。每件事我们都拿 tex 原文核对过。</p>
 
-            <div class="table-scroll">
-                <table class="comparison-table">
-                    <thead>
-                        <tr><th style="width:24%">评审质疑</th><th style="width:46%">论文原文核对</th><th>裁定</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr class="focus-row">
-                            <td>gb37：critic 训练的是 LLM 生成的 paper–review 对，不是真实人类评审</td>
-                            <td>§3.4 自述训练数据是 "simulated reasoning"；Fig. 3 显示数值标签由 GPT 从论文+评审中 "Extract"，映射规则未说明。真实评审仅为上游输入（详见本页 ④）</td>
-                            <td><strong>实质成立</strong>，且摘要 "trained on real-world reviewer feedback" 构成过度声称</td>
-                        </tr>
-                        <tr class="focus-row">
-                            <td>gb37 / hrL1：聚合函数 g(·) 未定义；F<sub>ij</sub> 如何从多篇论文计算不明</td>
-                            <td>§2.1 与 §3.3.1 两处都只说 g "aggregates the relationships"；附录只有单篇论文的 relation 提取 prompt，无跨论文聚合的任何实现描述</td>
-                            <td><strong>成立</strong>。gb37 问 relation() 是 LLM 解析还是 embedding——这一小问附录可答（LLM 生成文本）；g 本身确实缺失</td>
-                        </tr>
-                        <tr class="focus-row">
-                            <td>gb37 / hrL1 / Dots：54 人人类评估细节严重缺失（盲法、招募、专业、一致性、显著性）</td>
-                            <td>附录 A.6 仅三句话，上述信息一项都没有；正文只引一条匿名好评</td>
-                            <td><strong>完全成立</strong></td>
-                        </tr>
-                        <tr>
-                            <td>DTQ4：缺「复杂上下文边特征 vs 简单共现边」对照实验（核心卖点未验证）</td>
-                            <td>消融只有 w/o Evolve 和 w/o Critic（Table 3），概念网络与边文本从未被隔离验证</td>
-                            <td><strong>成立</strong>，是全文最致命的缺口：卖点没有证据</td>
-                        </tr>
-                        <tr>
-                            <td>gb37：novelty 可能与图距离混同</td>
-                            <td>Keyword Selection prompt 明写「长最短路→novelty、短最短路→feasibility」；critic 输入含最短路。混同是设计使然</td>
-                            <td><strong>成立</strong>（且比评审说的更严重：这是显式启发式，不是隐性偏差）</td>
-                        </tr>
-                        <tr>
-                            <td>gb37 / hrL1：数据污染与时间线未分析（语料/评审数据/参照论文 vs LLM 训练截止日期）</td>
-                            <td>全文无任何 checkpoint 日期、语料截止时间或去重去污染措施</td>
-                            <td><strong>成立</strong></td>
-                        </tr>
-                        <tr>
-                            <td>gb37：提升幅度可能在方差范围内；数据集统计未报告</td>
-                            <td>无方差/显著性；且 Table 1 存在三处内部矛盾（本页 ⑤ 审计），摘要 10.67% vs 正文 10.25% 不一致。数据集有总量（107,443 篇、3–4 词/篇）但无节点/边数、领域分布、评估集规模</td>
-                            <td><strong>成立并加重</strong>（数字矛盾是评审没抓到的新证据）；统计缺失部分成立</td>
-                        </tr>
-                        <tr>
-                            <td>Dots：evolve 节写得混乱；停止准则、关键词何时删除不明</td>
-                            <td>Router 逻辑有 prompt 可查（还算清楚），但 "Stop Triggering" 的判停准则全文未定义；flexible 关键词子集只在 prompt 里出现、正文未提</td>
-                            <td><strong>大部分成立</strong></td>
-                        </tr>
-                        <tr>
-                            <td>Dots：框架纯靠 prompting；邻居扩展思路 ResearchAgent/SciMON 已有</td>
-                            <td>除 critic LoRA 外全部为 GPT-4o-mini + prompt；邻居检索确为已有思路（本页 ②）</td>
-                            <td><strong>成立</strong>。「为什么不用科学 IE 系统抽关系」属于合理的路线偏好建议，不算硬伤</td>
-                        </tr>
-                        <tr>
-                            <td>gb37：基线不公平（MOOSE-Chem 是化学方法）；缺多智能体基线</td>
-                            <td>MOOSE-Chem 确为化学假设生成框架被移植到 AI 领域；但 SciMON/ResearchAgent/SciAgents 等主力基线对口</td>
-                            <td><strong>部分成立</strong>。缺基线的批评对一篇 2025 年的 ideation 论文属合理要求，但非致命</td>
-                        </tr>
-                        <tr>
-                            <td>hrL1：附录 A.1.3 与 A.1.7 两个 prompt 基本重复（编辑疏漏）</td>
-                            <td>核对属实：「keyword replacement」与「Keyword Replace」两节几乎逐句相同，仅一个占位符名不同（idea_stack vs status_bar）</td>
-                            <td><strong>成立</strong>，反映定稿仓促</td>
-                        </tr>
-                        <tr>
-                            <td>Dots：缺 LLM 使用声明、缺代码、缺伦理声明</td>
-                            <td>arXiv 版附录已有 "The Use of Large Language Models" 一节（或为投稿版后补）；代码至今未放出，承诺公开的数据集也未发布</td>
-                            <td>LLM 声明<strong>存疑/或已修复</strong>；缺代码<strong>持续成立</strong>（截至 2026-08）</td>
-                        </tr>
-                        <tr>
-                            <td>gb37：缺 Si et al. 2024 的 Effectiveness 评估维度</td>
-                            <td>rubric 只有 novelty/feasibility；但 Fig. 3 的训练数据抽取里其实含 Effectiveness 字段，模型却不评</td>
-                            <td><strong>成立</strong>，且暴露流水线内部不对齐</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <h3>关心点一：你的核心卖点（概念网络），到底有没有用？</h3>
+            <div class="highlight-box">
+                <p><strong>评审怎么说：</strong>gb37（2 分）："网络只用了关键词共现和 LLM 生成的短上下文，机制简单，没有分析图对 novelty/feasibility 的实际贡献；聚合函数 g 未定义。" DTQ4（6 分）也索要边特征的对照实验。</p>
+                <p><strong>核对结果：完全成立。</strong>g(·) 两处定义都是同义反复、跨论文聚合无任何实现描述（见 ①）；边文本 vs 共现计数无对照；概念网络无消融。更糟的是，评审 gb37 怀疑"novelty 可能与图距离混同"，核对发现这<strong>比他说的更严重</strong>——挑词 prompt 明写"要 novelty 就选最短路长的词"，混同不是隐性偏差，是显式设计。<span class="evidence audit" style="margin:0 0 0 4px">核对发现</span></p>
             </div>
 
-            <p><strong>哪些质疑偏苛刻？</strong>整体看几乎没有。最接近「过苛」的是 Dots 要求改用科学 IE 系统和领域 LLM（属于另一条技术路线的偏好）和 gb37 的基线扩充清单（Many Heads、ResearchTown、IdeaSynth 等，合理但非一票否决项）。四份评审的事实性指控经核对<strong>无一被冤枉</strong>；唯一的 6 分（DTQ4）也在 weakness 里点中了同样的两个要害（边特征形式化、critic 泛化），只是给了更善意的分数。</p>
+            <h3>关心点二：critic 号称"用真实评审反馈训练"，是真的吗？</h3>
+            <figure class="figure">
+                <a href="assets/figure3.png" target="_blank">
+                    <img src="assets/figure3.png" alt="Critic 训练数据构建流程">
+                </a>
+                <figcaption>论文 Fig. 3：critic 训练数据的生产线。真实评审只出现在<strong>最左端</strong>；中间的 novelty/feasibility 数值标签由 GPT "Extract" 得到，右侧的推理链由 GPT "Simulate Reasoning" 生成。</figcaption>
+            </figure>
+            <div class="highlight-box">
+                <p><strong>评审怎么说：</strong>gb37 指控 critic 训练的是"LLM 生成的 paper–review 对"，不是真实人类评审；DTQ4 质疑 4278 条样本撑不起跨领域泛化。</p>
+                <p><strong>核对结果：指控实质成立，且论文构成过度声称。</strong>OpenReview 的真实评审里根本没有 novelty/feasibility 的 1–5 分（只有 rating/soundness），这些数值标签是 GPT 从"论文+评审"里转写出来的，转写规则全文未说明；训练目标里的推理链，§3.4 自己承认是 "simulated reasoning"。也就是说 critic 实际学的监督信号——分数、描述、推理链——<strong>全部是 LLM 产物</strong>，真实评审只是流水线最上游的原料。摘要里 "trained on real-world reviewer feedback" 的说法是拔高。<span class="evidence audit" style="margin:0 0 0 4px">核对发现</span></p>
+            </div>
+
+            <h3>关心点三：你的评估数字，能信吗？</h3>
+            <div class="figure-grid">
+                <figure class="figure">
+                    <a href="assets/table1_llm_judge.png" target="_blank">
+                        <img src="assets/table1_llm_judge.png" alt="Table 1 LLM judge 主结果">
+                    </a>
+                    <figcaption>论文 Table 1（5 个 LLM judge 打分）：声称比最佳基线提升 10.25%、追平顶会接收论文（绿色行）。这张表内部数字对不上，见下。</figcaption>
+                </figure>
+                <figure class="figure">
+                    <a href="assets/table2_human_eval.png" target="_blank">
+                        <img src="assets/table2_human_eval.png" alt="Table 2 人类评估">
+                    </a>
+                    <figcaption>论文 Table 2（54 人人类评估）：Deep Ideation 3.69，"超过"真实顶会论文的 3.66。附录里关于这 54 人的全部信息只有三句话。</figcaption>
+                </figure>
+            </div>
+            <div class="highlight-box">
+                <p><strong>评审怎么说：</strong>三个 2 分共同点名——人类评估没有招募标准/盲法/一致性/显著性（gb37、hrL1、Dots）；LLM judge 之间的一致性没报告（hrL1）；提升幅度可能就在方差范围内（gb37）；评估用了什么数据集、每个方法评了多少条 idea 都没说（Dots）；训练语料和 LLM 截止日期的污染关系没分析（gb37、hrL1）。</p>
+                <p><strong>核对结果：全部成立，一项都没冤枉。</strong>附录 A.6 关于人类评估确实只有三句话。此外还有一层评审没有明说的结构性问题：系统内环用 critic 按 novelty/feasibility 优化，外环再用 5 个 LLM 按<strong>几乎同一套 rubric</strong> 打分——等于对着考题练习再参加考试，而基线没有这层内环。<span class="evidence inference" style="margin:0 0 0 4px">合理推断</span></p>
+            </div>
+
+            <div class="critical-note">
+                <p><strong>本页独立发现（评审没抓到）：主结果表数字自相矛盾。</strong><span class="evidence audit" style="margin:0 0 0 4px">核对发现</span></p>
+                <ul style="margin-bottom:0">
+                    <li>SciMON 的 CV 列：Nov 2.50、Fea 3.02，平均却写 3.76（应为 2.76）；NLP 列平均写 3.24（应为 3.48）。而 Improvement 行恰好是按修正值算的——说明作者手里有对的数据，表是誊错的。</li>
+                    <li>ResearchAgent 的 Overall Fea 3.47 与它四个分域的均值 3.27 对不上，而全文 headline 的"提升 10.25%"正是拿这个 3.47 当分母。</li>
+                    <li>摘要说提升 <strong>10.67%</strong>，正文和表格说 <strong>10.25%</strong>，无解释。</li>
+                    <li>介绍里"达到 8/10 个顶会的接收线"没有任何分会议数据支撑，且 NLP 域 3.81 &lt; 接收论文 3.83，自己就与这句话矛盾。</li>
+                </ul>
+            </div>
+
+            <div class="warning-note">
+                <p><strong>顺带一句："超过顶会接收论文"这个 headline 应该怎么读？</strong>那条"Accepted Papers"基线，是把真论文的标题/摘要/引言让 LLM <strong>重新转写成 proposal 格式</strong>再打分。所以更合理的解读不是"系统超越了人类科研"，而是：这套 rubric 偏好为它量身生成的文本，真论文经二次转写反而失分。</p>
+            </div>
+
+            <details>
+                <summary>次要问题清单 + 全部 12 条质疑的逐条核对表（点开查看）</summary>
+                <div class="details-body">
+                    <ul>
+                        <li><strong>停止准则未定义</strong>（hrL1 问，无解，见 ①）。</li>
+                        <li><strong>消融覆盖不全</strong>：只消融 evolve（−0.11 分）与 critic（−0.23 分），网络、Idea Stack、关系分析均未消融；且附录超参曲线全距仅约 0.2–0.3 分、无方差棒。</li>
+                    </ul>
+                    <div class="figure-grid">
+                        <figure class="figure">
+                            <a href="assets/table3_ablation.png" target="_blank">
+                                <img src="assets/table3_ablation.png" alt="Table 3 消融实验">
+                            </a>
+                            <figcaption>论文 Table 3（消融）：仅有的两项消融，去 Evolve −2.9%、去 Critic −6.0%。</figcaption>
+                        </figure>
+                        <figure class="figure">
+                            <a href="assets/performance.png" target="_blank">
+                                <img src="assets/performance.png" alt="附录超参分析">
+                            </a>
+                            <figcaption>论文 Fig. A.1：邻居数 m=12、词集上限 4 最优；曲线全距仅 0.2–0.3 分且无方差棒。</figcaption>
+                        </figure>
+                    </div>
+                    <ul>
+                        <li><strong>附录编辑事故</strong>：A.1.3 与 A.1.7 两个 prompt 几乎逐句相同（hrL1 点名，核对属实），反映定稿仓促。</li>
+                        <li><strong>基线问题</strong>：MOOSE-Chem 是化学领域方法被移植来对比（gb37 说不公平，部分成立）；缺多智能体基线（合理要求，非致命）。</li>
+                        <li><strong>缺 Effectiveness 维度</strong>（gb37）：rubric 只有 novelty/feasibility；有趣的是训练数据抽取里其实含 Effectiveness 字段，模型却不评——流水线内部都没对齐。</li>
+                        <li><strong>"该用科学 IE 系统/领域 LLM"</strong>（Dots）：属于另一条路线的偏好建议，是全部评审意见里唯一算"偏苛"的。</li>
+                    </ul>
+                    <div class="table-scroll">
+                        <table class="comparison-table">
+                            <thead>
+                                <tr><th style="width:24%">评审质疑</th><th style="width:46%">论文原文核对</th><th>裁定</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr class="focus-row"><td>gb37：critic 训练的是 LLM 生成的 paper–review 对</td><td>§3.4 自述 "simulated reasoning"；数值标签由 GPT "Extract"，映射规则未说明</td><td><strong>实质成立</strong>，摘要构成过度声称</td></tr>
+                                <tr class="focus-row"><td>gb37 / hrL1：g(·) 未定义</td><td>两处定义均为同义反复；跨论文聚合连 prompt 都没有</td><td><strong>成立</strong></td></tr>
+                                <tr class="focus-row"><td>gb37 / hrL1 / Dots：人类评估细节缺失</td><td>附录 A.6 仅三句话，盲法/招募/一致性/显著性全无</td><td><strong>完全成立</strong></td></tr>
+                                <tr><td>DTQ4：缺"复杂边 vs 简单共现"对照</td><td>消融只有 evolve/critic 两项</td><td><strong>成立</strong>，全文最致命缺口</td></tr>
+                                <tr><td>gb37：novelty 与图距离混同</td><td>挑词 prompt 明写"长路→novelty、短路→feasibility"</td><td><strong>成立且更严重</strong>：是显式设计</td></tr>
+                                <tr><td>gb37 / hrL1：数据污染时间线未分析</td><td>全文无 checkpoint 日期/语料截止/去污染措施</td><td><strong>成立</strong></td></tr>
+                                <tr><td>gb37：提升可能在方差内；数据集统计未报告</td><td>无方差/显著性；Table 1 三处内部矛盾；摘要与正文数字不一致</td><td><strong>成立并加重</strong></td></tr>
+                                <tr><td>Dots：evolve 节混乱、停止准则不明</td><td>Router 逻辑有 prompt 可查；判停准则确实全文未定义</td><td><strong>大部分成立</strong></td></tr>
+                                <tr><td>Dots：纯 prompting；邻居扩展思路已有</td><td>除 critic LoRA 外全为 GPT-4o-mini + prompt；思路确为 ResearchAgent/SciMON 已有</td><td><strong>成立</strong></td></tr>
+                                <tr><td>gb37：基线不公平/缺多智能体基线</td><td>MOOSE-Chem 确为化学框架移植；主力基线尚对口</td><td><strong>部分成立</strong></td></tr>
+                                <tr><td>hrL1：附录 prompt 重复</td><td>A.1.3 ≈ A.1.7，仅一个占位符名不同</td><td><strong>成立</strong></td></tr>
+                                <tr><td>Dots：缺 LLM 使用声明、代码、伦理声明</td><td>arXiv 版已有 LLM 声明节（或为后补）；代码与数据集至今未兑现</td><td>声明<strong>或已修复</strong>；缺代码<strong>持续成立</strong></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
         </section>
 
         <section id="verdict">
-            <h2>⑦ 为什么 2/6/2/2 撤稿：问题出在 idea 还是执行？</h2>
+            <h2>④ 为什么 2/6/2/2 撤稿：三成怪 idea，七成怪执行</h2>
 
             <figure class="figure">
                 <a href="assets/figure4.png" target="_blank">
-                    <img src="assets/figure4.png" alt="Case study：生成的 idea proposal 示例">
+                    <img src="assets/figure4.png" alt="Case study：生成的 idea 示例">
                 </a>
-                <figcaption>论文 Fig. 4（case study）：两条生成的 idea——「RL 驱动的多人脸伪造检测双任务模型」和「NCE 增强的偏好对齐」。右例引用了一篇真实论文（黄色高亮）。以领域眼光看，两条都是常见概念的组合式缝合，恰好落在评审对「关键词拼接式 novelty」的担忧区间。</figcaption>
+                <figcaption>论文 Fig. 4 的两条生成样例（"RL 驱动的多人脸伪造检测双任务模型"、"NCE 增强的偏好对齐"）。以领域眼光看，都是常见概念的组合式缝合——恰好落在评审对"关键词拼接式 novelty"的担忧区间。</figcaption>
             </figure>
 
-            <p><strong>Idea 层面（约三成责任）：</strong>「概念网络 + 图游走 + critic 反馈」不是坏方向，DTQ4 给 6 分正是认可这一点——上下文关系边比纯统计关联更有依据、Idea Stack 模拟人类迭代认知、微调 critic 优于裸 prompt 评审。但这个 idea 的<strong>增量空间本身就窄</strong>：邻居扩展（ResearchAgent/SciMON）、迭代评审（ResearchAgent/CycleResearcher）、知识图谱假设生成（SciAgents/MOOSE-Chem）都已存在，留给本文的只有「边上挂 LLM 文本」和「游走式检索」两个可辩护点。</p>
-
-            <p><strong>执行层面（约七成责任）：</strong>恰恰是这两个可辩护点，论文都没有给出证据——g(·) 没定义、边文本 vs 共现计数没对照、概念网络没消融。再叠加 critic 训练数据的过度声称、人类评估三句话交差、主表数字自相矛盾、摘要与正文提升数字不一致、prompt 附录复制粘贴出错、承诺开放的代码与数据集全部没有兑现。这些不是「方向错了」的问题，而是<strong>验证纪律和写作纪律的全面缺失</strong>。作者面对四份评审零 rebuttal 直接撤稿，与其说是被冤枉，不如说是自知证据链撑不起声称。</p>
+            <div class="card-grid">
+                <article class="card">
+                    <h3>Idea 层面（约三成责任）</h3>
+                    <p>方向本身不坏——给共现图的边补上语义、把一次性检索改成逐步游走、用微调 critic 替代裸 prompt 评审，这些都言之成理，6 分评审 DTQ4 认可的正是这些。但这个 idea 的<strong>增量空间天生就窄</strong>：邻居扩展、迭代评审、图谱假设生成全都有先例，留给它的只有两个可辩护点。</p>
+                </article>
+                <article class="card">
+                    <h3>执行层面（约七成责任）</h3>
+                    <p>恰恰这两个可辩护点全都没给证据：g 没定义、边文本没对照、网络没消融。再叠加 critic 数据的过度声称、人类评估三句话交差、主表数字自相矛盾、承诺开源全部没兑现。这不是方向错了，是<strong>验证纪律和写作纪律的全面缺失</strong>。零 rebuttal 直接撤稿，与其说被冤枉，不如说自知证据链撑不住。</p>
+                </article>
+            </div>
 
             <div class="key-insight">
-                <h3>对「文献组织路线」档案的启示</h3>
-                <p>这是概念网络路线的一个典型失败样本：把文献压成「关键词 + LLM 自由文本边」的图，检索层面确实比一次性 RAG 多了可游走的结构，但如果不能证明<strong>图结构本身</strong>（而非背后那个 LLM）贡献了 novelty/feasibility，它与「换皮 RAG」不可区分。与 CoI 的引用链（关系语义明确但只有单脉络）、ResearchAgent 的实体共现库（无语义但可验证）相比，本文选了语义最丰但最不可验证的表示——而验证恰恰是它没做的事。后续读同路线论文时，「边特征对照消融 + 判停准则 + judge 与内环 critic 是否同源」可以直接当三连筛查项。</p>
+                <h3>对本档案（idea 生成系统怎么做文献）的启示</h3>
+                <p>概念网络这条路选择了<strong>语义最丰富、也最不可验证</strong>的文献表示——而验证恰恰是这篇论文没做的事。如果不能证明图结构本身（而不是背后那个本来就很强的 LLM）贡献了产出质量，它与换皮 RAG 不可区分。以后读同路线论文，直接用三连筛查：<strong>①边特征有没有对照消融？②迭代有没有判停准则？③评估 judge 和内环 critic 是不是同源？</strong>三问皆空的，大概率是又一个 Deep Ideation。</p>
             </div>
 
             <div class="source-note">
-                <p><strong>来源与证据边界：</strong>本页方法拆解基于 arXiv:2511.02238 的 tex 源码（0Main + 1–6 章 + Appendix），评审内容基于本地 OpenReview 存档（ICLR 2026 #20167，存档日 2026-08-04），表格数字审计为本页独立重算。代码未放出，所有实现细节均为论文声称或推断，不存在代码确认档。</p>
+                <p><strong>来源与证据边界：</strong>方法拆解基于 arXiv:2511.02238 的 tex 源码（正文 + 附录 prompt），评审内容基于本地 OpenReview 存档（ICLR 2026 #20167），主表数字审计为本页独立重算。代码未放出，所有实现细节均为论文声称或推断，不存在"代码确认"档。</p>
             </div>
         </section>
 
         <footer>
             <p>Deep Ideation 中文精读 · 论文 + OpenReview 评审交叉核对（无代码，未做代码审计）</p>
-            <p>整理日期：2026-08-04 · 代码版本：kyZhao-1/Deep-Ideation 仅 README 占位，未放出</p>
+            <p>整理：2026-08-04 · 重写为易读版：2026-08-05 · kyZhao-1/Deep-Ideation 仓库仅 README 占位</p>
         </footer>
     </main>
 </body>
