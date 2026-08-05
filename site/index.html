@@ -236,9 +236,9 @@
     <div class="map-col">
       <div class="map-title">② 领域调研 · 别人做了什么</div>
       <a class="map-item" href="#landscape">🗺 领域版图<span>约 130 篇八大类 + 56 个系统分类</span></a>
-      <a class="map-item" href="#systems">📚 项目与系统<span>17 个项目深读 · 复杂/简单/包装三档</span></a>
+      <a class="map-item" href="#systems">📚 项目与系统<span>14 个项目深读 · 复杂/简单/包装三档</span></a>
       <a class="map-item sub" href="#compare">⚖️ 横向对比<span>文献搜索四系统横评</span></a>
-      <a class="map-item" href="#ideation">💡 Idea 生成<span>4 篇已精读+代码审计 · 看别人怎么"用文献喂出 idea"</span></a>
+      <a class="map-item" href="#ideation">💡 Idea 生成<span>7 个系统已精读 · 五条"用文献喂出 idea"的路线</span></a>
       <a class="map-item" href="#benchmark">🎯 Benchmark<span>7 张卡 · 4 篇已深读</span></a>
       <a class="map-item" href="#datalib">📖 文献库 · 数据接口<span>DeepXiv 等</span></a>
       <a class="map-item" href="#products">🏢 商业产品<span>Elicit / Consensus / Asta / Scite …</span></a>
@@ -700,7 +700,7 @@ PubMed / EuropePMC ─ 医学与生命科学增强</div>
             <tr><th class="w">工作</th><th>做什么</th></tr>
             <tr><td><a href="https://arxiv.org/abs/2409.13740">PaperQA2</a> (2024)</td><td>科学文献问答与知识综合，检索 + 证据抽取 + 引用绑定生成有来源支撑的回答。<span class="note-inline">本页已归档</span></td></tr>
             <tr><td><a href="https://arxiv.org/abs/2411.14199">OpenScholar</a> (2024)</td><td>检索增强 LM 搜索科学文献并撰写带引用的研究综述。<span class="note-inline">本页已归档</span></td></tr>
-            <tr><td><a href="https://arxiv.org/abs/2404.07738">ResearchAgent</a> (2024)</td><td>在科学文献基础上迭代生成、扩展和改进研究想法。<span class="note-inline">已精读 · 简单档</span></td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2404.07738">ResearchAgent</a> (2024)</td><td>在科学文献基础上迭代生成、扩展和改进研究想法。<span class="note-inline">已精读 · 见 Idea 生成模块</span></td></tr>
             <tr><td><a href="https://arxiv.org/abs/2502.14767">Tree-of-Debate</a> (2025)</td><td>多角色辩论树比较科学论文，围绕方法、证据和结论批判性分析。</td></tr>
             <tr><td><a href="https://arxiv.org/abs/2603.20278">OpenResearcher</a> (2026)</td><td>开放长程 Deep Research 轨迹生成管线，记录搜索、开页、文内查找步骤。<span class="note-inline">本页已归档</span></td></tr>
             <tr><td><a href="https://arxiv.org/abs/2601.10029">PaperScout</a> (2026)</td><td>学术论文搜索自主 Agent，优化多步检索过程与最终发现质量。<span class="note-inline">本页已深读</span></td></tr>
@@ -1055,7 +1055,7 @@ return timeout_answer</div>
 <!-- ==================== 项目与系统 ==================== -->
 <section id="systems">
 <details class="sec-fold">
-<summary>  <div class="sec-head"><h2>📚 项目与系统</h2><span class="count">Literature项目或者系统/ · 17 个项目</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<summary>  <div class="sec-head"><h2>📚 项目与系统</h2><span class="count">Literature项目或者系统/ · 14 个项目（idea 生成类另见下方专门模块）</span></div><span class="open-hint">点开阅读 ▾</span></summary>
 <div class="sec-body">
   <p class="sec-note">分类依据论文全文 + 源码深读：<b>复杂</b> = 有真实算法与工程实质；<b>简单</b> = 有实质但贡献有限或被重命名包装；<b>包装的好看</b> = 卖点在论文/代码层面无法成立。</p>
 
@@ -1120,14 +1120,6 @@ return timeout_answer</div>
       </div>
     </div>
     <div class="card">
-      <h4>Tree-of-Debate <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span></h4>
-      <div class="meta">UIUC 韩家炜组 · ACL 2025 Main · 论文对比 / novelty 分析</div>
-      <p class="blurb">两篇论文化身 LLM 辩手，就"谁的贡献更好"逐话题辩论，辩论树本身即输出。消融干净（树结构→语境化 +26%，迭代检索→事实性）；纯推理时 prompt 编排，评测全靠 5 位专家人工，论文有两处与代码不符（已在精读页标注）。</p>
-      <div class="links">
-        <a href="Literature项目或者系统/简单/Tree-of-Debate/Tree-of-Debate_精读与代码审计.html">精读与代码审计</a>
-      </div>
-    </div>
-    <div class="card">
       <h4>PaperScout <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-ok">重命名的 GSPO</span></h4>
       <div class="meta">USTC · 文献搜索 Agent + "PSPO" 强化学习</div>
       <p class="blurb">真做了训练（turn 级 GAE + verl），但训练脚本白纸黑字 loss_mode=gspo，论文公式与实现不符；环境/数据/评测全断，复现性为零。</p>
@@ -1143,32 +1135,6 @@ return timeout_answer</div>
       <div class="links">
         <a href="Literature项目或者系统/简单/SciAtlas/SciAtlas_精读.html">精读页面 (html)</a>
         <a class="dir" href="_未包含的内容.html">论文 + 原图 →</a>
-      </div>
-    </div>
-    <div class="card">
-      <h4>ResearchAgent <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-ok">复现失守的开山作</span></h4>
-      <div class="meta">KAIST × MSR · NAACL 2025 · arXiv:2404.07738 · 科研 Idea 生成</div>
-      <p class="blurb">Idea 生成方向开山作之一（218 引）：引用图 top-10 + 5 万篇实体共现知识库 + 三阶段「生成-评审」迭代；评审标准从 10 组人标诱导，方法设计被大量沿用。但三轮 ARR 才录用；开源代码是发表后重写的推理壳——无 benchmark 筛选/知识库构建/评测代码，默认 gpt-4o 使时间隔离失效，引用方向三处口径不一，主结果不可复现。</p>
-      <div class="links">
-        <a href="Literature项目或者系统/简单/ResearchAgent/ResearchAgent_精读与代码审计.html">精读与代码审计</a>
-        <a class="dir" href="_未包含的内容.html">论文 + 源码 →</a>
-      </div>
-    </div>
-    <div class="card">
-      <h4>SciMON <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-ok">参照原点</span></h4>
-      <div class="meta">Wang/Downey/Ji/Hope · ACL 2024 · idea 生成线的定型之作</div>
-      <p class="blurb">IE 流水线自建 used-for 知识图 + 语义/概念/引用三路灵感检索 + 事后新颖性查重重写。评测自我批判（自报 85% 输给真实论文 idea）、全部输出公开；但发布代码是带必崩 bug、无入口的研究脚本堆。</p>
-      <div class="links">
-        <a href="Literature项目或者系统/简单/SciMON/SciMON_精读与代码审计.html">精读与代码审计</a>
-      </div>
-    </div>
-    <div class="card">
-      <h4>SciPIP <span style="font-weight:400;font-size:12px;color:var(--ink-soft)">(2026-08 新归档)</span><span class="verdict v-warn">撤稿后大修</span></h4>
-      <div class="meta">浙大 × 阿里云 · ICLR 2025 撤稿 → arXiv 大修 · 检索增强 idea 生成</div>
-      <p class="blurb">7.8 万篇顶会论文重摘要成五元组入 Neo4j（库 dump 公开）+ SKC 三路检索 + 双路生成。大修版逐条回应评审（改 12 人评审、排查污染），但删掉了被点名"差距边际"的 SciMON 对比；检索框架系 SciMON 的组合改进。</p>
-      <div class="links">
-        <a href="Literature项目或者系统/简单/SciPIP/SciPIP_精读与代码审计.html">精读与代码审计</a>
-        <a href="Literature项目或者系统/简单/SciPIP/SciPIP_精读与代码审计.html#iclr-reviews">ICLR 评审存档（内嵌）</a>
       </div>
     </div>
     <div class="card">
@@ -1248,10 +1214,51 @@ return timeout_answer</div>
 <!-- ==================== Idea 生成 ==================== -->
 <section id="ideation">
 <details class="sec-fold">
-<summary>  <div class="sec-head"><h2>💡 Idea 生成</h2><span class="count">Literature项目或者系统/待归档/ · 4 篇 · 全部精读+代码审计（2026-08-04）</span></div><span class="open-hint">点开阅读 ▾</span></summary>
+<summary>  <div class="sec-head"><h2>💡 Idea 生成</h2><span class="count">7 个系统 · 全部精读+代码审计</span></div><span class="open-hint">点开阅读 ▾</span></summary>
 <div class="sec-body">
-  <p class="sec-note">很多 literature 工作最终是服务于 idea 生成的——这一簇专门看「idea 生成系统<b>是怎么做文献的</b>」：四条技术路线，文献分别被组织成<b>引用链</b>（CoI）、<b>概念网络</b>（Deep Ideation）、<b>端到端训练语料</b>（CycleResearcher）、<b>agent 人设+新颖性对照库</b>（VirSci）。每篇均已通读论文全文+代码并写成精读页（论文原图 + 论文↔代码审计 + OpenReview 评审对照）。</p>
+  <p class="sec-note">很多 literature 工作最终是服务于 idea 生成的——这一簇专门看「idea 生成系统<b>是怎么做文献的</b>」。五条路线：<b>引用链</b>（CoI）、<b>概念网络</b>（Deep Ideation）、<b>知识图/实体检索</b>（SciMON → ResearchAgent → SciPIP 一条演化线）、<b>端到端训练语料</b>（CycleResearcher）、<b>agent 人设+新颖性对照库</b>（VirSci）。每篇均已通读论文全文+代码并写成精读页（论文原图 + 论文↔代码审计 + 评审意见对照）。</p>
   <div class="grid">
+    <div class="card">
+      <h4>SciMON <span class="verdict v-ok">文献→实体灵感</span></h4>
+      <div class="meta">Wang/Downey/Ji/Hope · ACL 2024 Main · arXiv:2305.14259 · 简单档</div>
+      <p class="blurb">这条线的<b>参照原点</b>：IE 流水线（PL-Marker/SciCo）自建 used-for 知识图，语义/概念/引用<b>三路灵感检索</b>由此定型（后被 SciPIP 等沿用）；生成后与训练集旧 idea 查重、超阈值强制"显著不同地重写"的事后新颖性提升是其招牌。评测自我批判（自报 <b>85% 输给真实论文 idea</b>）、全部模型输出公开；但发布代码是带必崩 bug、无统一入口的研究脚本堆。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/简单/SciMON/SciMON_精读与代码审计.html">精读 + 代码审计 (html)</a>
+        <a href="https://arxiv.org/abs/2305.14259">arXiv</a>
+        <a href="https://github.com/EagleW/Scientific-Inspiration-Machines-Optimized-for-Novelty">GitHub</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>ResearchAgent <span class="verdict v-ok">文献→引用图+实体库</span></h4>
+      <div class="meta">KAIST × MSR · NAACL 2025 · arXiv:2404.07738 · 简单档</div>
+      <p class="blurb">开山作之一（218 引）：引用图 top-10 + 5 万篇实体共现知识库 + 三阶段「生成-评审」迭代；评审标准从 10 组人标诱导，方法设计被大量沿用。但三轮 ARR 才录用；开源代码是发表后重写的推理壳——无 benchmark 筛选/知识库构建/评测代码，默认 gpt-4o 使时间隔离失效，主结果不可复现。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/简单/ResearchAgent/ResearchAgent_精读与代码审计.html">精读 + 代码审计 (html)</a>
+        <a href="https://arxiv.org/abs/2404.07738">arXiv</a>
+        <a href="https://github.com/JinheonBaek/ResearchAgent">GitHub</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>SciPIP <span class="verdict v-warn">文献→五元组图库</span></h4>
+      <div class="meta">浙大 × 阿里云 · ICLR 2025 撤稿 → arXiv 大修 · arXiv:2410.23166 · 简单档</div>
+      <p class="blurb">7.8 万篇顶会论文由 GPT-4o 重摘要成<b>五元组</b>入 Neo4j（<b>库 dump 公开可下载</b>）+ SKC 三路检索 + 脑暴/检索<b>双路生成</b>（消融证实：脑暴管新颖、检索管可行）。大修版逐条回应 ICLR 评审（改 12 人评审、排查污染），但删掉了被点名"差距边际"的 SciMON 对比；检索框架系 SciMON 的组合改进。精读页含与 SciMON 的 11 维真实差异对比 + 内嵌评审全文。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/简单/SciPIP/SciPIP_精读与代码审计.html">精读 + 代码审计 (html)</a>
+        <a href="Literature项目或者系统/简单/SciPIP/SciPIP_精读与代码审计.html#iclr-reviews">ICLR 评审存档（内嵌）</a>
+        <a href="https://arxiv.org/abs/2410.23166">arXiv</a>
+        <a href="https://github.com/cheerss/SciPIP">GitHub</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Tree-of-Debate <span class="verdict v-ok">论文对→辩论树（novelty 评估）</span></h4>
+      <div class="meta">UIUC 韩家炜组 · ACL 2025 Main · arXiv:2502.14767 · 简单档</div>
+      <p class="blurb">不产 idea，做这条线缺的<b>评估环节</b>：两篇论文化身 LLM 辩手就"谁的贡献更好"逐话题辩论，辩论树本身即对比分析产出——重叠想法辩出长子树、独有想法快速封叶。消融干净（树结构→语境化 +26%、迭代检索→事实性），5 位领域专家全人工评测；论文有两处与代码不符（已在精读页标注）。</p>
+      <div class="links">
+        <a href="Literature项目或者系统/简单/Tree-of-Debate/Tree-of-Debate_精读与代码审计.html">精读 + 代码审计 (html)</a>
+        <a href="https://arxiv.org/abs/2502.14767">arXiv</a>
+        <a href="https://github.com/pkargupta/tree-of-debate">GitHub</a>
+      </div>
+    </div>
     <div class="card">
       <h4>Chain of Ideas (CoI Agent) <span class="verdict v-ok">文献→引用链</span></h4>
       <div class="meta">DAMO Academy 等 · ICLR 2025 Reject (5/5/5/8) · arXiv:2410.13185</div>
