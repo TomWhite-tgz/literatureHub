@@ -38,7 +38,7 @@ footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:v
 <header>
   <h1>⑥ 源码审计、横向对比与 AutoResearch 借鉴</h1>
   <p class="sub">先区分“源码能证明什么”和“产品宣传说了什么”，再讨论 Codex 相比其他 coding agent 真正值得借鉴的工程亮点。</p>
-  <p style="color:var(--ink-soft);font-size:12.5px">审计快照：<code>/home/tomwhite/coding/codex</code> @ <code>0a0ebb8535</code>（2026-08-06）；复核日期：2026-08-08。</p>
+  <p style="color:var(--ink-soft);font-size:12.5px">审计快照：<code>codex</code> @ <code>0a0ebb8535</code>（2026-08-06）；复核日期：2026-08-08。</p>
 </header>
 
 <div class="key"><b>结论先行：</b>原解读的主线——“事件流内核 + 受控执行 + app-server 协议边界”是成立的，但若干比较结论不成立或证据不足。Codex 的独特价值不是笼统的“最强沙箱”或“唯一后台 agent”，而是把<b>协议、准入、运行时权限、持久化、诊断证据</b>做成可组合且可测试的边界。对 AutoResearch 最有价值的，也是这套“把一次自主运行变成可治理、可恢复、可审计对象”的方法。</div>
