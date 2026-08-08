@@ -1,0 +1,30 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pi 源码深读 · 总览</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a class="cur" href="index.html">总览</a><a href="01_loop.html">① 经典 loop</a><a href="02_models_tools.html">② 模型与工具</a><a href="03_sessions_context.html">③ 会话与上下文</a><a href="04_extensions_frontends.html">④ 扩展与前端</a><a href="05_harness_protocol.html">⑤ Harness 与协议</a><a href="06_compare.html">⑥ 三方比较</a></nav>
+<header><h1>Pi · TypeScript monorepo 源码深读</h1><p class="sub">从一个极小 agent loop，追到多 provider、JSONL 会话树、扩展运行时、差分 TUI，以及仍在施工的 durable Harness。</p><div class="meta"><b>审计对象</b> <code>earendil-works/pi</code> · <b>提交</b> <code>e47b8e37a6</code>（<code>v0.84.1-27-ge47b8e37a</code>）· <b>提交日期</b> 2026-08-07 · <b>复核日期</b> 2026-08-08 · <b>许可证</b> MIT</div></header>
+
+<h2>先说结论</h2>
+<p class="lead">Pi 最值得研究的不是功能最多，而是<b>把层次切得很薄</b>：<code>pi-ai</code> 统一 provider 与消息流，<code>pi-agent-core</code> 只做 turn/tool/queue 循环，<code>pi-coding-agent</code> 再接会话、压缩、资源与 UI。它有意不内建 MCP、subagent、permission popup、plan mode 和后台 Bash；这些能力留给扩展、外部进程或容器。</p>
+<div class="key"><b>一句话架构：</b>当前可用产品主线是 <code>CLI/SDK → AgentSession → Agent → agentLoop → Models/provider</code>；另一条 <code>server → AgentHarness → durable session</code> 是面向崩溃恢复和多 lane 的下一代设计，但执行层大多仍为脚手架。</div>
+
+<h2>研究边界：先把“现状”和“设计”分开</h2>
+<table><tr><th>证据等级</th><th>本次材料</th><th>结论边界</th></tr>
+<tr><td><span class="tag full">已实现</span></td><td>1,358 个 tracked files；1,119 个 TS/TSX，约 253,131 行；经典 loop、coding-agent、AI、TUI、v3 session 可完整追踪</td><td>可以按函数和状态转换解释运行行为</td></tr>
+<tr><td><span class="tag partial">部分落地</span></td><td>format-4 session repository、SQLite backend、CBOR protocol、server/client 已有实现与测试面</td><td>只能逐模块陈述，不等于新 Harness 已可执行 prompt</td></tr>
+<tr><td><span class="tag external">设计文档</span></td><td><code>packages/agent/docs/harness-v2.md</code> 描述 durable operations、lanes、manual drive、hooks/events 与恢复矩阵</td><td>路线图不算运行能力；代码中的 checklist 与 placeholder 优先</td></tr></table>
+<div class="note warn"><b>关键审计结论：</b><code>AgentHarness.create()</code> 遇到已有 record 就抛 <code>HarnessNotImplemented("create.restore")</code>；<code>prompt / resume / abort / lane / watch / hooks / events</code> 等同样未实现。server/protocol/client 的 README 也明确标注 experimental。不能把 Harness v2 文档直接写成 Pi CLI 的现有特性。</div>
+
+<h2>代码重量放在哪里</h2>
+<table><tr><th>包</th><th>TS/TSX 行数</th><th>职责</th></tr><tr><td><code>coding-agent</code></td><td>123,758</td><td>CLI/SDK、AgentSession、会话、压缩、扩展、工具、模式</td></tr><tr><td><code>ai</code></td><td>58,767</td><td>provider、模型目录、认证、统一消息/stream/deferred API</td></tr><tr><td><code>tui</code></td><td>32,374</td><td>组件、输入、主屏/副屏差分渲染、图片与布局</td></tr><tr><td><code>agent</code></td><td>21,076</td><td>经典 loop，以及下一代 Harness/session primitives</td></tr><tr><td><code>protocol/server/client/session-backends</code></td><td>12,194</td><td>实验性远程会话与 durable storage 边界</td></tr></table>
+
+<h2>阅读路线</h2><div class="hub">
+<a href="01_loop.html"><h3>① 经典 Agent loop</h3><p>turn、tool batch、steer/follow-up、abort 与事件 barrier。</p></a>
+<a href="02_models_tools.html"><h3>② 模型与工具</h3><p>provider ownership、流式协议、工具顺序、错误闭合与权限边界。</p></a>
+<a href="03_sessions_context.html"><h3>③ 会话与上下文</h3><p>v3 JSONL 树、branch、compaction、overflow retry 与恢复信息。</p></a>
+<a href="04_extensions_frontends.html"><h3>④ 扩展与前端</h3><p>trust bootstrap、任意代码扩展、SDK/JSON/RPC/TUI 的真实边界。</p></a>
+<a href="05_harness_protocol.html"><h3>⑤ Harness 与协议</h3><p>区分已落地 storage/protocol 与未实现 durable runtime。</p></a>
+<a href="06_compare.html"><h3>⑥ Pi × Codex × Claude Code</h3><p>按 loop、并发、权限、持久化、扩展和前端做同证据等级比较。</p></a></div>
+
+<h2>值得带走的核心判断</h2><ul><li><b>小内核不是少功能，而是把策略推迟。</b>经典 loop 只规定消息、工具结果和队列的正确闭合；coding-agent 与扩展决定产品行为。</li><li><b>并发完成顺序与上下文顺序被刻意分离。</b>工具可并行，live end event 按完成顺序；写回模型上下文的 tool result 仍按模型调用顺序。</li><li><b>会话树比线性 chat log 更接近真实工作。</b>branch、compaction、model/thinking change、custom state 都是 append-only entry。</li><li><b>安全默认是“继承进程权限”。</b>project trust 只控制项目资源是否加载，不是工具执行沙箱；强隔离要靠容器或自定义扩展。</li><li><b>下一代 Harness 的设计质量高于当前完成度。</b>它提出了 durable acceptance、effect boundary、recovery matrix 和 lane isolation，但产品比较必须以实现为准。</li></ul>
+<div class="src">主要证据：<code>packages/agent/src/agent-loop.ts</code>、<code>packages/agent/src/agent.ts</code>、<code>packages/coding-agent/src/core/sdk.ts</code>、<code>packages/coding-agent/src/core/agent-session.ts</code>、<code>packages/agent/src/harness/agent-harness.ts</code>、<code>packages/agent/docs/harness-v2.md</code>。</div>
+<footer>Pi 源码深读 · 总览 · 所有源码位置均使用仓库相对路径，不包含本地文件系统路径</footer></div></body></html>

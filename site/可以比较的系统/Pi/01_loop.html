@@ -1,0 +1,26 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pi · 经典 Agent loop</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a class="cur" href="01_loop.html">① 经典 loop</a><a href="02_models_tools.html">② 模型与工具</a><a href="03_sessions_context.html">③ 会话与上下文</a><a href="04_extensions_frontends.html">④ 扩展与前端</a><a href="05_harness_protocol.html">⑤ Harness 与协议</a><a href="06_compare.html">⑥ 三方比较</a></nav>
+<header><h1>① 经典 Agent loop：小，但不含糊</h1><p class="sub"><code>Agent</code> 管状态与生命周期，<code>agentLoop</code> 管一次 run；两者故意保持可替换。</p></header>
+<h2>调用链</h2><div class="flow"><span class="step">AgentSession.prompt</span><span class="arr">→</span><span class="step">Agent.prompt</span><span class="arr">→</span><span class="step">agentLoop</span><span class="arr">→</span><span class="step">streamAssistantResponse</span><span class="arr">→</span><span class="step">executeToolCalls</span><span class="arr">↺</span></div>
+<p><code>agentLoop()</code> 从新 prompt 开始，<code>agentLoopContinue()</code> 从已有 context 继续。两者汇入 <code>runAgentLoop()</code>，依次发出 agent/turn/message 事件，再进入 <code>runLoop()</code>。外层循环消费 follow-up，内层循环处理 tool calls 和 steering。</p>
+<div class="src">证据：<code>packages/agent/src/agent-loop.ts:31-279</code>；<code>packages/agent/src/agent.ts:173-430</code>。</div>
+<h2>一个 turn 的真实顺序</h2><pre><code>user/pending messages
+  → turn_start
+  → assistant message stream（完整收束）
+  → message_end
+  → 若 stopReason=error/aborted：结束
+  → 若 length 且含 tool call：生成失败结果，不执行截断参数
+  → tool batch prepare / execute / finalize
+  → toolResult messages 按模型调用顺序写回
+  → turn_end
+  → steering? 下一次模型调用
+  → 无工具、无 steering 时再取 follow-up</code></pre>
+<p>Pi 与 Claude Code 的重要差异在这里：经典 Pi 会先把整个 assistant response 流完，再启动工具；它没有在 tool input streaming 尚未结束时抢跑工具。好处是状态机简单、参数边界清楚，代价是不能隐藏安全工具的模型流延迟。</p>
+<h2>steer 与 follow-up 不是同一队列</h2><table><tr><th>队列</th><th>可见时机</th><th>作用</th></tr><tr><td><code>steer</code></td><td>当前 assistant turn 及其整个 tool batch 完成后</td><td>在下一次 LLM 调用前改变方向；不会中途取消正在执行的 sibling tools</td></tr><tr><td><code>followUp</code></td><td>没有 tool continuation，也没有 steering 后</td><td>把新任务作为下一段对话处理</td></tr></table>
+<p><code>prompt()</code> 在 active run 中会拒绝，并明确要求调用方选择 <code>steer()</code> 或 <code>followUp()</code>。这避免了“新 prompt 到底插在 transcript 哪一层”的隐式竞态。</p>
+<div class="src">证据：<code>packages/agent/src/agent-loop.ts:155-269</code>；<code>packages/agent/src/agent.ts:283-320,348-353</code>。</div>
+<h2>EventStream 与 Agent 的语义不同</h2><p>低层 loop 返回 <code>EventStream</code>，适合边读边消费；高层 <code>Agent</code> 则把 listener 逐个 await。于是 <code>agent_end</code> 是最后一个 loop event，但只有它的 listeners 全部 settle 后，Agent 才真正 idle。这是一个容易忽视但很实用的 barrier：会话持久化 listener 可以在下一次 prompt 前完成。</p>
+<div class="note"><b>设计价值：</b>事件不是只给 UI 看。高层 Agent 把它用作状态更新与持久化的同步边界；低层 loop 则保持可组合和观察式消费。两个 API 没有假装具有同样的 settlement 语义。</div>
+<div class="src">证据：<code>packages/agent/src/agent.ts:247-252,326-331,540-592</code>。</div>
+<h2>失败也必须闭合协议</h2><ul><li>provider error/abort 生成终态 assistant message 并结束 turn。</li><li><code>length</code> 截断且出现 tool call 时，所有 call 都得到错误 tool result，绝不执行可能残缺的参数。</li><li>工具 schema、hook 或执行异常被捕获并转成 <code>isError</code> result，保证每个 tool use 有配对结果。</li><li><code>terminate: true</code> 可以阻止自动 tool continuation；并行 batch 只有所有 finalized results 都 terminate 才停止。</li></ul>
+<div class="key"><b>判断：</b>Pi loop 的核心质量来自少量明确不变量，而不是庞大调度器：一次只跑一个 Agent run；assistant 先收束；每个 tool call 必须闭合；队列只在规定 checkpoint 可见；事件处理完成才算 idle。</div>
+<footer><a href="02_models_tools.html">下一篇：模型与工具 →</a></footer></div></body></html>

@@ -1,0 +1,23 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pi · 会话与上下文</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① 经典 loop</a><a href="02_models_tools.html">② 模型与工具</a><a class="cur" href="03_sessions_context.html">③ 会话与上下文</a><a href="04_extensions_frontends.html">④ 扩展与前端</a><a href="05_harness_protocol.html">⑤ Harness 与协议</a><a href="06_compare.html">⑥ 三方比较</a></nav>
+<header><h1>③ 会话与上下文：append-only 树，不是聊天数组</h1><p class="sub">经典 coding-agent 的 v3 JSONL 同时承担恢复、分支、压缩、模型切换和扩展状态。</p></header>
+<h2>文件结构</h2><p>第一行是 session header；后续 entry 通过短 <code>id / parentId</code> 形成树。当前 leaf 决定活跃分支。message 之外还有 model/thinking change、compaction、branch summary、custom、custom message、label 与 session info。</p>
+<pre><code>session header
+  └─ model_change
+      └─ thinking_level_change
+          └─ user → assistant → toolResult
+                         ├─ 原分支继续
+                         └─ branch_summary → 新分支（current leaf）</code></pre>
+<p><code>custom</code> 保存扩展状态但不进入模型上下文；<code>custom_message</code> 则明确参与 context。这个区分避免“要持久化”被错误等同于“每轮都喂给模型”。</p>
+<div class="src">证据：<code>packages/coding-agent/docs/session-format.md</code>；<code>packages/coding-agent/src/core/session-manager.ts:418-504,1057-1160</code>。</div>
+<h2>恢复 context 是一次投影</h2><p><code>buildContextEntries()</code> 从 leaf 向 root 找活跃路径，并处理最近 compaction；<code>buildSessionContext()</code> 再提取模型、thinking level 和可见 messages。新 compaction 可带物化的 <code>retainedTail</code>，因此 checkpoint 可自包含；旧格式则通过 <code>firstKeptEntryId</code> 回看历史，保证兼容。</p>
+<table><tr><th>entry</th><th>进入 LLM context 的形式</th></tr><tr><td>message</td><td>原 AgentMessage</td></tr><tr><td>compaction</td><td>compactionSummary + retainedTail（若有）</td></tr><tr><td>branch_summary</td><td>branchSummary message</td></tr><tr><td>custom_message</td><td>CustomMessage</td></tr><tr><td>custom / label / session_info</td><td>不进入</td></tr></table>
+<h2>压缩不是简单截断</h2><p>自动触发条件是 <code>contextTokens &gt; contextWindow - reserveTokens</code>。Pi 从尾部保留约 <code>keepRecentTokens</code>，优先按完整 user turn 切分；如果单 turn 本身过大，可以在 assistant message 处 split，但绝不从 tool result 处切断，因为 tool result 必须与 tool call 同组。</p>
+<p>摘要使用固定结构保存 Goal、约束、进度、关键决策、下一步、关键上下文，并累计 read/modified files。序列化阶段会把 tool output 截至 2,000 字符，控制摘要请求本身的体积。</p>
+<div class="src">证据：<code>packages/coding-agent/docs/compaction.md</code>；<code>packages/coding-agent/src/core/compaction/</code>；<code>packages/coding-agent/src/core/agent-session.ts:1786-2221</code>。</div>
+<h2>overflow recovery 有界</h2><p>当终态 assistant 被判定为 context overflow 或可恢复 length 时，AgentSession 先把失败 response 从 retry context 中移除，再执行 overflow compaction 并重试。每个 conversational input 只允许一次 compact-and-retry；再次 overflow 就显式失败，避免无限压缩循环。普通 threshold compaction 则发生在 turn 后，不必制造错误。</p>
+<div class="note"><b>正确性细节：</b>失败 response 已在 <code>message_end</code> 时持久化，恢复逻辑只从当前 agent context 中移除它；审计记录仍然存在。这比“为了重试而抹掉失败历史”更适合科研系统。</div>
+<h2>分支摘要保留“被离开的工作”</h2><p>用户从 tree 的旧 leaf 导航到另一节点时，可对离开的路径做摘要。系统寻找共同祖先、收集 abandoned branch、生成 summary，然后在目标位置追加 <code>branch_summary</code>。因此新分支既不携带旧分支全部 token，也不会完全忘掉尝试过什么。</p>
+<div class="src">证据：<code>packages/coding-agent/src/core/agent-session.ts:2899-3093</code>；<code>packages/coding-agent/src/core/session-manager.ts:1381-1450</code>。</div>
+<h2>局限</h2><ul><li>v3 JSONL 写入与本进程 AgentSession 紧耦合，不是具备单 writer lease 的远程 durable runtime。</li><li>经典 loop 的 tool execution 没有持久化 intent；进程在工具执行中崩溃时，不能仅靠 v3 transcript 判断是否安全重放。</li><li>摘要保留的是模型生成的恢复信息，不能替代原始 artifact/evidence。</li></ul>
+<div class="key"><b>给 AutoResearch：</b>复制“树 + projection + self-contained checkpoint”，但为实验工具再加 durable action intent/result、artifact hash、environment digest 和 replay policy；否则恢复对话不等于恢复实验。</div>
+<footer><a href="04_extensions_frontends.html">下一篇：扩展与前端 →</a></footer></div></body></html>

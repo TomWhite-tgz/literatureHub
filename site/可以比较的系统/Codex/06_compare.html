@@ -41,7 +41,7 @@ footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:v
   <p style="color:var(--ink-soft);font-size:12.5px">审计快照：<code>codex</code> @ <code>0a0ebb8535</code>（2026-08-06）；复核日期：2026-08-08。</p>
 </header>
 
-<div class="key"><b>结论先行：</b>Codex 与 Claude Code 现在都可以落到代码证据比较，但二者把复杂度放在不同位置。Codex 更突出的是<b>事件协议、app-server 硬边界、执行准入与平台沙箱</b>；Claude Code 更突出的是<b>流式工具并发、权限竞态、多级上下文减重、可恢复子 agent 与 JSONL 会话图</b>。对 AutoResearch 最有价值的不是选边站，而是用 Codex 式 run/event 骨架承载 Claude Code 式长程会话状态。</div>
+<div class="key"><b>结论先行：</b>三套源码把复杂度放在不同位置。Codex 更突出<b>事件协议、app-server 硬边界、执行准入与平台沙箱</b>；Claude Code 更突出<b>流式工具并发、权限竞态、多级上下文减重、可恢复子 agent 与 JSONL 会话图</b>；Pi 则以<b>极小 Agent loop、provider/message 分层和任意代码扩展</b>换取可嵌入性，同时正在建设尚未完成的 durable Harness。AutoResearch 应让 Pi 式小 loop、Codex 式治理骨架和 Claude Code 式长程状态各司其职。</div>
 
 <h2>一、审计口径：避免苹果和橘子比较</h2>
 <p>现在可以对 Codex 与 Claude Code 做函数级比较，但证据强度仍不完全相同。Codex 是带 Git 提交号、Cargo workspace 与低层 sandbox crate 的仓库快照；Claude Code 材料是一个只有 <code>src/</code>、无 <code>.git</code>/<code>package.json</code> 的 source-map backed TypeScript 展开树。后者的大部分 query、tool、session、agent 和 SDK 实现可读，但若干内部 feature 模块缺失，sandbox 底层也来自外部 runtime。</p>
@@ -67,6 +67,10 @@ footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:v
   <tr><td><b>扩展机制</b></td><td>skills、MCP、apps、hooks 由 manifest/配置聚合，并受协议与 capability 边界约束</td><td>Skills 改模型指令，Hooks 介入生命周期，MCP 增加外部能力，Plugins 负责成组分发；enterprise policy 可限制来源</td><td>两者都不是“任意插件脚本等于隔离子进程”；应按能力类型讨论信任与进程语义</td></tr>
 </table>
 <p style="font-size:13px">Claude Code 的逐文件证据与行号见本站 <a href="../ClaudeCode/index.html">源码深读总览</a>、<a href="../ClaudeCode/01_loop.html">Agent loop</a>、<a href="../ClaudeCode/02_tools.html">工具与权限</a>、<a href="../ClaudeCode/03_context.html">上下文工程</a>、<a href="../ClaudeCode/04_agents.html">子 Agent</a>和<a href="../ClaudeCode/05_sessions.html">会话与前端</a>。Cursor/Aider 旁证仍只采用 <a href="https://docs.cursor.com/background-agent">Cursor Background Agents</a>、<a href="https://aider.chat/docs/usage/commands.html">Aider commands</a>与<a href="https://aider.chat/docs/usage/modes.html">Aider chat modes</a>。</p>
+
+<h3>Pi 作为第三个源码基准</h3>
+<table><tr><th>维度</th><th>Pi 经典运行时</th><th>与 Codex / Claude Code 的关键差别</th></tr><tr><td>Agent loop</td><td>完整收束 assistant 后执行工具；steer 在整批工具后可见</td><td>比 Claude 的流中 executor 更简单；比 Codex 的 thread/event 控制面更薄</td></tr><tr><td>工具并发</td><td>completion event 按完成序，tool result 按模型调用序</td><td>用很小的实现取得“及时观察 + 确定性 context”</td></tr><tr><td>安全</td><td>无默认 permission system；project trust 不等于 sandbox</td><td>灵活性高，但 OS enforcement 明显弱于 Codex，permission provenance 也不及 Claude</td></tr><tr><td>持久化</td><td>v3 JSONL tree 可 branch/compact；tool effect 无 durable intent</td><td>对话恢复成熟，崩溃中工具恢复不足</td></tr><tr><td>Harness v2</td><td>规范提出 durable lanes/effects/replay；执行 API 多数尚未实现</td><td>为 AutoResearch 提供 crash-prefix 测试方法，但不能当现成功能依赖</td></tr></table>
+<p style="font-size:13px">完整证据见本站 <a href="../Pi/index.html">Pi 源码深读</a>与<a href="../Pi/06_compare.html">三方比较页</a>。</p>
 
 <div class="note warn"><span class="t">原文需要撤回的说法</span>
   <ul style="margin:4px 0;padding-left:22px">
@@ -201,7 +205,7 @@ EvidenceGraph (offline reducer)
 </ol>
 
 <div class="note clever"><span class="t">最终判断</span>
-Codex 迫使我们追问：请求何时真正被接纳和持久化？权限最终由哪层强制？原始事件如何还原成因果图？Claude Code 又补上另一组问题：模型流尚未结束时工具如何安全并行？压缩损失了什么、靠什么恢复？后台任务的 transcript、cwd 与权限如何续接？把两组问题合在一起，才是 AutoResearch 从 demo 走向可恢复、可治理、可复现研究基础设施所需的完整工程视角。
+Codex 迫使我们追问：请求何时真正被接纳和持久化？权限最终由哪层强制？原始事件如何还原成因果图？Claude Code 又追问：模型流尚未结束时工具如何安全并行？压缩损失了什么、后台任务如何续接？Pi 则提醒我们：核心 loop 和 context projection 可以很小，但扩展自由度不能替代安全边界，精致的 durable 规范也不能替代已运行的实现。三组问题合在一起，才是 AutoResearch 从 demo 走向可恢复、可治理、可复现研究基础设施所需的完整工程视角。
 </div>
 
 <p style="margin-top:30px"><a href="index.html">← 回到总览</a></p>

@@ -1,0 +1,31 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pi · 三方比较与 AutoResearch</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① 经典 loop</a><a href="02_models_tools.html">② 模型与工具</a><a href="03_sessions_context.html">③ 会话与上下文</a><a href="04_extensions_frontends.html">④ 扩展与前端</a><a href="05_harness_protocol.html">⑤ Harness 与协议</a><a class="cur" href="06_compare.html">⑥ 三方比较</a></nav>
+<header><h1>⑥ Pi × Codex × Claude Code × AutoResearch</h1><p class="sub">不是比功能数量，而是比较每套系统把复杂度放在 loop、执行治理、持久化、扩展还是前端边界。</p></header>
+<h2>一句话定位</h2><div class="key"><b>Pi：</b>最小、可嵌入、可扩展的 TypeScript coding-agent 栈，经典运行时成熟，新 durable runtime 尚在施工。<br><b>Codex：</b>事件协议和执行治理最硬，app-server 与 OS sandbox 边界最完整。<br><b>Claude Code：</b>单个长会话内部的流式工具、权限竞态、多级上下文和后台 agent 最丰富。<br><b>AutoResearch：</b>应以证据可恢复为中心，吸收三者机制而不复制三套产品复杂度。</div>
+<h2>同证据等级横向表</h2><table><tr><th>维度</th><th>Pi（本次 Git 源码）</th><th>Codex（本地 Rust 源码审计）</th><th>Claude Code（本地展开树审计）</th></tr>
+<tr><td>运行内核</td><td>小型 <code>Agent + agentLoop</code>；AgentSession 叠加产品语义</td><td>thread/turn/item + event；run_turn 与 ToolRouter</td><td><code>query()</code> async generator；QueryEngine/REPL 包装</td></tr>
+<tr><td>工具启动</td><td>assistant 完整流结束后执行 batch</td><td>受控 dispatch，经统一事件与执行层</td><td>可在模型流中启动已判安全工具，隐藏延迟</td></tr>
+<tr><td>并发写回</td><td>物理并行；end event 完成序；context 源顺序</td><td>异步 task/event，执行治理优先</td><td>concurrency-safe 分组；完成可并行、结果按模型顺序释放</td></tr>
+<tr><td>steering</td><td>当前 turn + 整个 tool batch 后可见</td><td>通过 thread/turn command/event 协调</td><td>可配合 streaming executor、interrupt 和后台任务</td></tr>
+<tr><td>权限/沙箱</td><td>默认继承进程权限；hook/extension 可加 gate；隔离外置</td><td>execpolicy → approval → permission profile → platform sandbox</td><td>多来源 permission 决策；sandbox adapter 完整但 runtime 外置</td></tr>
+<tr><td>上下文</td><td>turn-aware compaction、split turn、branch summary、retained tail</td><td>compact/rollout/persistence 清晰</td><td>tool-result budget、microcompact、collapse、full compact 多级链</td></tr>
+<tr><td>会话</td><td>v3 JSONL parent tree；v4 durable session primitives 在建</td><td>rollout recorder + thread metadata，协议身份强</td><td>JSONL parentUuid 图、sidechain transcript</td></tr>
+<tr><td>子 agent</td><td>核心刻意不内建；用扩展、多个 pi 进程或 tmux</td><td>thread/task/cloud event 语义统一，不等于 Claude 同型 swarm</td><td>sync/background/fork/resume/worktree/team mailbox</td></tr>
+<tr><td>扩展</td><td>任意 TS code：tool/hook/UI/command/provider；权力最大</td><td>能力更受协议和执行层约束</td><td>Skills/Hooks/MCP/Plugins 多面组合</td></tr>
+<tr><td>前端边界</td><td>SDK/TUI/JSON/RPC 并存；实验性 CBOR server 尚未接管主线</td><td>app-server JSON-RPC 是主产品边界</td><td>共享 SDK schema，但 REPL/QueryEngine/bridge 多 adapter</td></tr></table>
+<div class="src">配套证据：本站 <a href="../Codex/index.html">Codex 源码精读</a> 与 <a href="../ClaudeCode/index.html">Claude Code 源码深读</a>。</div>
+<h2>Pi 修正了前两轮比较中的一个盲点</h2><p>Codex 与 Claude Code 都容易让人以为“成熟 agent 必须先有重型 server 或复杂 swarm”。Pi 证明另一条路径可行：先把 provider/message/tool loop 做成小而稳定的库，让 SDK、TUI 与扩展直接复用；等真正需要跨进程 ownership 和 crash recovery 时，再引入 durable session/server。</p>
+<p>但 Pi 同时给出反例：如果下一代协议面一次性设计 lanes、hooks、watch、manual drive、deferred provider、compaction/navigation 和三种 backend，而执行主链尚未落地，就会产生“类型看起来完成、能力其实 unavailable”的落差。</p>
+<h2>AutoResearch 应组合什么</h2><table><tr><th>来源</th><th>采用机制</th><th>落到 AutoResearch</th></tr><tr><td>Pi classic</td><td>最小 loop、稳定 tool result 顺序、业务消息投影</td><td><code>ResearchLoop</code> 只做 action/observation/checkpoint，不承载 UI 和 policy</td></tr><tr><td>Pi session</td><td>append-only tree、branch summary、retained tail</td><td><code>RunEvent</code> 图 + <code>ContextProjection</code> + 自包含 checkpoint</td></tr><tr><td>Pi Harness design</td><td>intent-before-effect、manual gate、replay declaration</td><td>实验执行前 durable <code>ActionStarted</code>，崩溃恢复按 tool replay policy</td></tr><tr><td>Codex</td><td>thread/turn/item event 与强执行治理</td><td>稳定 API/event schema、approval provenance、container profile</td></tr><tr><td>Claude Code</td><td>多级 context、后台 task identity、workspace resume</td><td>artifact preview、task transcript、environment/worktree checkpoint</td></tr></table>
+<h2>建议的最小数据模型</h2><pre><code>ResearchRun(run_id, parent_run_id, status, seq)
+RunEvent(event_id, run_id, parent_id, kind, actor, timestamp)
+ActionAttempt(action_id, ordinal, tool, input_hash, replay_policy,
+              started_event, result_event, artifact_refs, error_class)
+ContextCheckpoint(summary, retained_event_ids, artifact_refs,
+                  open_hypotheses, task_refs, token_stats)
+PolicyDecision(action_id, source, rule_id, decision, sandbox_profile)
+ResearchTask(task_id, parent_run, lane, owner, state, transcript_ref)
+EvidenceArtifact(hash, media_type, provenance, environment_digest)</code></pre>
+<h2>实现顺序</h2><ol><li>先稳定单 run 的 append-only event、tool pairing 和 content-addressed artifact。</li><li>加入 context projector，让 event truth 与模型可见 context 分离。</li><li>在每个外部 effect 前持久化 intent；用 manual gate 做 crash-prefix 测试。</li><li>加入 checkpoint/branch，但原始 evidence 永不被摘要覆盖。</li><li>只实现一个 background task/lane 和一个 container backend，验证恢复后再扩展。</li><li>最后才引入远程 protocol、多 lease 与更多 UI adapter。</li></ol>
+<h2>不该照搬</h2><ul><li>不把 Pi Harness 规范中的未实现 API 当作现成依赖。</li><li>不采用 Pi 默认的“进程权限即工具权限”作为科研执行边界。</li><li>不一开始复制 Claude Code 的完整 swarm/backend 矩阵。</li><li>不因 Codex app-server 很完整，就在只有单 UI 时预付全部版本兼容成本。</li><li>不把 compaction summary 当证据；结论必须回指代码、数据、参数、环境和原始输出。</li></ul>
+<div class="note"><b>最终判断：</b>三者的最佳交集不是“更多 agent”，而是：Pi 的小 loop 与显式投影、Codex 的硬事件/执行边界、Claude Code 的长程 context/task 恢复，再加科研系统独有的 evidence 与 environment provenance。</div>
+<footer><a href="index.html">回到 Pi 总览</a> · 配套阅读 <a href="../Codex/06_compare.html">Codex 横向页</a> / <a href="../ClaudeCode/06_compare.html">Claude Code 横向页</a></footer></div></body></html>
