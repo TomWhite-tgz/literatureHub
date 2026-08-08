@@ -41,23 +41,39 @@ footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:v
   <p style="color:var(--ink-soft);font-size:12.5px">审计快照：<code>codex</code> @ <code>0a0ebb8535</code>（2026-08-06）；复核日期：2026-08-08。</p>
 </header>
 
-<div class="key"><b>结论先行：</b>原解读的主线——“事件流内核 + 受控执行 + app-server 协议边界”是成立的，但若干比较结论不成立或证据不足。Codex 的独特价值不是笼统的“最强沙箱”或“唯一后台 agent”，而是把<b>协议、准入、运行时权限、持久化、诊断证据</b>做成可组合且可测试的边界。对 AutoResearch 最有价值的，也是这套“把一次自主运行变成可治理、可恢复、可审计对象”的方法。</div>
+<div class="key"><b>结论先行：</b>Codex 与 Claude Code 现在都可以落到代码证据比较，但二者把复杂度放在不同位置。Codex 更突出的是<b>事件协议、app-server 硬边界、执行准入与平台沙箱</b>；Claude Code 更突出的是<b>流式工具并发、权限竞态、多级上下文减重、可恢复子 agent 与 JSONL 会话图</b>。对 AutoResearch 最有价值的不是选边站，而是用 Codex 式 run/event 骨架承载 Claude Code 式长程会话状态。</div>
 
 <h2>一、审计口径：避免苹果和橘子比较</h2>
-<p>Codex 在本地有完整 Rust 源码；Claude Code、Cursor 的核心实现并不以同样方式公开，因此无法做对称的源码级比较。下表只比较公开可验证的架构表面，不再混用价格、star、上下文窗口和随时变化的 benchmark。</p>
+<p>现在可以对 Codex 与 Claude Code 做函数级比较，但证据强度仍不完全相同。Codex 是带 Git 提交号、Cargo workspace 与低层 sandbox crate 的仓库快照；Claude Code 材料是一个只有 <code>src/</code>、无 <code>.git</code>/<code>package.json</code> 的 source-map backed TypeScript 展开树。后者的大部分 query、tool、session、agent 和 SDK 实现可读，但若干内部 feature 模块缺失，sandbox 底层也来自外部 runtime。</p>
 <table>
-  <tr><th>维度</th><th>Codex（源码）</th><th>Claude Code（公开接口）</th><th>Cursor（公开接口）</th><th>Aider（开源/文档）</th></tr>
-  <tr><td>交互边界</td><td><code>CodexThread</code> 的 submission/event；上层统一成 app-server JSON-RPC</td><td>CLI + print/stream-json；工具 allow/disallow 与 permission mode</td><td>IDE 前台 agent + 远程 background agent</td><td>终端 pair-programming；code/ask/architect 模式</td></tr>
-  <tr><td>后台执行</td><td>本地 in-process/remote app-server；产品侧可另有云任务，但不能从本仓库等同推出</td><td>支持非交互与 agentic turns；本文不推断内部实现</td><td>Background Agent 在隔离 Ubuntu VM 克隆分支、后台运行</td><td>以用户驱动的同步会话为主</td></tr>
-  <tr><td>本地执行治理</td><td>execpolicy → approval → permission profile → 平台沙箱/managed network</td><td>公开 CLI 有 allowed/disallowed tools、permission mode 等控制</td><td>foreground 与 background 权限模型不同；后者自动运行命令</td><td>可用 <code>/run</code>、<code>/test</code>，git 提供强回退路径</td></tr>
-  <tr><td>编辑合同</td><td>结构化 apply_patch；先计算变更，再逐项提交，并报告已提交 delta</td><td>多种文件工具，内部编辑合同不可由公开文档完整核验</td><td>IDE diff/agent 编辑</td><td>search/replace、whole、architect/editor 等 edit format</td></tr>
-  <tr><td>可观测性</td><td>canonical rollout JSONL；另有 opt-in raw rollout trace + 离线 reducer</td><td>公开支持 JSON/stream-json 与 verbose；内部轨迹不可对称比较</td><td>可查看后台 agent 状态并 follow-up/take over</td><td>chat history、git commits、可保存会话命令</td></tr>
+  <tr><th>材料</th><th>能证明什么</th><th>不能越界推断什么</th></tr>
+  <tr><td><b>Codex Git 快照</b><br><code>0a0ebb8535</code></td><td>Rust agent loop、app-server protocol、rollout、execpolicy 及各平台 sandbox 的具体实现</td><td>不能由仓内本地/remote app-server 自动推出所有云产品运行时</td></tr>
+  <tr><td><b>Claude Code 展开源码树</b><br><code>claude-code/src</code></td><td><code>query()</code>、工具编排与 permission、普通 compact、AgentTool、session JSONL、REPL/SDK/bridge 适配</td><td>不能伪造版本/提交；不能补写缺失的 context-collapse/reactive-compact 算法；不能把外部 sandbox runtime 当作已审计</td></tr>
+  <tr><td><b>Cursor / Aider</b></td><td>本页只引用官方产品文档或其公开仓库能直接证明的行为</td><td>不与前两者混作同等深度的内部实现比较</td></tr>
 </table>
-<p style="font-size:13px">竞品行为依据：<a href="https://docs.anthropic.com/en/docs/claude-code/cli-usage">Claude Code CLI reference</a>、<a href="https://docs.cursor.com/background-agent">Cursor Background Agents</a>、<a href="https://aider.chat/docs/usage/commands.html">Aider commands</a>、<a href="https://aider.chat/docs/usage/modes.html">Aider chat modes</a>。</p>
+
+<h2>二、Codex 与 Claude Code：源码级同口径对照</h2>
+<table>
+  <tr><th>维度</th><th>Codex</th><th>Claude Code</th><th>判断</th></tr>
+  <tr><td><b>会话内核</b></td><td><code>CodexThread</code> 接受 <code>Op</code>、吐出 <code>EventMsg</code>；submission、admission、persisted admission 有不同完成语义</td><td><code>query()</code> 是 async generator；<code>QueryEngine</code> 每 conversation 一个实例、每次 <code>submitMessage()</code> 启动一 turn</td><td>两者都不是同步 <code>await run()</code>；Codex 的外部协议身份更硬，Claude 的 loop 内恢复状态更细</td></tr>
+  <tr><td><b>Agent loop</b></td><td><code>run_turn</code> 循环执行 sampling → output item → ToolRouter → 下一次采样</td><td><code>query.ts:307-1728</code> 的 <code>while(true)</code> 显式携带 compact/recovery/turn state；不信任不稳定的 <code>stop_reason === tool_use</code>，以实际 tool block 为准</td><td>Codex 强调 item/event 协议；Claude 把 prompt-too-long、fallback、stop-hook 等恢复路径直接编码进 loop transition</td></tr>
+  <tr><td><b>工具并发</b></td><td>异步 ToolRouter 与事件流允许工具任务被调度和观测</td><td><code>Tool.isConcurrencySafe(input)</code> 按实际输入判定；<code>StreamingToolExecutor</code> 在模型仍流式输出时启动安全工具，物理并行但按 tool block 顺序释放结果</td><td>Claude 的 latency hiding 与确定性结果顺序在本树中更集中、可直接验证；不能反向声称 Codex 没有并发能力</td></tr>
+  <tr><td><b>工具失败</b></td><td><code>ApplyPatchFailure</code> 携带已提交 <code>AppliedPatchDelta</code> 与 <code>exact</code>，承认部分副作用</td><td>fallback、用户中断、sibling Bash error 都为未完成 tool use 生成 synthetic result；旧模型分支执行器可 <code>discard()</code></td><td>Codex 更细地建模文件写入的部分提交；Claude 更细地维护模型协议中的 tool_use/tool_result 闭合</td></tr>
+  <tr><td><b>权限与沙箱</b></td><td>execpolicy → approval → permission profile → Linux bwrap+seccomp / macOS Seatbelt / Windows restricted token；低层实现在仓</td><td>rule、hook、classifier、dialog、bridge/channel、coordinator/swarm leader 汇成带 provenance 的 decision；sandbox adapter 将规则编译成 FS/network config，但 <code>enabled ?? false</code>，底层 runtime 外置</td><td>Codex 的 OS 强制边界证据更完整；Claude 的“谁以什么理由批准”与多角色权限竞态更丰富。两者都不能简化成一个 allow/deny 布尔值</td></tr>
+  <tr><td><b>上下文工程</b></td><td>增量 history、bounded fragments、compact 与 cache 不变量被纳入 core/评审规则</td><td>固定流水线：tool-result budget → microcompact → collapse gate → autocompact；full compact 返回 boundary、summary、preserved tail、文件/plan/skill/async-agent 附件</td><td>Claude 可见的 client-side 多级减重更具体；其中 collapse/reactive/cached 算法文件缺失，只能证明编排接口与恢复顺序</td></tr>
+  <tr><td><b>子 agent</b></td><td>稳定 routing path 与 spawn/task/result/close interaction edges 进入 rollout trace</td><td>AgentTool 支持 sync/background/fork/resume/worktree；独立 sidechain transcript；swarm worker 还可通过 mailbox 领取任务与向 leader 请求权限</td><td>Codex 强在统一因果 trace；Claude 强在可恢复 worker 生命周期与工作区状态。Claude 的多种 backend 也带来更高状态复杂度</td></tr>
+  <tr><td><b>持久化</b></td><td>canonical rollout JSONL + SQLite thread metadata；raw rollout trace 由离线 reducer 生成语义状态</td><td>session JSONL 以 <code>uuid → parentUuid</code> 形成多叶子会话图；compact boundary 切物理父链并保留 logical parent；agent 另有 JSONL 与 metadata sidecar</td><td>Codex 把产品历史、索引、诊断证据分层；Claude 把 rewind/branch/resume 的会话图语义做得更直接</td></tr>
+  <tr><td><b>前端边界</b></td><td>TUI/exec/IDE 主路径通过 app-server JSON-RPC；in-process 与 remote 使用同一 envelope</td><td>SDK Zod schema统一 assistant/result/hook/task 等消息；headless 走 QueryEngine + StructuredIO，REPL 仍保留自己的 UI/history 架构，源码称接入 QueryEngine 为 future phase</td><td>Codex 的 server boundary 更统一；Claude 是共享消息语汇加多 transport adapter，不能误写成同样的单一 RPC 内核</td></tr>
+  <tr><td><b>扩展机制</b></td><td>skills、MCP、apps、hooks 由 manifest/配置聚合，并受协议与 capability 边界约束</td><td>Skills 改模型指令，Hooks 介入生命周期，MCP 增加外部能力，Plugins 负责成组分发；enterprise policy 可限制来源</td><td>两者都不是“任意插件脚本等于隔离子进程”；应按能力类型讨论信任与进程语义</td></tr>
+</table>
+<p style="font-size:13px">Claude Code 的逐文件证据与行号见本站 <a href="../ClaudeCode/index.html">源码深读总览</a>、<a href="../ClaudeCode/01_loop.html">Agent loop</a>、<a href="../ClaudeCode/02_tools.html">工具与权限</a>、<a href="../ClaudeCode/03_context.html">上下文工程</a>、<a href="../ClaudeCode/04_agents.html">子 Agent</a>和<a href="../ClaudeCode/05_sessions.html">会话与前端</a>。Cursor/Aider 旁证仍只采用 <a href="https://docs.cursor.com/background-agent">Cursor Background Agents</a>、<a href="https://aider.chat/docs/usage/commands.html">Aider commands</a>与<a href="https://aider.chat/docs/usage/modes.html">Aider chat modes</a>。</p>
 
 <div class="note warn"><span class="t">原文需要撤回的说法</span>
   <ul style="margin:4px 0;padding-left:22px">
-    <li>“Claude Code / Aider 没有权限控制、Aider 不跑 shell”过于绝对；Aider 明确有 <code>/run</code> 和 <code>/test</code>，Claude Code CLI 公开了工具 allow/disallow 与 permission mode。</li>
+    <li>“Claude Code 没有本地沙箱”不成立。本树有完整 sandbox adapter，但底层 runtime 外置、且默认由 <code>sandbox.enabled ?? false</code> 控制；正确说法是“存在可配置沙箱路径，低层实现未在本树审计”。</li>
+    <li>“Claude Code 只有前台同步 subagent”不成立。AgentTool 明确支持 background、resume、fork、worktree 和 swarm mailbox；但这些路径不是一个完全统一的 worker backend。</li>
+    <li>“Claude Code 只是一次摘要 compact”不成立。可见主链至少有 tool-result budget、microcompact 和 full compact；另有仅接口可见的 collapse/reactive/cached feature，不能据调用点补写算法。</li>
+    <li>“Claude Code / Aider 没有权限控制、Aider 不跑 shell”不成立；Claude 权限链已能从源码追到 rule/hook/classifier/交互 handler，Aider 也明确有 <code>/run</code> 和 <code>/test</code>。</li>
     <li>“异步 PR 交付只有 Codex”不成立；Cursor Background Agents 也是远程隔离 VM + 分支交付。</li>
     <li>“Linux 始终 Landlock + seccomp + bwrap 三层叠加”不成立；当前默认是 bubblewrap + seccomp，Landlock 是 legacy 路径。</li>
     <li>“rollout 可换模型精确重放做 A/B”没有现成源码语义保证；恢复历史不等于重现实验环境。</li>
@@ -65,7 +81,7 @@ footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:v
   </ul>
 </div>
 
-<h2>二、Codex 源码中真正突出的七个亮点</h2>
+<h2>三、在看过 Claude Code 源码后，Codex 仍突出的七个亮点</h2>
 
 <div class="highlight">
   <h4>1. 会话不是一次函数调用，而是可寻址、可插入、可中断的运行对象</h4>
@@ -109,7 +125,7 @@ footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:v
   <p><b>亮点：</b>并行本身不难，难的是事后回答“哪个子任务产生了哪个工具调用和结果”。Codex 把多 agent 当作可还原的因果图，而不是一堆无法关联的并发日志。</p>
 </div>
 
-<h2>三、仍然存在的代价与边界</h2>
+<h2>四、两份实现各自的代价与边界</h2>
 <table>
   <tr><th>问题</th><th>源码层面的判断</th><th>对使用者的含义</th></tr>
   <tr><td>体量和认知成本</td><td>130 个 workspace member，<code>src/**/*.rs</code> 约 106 万行；core、TUI、app-server 都很大</td><td>边界丰富不等于容易复用；小项目照搬会先得到维护负担</td></tr>
@@ -118,12 +134,15 @@ footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:v
   <tr><td>补丁非事务</td><td>失败可留下部分修改，delta 只是把事实暴露出来</td><td>关键数据仍需 snapshot、staging area 或事务式 artifact store</td></tr>
   <tr><td>trace 含敏感信息</td><td>源码 README 明示可能包含 prompt、response、tool I/O、terminal output 与路径</td><td>科研系统必须把 trace 当敏感研究数据，设置保留期、脱敏和访问控制</td></tr>
   <tr><td>解释性分层不是稳定 API</td><td>crate 很多，但并非每个 crate 都是可插拔接口</td><td>复用前先找 trait/protocol/test gate，不要按目录复制</td></tr>
+  <tr><td>Claude 的状态面重叠</td><td>QueryEngine 尚未统一 REPL；AgentTool task、in-process teammate、pane teammate、remote agent 和 coordinator 共享部分抽象但不是同一种 worker</td><td>产品能力丰富不代表内核已经收敛；修改 resume/permission/task 时要跨多条路径验证</td></tr>
+  <tr><td>Claude 的可见源码边界</td><td>若干内部 context feature 只有调用点，sandbox runtime 外置，展开树也没有可验证版本号</td><td>可以借鉴接口与编排顺序，不能把缺失算法和外部强制机制包装成已完成的源码审计</td></tr>
+  <tr><td>Claude 的 JSONL 增长</td><td>源码为 raw transcript 设置 50 MB 快速读取上限，并注释现实会话可能增长到 GB 级</td><td>append log 仍需要索引、投影、归档与敏感数据治理；“可恢复”不等于“可无限加载”</td></tr>
 </table>
 
-<h2>四、对 AutoResearch 的直接借鉴：从 coding turn 到 experiment run</h2>
-<p class="lead">AutoResearch 不应照搬 Codex 的 UI 或 crate 数量；应复制它对“自主运行”的治理语义。下面给出可以落到数据模型和模块边界的映射。</p>
+<h2>五、对 AutoResearch 的直接借鉴：Codex 作骨架，Claude 补长程状态</h2>
+<p class="lead">AutoResearch 不应照搬 Codex 的 crate 数量，也不应照搬 Claude Code 的所有 task/backend 分支。更稳妥的组合是：以 Codex 的 run/event/admission 形成控制面，以 Claude Code 的 context checkpoint、permission provenance、sidechain task 和恢复包承载长周期自治。</p>
 <table>
-  <tr><th>Codex 机制</th><th>AutoResearch 对应设计</th><th>需要科研化改造的地方</th></tr>
+  <tr><th>来源机制</th><th>AutoResearch 对应设计</th><th>需要科研化改造的地方</th></tr>
   <tr><td><code>CodexThread / Op / EventMsg</code></td><td><code>ResearchRun / RunCommand / RunEvent</code>；proposal、search、experiment、evaluation 都只追加事件</td><td>事件必须带 dataset、code、environment、seed、budget 的版本引用</td></tr>
   <tr><td>admission / persisted admission</td><td>区分“任务已提交、资源已获批、run manifest 已持久化、worker 已启动”</td><td>加 GPU quota、伦理审查、数据许可、最大成本和 wall-time admission</td></tr>
   <tr><td>execpolicy + approval + sandbox</td><td>实验意图策略 → 人/guardian 审批 → 实际容器/调度器权限</td><td>限制的不只是命令，还包括数据集、算力、外网、模型 API 和危险实验</td></tr>
@@ -132,6 +151,11 @@ footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:v
   <tr><td><code>AppliedPatchDelta.exact</code></td><td>每个工具错误都返回 <code>side_effects</code> 与 <code>evidence_complete</code></td><td>对数据和 checkpoint 默认 staging + atomic publish，不能只靠 git</td></tr>
   <tr><td>multi-agent routing path / interaction edges</td><td>为 literature、method、runner、reviewer 分配稳定路径并记录任务/结果边</td><td>合并结果时保留 provenance，禁止 reviewer 与被评估产物共享未声明状态</td></tr>
   <tr><td>bounded contextual fragments</td><td>每类研究上下文有 token/size cap、版本和来源</td><td>文献摘要不得替代原文证据；关键 claim 应保留 citation pointer</td></tr>
+  <tr><td>Claude tool-use/result 闭合 + streaming executor</td><td><code>ActionAttempt</code> 先持久化稳定 action id，再允许并行 worker 执行；完成顺序可乱，进入 reasoning context 的顺序必须确定</td><td>每次数据下载、训练、评测都必须有 terminal result；中断和重试不能留下无归属的实验</td></tr>
+  <tr><td>Claude permission decision provenance</td><td><code>PolicyDecision</code> 保存 behavior、rule、source、approver、scope 与实际 sandbox profile</td><td>审批来源还要覆盖数据许可、GPU 配额、外部 API、伦理约束和人工 reviewer</td></tr>
+  <tr><td>Claude compact recovery package</td><td><code>ContextCheckpoint</code> = summary + preserved event ids + artifact refs + open hypotheses + task refs</td><td>摘要只是派生视图；论文 claim 必须继续指向原始 observation、表格和 citation</td></tr>
+  <tr><td>Claude parentUuid graph + sidechain transcript</td><td>主 run 与 task run 都用稳定 ID 和 parent/causal edge；resume 同时恢复 workspace、budget、projection 与依赖</td><td>分支实验不能复制成无血缘的新会话；失败分支仍应保留为负结果证据</td></tr>
+  <tr><td>Claude worktree isolation</td><td><code>ExperimentWorkspace</code> 记录 commit、branch/worktree、dataset snapshot、environment digest 与 dirty diff</td><td>科研 workspace 还需容器/调度器隔离；Git worktree 不能隔离数据、GPU、网络和 secrets</td></tr>
 </table>
 
 <h3>推荐的最小数据骨架</h3>
@@ -148,6 +172,16 @@ RunEvent (append-only)
   side_effects[]
   evidence_complete
 
+ResearchTask
+  id, parent_run_id, owner, dependencies
+  workspace_ref, transcript_ref, checkpoint_ref
+  status                 # pending/claimed/running/blocked/completed/stopped
+
+ContextCheckpoint
+  summary_ref, preserved_event_ids[]
+  artifact_refs[], open_hypotheses[], task_refs[]
+  projector_version, token_stats
+
 RunIndex (derived)
   queryable metadata, cost, metrics, latest status
 
@@ -157,21 +191,22 @@ EvidenceGraph (offline reducer)
 
 <h3>实施优先级</h3>
 <ol>
-  <li><b>P0：先定义 RunEvent 与 manifest。</b>没有稳定身份、环境快照和 append-only 事件，其余“自动研究”都无法可靠复现。</li>
-  <li><b>P0：建立 artifact staging/commit。</b>代码 patch 可借鉴 Codex delta；数据、checkpoint、指标文件必须比 Codex apply_patch 更事务化。</li>
+  <li><b>P0：先定义 RunEvent、ActionAttempt 与 manifest。</b>请求接受后先持久化稳定身份；每个工具调用都必须闭合到成功、错误、中断或 synthetic terminal result。</li>
+  <li><b>P0：建立 artifact staging/commit。</b>代码 patch 可借鉴 Codex delta；数据、checkpoint、指标文件必须比 Codex apply_patch 更事务化，大内容只在 context 中保留可追溯 preview。</li>
   <li><b>P1：把 admission 与执行权限分开。</b>policy engine 判断实验是否该做，sandbox/scheduler 保证即使模型失控也越不了界。</li>
+  <li><b>P1：实现可恢复的单 worker 与 ContextCheckpoint。</b>恢复测试必须覆盖消息、预算、workspace、artifact projection 和未完成 action，而不只是重新加载 summary。</li>
   <li><b>P1：建立 raw trace → versioned reducer。</b>先做到可回答“这条结论来自哪次 run、哪份日志”，再做漂亮 dashboard。</li>
   <li><b>P2：需要第二种前端或远程 worker 时再引入 RPC 硬边界。</b>不要一开始复制 7 万行协议层。</li>
-  <li><b>P2：多 agent 最后加。</b>先确保单 run 的状态、证据、恢复正确，再用 routing path 和 causal edges 扩展为树。</li>
+  <li><b>P2：多 agent 最后加，而且先只做一种 backend。</b>先确保单 task 的状态、证据、权限与恢复正确，再用 routing path、sidechain transcript 和 causal edges 扩展为树。</li>
 </ol>
 
 <div class="note clever"><span class="t">最终判断</span>
-Codex 相比许多 coding agent 最有辨识度的地方，是它没有把“模型会写代码”当作系统完成，而是继续追问：请求何时真正被接纳？命令为什么获准？权限最终由谁强制？失败留下了哪些副作用？历史如何恢复？原始证据如何还原成因果图？这套问题意识，正是 AutoResearch 从 demo 走向可复现研究基础设施时最值得借鉴的部分。
+Codex 迫使我们追问：请求何时真正被接纳和持久化？权限最终由哪层强制？原始事件如何还原成因果图？Claude Code 又补上另一组问题：模型流尚未结束时工具如何安全并行？压缩损失了什么、靠什么恢复？后台任务的 transcript、cwd 与权限如何续接？把两组问题合在一起，才是 AutoResearch 从 demo 走向可恢复、可治理、可复现研究基础设施所需的完整工程视角。
 </div>
 
 <p style="margin-top:30px"><a href="index.html">← 回到总览</a></p>
 <footer>
   <b>Codex (Rust) 架构精读</b> · ⑥ 源码审计与 AutoResearch 借鉴 · 源码 <code>0a0ebb8535</code><br>
-  本页的 Codex 结论来自本地源码；竞品只采用其官方公开文档描述，不声称完成对称源码审计。
+  Codex 结论来自带提交号的 Git 快照；Claude Code 结论来自无版本号的 TypeScript 展开源码树，并对缺失内部模块与外置 sandbox runtime 单独降级标注。Cursor/Aider 仅采用官方公开材料。
 </footer>
 </div></body></html>
