@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex (Rust) · 架构精读 · 总览</title>
+<style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a;--accent2:#0d9488;--purple:#7c4ddb;--blue:#0891b2;--warn:#d6435a}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.75;margin:0}
+.wrap{max-width:960px;margin:0 auto;padding:36px 26px 80px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:14px}
+.back:hover{background:var(--accent);color:#fff}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}
+.nav a{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#fffdf8;border:1px solid #e0c49c;border-radius:6px;padding:8px 16px}
+.nav a:hover{background:var(--accent);color:#fff}
+.nav a.cur{background:var(--accent);color:#fff;font-weight:700}
+header h1{font-size:27px;margin:0 0 6px}
+header .sub{color:var(--ink-soft);font-size:14px;margin:0 0 4px}
+header .meta{color:var(--ink-soft);font-size:12.5px;margin-top:8px}
+header .meta b{color:var(--accent)}
+h2{font-size:21px;border-left:5px solid var(--accent);padding-left:12px;margin:36px 0 12px}
+h3{font-size:16.5px;color:var(--accent);margin:24px 0 8px}
+h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.7px}
+code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,Consolas,monospace}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}
+tr:nth-child(even) td{background:#fbf7ee}
+blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;padding:8px 16px;color:var(--ink-soft)}
+a{color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+strong{color:#8f4208}
+.lead{font-size:15.5px;color:var(--ink)}
+.key{background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:16px 22px;margin:18px 0;font-size:14px;line-height:1.8}
+.key b.hl{color:#b4530a;font-weight:700}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--line);padding-bottom:8px;margin:34px 0 14px}
+.sec-head h2{border:none;padding:0;margin:0}
+.sec-head .count{font-size:12px;color:var(--ink-soft)}
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;font-size:13.8px;line-height:1.7}
+.note .t{display:inline-block;font-weight:700;margin-bottom:4px}
+.note.clever{background:#f3eefe;border:1px solid #cbb8f7}
+.note.clever .t{color:var(--purple)}
+.note.warn{background:#fdeef0;border:1px solid #f5b9c3}
+.note.warn .t{color:var(--warn)}
+.note.plain{background:#f3f8f6;border:1px solid #b8e0d2}
+.note.plain .t{color:var(--accent2)}
+.num{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+.hub{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin:24px 0}
+.hub a{display:block;text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:16px 18px}
+.hub a:hover{border-color:var(--accent);background:#fff9ee}
+.hub h3{margin:0 0 4px;color:var(--accent);font-size:15.5px}
+.hub p{margin:0;font-size:12.8px;color:var(--ink-soft)}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+
+<div class="nav">
+  <a class="cur" href="index.html">总览</a>
+  <a href="01_loop.html">① Agent loop</a>
+  <a href="02_exec.html">② 执行 & 沙箱</a>
+  <a href="03_server.html">③ app-server & TUI</a>
+  <a href="04_takeaway.html">④ 结论</a>
+  <a href="05_architecture.html">⑤ 总架构图</a>
+  <a href="06_compare.html">⑥ 横向对比</a>
+</div>
+
+<header>
+  <h1>Codex <span style="color:var(--ink-soft);font-weight:400">·</span> Rust 架构精读</h1>
+  <p class="sub">OpenAI 的命令行 coding agent。本篇按源码解剖它的 crate 切分、agent 循环、执行沙箱与 server/TUI 分层。</p>
+  <div class="meta">
+    <b>语言</b> Rust <b>·</b>
+    <b>审计版本</b> <code>codex-rs @ 0a0ebb8535</code>（2026-08-06）<b>·</b>
+    <b>定位</b> 横向对比 / 可以比较的系统
+  </div>
+</header>
+
+<!-- ==================== 位置 ==================== -->
+<section id="position">
+  <div class="sec-head"><h2><span class="num">§</span>在科研 agent 谱系里的位置</h2></div>
+  <p class="lead">Codex 不属于"科研 agent"那一类。它是一个<b>面向工程实操的 coding agent</b>——和 Claude Code / Cursor 同一层。但它的源码结构对搭科研 agent 极有参考价值：它把"<b>agent 循环 / 工具执行 / 沙箱隔离 / 多前端接入</b>"切成正交的 crate，每一层都能单独复用。</p>
+  <table>
+    <tr><th>项目</th><th>核心抽象</th><th>执行隔离</th><th>前端接入</th></tr>
+    <tr><td><b>AgentScope</b></td><td>深 ReAct <code>Agent</code> + 中间件</td><td>6 种沙箱后端</td><td>FastAPI 服务层</td></tr>
+    <tr><td><b>Codex</b> 👈</td><td><b>Session + Turn + CodexThread</b>（异步任务）</td><td><b>Linux bwrap+seccomp / macOS Seatbelt / Windows restricted token</b></td><td><b>app-server（JSON-RPC）→ TUI / IDE / exec</b></td></tr>
+    <tr><td><b>InternAgent</b></td><td>状态机 + 11 个专职 agent</td><td>外包给 shell/openhands</td><td>CLI + benchmark</td></tr>
+  </table>
+  <div class="note clever"><span class="t">★ 关键洞察：Codex 把"一个 agent 会话"做成 <code>CodexThread</code>，它是<b>事件流</b>而非同步函数</span>
+    AgentScope 的 <code>Agent.reply()</code> 是一个会跑完的 async 调用；Codex 的 <code>CodexThread</code> 是一条<b>双向消息流</b>——客户端发 <code>Op::UserInput</code>，thread 回吐 <code>Event</code> 流（token、工具调用、diff、完成）。<br>
+    这个设计的代价是状态管理复杂（<code>Session</code> / <code>SessionState</code> / <code>TurnContext</code> 三层），收益是<b>天然支持多消费者</b>：TUI 与 exec 走 in-process app-server，IDE/daemon 可走进程外 transport；MCP server 则是另一条把 Codex 能力向外暴露的适配路径，不能简单算作 app-server client。
+  </div>
+</section>
+
+<hr>
+
+<h2>阅读路线：主干四篇 + 两篇补全</h2>
+
+<div class="hub">
+  <a href="01_loop.html">
+    <h3>① Agent loop</h3>
+    <p>逐函数精读 <code>run_turn</code> 的 <code>loop { ... }</code>：采样 → 流式事件 → 工具调用 → 回到采样。附关键源码。</p>
+  </a>
+  <a href="02_exec.html">
+    <h3>② 执行 & 沙箱</h3>
+    <p><code>apply-patch</code> 的 patch 模型；<code>linux-sandbox</code> 当前默认的 bubblewrap+seccomp 与 legacy Landlock 路径；execpolicy 的命令准入。</p>
+  </a>
+  <a href="03_server.html">
+    <h3>③ app-server & TUI</h3>
+    <p>app-server 如何把 CodexThread 暴露成 JSON-RPC；TUI 的 ratatui 事件循环与渲染管线。</p>
+  </a>
+  <a href="04_takeaway.html">
+    <h3>④ 结论</h3>
+    <p>一句话：Codex 是"事件流内核 + 沙箱执行 + 多前端 RPC"的三层正交设计。</p>
+  </a>
+</div>
+
+<div class="note plain"><span class="t">补全阅读</span>
+先读 ①②③ 理解运行主干，再读 ⑤ 看工作区全景；⑥ 是 2026-08-08 的事实审计，集中修正过度比较，并把源码机制映射到 AutoResearch 的 run/event/artifact/evidence 设计。若只想看结论，直接读 <a href="06_compare.html">⑥ 横向对比与 AutoResearch 借鉴</a>。
+</div>
+
+<h2>crate 切分一览</h2>
+<p>Codex 把代码按"<b>能独立编译的边界</b>"切 crate，而非按目录。审计快照中共找到 137 个 <code>Cargo.toml</code>（这只是包清单文件数，不等同于 137 个 workspace member）；下表只列与本篇相关的核心 crate。</p>
+<table>
+  <tr><th>crate</th><th>规模</th><th>职责</th><th>本篇章节</th></tr>
+  <tr><td><code>core</code></td><td>417 文件 / 18.8 万行</td><td>agent 循环、Session、Turn、compact、MCP 客户端、tool router</td><td>①</td></tr>
+  <tr><td><code>exec</code></td><td>12 文件 / 5.5 千行</td><td>非交互入口 <code>codex-exec</code>，JSONL/human 输出</td><td>②③</td></tr>
+  <tr><td><code>apply-patch</code></td><td>7 文件 / 4.6 千行</td><td>解析并应用 <code>*** Begin Patch</code> 格式补丁</td><td>②</td></tr>
+  <tr><td><code>linux-sandbox</code></td><td>13 文件 / 7.0 千行</td><td>bubblewrap + seccomp 默认路径、legacy Landlock 回退，<code>codex-linux-sandbox</code> 二进制</td><td>②</td></tr>
+  <tr><td><code>execpolicy</code></td><td>12 文件 / 2.0 千行</td><td>命令行准入策略（allow/deny/ask）</td><td>②</td></tr>
+  <tr><td><code>app-server</code></td><td>93 文件 / 4.6 万行</td><td>JSON-RPC server，托管 CodexThread，stdio/websocket/in-process 三种传输</td><td>③</td></tr>
+  <tr><td><code>app-server-protocol</code></td><td>51 文件 / 3.1 万行</td><td>RPC 协议类型（ClientRequest / ServerNotification / Thread / Turn）</td><td>③</td></tr>
+  <tr><td><code>mcp-server</code></td><td>12 文件 / 3.0 千行</td><td>把 codex 会话作为 MCP 工具暴露给外部 MCP 客户端</td><td>③</td></tr>
+  <tr><td><code>tui</code></td><td>411 文件 / 24.2 万行</td><td>ratatui 终端 UI，通过 app-server-client 接入</td><td>③</td></tr>
+</table>
+
+<div class="note plain"><span class="t">为什么 <code>tui</code> 有 24 万行？</span>
+TUI 是整个 repo 最大的 crate。它不只是"画界面"——它包含完整的 chat widget、流式 markdown 渲染、diff 渲染、onboarding、resume/fork picker、通知系统、宠物彩蛋，以及一套和 app-server 对等的 client 逻辑。本篇 ③ 只讲它的骨架（entry → event loop → render），不展开 411 个文件。
+</div>
+
+<h2>一条贯穿全篇的调用链</h2>
+<p>读 Codex 源码时，下面这条链会反复出现。建议先记住它，再看 ①②③ 会顺畅很多。</p>
+<pre><code>codex-exec / codex (TUI)        // 前端二进制
+  └─ app-server (JSON-RPC)       // ③ 的主角
+       └─ CodexThread            // core/src/codex_thread.rs:193
+            └─ Session           // core/src/session/session.rs:34
+                 └─ run_turn     // core/src/session/turn.rs:151
+                      └─ loop {  // core/src/session/turn.rs:273
+                            run_sampling_request     // turn.rs:1317
+                              → ModelClientSession  // 调模型，流式回包
+                            handle_output_item_done // 处理 assistant 输出
+                            ToolRouter::dispatch    // 工具调用
+                            ← 下一步采样
+                          }
+                 └─ exec / apply_patch / linux-sandbox  // ② 的主角
+</code></pre>
+
+<footer>
+  <b>Codex (Rust) 架构精读</b> · 复核于 2026-08-08 · 源码 <code>0a0ebb8535</code><br>
+  对照参考：<code>AgentScope 2.0 架构精读</code>（横向对比 / 可以比较的系统）<br>
+  归档位置：横向对比 / 可以比较的系统 / Codex
+</footer>
+
+</div>
+</body>
+</html>

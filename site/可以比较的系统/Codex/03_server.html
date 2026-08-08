@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex (Rust) · ③ app-server & TUI</title>
+<style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a;--accent2:#0d9488;--purple:#7c4ddb;--blue:#0891b2;--warn:#d6435a}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.75;margin:0}
+.wrap{max-width:980px;margin:0 auto;padding:36px 26px 80px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:14px}
+.back:hover{background:var(--accent);color:#fff}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}
+.nav a{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#fffdf8;border:1px solid #e0c49c;border-radius:6px;padding:8px 16px}
+.nav a:hover{background:var(--accent);color:#fff}
+.nav a.cur{background:var(--accent);color:#fff;font-weight:700}
+h2{font-size:21px;border-left:5px solid var(--accent);padding-left:12px;margin:36px 0 12px}
+h3{font-size:16.5px;color:var(--accent);margin:24px 0 8px}
+h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.7px}
+code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,Consolas,monospace}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55;max-height:560px}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}
+tr:nth-child(even) td{background:#fbf7ee}
+a{color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+strong{color:#8f4208}
+.lead{font-size:15.5px;color:var(--ink)}
+.key{background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:16px 22px;margin:18px 0;font-size:14px;line-height:1.8}
+.key b.hl{color:#b4530a;font-weight:700}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--line);padding-bottom:8px;margin:34px 0 14px}
+.sec-head h2{border:none;padding:0;margin:0}
+.sec-head .count{font-size:12px;color:var(--ink-soft)}
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;font-size:13.8px;line-height:1.7}
+.note .t{display:inline-block;font-weight:700;margin-bottom:4px}
+.note.clever{background:#f3eefe;border:1px solid #cbb8f7}
+.note.clever .t{color:var(--purple)}
+.note.warn{background:#fdeef0;border:1px solid #f5b9c3}
+.note.warn .t{color:var(--warn)}
+.note.plain{background:#f3f8f6;border:1px solid #b8e0d2}
+.note.plain .t{color:var(--accent2)}
+.num{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+.fn{scroll-margin-top:20px;border:1px solid var(--line);border-left:4px solid var(--accent2);border-radius:8px;padding:14px 18px;margin:16px 0;background:var(--card)}
+.fn h4{margin:0 0 4px;color:var(--accent2);font-size:15px}
+.fn .sig{font-size:12px;color:var(--ink-soft);margin:0 0 8px;font-family:"SF Mono",Menlo,Consolas,monospace;word-break:break-all}
+.fn .loc{font-size:11.5px;color:var(--ink-soft);margin:0 0 10px}
+.fn p{font-size:13.6px;margin:6px 0}
+.fn ul{font-size:13.6px;margin:6px 0;padding-left:22px}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+
+<div class="nav">
+  <a href="index.html">总览</a>
+  <a href="01_loop.html">① Agent loop</a>
+  <a href="02_exec.html">② 执行 & 沙箱</a>
+  <a class="cur" href="03_server.html">③ app-server & TUI</a>
+  <a href="04_takeaway.html">④ 结论</a>
+  <a href="05_architecture.html">⑤ 总架构图</a>
+  <a href="06_compare.html">⑥ 横向对比</a>
+</div>
+
+<header>
+  <h1>③ 接入层：<code>app-server</code> · <code>mcp-server</code> · <code>tui</code></h1>
+  <p class="sub">TUI、IDE、非交互 exec 的主路径由 app-server JSON-RPC 统一；MCP server 则是另一条把 Codex 能力向外适配的边界。本篇同时解释两者，避免把它们混成同一种 client。</p>
+</header>
+
+<div class="key">
+  <b class="hl">本篇主线</b>
+  <p>对 TUI、exec、IDE/daemon 这条主产品路径，Codex 的"多前端"不是 if-else 分支，而是<b>一个 server + 多种 transport + 多种 client</b>。但 MCP server 等独立适配器仍可直接依赖 core，所以 app-server 是主要公共接入边界，不是全仓库唯一能持有 <code>CodexThread</code> 的模块。</p>
+</div>
+
+<!-- ==================== app-server ==================== -->
+<h2>一、<code>app-server</code>：JSON-RPC 会话托管</h2>
+<p class="lead">app-server 是整个接入层的枢纽。它把 <code>CodexThread</code>（agent 内核）包装成<b>可远程调用</b>的服务。</p>
+
+<h3>1.1 它是什么</h3>
+<p>app-server 是一个 <b>JSON-RPC server</b>，接受 <code>codex_app_server_protocol::ClientRequest</code>，委托给一族 request processor，processor 再驱动 <code>codex_core::CodexThread</code>。三种 transport：</p>
+<table>
+  <tr><th>transport</th><th>用途</th><th>入口</th></tr>
+  <tr><td><b>stdio</b></td><td>IDE 扩展（VS Code）通过子进程 stdio 通信</td><td><code>AppServerTransport::Stdio</code></td></tr>
+  <tr><td><b>websocket</b></td><td>远程 daemon / cloud 连接</td><td>acceptor in <code>transport.rs</code></td></tr>
+  <tr><td><b>in-process</b></td><td>TUI / exec 在同一进程内跑 server（mpsc channel）</td><td><code>in_process.rs:355 start()</code></td></tr>
+</table>
+
+<h3>1.2 启动入口</h3>
+<div class="fn" id="f-run-main">
+  <h4><span class="num">1</span>run_main（lib.rs:407）</h4>
+  <p class="sig">pub async fn run_main(args: AppServerArgs, config_overrides: ConfigOverrides, ...) -&gt; IoResult&lt;()&gt;</p>
+  <p class="loc">app-server/src/lib.rs:407</p>
+  <p>默认 <code>AppServerTransport::Stdio</code>，真正启动在 <code>run_main_with_transport_options</code>（lib.rs:456）：构建 <code>Config</code>，启动 transport acceptor，spawn outbound router，构造 <code>MessageProcessor</code>。</p>
+</div>
+
+<div class="fn" id="f-in-process">
+  <h4><span class="num">2</span>in_process::start（in_process.rs:355）</h4>
+  <p class="sig">pub async fn start(args: InProcessStartArgs) -&gt; IoResult&lt;InProcessClientHandle&gt;</p>
+  <p class="loc">app-server/src/in_process.rs:355</p>
+  <p>TUI / exec 走这条路。它创建 mpsc channel，注册一个合成的 <code>IN_PROCESS_CONNECTION_ID = ConnectionId(0)</code>（in_process.rs:98），spawn <code>run_outbound_router</code>（in_process.rs:386），再 spawn 一个 runtime task 跑 <code>MessageProcessor</code>（in_process.rs:461）。第二个 loop（in_process.rs:563）把 outbound 消息扇回给 caller。</p>
+</div>
+
+<h3>1.3 消息分发</h3>
+<div class="fn" id="f-message-processor">
+  <h4><span class="num">3</span>MessageProcessor（message_processor.rs:101）</h4>
+  <p class="sig">struct MessageProcessor { thread_manager: Arc&lt;ThreadManager&gt;, thread_request_processor, turn_request_processor, ... }</p>
+  <p class="loc">app-server/src/message_processor.rs:101</p>
+  <p><code>MessageProcessor</code> 持有约 20 个 processor。核心：<code>ThreadManager</code>（<code>Arc::new_cyclic</code>，message_processor.rs:271）—— 所有 <code>CodexThread</code> 的生命周期管理者。请求流：</p>
+<pre><code>process_client_request(req)
+  → match req {
+      ClientRequest::ThreadStart(params) → thread_request_processor.thread_start(params)
+      ClientRequest::TurnStart(params)   → turn_request_processor.turn_start(params)
+      ClientRequest::ReviewStart(params) → turn_request_processor.review_start(params)
+      ClientRequest::ThreadInterrupt(...) → ...
+      ...
+    }
+  → ThreadManager 启动 / 驱动 CodexThread
+  → outbound router 把 Event 流推回 client</code></pre>
+</div>
+
+<h3>1.4 三类核心请求</h3>
+<div class="fn" id="f-thread-start">
+  <h4><span class="num">4</span>thread_start（thread_processor.rs）</h4>
+  <p class="loc">app-server/src/request_processors/thread_processor.rs</p>
+  <p><code>ClientRequest::ThreadStart(ThreadStartParams)</code> 创建一个新的会话线程。processor 调 <code>thread_manager.start_thread(...)</code>，后者构造 <code>Session</code> + <code>CodexThread</code>，返回 <code>ThreadStartResponse</code>（含 <code>thread_id</code>）。</p>
+</div>
+
+<div class="fn" id="f-turn-start">
+  <h4><span class="num">5</span>turn_start（turn_processor.rs）</h4>
+  <p class="loc">app-server/src/request_processors/turn_processor.rs</p>
+  <p><code>ClientRequest::TurnStart(TurnStartParams)</code> 在已有线程上发起一轮对话。这会触发 core 里的 <code>run_turn</code>（见 ①）。响应 <code>TurnStartResponse</code> 里含 <code>turn_id</code>，客户端用它过滤后续 notification。</p>
+</div>
+
+<div class="fn" id="f-review-start">
+  <h4><span class="num">6</span>review_start（turn_processor.rs）</h4>
+  <p class="loc">app-server/src/request_processors/turn_processor.rs</p>
+  <p><code>ClientRequest::ReviewStart(ReviewStartParams)</code> 是 <b>codex exec --review</b> 的后端。它不走正常 turn 流程，而是做 PR 评审：拉取 diff、让模型按 review 专用 prompt 分析、输出结构化评审意见。</p>
+</div>
+
+<h3>1.5 通知回流</h3>
+<p>agent 内核发出的 <code>Event</code> 不会自动到达 client。app-server 有一个 <b>thread lifecycle listener task</b>，把 core 的 Event 转成 <code>ServerNotification</code>，经 outbound router 推给所有订阅该 thread 的 connection。</p>
+<div class="note plain"><span class="t">三种出站消息</span>
+  <code>ServerNotification</code>（单向通知，如 token delta、tool call 开始）<br>
+  <code>ServerRequest</code>（需要 client 回应，如 <code>AskForApproval</code>、<code>Elicitation</code>）<br>
+  RPC response（对应某个 ClientRequest 的结果）
+</div>
+
+<hr>
+
+<!-- ==================== exec binary ==================== -->
+<h2>二、<code>exec</code>：非交互前端的薄壳</h2>
+<p class="lead"><code>codex-exec</code>（5.5 千行）是<b>最薄的前端</b>：它不做 UI，只把 prompt 喂进 app-server，把 Event 流转成人类可读或 JSONL 输出。</p>
+
+<h3>2.1 入口与启动</h3>
+<div class="fn" id="f-exec-main">
+  <h4><span class="num">7</span>run_main（exec/src/lib.rs:239）</h4>
+  <p class="loc">exec/src/lib.rs:239</p>
+  <p><code>main.rs:31</code> 用 <code>arg0_dispatch_or_else</code> 处理 argv[0] 分发（同一二进制可充当 <code>codex-linux-sandbox</code>）。<code>run_main</code> 做的事：</p>
+  <ul>
+    <li>设 originator、解析颜色、装 tracing subscriber + OTEL layer。</li>
+    <li>找 <code>CODEX_HOME</code>，加载 bootstrap config，解析 OSS provider/model。</li>
+    <li>构建 <code>Config</code>，headless 默认 <code>approval_policy: Never</code>（非交互模式不等待审批）。</li>
+    <li>初始化 state DB、OTEL、<code>EnvironmentManager</code>，构造 <code>InProcessClientStartArgs</code>，调 <code>run_exec_session</code>。</li>
+  </ul>
+</div>
+
+<div class="fn" id="f-run-exec-session">
+  <h4><span class="num">8</span>run_exec_session（exec/src/lib.rs:646）</h4>
+  <p class="sig">// 主循环：tokio::select! { Ctrl-C / client.next_event() }</p>
+  <p class="loc">exec/src/lib.rs:646</p>
+  <p>核心循环在 lib.rs:932-1024，是一个 <code>tokio::select!</code>：</p>
+  <ul>
+    <li><b>Ctrl-C</b> → 发 <code>TurnInterrupt</code>，优雅停止。</li>
+    <li><b><code>client.next_event()</code></b> → 拿到 <code>InProcessServerEvent</code>，分三类：<br>
+      <code>ServerRequest</code> → <code>handle_server_request</code>（lib.rs:1646）：headless 模式下自动拒绝所有审批/elicitation 请求；<br>
+      <code>ServerNotification</code> → 过滤 thread/turn（<code>should_process_notification</code>，lib.rs:1259），交给 <code>EventProcessor</code>；<br>
+      <code>Lagged</code> → 告警。</li>
+  </ul>
+  <p>结束时：<code>thread/unsubscribe</code>、break、<code>client.shutdown()</code>、<code>print_final_output()</code>；如果见过 fatal error 就 <code>exit(1)</code>。</p>
+</div>
+
+<h3>2.2 两种输出处理器</h3>
+<div class="fn" id="f-event-processor">
+  <h4><span class="num">9</span>EventProcessor trait + 两个实现</h4>
+  <p class="sig">trait EventProcessor { print_config_summary(); process_server_notification(); process_warning(); print_final_output(); }</p>
+  <p class="loc">exec/src/event_processor.rs:13；event_processor_with_human_output.rs；event_processor_with_jsonl_output.rs</p>
+  <p><code>--json</code> 模式用 <code>EventProcessorWithJsonOutput</code>，把每个 <code>ServerNotification</code> 序列化成 JSONL 一行；否则用 <code>EventProcessorWithHumanOutput</code>，用 owo-colors 着色，把 agent 的文本输出直接打到 stdout。这是 codex-exec 能被脚本 <code>| jq</code> 消费的原因。</p>
+</div>
+
+<hr>
+
+<!-- ==================== mcp-server ==================== -->
+<h2>三、<code>mcp-server</code>：把 Codex 暴露成 MCP 工具</h2>
+<p class="lead">这一层方向<b>反过来</b>：前面是 Codex 作为 MCP <b>客户端</b>消费外部 server；这里是 Codex 作为 MCP <b>服务端</b>，让自己被别的 MCP 客户端（比如 Claude Desktop、Cursor）调用。</p>
+
+<div class="fn" id="f-mcp-server">
+  <h4><span class="num">10</span>mcp-server（3.0 千行）</h4>
+  <p class="loc">mcp-server/src/lib.rs、main.rs</p>
+  <p>mcp-server crate 暴露的是一个 <b>MCP server</b>，它把 Codex 的会话能力封装成 MCP tools/resources 暴露给外部 MCP 客户端。入口是 <code>fn main()</code>（启动 stdio MCP server）。它内部驱动 <code>CodexThread</code>，把 agent 的输出转成 MCP 响应格式。</p>
+  <div class="note clever"><span class="t">★ 对称的双向 MCP</span>
+    Codex 对 MCP 是<b>双向</b>的：<br>
+    方向 A：agent loop 里的 <code>McpManager</code>（core）作为 MCP <b>client</b>，连接外部 MCP server，把它们的工具暴露给模型。<br>
+    方向 B：<code>mcp-server</code> crate 作为 MCP <b>server</b>，让 Codex 自己变成一个可被外部调用的工具源。<br>
+    这种对称性让 Codex 既能"用别人的工具"，也能"被别人当工具用"。
+  </div>
+</div>
+
+<hr>
+
+<!-- ==================== TUI ==================== -->
+<h2>四、<code>tui</code>：24 万行的终端前端</h2>
+<p class="lead">TUI 是 repo 里最大的 crate（411 文件，24.2 万行）。它不直接碰 <code>CodexThread</code>，而是通过 <code>app-server-client</code> 走 JSON-RPC 协议接入 app-server——和 IDE 扩展走的是<b>同一条路</b>。</p>
+
+<h3>4.1 入口链</h3>
+<pre><code>main.rs:53  main()
+  └─ arg0_dispatch_or_else
+       └─ run_main(inner, arg0_paths, ...)          // lib.rs:882
+            ├─ load_config_or_exit                  // bootstrap config
+            ├─ resolve AppServerTarget              // lib.rs:267 (Embedded/LocalDaemon/Remote)
+            ├─ init state DB, OTEL, tracing
+            └─ run_ratatui_app(...)                 // lib.rs:1275
+                 ├─ tui::init()                     // tui.rs:412 raw/alt-screen
+                 ├─ Tui::new()                      // tui.rs:613
+                 ├─ TerminalRestoreGuard            // lib.rs:1804
+                 ├─ start_app_server()              // lib.rs:459 → AppServerSession::new
+                 ├─ onboarding / login / trust screens
+                 └─ App::run()                      // app.rs:774 ★事件循环★</code></pre>
+
+<h3>4.2 事件循环</h3>
+<div class="fn" id="f-app-run">
+  <h4><span class="num">11</span>App::run（app.rs:774）—— 四路 select</h4>
+  <p class="loc">tui/src/app.rs:774；事件循环 app.rs:1197</p>
+  <p><code>App::run</code> 内部是一个 <code>tokio::select!</code>（app.rs:1197），监听四路事件源：</p>
+  <ul>
+    <li><code>app_event_rx</code> —— 内部 <code>AppEvent</code> 总线（app_event.rs:189），由 widget 通过 <code>AppEventSender</code> 投递。</li>
+    <li><code>active_thread_rx</code> —— 当前活跃线程的 buffered turn events。</li>
+    <li><code>tui_events</code> —— <code>Tui::event_stream()</code>（tui.rs:760），crossterm 的 key / paste / resize / draw 事件。</li>
+    <li><code>app_server.next_event()</code> —— app-server 推来的 <code>ServerNotification</code>。</li>
+  </ul>
+  <p>分发：<code>handle_event</code>（内部）/ <code>handle_tui_event</code>（app.rs:1294，经 <code>RuntimeKeymap</code> 路由按键，调 <code>render_chat_widget_frame</code>）/ <code>handle_app_server_event</code>。</p>
+</div>
+
+<h3>4.3 与内核的连接</h3>
+<div class="fn" id="f-app-server-session">
+  <h4><span class="num">12</span>AppServerSession + AppServerClient</h4>
+  <p class="loc">tui/src/app_server_session.rs:261；app-server-client/src/lib.rs:451</p>
+  <p>TUI 通过 <code>AppServerSession</code>（app_server_session.rs:261）与 app-server 通信。它包装了 <code>AppServerClient</code>，后者是一个 enum：</p>
+  <ul>
+    <li><code>InProcess</code> —— <code>InProcessAppServerClient::start</code>（app-server-client/src/lib.rs:462），调 <code>codex_app_server::in_process::start(...)</code>，即 codex-core 的 app server 在同一进程跑，后面是 mpsc channel。</li>
+    <li><code>Remote</code> —— websocket / JSON-RPC client（用于 daemon / cloud 连接）。</li>
+  </ul>
+  <p>关键方法：<code>bootstrap</code>（:381）、<code>next_event</code>（:579）、<code>request_handle</code>（:1457，发送 typed <code>ClientRequest</code>）、<code>resume_thread</code> / <code>fork_thread</code>、<code>shutdown</code>。</p>
+</div>
+
+<h3>4.4 渲染管线</h3>
+<div class="fn" id="f-render">
+  <h4><span class="num">13</span>ChatWidget + Renderable + Tui::draw</h4>
+  <p class="loc">tui/src/chatwidget.rs:543；render/renderable.rs:16；tui.rs:925</p>
+  <p>渲染核心是 <code>ChatWidget</code>（chatwidget.rs:543）。它实现 <code>Renderable</code> trait（render/renderable.rs:16），由 <code>App::render_chat_widget_frame</code>（app.rs:1392）触发，最终走 <code>Tui::draw</code>（tui.rs:925）→ ratatui 的 <code>terminal.draw_with_size</code>。</p>
+  <p>ChatWidget 的结构是一个 <code>FlexRenderable</code>：上面是 <code>TranscriptAreaRenderable</code>（对话流，由一堆 history_cell / exec_cell 组成），下面是 bottom pane（输入框 + 状态栏）。流式 markdown 渲染在 <code>markdown_render/</code>；diff 渲染在 <code>diff_render.rs</code> / <code>diff_model.rs</code>。</p>
+</div>
+
+<h3>4.5 模块布局</h3>
+<p>TUI 的 411 个文件大致分这些顶层模块：</p>
+<table>
+  <tr><th>目录/文件</th><th>职责</th></tr>
+  <tr><td><code>app.rs</code> / <code>app/</code></td><td>主 App 结构、事件循环、dispatch</td></tr>
+  <tr><td><code>chatwidget.rs</code> / <code>chatwidget/</code></td><td>聊天主界面 widget</td></tr>
+  <tr><td><code>render/</code></td><td>Renderable trait、FlexRenderable、布局原语</td></tr>
+  <tr><td><code>markdown_render/</code> / <code>markdown.rs</code></td><td>流式 markdown → ratatui cells</td></tr>
+  <tr><td><code>diff_render.rs</code> / <code>diff_model.rs</code></td><td>apply_patch diff 渲染</td></tr>
+  <tr><td><code>bottom_pane/</code></td><td>输入框、提示、补全</td></tr>
+  <tr><td><code>app_server_session.rs</code></td><td>与 app-server 的会话管理</td></tr>
+  <tr><td><code>onboarding/</code> / <code>resume_picker.rs</code></td><td>启动流程：onboarding、login、trust、resume/fork</td></tr>
+  <tr><td><code>history_cell/</code> / <code>exec_cell/</code></td><td>transcript 的两种 cell 类型</td></tr>
+  <tr><td><code>keymap.rs</code> / <code>keymap_setup.rs</code></td><td>键位映射、模式（normal/insert/plan）</td></tr>
+  <tr><td><code>status/</code> / <code>notifications/</code></td><td>状态栏、通知系统</td></tr>
+  <tr><td><code>tui.rs</code></td><td>Terminal 抽象、init、event_stream、draw</td></tr>
+  <tr><td><code>pets/</code></td><td>彩蛋：终端宠物</td></tr>
+</table>
+
+<hr>
+
+<!-- ==================== 对比 ==================== -->
+<h2>五、与 AgentScope 接入层的对照</h2>
+<table>
+  <tr><th>维度</th><th>Codex</th><th>AgentScope 2.0</th></tr>
+  <tr><td>多前端接入</td><td>统一 JSON-RPC（app-server）+ 多 transport + 多 client</td><td>FastAPI 服务层（2.8 万行）+ web_ui</td></tr>
+  <tr><td>前端与内核的边界</td><td><b>主路径硬边界</b>：TUI/exec/IDE 统一经 app-server；专用适配器可直接依赖 core</td><td><b>软边界</b>：FastAPI 直接 import <code>Agent</code></td></tr>
+  <tr><td>会话状态归属</td><td>core 持有 <code>Session</code>，前端只有 <code>thread_id</code></td><td>FastAPI 持有 <code>Agent</code> 实例的引用</td></tr>
+  <tr><td>新增前端的成本</td><td>写一个 client（实现 <code>AppServerClient</code>）</td><td>在 FastAPI 加一组 endpoint</td></tr>
+  <tr><td>审批交互</td><td><code>ServerRequest::AskForApproval</code> 异步问 client</td><td>同步在 agent loop 里问</td></tr>
+</table>
+
+<div class="note warn"><span class="t">⚠ app-server 的代价</span>
+  Codex 这套"硬边界 + JSON-RPC"不是免费的：协议层 <code>app-server-protocol</code> 有 3.1 万行类型定义；<code>app-server</code> 本身 4.6 万行。对一个<b>只需要一个前端</b>的项目，这套开销可能过重。Codex 之所以值得，是因为它同时要服务 TUI、IDE、exec、MCP、cloud daemon 五种前端。
+</div>
+
+<p style="margin-top:30px"><a href="04_takeaway.html">→ 继续 ④ 结论</a></p>
+
+<footer>
+  <b>Codex (Rust) 架构精读</b> · ③ app-server & TUI · 源码版本 <code>0a0ebb8535</code><br>
+  对照参考：<code>AgentScope 2.0 · ② 模块解剖</code>
+</footer>
+
+</div>
+</body>
+</html>

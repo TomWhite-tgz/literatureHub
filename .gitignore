@@ -3,4 +3,4 @@
 literatureHub/
 __pycache__/
 .DS_Store
-
+.atomcode/

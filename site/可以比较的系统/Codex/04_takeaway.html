@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex (Rust) · ④ 结论</title>
+<style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a;--accent2:#0d9488;--purple:#7c4ddb;--blue:#0891b2;--warn:#d6435a}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.75;margin:0}
+.wrap{max-width:960px;margin:0 auto;padding:36px 26px 80px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:14px}
+.back:hover{background:var(--accent);color:#fff}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}
+.nav a{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#fffdf8;border:1px solid #e0c49c;border-radius:6px;padding:8px 16px}
+.nav a:hover{background:var(--accent);color:#fff}
+.nav a.cur{background:var(--accent);color:#fff;font-weight:700}
+h2{font-size:21px;border-left:5px solid var(--accent);padding-left:12px;margin:36px 0 12px}
+h3{font-size:16.5px;color:var(--accent);margin:24px 0 8px}
+h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.7px}
+code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,Consolas,monospace}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55;max-height:560px}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}
+tr:nth-child(even) td{background:#fbf7ee}
+a{color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+strong{color:#8f4208}
+.lead{font-size:15.5px;color:var(--ink)}
+.key{background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:16px 22px;margin:18px 0;font-size:14px;line-height:1.8}
+.key b.hl{color:#b4530a;font-weight:700}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--line);padding-bottom:8px;margin:34px 0 14px}
+.sec-head h2{border:none;padding:0;margin:0}
+.sec-head .count{font-size:12px;color:var(--ink-soft)}
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;font-size:13.8px;line-height:1.7}
+.note .t{display:inline-block;font-weight:700;margin-bottom:4px}
+.note.clever{background:#f3eefe;border:1px solid #cbb8f7}
+.note.clever .t{color:var(--purple)}
+.note.warn{background:#fdeef0;border:1px solid #f5b9c3}
+.note.warn .t{color:var(--warn)}
+.note.plain{background:#f3f8f6;border:1px solid #b8e0d2}
+.note.plain .t{color:var(--accent2)}
+.num{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+
+<div class="nav">
+  <a href="index.html">总览</a>
+  <a href="01_loop.html">① Agent loop</a>
+  <a href="02_exec.html">② 执行 & 沙箱</a>
+  <a href="03_server.html">③ app-server & TUI</a>
+  <a href="04_takeaway.html">④ 结论</a>
+  <a href="05_architecture.html">⑤ 总架构图</a>
+  <a href="06_compare.html">⑥ 横向对比</a>
+</div>
+
+<header>
+  <h1>④ 一句话结论</h1>
+  <p class="sub">把 ①②③ 浓缩成几条可迁移的工程判断。</p>
+</header>
+
+<section id="takeaway">
+  <div class="sec-head"><h2><span class="num">§</span>一句话</h2></div>
+  <div class="key">
+    <b class="hl">Codex 是"事件流内核 + 沙箱执行 + 多前端 RPC"的三层正交设计。</b>
+    <ul style="margin:8px 0 0">
+      <li>① 内核 <code>CodexThread</code> 是双向事件流：客户端塞 <code>Op</code>、thread 吐 <code>Event</code>。<code>run_turn</code> 的 <code>loop {}</code> 把"采样 → 工具 → 再采样"做成同一 turn 内的多步循环。</li>
+      <li>② 执行层三正交：<code>apply-patch</code> 管格式、<code>linux-sandbox</code> 管隔离、<code>execpolicy</code> 管准入。三者互不依赖，可独立替换。</li>
+      <li>③ 接入层硬边界：TUI / exec / IDE 主路径统一走 app-server JSON-RPC（in-process 也保留相同 envelope）；MCP server 等专用适配器不应误算作 app-server client。代价是 ~7 万行协议+server 代码，收益是主前端共享 thread/turn/item 状态语义。</li>
+    </ul>
+  </div>
+</section>
+
+<hr>
+
+<section id="compare-agentscope">
+  <div class="sec-head"><h2><span class="num">§</span>与 AgentScope 的重量对照</h2></div>
+  <p class="lead">Codex 是 coding agent 产品/运行时，AgentScope 更接近通用 agent 框架；二者仍可在 loop、执行治理和服务边界上比较，但定位并不相同。</p>
+  <table>
+    <tr><th>维度</th><th>Codex (Rust)</th><th>AgentScope 2.0</th></tr>
+    <tr><td>内核抽象</td><td><b>事件流</b> <code>CodexThread</code>（异步 task + Event 流）</td><td><b>对象</b> <code>Agent</code>（深 ReAct 循环 + 中间件）</td></tr>
+    <tr><td>单 turn 内多步工具</td><td>同一 <code>loop {}</code> 内反复采样+工具</td><td><code>reply()</code> 内 <code>while cur_iter &lt; max_iters</code></td></tr>
+    <tr><td>工具批并发</td><td>同一 step 内并发，跨 step 串行</td><td><code>_batch_tool_calls</code> 分 sequential/concurrent 两批</td></tr>
+    <tr><td>执行隔离</td><td>Linux 默认 bwrap + seccomp（legacy Landlock）；另有 macOS/Windows 后端</td><td>6 种沙箱后端（docker / podman / 系统原生 …）</td></tr>
+    <tr><td>准入控制</td><td><code>execpolicy</code> 命令行模式匹配</td><td><code>PermissionEngine</code> 五模式权限引擎</td></tr>
+    <tr><td>文件编辑</td><td>结构化补丁 <code>apply-patch</code>（流式解析）</td><td>依赖工具实现，无统一补丁格式</td></tr>
+    <tr><td>多前端接入</td><td>JSON-RPC app-server（硬边界）</td><td>FastAPI 服务层（软边界，直接 import Agent）</td></tr>
+    <tr><td>上下文压缩</td><td>pre-sampling + inline auto-compact（本地+远端两路）</td><td><code>compress_context</code> 中间件钩子</td></tr>
+    <tr><td>规模</td><td>core 18.8 万行 / tui 24.2 万行 / 130 个 workspace member</td><td>333 .py / ~7.6 万行</td></tr>
+  </table>
+  <div class="note clever"><span class="t">★ 根本差异：抽象方向</span>
+    AgentScope 的内核以<b>agent 对象</b>为中心，适合由应用层组合 workflow。<br>
+    Codex 的内核以<b>可持久化 thread/turn 事件流</b>为中心，并把执行与接入做得很重；当前源码也已有 multi-agent v2 的 spawn/message/routing/trace，因此“没有编排”已经过时。它仍不是 InternAgent 那种预设角色状态机，而是提供更底层的动态协作原语。
+  </div>
+</section>
+
+<hr>
+
+<section id="lessons">
+  <div class="sec-head"><h2><span class="num">§</span>可迁移的工程判断</h2></div>
+
+  <h3>1. 事件流 &gt; 同步调用</h3>
+  <p>Codex 把 agent 会话做成<b>事件流</b>而非 <code>async fn reply() -&gt; Response</code>。收益：</p>
+  <ul>
+    <li>用户可在模型跑时<b>打断 / 追加</b>（<code>tokio::select!</code> + <code>input_queue</code>）。</li>
+    <li>流式 token 天然是事件，无需额外 channel。</li>
+    <li>多前端复用同一 event 协议。</li>
+  </ul>
+  <p>代价是状态管理复杂（<code>Session</code> / <code>TurnContext</code> / <code>StepContext</code> 三层）。如果项目只要单前端，同步调用更简单。</p>
+
+  <h3>2. 沙箱三正交：格式 / 隔离 / 准入</h3>
+  <p>Codex 把"模型怎么表达改动"（<code>apply-patch</code>）、"命令执行时怎么隔离"（<code>linux-sandbox</code>）、"这条命令该不该跑"（<code>execpolicy</code>）切成三个独立 crate。这比把三者耦合在一个 <code>Sandbox</code> 类里更易测试和替换。</p>
+
+  <h3>3. 补丁用"上下文锚点"而非行号</h3>
+  <p><code>apply-patch</code> 的 <code>@@ ... @@</code> 是文件里的文本片段，不是行号。这让模型哪怕记错行号也能定位，鲁棒性远高于 diff/patch 的行号格式。这是一个<b>针对模型输出特性</b>的设计，值得复用到科研 agent 的代码编辑能力上。</p>
+
+  <h3>4. 准入拒绝也是反馈</h3>
+  <p><code>execpolicy</code> 的 <code>Deny</code> 不直接报错退出，而是把拒绝原因<b>作为 tool result 回传模型</b>。模型可以自己换写法。这比"拒绝即终止"更贴近真实 agent 协作。科研 agent 在"实验被伦理/安全策略拒绝"时也可以走这条路。</p>
+
+  <h3>5. 多前端硬边界：JSON-RPC 总线</h3>
+  <p>Codex 用 app-server 把内核与前端<b>硬隔离</b>，前端只认 <code>ClientRequest</code> / <code>ServerNotification</code>。代价是协议层很重（~7 万行）；收益是新增一个前端（Slack bot、web UI）只需写一个 client 实现。如果项目从一开始就要多前端，这套设计值得抄；如果只要一个前端，过重。</p>
+
+  <div class="note warn"><span class="t">⚠ 不建议照搬的部分</span>
+    <ul style="margin:4px 0;padding-left:22px">
+      <li><b>三重状态层</b>（Session/TurnContext/StepContext）：对单前端、短会话项目是过度设计。</li>
+      <li><b>协议层 3.1 万行类型</b>：除非要支持 5+ 种前端，否则用 OpenAPI 生成就够。</li>
+      <li><b>补丁不是事务</b>：Codex 用 <code>AppliedPatchDelta</code> 报告已提交副作用，但源码没有证明“总由 git 自动兜底”；科研 agent 改实验数据时需要 staging + atomic publish。</li>
+    </ul>
+  </div>
+</section>
+
+<hr>
+
+<section id="for-research-agent">
+  <div class="sec-head"><h2><span class="num">§</span>对搭科研 agent 的启发</h2></div>
+  <p class="lead">把 Codex 的设计映射到科研 agent 谱系：</p>
+  <table>
+    <tr><th>Codex 机制</th><th>科研 agent 对应</th></tr>
+    <tr><td>事件流 <code>CodexThread</code></td><td>实验 run 即事件流：模型决策、工具调用、结果回流都是 event，前端（notebook / web）订阅即可</td></tr>
+    <tr><td><code>apply-patch</code> 上下文锚点</td><td>科研 agent 改实验代码 / 配置文件时，用同款结构化补丁，避免行号错位</td></tr>
+    <tr><td><code>execpolicy</code> 拒绝即反馈</td><td>实验被资源/伦理策略拒绝时，把原因回传模型，让它自己调整方案</td></tr>
+    <tr><td>沙箱三正交</td><td>实验执行同样可以拆：改动格式（patch）/ 执行隔离（docker）/ 准入（资源 quota）</td></tr>
+    <tr><td>app-server 多前端</td><td>科研 agent 若要同时服务 CLI、web demo、benchmark harness，JSON-RPC 总线是合理选择</td></tr>
+  </table>
+  <p>一句话：Codex 的"<b>事件流内核 + 分层执行治理 + JSON-RPC 总线</b>"是一套成熟的工程参考。对科研 agent 而言，更值得迁移的是 admission 语义、运行权限强制、canonical history 与 raw trace 分层；不要直接复制它的 crate 数和协议体量。完整映射见 <a href="06_compare.html">⑥ 源码审计与 AutoResearch 借鉴</a>。</p>
+</section>
+
+<p style="margin-top:30px"><a href="index.html">← 回到总览</a></p>
+
+<footer>
+  <b>Codex (Rust) 架构精读</b> · ④ 结论 · 源码版本 <code>0a0ebb8535</code><br>
+  对照参考：<code>AgentScope 2.0 架构精读</code>（横向对比 / 可以比较的系统）<br>
+  归档位置：横向对比 / 可以比较的系统 / Codex
+</footer>
+
+</div>
+</body>
+</html>

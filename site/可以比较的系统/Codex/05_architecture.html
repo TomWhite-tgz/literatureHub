@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex (Rust) · ⑤ 总架构 & 全 crate 依赖图</title>
+<style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a;--accent2:#0d9488;--purple:#7c4ddb;--blue:#0891b2;--warn:#d6435a}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.75;margin:0}
+.wrap{max-width:1000px;margin:0 auto;padding:36px 26px 80px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:14px}
+.back:hover{background:var(--accent);color:#fff}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}
+.nav a{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#fffdf8;border:1px solid #e0c49c;border-radius:6px;padding:8px 16px}
+.nav a:hover{background:var(--accent);color:#fff}
+.nav a.cur{background:var(--accent);color:#fff;font-weight:700}
+h2{font-size:21px;border-left:5px solid var(--accent);padding-left:12px;margin:36px 0 12px}
+h3{font-size:16.5px;color:var(--accent);margin:24px 0 8px}
+h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.7px}
+code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,Consolas,monospace}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.2px;line-height:1.5;max-height:620px}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}
+tr:nth-child(even) td{background:#fbf7ee}
+a{color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+strong{color:#8f4208}
+.lead{font-size:15.5px;color:var(--ink)}
+.key{background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:16px 22px;margin:18px 0;font-size:14px;line-height:1.8}
+.key b.hl{color:#b4530a;font-weight:700}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--line);padding-bottom:8px;margin:34px 0 14px}
+.sec-head h2{border:none;padding:0;margin:0}
+.sec-head .count{font-size:12px;color:var(--ink-soft)}
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;font-size:13.8px;line-height:1.7}
+.note .t{display:inline-block;font-weight:700;margin-bottom:4px}
+.note.clever{background:#f3eefe;border:1px solid #cbb8f7}
+.note.clever .t{color:var(--purple)}
+.note.warn{background:#fdeef0;border:1px solid #f5b9c3}
+.note.warn .t{color:var(--warn)}
+.note.plain{background:#f3f8f6;border:1px solid #b8e0d2}
+.note.plain .t{color:var(--accent2)}
+.num{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+.layer{border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0;background:var(--card)}
+.layer h3{margin:0 0 8px}
+.layer .crates{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.layer .crates span{display:inline-block;font-size:12px;font-family:"SF Mono",Menlo,Consolas,monospace;background:#f1e9d8;padding:2px 8px;border-radius:4px}
+.layer.frontend{border-left:4px solid var(--blue)}
+.layer.server{border-left:4px solid var(--accent)}
+.layer.core{border-left:4px solid var(--purple)}
+.layer.exec{border-left:4px solid var(--accent2)}
+.layer.foundation{border-left:4px solid var(--ink-soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+
+<div class="nav">
+  <a href="index.html">总览</a>
+  <a href="01_loop.html">① Agent loop</a>
+  <a href="02_exec.html">② 执行 & 沙箱</a>
+  <a href="03_server.html">③ app-server & TUI</a>
+  <a href="04_takeaway.html">④ 结论</a>
+  <a class="cur" href="05_architecture.html">⑤ 总架构图</a>
+  <a href="06_compare.html">⑥ 横向对比</a>
+</div>
+
+<header>
+  <h1>⑤ 总架构 & 全 crate 依赖图</h1>
+  <p class="sub">审计快照的 workspace 明列 <b>130 个 member</b>，仓库内共有 <b>137 个 Cargo.toml</b>，<code>src/**/*.rs</code> 共 <b>1,058,898 行</b>。本篇把核心部分按 5 层做解释性切分。</p>
+</header>
+
+<div class="key">
+  <b class="hl">数字一览</b>
+  <ul style="margin:8px 0 0;font-size:13.6px">
+    <li><b>130 个 workspace member</b>；仓库内共 137 个 <code>Cargo.toml</code>（含根清单及不在 member 列表中的包）</li>
+    <li><b>1,058,898 行</b> Rust 源码（统计所有 <code>src/**/*.rs</code>）</li>
+    <li><b>codex-protocol</b> 是被依赖最多的 crate（69 个直接 dependents；含 normal/dev/build/target dependency）</li>
+    <li><b>29 个 leaf crate</b>（零内部依赖），大多是底层工具库</li>
+    <li>最大的三个：<code>tui</code> 24.2 万行、<code>core</code> 18.8 万行、<code>app-server</code> 4.6 万行</li>
+  </ul>
+</div>
+
+<!-- ==================== 总架构图 ==================== -->
+<h2>一、五层总架构图</h2>
+<p class="lead">下面的 5 层是为了阅读方便而做的<b>解释性切片</b>，不是源码声明的正式分层。Cargo 保证 package 依赖图无环，但现实依赖会跨层；因此不应把这张图读成“每条边都严格只指向下一层”。</p>
+
+<div class="layer frontend">
+  <h3>🔧 Layer 5 · 前端层（Frontends）</h3>
+  <p style="font-size:13.6px;margin:4px 0">面向不同使用场景的入口二进制。当前 TUI 与 exec 已统一到 app-server client；CLI 仍是多工具分发器，MCP server 等适配器也可能直接依赖 core，不能概括为“所有前端只认 app-server”。</p>
+  <div class="crates">
+    <span>codex-tui (242k)</span><span>codex-cli (22k)</span><span>codex-exec (5.5k)</span>
+    <span>codex-mcp-server (3k)</span><span>codex-app-server-test-client</span><span>codex-app-server-daemon</span>
+  </div>
+</div>
+
+<div class="layer server">
+  <h3>⚡ Layer 4 · 协议 & 服务层（Protocol & Server）</h3>
+  <p style="font-size:13.6px;margin:4px 0">把 agent 内核暴露成可远程调用的服务。JSON-RPC over stdio / websocket / in-process。</p>
+  <div class="crates">
+    <span>codex-app-server (46k)</span><span>codex-app-server-protocol (31k)</span>
+    <span>codex-app-server-transport (16k)</span><span>codex-app-server-client</span>
+    <span>codex-exec-server (30k)</span><span>codex-exec-server-protocol</span>
+    <span>codex-mcp (16k)</span><span>codex-rmcp-client (15k)</span>
+  </div>
+</div>
+
+<div class="layer core">
+  <h3>🧠 Layer 3 · Agent 内核层（Core）</h3>
+  <p style="font-size:13.6px;margin:4px 0">agent 循环、会话状态、模型客户端、上下文压缩、MCP 客户端、工具路由。整个系统的心脏。</p>
+  <div class="crates">
+    <span>codex-core (188k)</span><span>codex-thread-store (26k)</span><span>codex-rollout (14k)</span>
+    <span>codex-rollout-trace (13k)</span><span>codex-state (20k)</span><span>codex-compact</span>
+    <span>codex-model-provider (3k)</span><span>codex-models-manager</span><span>codex-tools (7k)</span>
+    <span>codex-skills (14k)</span><span>codex-core-plugins (38k)</span><span>codex-core-skills</span>
+    <span>codex-hooks (12k)</span><span>codex-guardian</span><span>codex-connectors (5k)</span>
+    <span>codex-memories (2.5k)</span><span>codex-context-fragments</span>
+  </div>
+</div>
+
+<div class="layer exec">
+  <h3>🔒 Layer 2 · 执行 & 沙箱层（Exec & Sandbox）</h3>
+  <p style="font-size:13.6px;margin:4px 0">命令执行、文件编辑、沙箱隔离、准入策略。三个正交维度互不依赖。</p>
+  <div class="crates">
+    <span>codex-apply-patch (4.6k)</span><span>codex-linux-sandbox (7k)</span>
+    <span>codex-windows-sandbox (19k)</span><span>codex-sandboxing (6.9k)</span>
+    <span>codex-execpolicy (2k)</span><span>codex-shell-command (6.8k)</span>
+    <span>codex-shell-escalation</span><span>codex-process-hardening</span><span>codex-bwrap</span>
+  </div>
+</div>
+
+<div class="layer foundation">
+  <h3>📦 Layer 1 · 基础设施层（Foundation）</h3>
+  <p style="font-size:13.6px;margin:4px 0">协议类型、配置、认证、HTTP 客户端、路径工具、遥测。被几乎所有上层 crate 依赖。</p>
+  <div class="crates">
+    <span>codex-protocol (24k)</span><span>codex-config (21k)</span><span>codex-login (11k)</span>
+    <span>codex-http-client (7k)</span><span>codex-otel (4.4k)</span><span>codex-analytics (13k)</span>
+    <span>codex-utils-absolute-path</span><span>codex-utils-path-uri</span><span>codex-async-utils</span>
+    <span>codex-features (2.7k)</span><span>codex-extension-api</span><span>codex-plugin</span>
+    <span>codex-aws-auth</span><span>codex-keyring-store</span><span>codex-git-utils</span>
+  </div>
+</div>
+
+<hr>
+
+<!-- ==================== 依赖关系 ==================== -->
+<h2>二、关键依赖关系（谁依赖谁）</h2>
+<p class="lead">下面这张表是<b>反向依赖</b>（fan-in）：一个 crate 被多少其他 crate 依赖。fan-in 越高 = 改它越危险。</p>
+
+<table>
+  <tr><th>crate</th><th>被依赖次数</th><th>为什么这么高</th></tr>
+  <tr><td><code>codex-protocol</code></td><td><b>69</b></td><td>Event / ResponseItem / Op 等核心协议类型被广泛共享。</td></tr>
+  <tr><td><code>codex-utils-absolute-path</code></td><td><b>54</b></td><td>绝对路径强类型被沙箱、配置、rollout 等使用。</td></tr>
+  <tr><td><code>codex-http-client</code></td><td><b>25</b></td><td>共享 HTTP 基础能力。</td></tr>
+  <tr><td><code>codex-core</code></td><td><b>24</b></td><td>agent 内核被 app-server、专用适配器和测试支持等依赖。</td></tr>
+  <tr><td><code>codex-login</code></td><td><b>24</b></td><td>认证与账户能力。</td></tr>
+  <tr><td><code>codex-otel</code></td><td><b>24</b></td><td>OpenTelemetry 集成是横切关注点。</td></tr>
+  <tr><td><code>codex-config</code></td><td><b>23</b></td><td>配置加载与类型。</td></tr>
+  <tr><td><code>codex-exec-server</code></td><td><b>18</b></td><td>执行服务边界。</td></tr>
+  <tr><td><code>codex-git-utils</code></td><td><b>16</b></td><td>git 操作工具，diff 追踪 / PR 创建 / blame 都用它。</td></tr>
+  <tr><td><code>codex-extension-api</code></td><td><b>15</b></td><td>宿主内 extension contributor 契约。</td></tr>
+</table>
+
+<div class="note clever"><span class="t">★ 关键洞察：protocol 是真正的地基</span>
+  <code>codex-protocol</code> 有 69 个直接 dependents，是当前快照被引用最多的内部 package。这说明共享协议类型确实位于高 fan-in 边界；但 <code>Event / Op</code> 是 core protocol，app-server 还有独立的版本化 RPC protocol，二者之间存在显式映射，不能混成一套“跨进程契约”。<br>
+  这跟 AgentScope 不同：AgentScope 的 <code>protocol.py</code> 只是消息格式，没有"协议即地基"的地位。
+</div>
+
+<h3>2.1 依赖方向：package 图无环，但阅读分层不是强约束</h3>
+<p>从 fan-in 表可以看出依赖方向是：</p>
+<pre><code>Frontends (tui/cli/exec)
+    ↓ import
+Server (app-server / exec-server / mcp)
+    ↓ import
+Core (codex-core / tools / skills / compact)
+    ↓ import
+Exec & Sandbox (apply-patch / linux-sandbox / execpolicy)
+    ↓ import
+Foundation (protocol / config / login / utils / otel)</code></pre>
+<p>Cargo package 依赖图必须无环，且 core 不依赖 app-server，这个内外边界确实清楚；但“foundation / core / server”是本文标签，不是 Rust 类型系统强制的 layer rule。替换 app-server transport 通常不必重写 agent loop，却仍会影响 protocol、client 与集成测试，不能据此声称某一整层可无波及替换。</p>
+
+<hr>
+
+<!-- ==================== 核心依赖链 ==================== -->
+<h2>三、从入口到内核的完整调用链</h2>
+<p class="lead">以 <code>codex-exec</code> 为例，从 <code>main()</code> 到模型采样的完整 import 链：</p>
+<pre><code>codex-exec (前端)
+  ├─ codex-app-server-client    → 连接 app-server
+  ├─ codex-app-server-protocol  → RPC 类型
+  ├─ codex-config               → 读 ~/.codex/config.toml
+  ├─ codex-login                → ChatGPT OAuth / API key
+  ├─ codex-core                 → CodexThread / Session / run_turn
+  │    ├─ codex-protocol        → Event / ResponseItem / Op
+  │    ├─ codex-model-provider  → 模型适配（OpenAI / Anthropic / Ollama）
+  │    ├─ codex-tools           → ToolRouter / shell / apply_patch
+  │    ├─ codex-compact         → 上下文压缩
+  │    ├─ codex-mcp             → MCP 客户端管理
+  │    ├─ codex-skills          → skill 注入
+  │    ├─ codex-hooks           → 用户自定义 hook
+  │    ├─ codex-guardian        → 审批 / 安全守护
+  │    └─ codex-sandboxing      → 沙箱策略 → linux/windows-sandbox
+  ├─ codex-apply-patch          → 结构化补丁应用
+  ├─ codex-linux-sandbox        → bwrap + seccomp（默认）/ legacy Landlock
+  ├─ codex-execpolicy           → 命令准入
+  └─ codex-otel                 → OpenTelemetry 遥测</code></pre>
+
+<div class="note plain"><span class="t">设计要点</span>
+  这条链展示的是职责分离，不代表每个 crate 都是稳定插件点。真正可替换的边界要看 trait、协议和构造注入；例如 app-server protocol、<code>ThreadStore</code> trait、跨平台 sandbox transform 是显式边界，而“换成 Firecracker 完全不动 core”只是设计设想，源码没有提供这样的现成后端。
+</div>
+
+<hr>
+
+<!-- ==================== 每层详解 ==================== -->
+<h2>四、每层关键 crate 详解</h2>
+
+<h3>4.1 Layer 5 · 前端层</h3>
+<table>
+  <tr><th>crate</th><th>规模</th><th>职责</th></tr>
+  <tr><td><code>codex-tui</code></td><td>242k</td><td>ratatui 终端 UI。最大 crate，含 chat widget / 流式 markdown / diff 渲染 / onboarding / resume picker / 宠物彩蛋。通过 app-server-client 接入。</td></tr>
+  <tr><td><code>codex-cli</code></td><td>22k</td><td>统一 CLI 入口（<code>codex</code> 命令），分发到 tui / exec / login / mcp 等子命令。</td></tr>
+  <tr><td><code>codex-exec</code></td><td>5.5k</td><td>非交互前端。把 prompt 喂进 app-server，把 Event 流转成 human / JSONL 输出。</td></tr>
+  <tr><td><code>codex-mcp-server</code></td><td>3k</td><td>把 codex 会话作为 MCP 工具暴露给外部 MCP 客户端。</td></tr>
+</table>
+
+<h3>4.2 Layer 4 · 协议 & 服务层</h3>
+<table>
+  <tr><th>crate</th><th>规模</th><th>职责</th></tr>
+  <tr><td><code>codex-app-server</code></td><td>46k</td><td>JSON-RPC server，托管 CodexThread。stdio / websocket / in-process 三种 transport。</td></tr>
+  <tr><td><code>codex-app-server-protocol</code></td><td>31k</td><td>RPC 协议类型：ClientRequest / ServerNotification / Thread / Turn / ReviewStart。</td></tr>
+  <tr><td><code>codex-exec-server</code></td><td>30k</td><td>执行服务端。管理沙箱进程生命周期、命令分发、结果回收。</td></tr>
+  <tr><td><code>codex-mcp</code></td><td>16k</td><td>MCP 客户端管理器。连接外部 MCP server，把它们的工具暴露给模型。</td></tr>
+  <tr><td><code>codex-rmcp-client</code></td><td>15k</td><td>Rust MCP (rmcp) 协议客户端实现。</td></tr>
+</table>
+
+<h3>4.3 Layer 3 · Agent 内核层</h3>
+<table>
+  <tr><th>crate</th><th>规模</th><th>职责</th></tr>
+  <tr><td><code>codex-core</code></td><td>188k</td><td>agent 内核：CodexThread / Session / run_turn / 模型客户端 / 上下文管理 / MCP 客户端 / 工具路由。整个系统的心脏。</td></tr>
+  <tr><td><code>codex-thread-store</code></td><td>26k</td><td>会话线程持久化。把 thread 的历史和元数据存到 SQLite / JSON。</td></tr>
+  <tr><td><code>codex-core-plugins</code></td><td>38k</td><td>插件包/marketplace 的发现、安装、策略与装载。manifest 聚合 skills、MCP servers、apps 和 hooks；它不是任意语言插件代码的通用进程运行时。</td></tr>
+  <tr><td><code>codex-state</code></td><td>20k</td><td>状态管理。SessionState / ActiveTurn / 世界状态快照。</td></tr>
+  <tr><td><code>codex-rollout</code></td><td>14k</td><td>canonical session history 的 JSONL 持久化，用于恢复与检查；更细的运行时因果图由 opt-in 的 <code>codex-rollout-trace</code> 负责。</td></tr>
+  <tr><td><code>codex-skills</code></td><td>14k</td><td>skill 系统。skill 是一种"带 prompt 的工具包"，模型可以按需调用。</td></tr>
+  <tr><td><code>codex-hooks</code></td><td>12k</td><td>用户自定义 hook。pre-turn / post-turn / on-tool-call 等钩子点。</td></tr>
+  <tr><td><code>codex-analytics</code></td><td>13k</td><td>分析埋点。token 用量、turn 耗时、工具调用统计。</td></tr>
+  <tr><td><code>codex-tools</code></td><td>7k</td><td>工具注册表和路由器。shell / apply_patch / update_plan / view_image 等。</td></tr>
+  <tr><td><code>codex-model-provider</code></td><td>3k</td><td>模型适配抽象。统一 OpenAI / Anthropic / Ollama / LMStudio 的调用接口。</td></tr>
+</table>
+
+<h3>4.4 Layer 2 · 执行 & 沙箱层</h3>
+<table>
+  <tr><th>crate</th><th>规模</th><th>职责</th></tr>
+  <tr><td><code>codex-apply-patch</code></td><td>4.6k</td><td>结构化补丁（<code>*** Begin Patch</code> 格式）的解析与应用。流式解析 + 上下文锚点定位。</td></tr>
+  <tr><td><code>codex-linux-sandbox</code></td><td>7k</td><td>Linux 沙箱：默认 bubblewrap（mount/user/PID/network namespace）+ seccomp；legacy Landlock + mount protections 是兼容路径。</td></tr>
+  <tr><td><code>codex-windows-sandbox</code></td><td>19k</td><td>Windows 沙箱：受限 token + ConPTY + IPC pipe。</td></tr>
+  <tr><td><code>codex-sandboxing</code></td><td>6.9k</td><td>沙箱策略抽象层。把 permission profile 翻译成各平台的沙箱配置。</td></tr>
+  <tr><td><code>codex-execpolicy</code></td><td>2k</td><td>命令行准入策略。三级裁决：Allow / Deny / Ask。</td></tr>
+  <tr><td><code>codex-shell-command</code></td><td>6.8k</td><td>shell 命令构造与执行抽象。</td></tr>
+</table>
+
+<h3>4.5 Layer 1 · 基础设施层</h3>
+<table>
+  <tr><th>crate</th><th>规模</th><th>职责</th></tr>
+  <tr><td><code>codex-protocol</code></td><td>24k</td><td>core 协议类型：Event / Op / ResponseItem / ContentItem 等。当前有 <b>69 个直接 dependents</b>；跨进程 app-server API 另由 <code>app-server-protocol</code> 定义。</td></tr>
+  <tr><td><code>codex-config</code></td><td>21k</td><td>配置加载与校验。支持 TOML / profile / 环境变量 / CLI override 多层叠加。</td></tr>
+  <tr><td><code>codex-login</code></td><td>11k</td><td>认证。ChatGPT OAuth / API key / API key ring。任何调模型 API 的 crate 都依赖它。</td></tr>
+  <tr><td><code>codex-http-client</code></td><td>7k</td><td>路由感知 HTTP 客户端池。sticky routing / WebSocket 复用 / 重试。</td></tr>
+  <tr><td><code>codex-otel</code></td><td>4.4k</td><td>OpenTelemetry 集成。turn 级别 trace / metrics。</td></tr>
+  <tr><td><code>codex-utils-absolute-path</code></td><td>—</td><td>绝对路径强类型。<b>有 54 个直接 dependents</b>——因为沙箱、配置、rollout 都要处理路径。</td></tr>
+  <tr><td><code>codex-extension-api</code></td><td>1.6k</td><td>扩展 API 契约。plugin / connector / skill 的公共接口。</td></tr>
+  <tr><td><code>codex-features</code></td><td>2.7k</td><td>feature flag 系统。运行时开关功能（multi-agent / code-mode / realtime 等）。</td></tr>
+</table>
+
+<hr>
+
+<!-- ==================== 之前漏掉的重磅模块 ==================== -->
+<h2>五、之前漏掉的重磅模块</h2>
+<p class="lead">①②③ 只讲了 agent loop 主干。这里补全 Codex 源码里几个<b>重量级但没展开</b>的子系统。</p>
+
+<h3>5.1 <code>codex-core-plugins</code>（38k 行）—— 能力包与 marketplace</h3>
+<p>Codex 不只是一个 CLI，它把可分发扩展组织成插件包。源码中的 <code>PluginManifestPaths</code> 明确定义了四类资源：skills、MCP servers、apps、hooks；<code>core-plugins</code> 负责 marketplace、安装缓存、策略和装载。</p>
+<ul>
+  <li>自定义工具通常通过插件声明的 <b>MCP server</b> 接入；prompt/workflow 通过 skill，外部服务通过 app connector，生命周期动作通过 hook。</li>
+  <li>只有具体的 MCP server 或 hook 脚本可能启动进程；“插件整体是一个隔离子进程”并非 manifest 或 loader 的语义。</li>
+  <li>亮点是<b>组合与分发</b>：一个安装单元可以原子携带多种能力，并接受 marketplace policy 和版本管理，而不是发明另一套任意代码 ABI。</li>
+</ul>
+
+<h3>5.2 <code>codex-state</code> + <code>codex-thread-store</code> + <code>codex-rollout</code>（60k 行）—— 持久化三件套</h3>
+<p>这三个 crate 一起实现了 Codex 的<b>会话持久化</b>：</p>
+<ul>
+  <li><code>codex-state</code>（20k）—— SQLite 状态库和可查询索引等持久状态，不等同于 core 内存中的全部 <code>SessionState</code>。</li>
+  <li><code>codex-thread-store</code>（26k）—— 明确的 storage boundary：<code>LocalThreadStore</code> 把 canonical history 写入 rollout JSONL，把可查询 metadata 写入 SQLite（可用时）。</li>
+  <li><code>codex-rollout</code>（14k）—— 记录经过 persistence policy 筛选的 canonical items，支持会话恢复/检查；它与 opt-in、原始证据导向的 <code>rollout-trace</code> 不是一回事。</li>
+</ul>
+<div class="note plain"><span class="t">设计要点</span>
+  真正值得借鉴的是<b>把运行事实分成两种存储</b>：产品级 rollout JSONL 是可恢复的 canonical history；设置 <code>CODEX_ROLLOUT_TRACE_ROOT</code> 后，<code>rollout-trace</code> 才额外写原始事件与 payload，并用离线 reducer 生成语义图（“observe first, interpret later”）。源码支持恢复、检查和诊断，但没有提供“把同一 rollout 换模型重跑即可精确 A/B”的现成语义；科学实验若要 A/B，还必须固定环境、工具版本、随机种子和外部数据快照。
+</div>
+
+<h3>5.3 <code>codex-extension-api</code>（1.6k 行）—— 扩展契约</h3>
+<p>这个 crate 是<b>宿主内扩展（host-owned extensions）的 Rust 契约</b>，与前面的可安装 plugin package 不是同一个概念。它定义了：</p>
+<ul>
+  <li><code>ExtensionData</code> / <code>ExtensionDataInit</code> —— session、thread、turn 等 scope 的类型化私有状态。</li>
+  <li><code>ThreadLifecycleContributor</code> / <code>TurnLifecycleContributor</code> —— start、resume、idle、stop、abort、error 等宿主生命周期 gate。</li>
+  <li><code>ToolContributor</code>、<code>ContextContributor</code>、<code>McpServerContributor</code> 等 —— 在不暴露 core runtime 对象的前提下贡献工具、上下文和服务。</li>
+</ul>
+<p>源码中的 memories、web-search、image-generation、goal、guardian 等内建扩展使用它。亮点是宿主只给稳定标识和受限 capability/store，不把整个 <code>Session</code> 暴露给扩展；但不能据此声称所有 marketplace plugin 或第三方 skill 都直接实现这套 Rust trait。</p>
+
+<h3>5.4 <code>codex-features</code>（2.7k 行）—— Feature Flag 系统</h3>
+<p>Codex 有一套运行时 feature flag 系统。可以在配置里开关：</p>
+<ul>
+  <li>multi-agent v2（多 agent 协作）</li>
+  <li>code-mode（代码执行模式）</li>
+  <li>realtime conversation（实时语音对话）</li>
+  <li>managed network proxy（托管网络代理）</li>
+</ul>
+<p>这解释了为什么 core 有 18.8 万行——很多功能是<b>条件编译 + 运行时 flag</b> 双重控制的，代码里充满了 <code>if Feature::X.enabled()</code> 分支。</p>
+
+<hr>
+
+<h2>六、29 个 leaf crate（零内部依赖）</h2>
+<p class="lead">这些 crate 不依赖任何其他 <code>codex-*</code> crate，是整个系统的<b>最底层原子</b>。它们通常是独立的工具库或协议实现。</p>
+<table>
+  <tr><th>leaf crate</th><th>作用</th></tr>
+  <tr><td><code>codex-linux-sandbox</code></td><td>Linux 沙箱二进制，完全自包含</td></tr>
+  <tr><td><code>codex-bwrap</code></td><td>bubblewrap 封装</td></tr>
+  <tr><td><code>codex-ansi-escape</code></td><td>ANSI 转义序列处理</td></tr>
+  <tr><td><code>codex-async-utils</code></td><td>异步工具（OrCancelExt 等）</td></tr>
+  <tr><td><code>codex-aws-auth</code></td><td>AWS 认证</td></tr>
+  <tr><td><code>codex-keyring-store</code></td><td>系统 keyring 凭证存储</td></tr>
+  <tr><td><code>codex-process-hardening</code></td><td>进程硬化（no_new_privs 等）</td></tr>
+  <tr><td><code>codex-terminal-detection</code></td><td>终端能力检测</td></tr>
+  <tr><td><code>codex-uds</code></td><td>Unix Domain Socket 工具</td></tr>
+  <tr><td><code>codex-file-search</code></td><td>文件搜索（grep / glob 封装）</td></tr>
+  <tr><td>... 还有 18 个</td><td>大多是底层工具库</td></tr>
+</table>
+
+<div class="note warn"><span class="t">⚠ leaf crate 的意义</span>
+  leaf crate 是<b>可以最先编译完</b>的，也是<b>并行编译收益最大</b>的。Codex 把 linux-sandbox / process-hardening / keyring-store 这些跟平台强相关的逻辑切成 leaf crate，让它们可以独立测试和交叉编译。
+</div>
+
+<p style="margin-top:30px"><a href="06_compare.html">→ 继续 ⑥ 横向对比</a></p>
+
+<footer>
+  <b>Codex (Rust) 架构精读</b> · ⑤ 总架构图 · 源码版本 <code>0a0ebb8535</code> · 130 workspace member / 1,058,898 行 <code>src/**/*.rs</code><br>
+  数据来源：解析 workspace member 的 Cargo.toml（fan-in 按 normal/dev/build/target 依赖去重）+ 统计 src/**/*.rs 行数
+</footer>
+
+</div>
+</body>
+</html>

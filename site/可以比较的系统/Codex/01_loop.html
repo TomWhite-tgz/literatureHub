@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex (Rust) · ① Agent loop 逐函数精读</title>
+<style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a;--accent2:#0d9488;--purple:#7c4ddb;--blue:#0891b2;--warn:#d6435a}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.75;margin:0}
+.wrap{max-width:980px;margin:0 auto;padding:36px 26px 80px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:14px}
+.back:hover{background:var(--accent);color:#fff}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}
+.nav a{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#fffdf8;border:1px solid #e0c49c;border-radius:6px;padding:8px 16px}
+.nav a:hover{background:var(--accent);color:#fff}
+.nav a.cur{background:var(--accent);color:#fff;font-weight:700}
+h2{font-size:21px;border-left:5px solid var(--accent);padding-left:12px;margin:36px 0 12px}
+h3{font-size:16.5px;color:var(--accent);margin:24px 0 8px}
+h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.7px}
+code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,Consolas,monospace}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55;max-height:560px}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}
+tr:nth-child(even) td{background:#fbf7ee}
+a{color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+strong{color:#8f4208}
+.lead{font-size:15.5px;color:var(--ink)}
+.key{background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:16px 22px;margin:18px 0;font-size:14px;line-height:1.8}
+.key b.hl{color:#b4530a;font-weight:700}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--line);padding-bottom:8px;margin:34px 0 14px}
+.sec-head h2{border:none;padding:0;margin:0}
+.sec-head .count{font-size:12px;color:var(--ink-soft)}
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;font-size:13.8px;line-height:1.7}
+.note .t{display:inline-block;font-weight:700;margin-bottom:4px}
+.note.clever{background:#f3eefe;border:1px solid #cbb8f7}
+.note.clever .t{color:var(--purple)}
+.note.warn{background:#fdeef0;border:1px solid #f5b9c3}
+.note.warn .t{color:var(--warn)}
+.note.plain{background:#f3f8f6;border:1px solid #b8e0d2}
+.note.plain .t{color:var(--accent2)}
+.num{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+.fn{scroll-margin-top:20px;border:1px solid var(--line);border-left:4px solid var(--accent2);border-radius:8px;padding:14px 18px;margin:16px 0;background:var(--card)}
+.fn h4{margin:0 0 4px;color:var(--accent2);font-size:15px}
+.fn .sig{font-size:12px;color:var(--ink-soft);margin:0 0 8px;font-family:"SF Mono",Menlo,Consolas,monospace;word-break:break-all}
+.fn .loc{font-size:11.5px;color:var(--ink-soft);margin:0 0 10px}
+.fn p{font-size:13.6px;margin:6px 0}
+.fn ul{font-size:13.6px;margin:6px 0;padding-left:22px}
+.fnlist{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 20px;margin:20px 0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.8px}
+.fnlist a{color:var(--accent);text-decoration:none}
+.fnlist a:hover{text-decoration:underline}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+
+<div class="nav">
+  <a href="index.html">总览</a>
+  <a class="cur" href="01_loop.html">① Agent loop</a>
+  <a href="02_exec.html">② 执行 & 沙箱</a>
+  <a href="03_server.html">③ app-server & TUI</a>
+  <a href="04_takeaway.html">④ 结论</a>
+  <a href="05_architecture.html">⑤ 总架构图</a>
+  <a href="06_compare.html">⑥ 横向对比</a>
+</div>
+
+<header>
+  <h1>① 核心：<code>run_turn</code> 的 agent 循环</h1>
+  <p class="sub">逐函数精读 <code>core/src/session/turn.rs</code>（2750 行）。循环骨架在 L273 的 <code>loop {}</code>，采样在 L1317 的 <code>run_sampling_request</code>。</p>
+  <div class="meta" style="color:var(--ink-soft);font-size:12.5px;margin-top:8px">
+    <b style="color:var(--accent)">核心文件</b> <code>core/src/session/turn.rs</code> <b style="color:var(--accent)">·</b>
+    <b style="color:var(--accent)">三层状态</b> <code>Session</code> → <code>TurnContext</code> → <code>StepContext</code>
+  </div>
+</header>
+
+<div class="key">
+  <b class="hl">阅读路线</b>
+  <p>Codex 的"agent"不是单个对象，而是一条<b>事件流</b>。最小执行单元是 <b>turn</b>（一轮对话），turn 内部是 <b>step</b>（一次采样 + 工具批）。本篇按"入口 → 循环 → 采样 → 工具"四层讲，每个关键函数附源码块。</p>
+</div>
+
+<div class="fnlist">
+  <a href="#f-codex-thread">CodexThread</a>
+  <a href="#f-session">Session</a>
+  <a href="#f-run-turn">run_turn</a>
+  <a href="#f-loop">主循环 loop</a>
+  <a href="#f-run-sampling">run_sampling_request</a>
+  <a href="#f-build-prompt">build_prompt</a>
+  <a href="#f-try-run-sampling">try_run_sampling_request</a>
+  <a href="#f-tool-router">ToolRouter::dispatch</a>
+  <a href="#f-handle-output">handle_output_item_done</a>
+  <a href="#f-auto-compact">run_auto_compact</a>
+</div>
+
+<!-- ==================== CodexThread ==================== -->
+<h2>第一层：会话的入口——<code>CodexThread</code></h2>
+<p class="lead">外部世界（TUI / exec / app-server client）接触到的只是 <code>CodexThread</code>。它是一个<b>双向消息流</b>的句柄：你往里塞 <code>Op::UserInput</code>，它往外吐 <code>Event</code>。</p>
+
+<div class="fn" id="f-codex-thread">
+  <h4><span class="num">1</span>CodexThread（L193-234）</h4>
+  <p class="sig">pub struct CodexThread { session: Arc&lt;Session&gt;, io: SessionIo, session_source: SessionSource, ... }</p>
+  <p class="loc">core/src/codex_thread.rs:193</p>
+  <p><code>CodexThread</code> 持有 <code>Session</code>（真正的状态机）和 <code>SessionIo</code>（事件管道）。对外只暴露 <code>submit(op)</code>、<code>wait_until_terminated()</code> 等少数方法——<b>turn 的生命周期对调用方不可见</b>，client 只看事件。</p>
+  <div class="note plain"><span class="t">设计要点</span>这是 Codex 区别于 AgentScope 的关键：AgentScope 的 <code>Agent.reply()</code> 是一个会 await 到结束的 async fn；Codex 把 turn 做成<b>后台 task</b>，turn 内部用 <code>tokio::select!</code> 监听取消、新输入、采样事件。所以 Codex 天然支持"用户在模型跑的时候打断/追加输入"。</div>
+  <p><b>源码：</b></p>
+<pre><code>pub struct CodexThread {
+    pub(crate) session: Arc&lt;Session&gt;,
+    pub(crate) io: SessionIo,
+    pub(crate) session_source: SessionSource,
+    session_configured: SessionConfiguredEvent,
+    rollout_path: Option&lt;PathBuf&gt;,
+    out_of_band_elicitations: Mutex&lt;OutOfBandElicitations&gt;,
+}
+
+impl CodexThread {
+    pub(crate) fn new(session, io, session_configured, rollout_path, session_source) -> Self { ... }
+
+    pub async fn submit(&self, op: Op) -> CodexResult&lt;String&gt; {
+        self.io.submit(op).await
+    }
+    pub async fn wait_until_terminated(&self) {
+        self.io.session_loop_termination.clone().await;
+    }
+}</code></pre>
+</div>
+
+<!-- ==================== Session ==================== -->
+<div class="fn" id="f-session">
+  <h4><span class="num">2</span>Session（L34-66）</h4>
+  <p class="sig">pub(crate) struct Session { thread_id, tx_event: Sender&lt;Event&gt;, agent_status: watch::Sender&lt;AgentStatus&gt;, state: Mutex&lt;SessionState&gt;, ... }</p>
+  <p class="loc">core/src/session/session.rs:34</p>
+  <p><code>Session</code> 是一个 turn 的<b>所有可变状态容器</b>。它同时持有同步原语（<code>watch</code> 推状态变更、<code>Mutex</code> 保护 <code>SessionState</code>）和异步通道（<code>tx_event</code> 向外发事件）。一个 session 同时只有 1 个 running task。</p>
+  <div class="note clever"><span class="t">★ 关键洞察：三层状态</span>
+    Codex 的状态分三层：<br>
+    <code>Session</code>（thread-scoped，持久：history、provider、policy）<br>
+    → <code>TurnContext</code>（turn-scoped，这一次对话的输入、metadata、model_info）<br>
+    → <code>StepContext</code>（step-scoped，一次采样的 snapshot：tool_router、window、prompt 视图）<br>
+    每次循环开头都会 <code>capture_step_context()</code> 重新抓一份 step 视图，保证<b>同一 turn 内多步采样看到一致的上下文</b>。
+  </div>
+  <p><b>源码：</b></p>
+<pre><code>pub(crate) struct Session {
+    pub(crate) thread_id: ThreadId,
+    pub(crate) installation_id: String,
+    pub(super) tx_event: Sender&lt;Event&gt;,
+    pub(super) agent_status: watch::Sender&lt;AgentStatus&gt;,
+    pub(super) state: Mutex&lt;SessionState&gt;,
+    pub(super) managed_network_proxy_refresh_lock: Semaphore,
+    pub(super) features: ManagedFeatures,
+    pub(crate) conversation: Arc&lt;RealtimeConversationManager&gt;,
+    pub(crate) active_turn: Mutex&lt;Option&lt;ActiveTurn&gt;&gt;,
+    pub(crate) input_queue: InputQueue,
+    pub(crate) services: SessionServices,
+    // ...
+}</code></pre>
+</div>
+
+<!-- ==================== run_turn ==================== -->
+<h2>第二层：循环骨架——<code>run_turn</code></h2>
+<p class="lead">这是整个 crate 最重要的一段代码。函数本体在 L151，真正的循环在 L273。它把"采样 → 处理输出 → 跑工具 → 回到采样"串成一个 <code>loop {}</code>。</p>
+
+<div class="fn" id="f-run-turn">
+  <h4><span class="num">3</span>run_turn（L151-273）—— 入口准备</h4>
+  <p class="sig">pub(crate) async fn run_turn(sess: Arc&lt;Session&gt;, turn_context: Arc&lt;TurnContext&gt;, input: Vec&lt;TurnInput&gt;, prewarmed_client_session: Option&lt;ModelClientSession&gt;, cancellation_token: CancellationToken) -&gt; CodexResult&lt;Option&lt;String&gt;&gt;</p>
+  <p class="loc">core/src/session/turn.rs:151</p>
+  <p>进入循环前，<code>run_turn</code> 要做 6 件事：</p>
+  <ul>
+    <li><b>pre-sampling compact</b>（L164）：采样前先压缩历史，避免一上来就超窗口。</li>
+    <li><b>解析 MCP 需求</b>（L187 <code>required_mcp_servers_for_input</code>）：看用户输入里 mention 了哪些 MCP server/plugin，决定这一轮要启哪些。</li>
+    <li><b>抓 first step context</b>（L200 <code>capture_step_context_with_required_mcp_servers</code>）：冻结一份 tool_router / window / prompt 视图。</li>
+    <li><b>build skills & plugins</b>（L222 <code>build_skills_and_plugins</code>）：把 skill prompt 注入进上下文。</li>
+    <li><b>跑 hooks</b>（L234 <code>run_pending_session_start_hooks</code>、L238 <code>run_hooks_and_record_inputs</code>）：用户自定义的 pre-turn hook。</li>
+    <li><b>建 TurnDiffTracker</b>（L261）：跟踪这一轮对工作区产生的 diff，供后续展示和回滚。</li>
+  </ul>
+  <div class="note plain"><span class="t">设计要点</span><code>ModelClientSession</code> 是 turn-scoped 的，缓存 WebSocket + sticky routing 状态。Codex 在同一个 turn 的多次重试里<b>复用</b>这一个 session，而不是每次重连。</div>
+</div>
+
+<div class="fn" id="f-loop">
+  <h4><span class="num">4</span>主循环 <code>loop {}</code>（L273-560）</h4>
+  <p class="sig">loop { pending_input = drain; run_hooks; capture_step_context; run_sampling_request → Ok/Err 分支; needs_follow_up → 继续; 否则 break }</p>
+  <p class="loc">core/src/session/turn.rs:273</p>
+  <p>循环体每轮做四件事，下面是<b>关键源码节选</b>：</p>
+<pre><code>let mut next_step_context = Some(first_step_context);
+loop {
+    // 1) 拿 pending 用户输入（UI 在模型跑时追加的消息）
+    let pending_input = if can_drain_pending_input {
+        sess.input_queue.get_pending_input(&sess.active_turn).await.0
+    } else { Vec::new() };
+
+    if run_hooks_and_record_inputs(&sess, &turn_context, &pending_input).await {
+        break;
+    }
+
+    // 2) 抓 step 视图：有就用，没有就 capture 一份
+    let step_context = match next_step_context.take() {
+        Some(step_context) => step_context,
+        None if pending_input.is_empty() =&gt; {
+            sess.capture_step_context(Arc::clone(&turn_context), &cancellation_token).await?
+        }
+        None =&gt; { /* 带 pending input 的 capture */ }
+    };
+
+    // 3) 跑采样：这一步会把模型流式回包驱动到底
+    let sampling_request_result: CodexResult&lt;_&gt; = async {
+        // record world state、clone history、build responses_metadata
+        run_sampling_request(
+            Arc::clone(&sess),
+            Arc::clone(&step_context),
+            Arc::clone(&turn_context.extension_data),
+            Arc::clone(&turn_diff_tracker),
+            &mut client_session,
+            &responses_metadata,
+            sampling_request_input,
+            cancellation_token.child_token(),
+        ).await
+    }.await;
+
+    // 4) Ok → 看 needs_follow_up；Err → retryable 才重试
+    match sampling_request_result {
+        Ok((sampling_request_output, sampling_request_input)) =&gt; {
+            let SamplingRequestResult {
+                needs_follow_up: model_needs_follow_up,
+                last_agent_message: sampling_request_last_agent_message,
+            } = sampling_request_output;
+            if model_needs_follow_up {
+                sess.input_queue.accept_mailbox_delivery_for_current_turn(...).await;
+                // ← 回到 loop 顶，再做一次采样
+            } else {
+                break; // 模型说完了，turn 结束
+            }
+        }
+        Err(err) =&gt; { /* 重试逻辑 */ }
+    }
+}</code></pre>
+  <div class="note clever"><span class="t">★ 关键洞察：loop 的退出条件</span>
+    退出 <code>loop</code> 只有两个路径：<br>
+    (a) <code>needs_follow_up == false</code> —— 模型这一轮没有再要求工具调用，turn 自然结束；<br>
+    (b) <code>run_hooks_and_record_inputs</code> 返回 true —— pre-turn hook 主动拒绝。<br>
+    这意味着<b>多轮工具调用是循环的同一 turn 内完成的</b>，而不是 AgentScope 那种"每一轮 reply 都是一次完整调用"。
+  </div>
+</div>
+
+<!-- ==================== run_sampling_request ==================== -->
+<h2>第三层：采样——<code>run_sampling_request</code></h2>
+<p class="lead">这一层负责"把 prompt 送进模型、把流式回包分发到事件流"。它自己也有一个 <code>loop</code>（L1347），但那个 loop 是<b>重试 loop</b>，不是 ReAct loop。</p>
+
+<div class="fn" id="f-run-sampling">
+  <h4><span class="num">5</span>run_sampling_request（L1317-1406）</h4>
+  <p class="sig">async fn run_sampling_request(sess, step_context, turn_store, turn_diff_tracker, client_session, responses_metadata, input, cancellation_token) -&gt; CodexResult&lt;(SamplingRequestResult, Vec&lt;ResponseItem&gt;)&gt;</p>
+  <p class="loc">core/src/session/turn.rs:1317</p>
+  <p>这个函数做三件事：</p>
+  <ul>
+    <li>构造 <code>ToolCallRuntime</code>（L1332）—— 工具执行的 runtime，持 sess + step_context + diff_tracker。</li>
+    <li>调 <code>try_run_sampling_request</code>（L1368）—— 真正发请求、收流、分派事件。</li>
+    <li>失败时按 <code>err.is_retryable()</code> 决定是否重试（L1404），最多 <code>stream_max_retries</code> 次（L1342）。</li>
+  </ul>
+  <p><b>源码（节选）：</b></p>
+<pre><code>async fn run_sampling_request(
+    sess: Arc&lt;Session&gt;,
+    step_context: Arc&lt;StepContext&gt;,
+    turn_store: Arc&lt;codex_extension_api::ExtensionData&gt;,
+    turn_diff_tracker: SharedTurnDiffTracker,
+    client_session: &mut ModelClientSession,
+    responses_metadata: &CodexResponsesMetadata,
+    input: Vec&lt;ResponseItem&gt;,
+    cancellation_token: CancellationToken,
+) -&gt; CodexResult&lt;(SamplingRequestResult, Vec&lt;ResponseItem&gt;)&gt; {
+    let turn_context = Arc::clone(&step_context.turn);
+    let router = Arc::clone(&step_context.tool_router);
+
+    let base_instructions = sess.get_base_instructions().await;
+    let tool_runtime = ToolCallRuntime::new(
+        Arc::clone(&sess),
+        Arc::clone(&step_context),
+        Arc::clone(&turn_diff_tracker),
+    );
+    let max_retries = turn_context.provider.info().stream_max_retries();
+    let mut retries = 0;
+    let mut initial_input = Some(input);
+    loop {
+        let prompt_input = if let Some(input) = initial_input.take() {
+            input
+        } else {
+            sess.clone_history().await.for_prompt(&turn_context.model_info.input_modalities)
+        };
+        let prompt = build_prompt(prompt_input, router.as_ref(), turn_context.as_ref(), base_instructions.clone());
+        match try_run_sampling_request(
+            tool_runtime.clone(),
+            Arc::clone(&sess),
+            Arc::clone(&turn_context),
+            Arc::clone(&turn_store),
+            client_session,
+            responses_metadata,
+            Arc::clone(&turn_diff_tracker),
+            &prompt,
+            cancellation_token.child_token(),
+        ).await {
+            Ok(output) =&gt; return Ok((output, original_input.unwrap_or(prompt.input))),
+            Err(err) =&gt; match err.details() {
+                CodexErrorDetails::ContextWindowExceeded =&gt; { sess.set_total_tokens_full(&turn_context).await; return Err(err); }
+                CodexErrorDetails::UsageLimitReached(e) =&gt; { ... return Err(err); }
+                _ =&gt; err,
+            },
+        }
+        if !err.is_retryable() { return Err(err); }
+        // ... retry
+    }
+}</code></pre>
+</div>
+
+<div class="fn" id="f-build-prompt">
+  <h4><span class="num">6</span>build_prompt（L1289）</h4>
+  <p class="sig">pub(crate) fn build_prompt(input: Vec&lt;ResponseItem&gt;, router: &ToolRouter, turn_context: &TurnContext, base_instructions: String) -&gt; Prompt</p>
+  <p class="loc">core/src/session/turn.rs:1289</p>
+  <p>把 <code>ResponseItem</code> 列表（历史消息）+ 工具 router + turn 上下文打包成一个 <code>Prompt</code>，发给模型。这一步<b>不做 token 计数或截断</b>——那是 compact 层的事。</p>
+</div>
+
+<div class="fn" id="f-try-run-sampling">
+  <h4><span class="num">7</span>try_run_sampling_request（L2146-2211）</h4>
+  <p class="sig">async fn try_run_sampling_request(...) -&gt; CodexResult&lt;SamplingRequestResult&gt;</p>
+  <p class="loc">core/src/session/turn.rs:2146</p>
+  <p>真正驱动模型流式回包的函数。内部用 <code>client_session.stream(prompt)</code> 拿到一个流，然后逐 chunk 处理：</p>
+  <ul>
+    <li>assistant 文本 delta → <code>emit_streamed_assistant_text_delta</code>（L1885）推到事件流。</li>
+    <li>工具调用 delta → 累积成完整工具调用，等 done 时 dispatch。</li>
+    <li>reasoning/thinking delta → 视 <code>reasoning_summary</code> 配置决定是否对外暴露。</li>
+  </ul>
+  <p>整个采样用一个 <code>while let Some(res) = in_flight.next().await</code>（L2102）消费流，并在 L2211 用 <code>loop {}</code> 处理可重试错误。</p>
+</div>
+
+<!-- ==================== Tool dispatch ==================== -->
+<h2>第四层：工具分发——<code>ToolRouter</code></h2>
+<p class="lead">模型在流里吐出 tool call 后，Codex 不是立刻执行，而是累积到 done 再分发。<code>ToolRouter</code>（<code>core/src/tools/</code>）是所有工具的注册表与分派器。</p>
+
+<div class="fn" id="f-tool-router">
+  <h4><span class="num">8</span>ToolRouter::dispatch</h4>
+  <p class="sig">// core/src/tools/ 下 ToolRouter + ToolCallRuntime</p>
+  <p class="loc">core/src/tools/（31 文件，6.9 千行）</p>
+  <p>工具调用的 runtime 由 <code>ToolCallRuntime::new(sess, step_context, turn_diff_tracker)</code>（L1332）创建，持 <code>ToolCallRuntime</code> 把模型生成的 tool call 分派到具体工具实现。内置工具包括：</p>
+  <ul>
+    <li><code>shell</code> —— 执行 shell 命令（受 <code>execpolicy</code> 准入控制）。</li>
+    <li><code>apply_patch</code> —— 多文件编辑（详见 ②）。</li>
+    <li><code>update_plan</code> —— 维护待办计划。</li>
+    <li><code>view_image</code> —— 查看图片。</li>
+    <li>MCP 工具 —— 通过 <code>McpManager</code> 转发到外部 MCP server。</li>
+  </ul>
+  <div class="note clever"><span class="t">★ 与 AgentScope 的关键差异</span>
+    AgentScope 在 <code>_batch_tool_calls</code> 里把工具分成 sequential / concurrent 两批并发执行；Codex 的工具调度也是<b>同一 step 内并发</b>，但<strong>跨 step 严格串行</strong>——每个 step 的工具批必须全部 done，才能进入下一个采样 step。这保证了"模型看到工具结果后再决定下一步"的 ReAct 语义。
+  </div>
+</div>
+
+<!-- ==================== handle output ==================== -->
+<div class="fn" id="f-handle-output">
+  <h4><span class="num">9</span>handle_output_item_done</h4>
+  <p class="sig">// core/src/stream_events_utils.rs</p>
+  <p class="loc">core/src/stream_events_utils.rs</p>
+  <p>当模型流里某个 output item（assistant message / function_call / reasoning）done 时，这个回调被触发。它做三件事：</p>
+  <ul>
+    <li>把 item 落进 conversation history（<code>record_conversation_items</code>）。</li>
+    <li>如果是 function_call，触发 <code>ToolRouter::dispatch</code>。</li>
+    <li>向 <code>tx_event</code> 发一个 <code>Event</code>，让 app-server client 能看到。</li>
+  </ul>
+  <p>所有"流式 token → UI 显示"的魔法都起源于这里——TUI 不是直接读模型 socket，而是消费 CodexThread 发出的 <code>Event</code> 流。</p>
+</div>
+
+<!-- ==================== auto compact ==================== -->
+<h2>第五层：上下文压缩——<code>run_auto_compact</code></h2>
+<p class="lead">长对话会爆窗口。Codex 在 turn 内有多个压缩触发点。</p>
+
+<div class="fn" id="f-auto-compact">
+  <h4><span class="num">10</span>run_auto_compact / run_pre_sampling_compact（L1155 / L989）</h4>
+  <p class="sig">// core/src/session/turn.rs:1155 (run_auto_compact) + L989 (run_pre_sampling_compact)</p>
+  <p class="loc">core/src/session/turn.rs:1155</p>
+  <p>Codex 有两条压缩路径：</p>
+  <ul>
+    <li><b>inline auto-compact</b>（<code>run_auto_compact</code>，L1155）—— 采样返回 <code>ContextWindowExceeded</code> 时触发，把历史压缩后重试。</li>
+    <li><b>pre-sampling compact</b>（<code>run_pre_sampling_compact</code>，L989）—— 在采样前主动判断，避免等到失败。分本地（<code>compact.rs</code>）和远端（<code>compact_remote.rs</code> / <code>compact_remote_v2.rs</code>）两种实现。</li>
+  </ul>
+  <div class="note plain"><span class="t">设计要点</span>压缩不只是"summarize history"。Codex 维护 <code>InitialContextInjection</code>，压缩时会<b>重新注入</b>被裁掉的关键上下文（AGENTS.md、用户 instructions、MCP server 列表），保证压缩后模型不会"失忆"。</div>
+</div>
+
+<hr>
+
+<h2>一张图总结 agent 循环</h2>
+<pre><code>                  ┌─────────────────────────────────────────┐
+                  │           CodexThread (事件流)           │
+                  │   submit(Op::UserInput) → emit(Event)    │
+                  └────────────────────┬────────────────────┘
+                                       │ 持有
+                                       ▼
+                  ┌─────────────────────────────────────────┐
+                  │                Session                  │
+                  │  history · provider · policy · MCP      │
+                  └────────────────────┬────────────────────┘
+                                       │ 驱动
+                                       ▼
+        run_turn (L151)
+        ├── pre-sampling compact (L164)
+        ├── capture first step_context (L200)
+        ├── build skills & plugins (L222)
+        └── loop { (L273)
+              ├── drain pending input
+              ├── capture_step_context
+              ├── run_sampling_request (L1317) ──┐
+              │     ├── build_prompt (L1289)     │
+              │     ├── try_run_sampling_request │
+              │     │     (L2146) → stream       │
+              │     │       ├─ assistant delta   │
+              │     │       ├─ tool_call delta   │
+              │     │       └─ reasoning delta   │
+              │     └── handle_output_item_done  │
+              │           ├─ ToolRouter::dispatch│
+              │           └─ emit(Event) ────────┼──→ app-server client
+              └── needs_follow_up? → continue / break
+        }
+</code></pre>
+
+<div class="note warn"><span class="t">⚠ 本篇未覆盖</span>
+  <code>core</code> 有 18.8 万行，本篇只讲 agent loop 主干。未展开：MCP 客户端管理（<code>core/src/mcp.rs</code> / <code>mcp_tool_call.rs</code>）、guardian 审批层（<code>core/src/guardian/</code>）、多 agent 编排（<code>core/src/session/multi_agents.rs</code>）、code-mode 子 agent、realtime 对话模式。这些在 ④ 结论里点一下。</div>
+
+<p style="margin-top:30px"><a href="02_exec.html">→ 继续 ② 执行 & 沙箱</a></p>
+
+<footer>
+  <b>Codex (Rust) 架构精读</b> · ① Agent loop · 源码版本 <code>0a0ebb8535</code><br>
+  对照参考：<code>AgentScope 2.0 · ① ReAct loop</code>
+</footer>
+
+</div>
+</body>
+</html>

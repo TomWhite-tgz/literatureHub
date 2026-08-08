@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex (Rust) · ② 执行 & 沙箱 & 补丁</title>
+<style>
+:root{--paper:#faf5ec;--card:#fffdf8;--ink:#3b2f23;--ink-soft:#6f5f4d;--line:#e8dcc8;--accent:#b4530a;--accent2:#0d9488;--purple:#7c4ddb;--blue:#0891b2;--warn:#d6435a}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.75;margin:0}
+.wrap{max-width:980px;margin:0 auto;padding:36px 26px 80px}
+.back{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#f3e3d0;border:1px solid #e6cdb2;padding:4px 13px;border-radius:999px;margin-bottom:14px}
+.back:hover{background:var(--accent);color:#fff}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}
+.nav a{display:inline-block;font-size:13px;text-decoration:none;color:var(--accent);background:#fffdf8;border:1px solid #e0c49c;border-radius:6px;padding:8px 16px}
+.nav a:hover{background:var(--accent);color:#fff}
+.nav a.cur{background:var(--accent);color:#fff;font-weight:700}
+h2{font-size:21px;border-left:5px solid var(--accent);padding-left:12px;margin:36px 0 12px}
+h3{font-size:16.5px;color:var(--accent);margin:24px 0 8px}
+h4{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.7px}
+code{background:#f1e9d8;padding:1px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,Consolas,monospace}
+pre{background:#40352a;color:#f3e9d8;padding:14px 18px;border-radius:8px;overflow-x:auto;font-size:12.6px;line-height:1.55;max-height:560px}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.3px}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:#f3e3d0}
+tr:nth-child(even) td{background:#fbf7ee}
+a{color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+strong{color:#8f4208}
+.lead{font-size:15.5px;color:var(--ink)}
+.key{background:linear-gradient(135deg,#fdf6ea,#f6e6cd);border:1px solid #e0c49c;border-left:5px solid #b4530a;border-radius:10px;padding:16px 22px;margin:18px 0;font-size:14px;line-height:1.8}
+.key b.hl{color:#b4530a;font-weight:700}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--line);padding-bottom:8px;margin:34px 0 14px}
+.sec-head h2{border:none;padding:0;margin:0}
+.sec-head .count{font-size:12px;color:var(--ink-soft)}
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;font-size:13.8px;line-height:1.7}
+.note .t{display:inline-block;font-weight:700;margin-bottom:4px}
+.note.clever{background:#f3eefe;border:1px solid #cbb8f7}
+.note.clever .t{color:var(--purple)}
+.note.warn{background:#fdeef0;border:1px solid #f5b9c3}
+.note.warn .t{color:var(--warn)}
+.note.plain{background:#f3f8f6;border:1px solid #b8e0d2}
+.note.plain .t{color:var(--accent2)}
+.num{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+.fn{scroll-margin-top:20px;border:1px solid var(--line);border-left:4px solid var(--accent2);border-radius:8px;padding:14px 18px;margin:16px 0;background:var(--card)}
+.fn h4{margin:0 0 4px;color:var(--accent2);font-size:15px}
+.fn .sig{font-size:12px;color:var(--ink-soft);margin:0 0 8px;font-family:"SF Mono",Menlo,Consolas,monospace;word-break:break-all}
+.fn .loc{font-size:11.5px;color:var(--ink-soft);margin:0 0 10px}
+.fn p{font-size:13.6px;margin:6px 0}
+.fn ul{font-size:13.6px;margin:6px 0;padding-left:22px}
+footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+
+<div class="nav">
+  <a href="index.html">总览</a>
+  <a href="01_loop.html">① Agent loop</a>
+  <a class="cur" href="02_exec.html">② 执行 & 沙箱</a>
+  <a href="03_server.html">③ app-server & TUI</a>
+  <a href="04_takeaway.html">④ 结论</a>
+  <a href="05_architecture.html">⑤ 总架构图</a>
+  <a href="06_compare.html">⑥ 横向对比</a>
+</div>
+
+<header>
+  <h1>② 执行层：<code>apply-patch</code> / <code>linux-sandbox</code> / <code>execpolicy</code></h1>
+  <p class="sub">模型说"改这个文件 / 跑这条命令"，谁来落地？本篇解剖 Codex 的三个执行子模块。</p>
+</header>
+
+<div class="key">
+  <b class="hl">本篇主线</b>
+  <p>agent loop 里模型发出两种动作：<b>工具调用</b>（shell / apply_patch / MCP）和<b>文本</b>。工具调用要走一条"准入 → 沙箱 → 文件落地 → diff 追踪"的流水线。这条流水线由三个 crate 支撑：</p>
+  <ul style="font-size:13.6px;margin:6px 0">
+    <li><code>apply-patch</code>（4.6 千行）—— OpenAI 自定义的 <code>*** Begin Patch</code> 格式的解析与应用。</li>
+    <li><code>linux-sandbox</code>（7.0 千行）—— 默认 bubblewrap + seccomp；保留 legacy Landlock 兼容路径。</li>
+    <li><code>execpolicy</code>（2.0 千行）—— 命令行准入策略（allow / deny / ask）。</li>
+  </ul>
+</div>
+
+<!-- ==================== apply-patch ==================== -->
+<h2>一、<code>apply-patch</code>：模型编辑文件的"格式合同"</h2>
+<p class="lead">Codex 为模型提供一种首选的<b>结构化补丁格式</b>，但 shell 工具仍可能运行 <code>sed</code> / <code>python</code>；因此它是可审计的编辑合同，不是唯一写文件通道。<code>apply-patch</code> 负责解析、校验、计算并逐项应用，失败时显式返回已提交的部分，而不是承诺全量原子性。</p>
+
+<h3>1.1 补丁格式（L4-22 Lark 文法）</h3>
+<p>补丁的开头必须是 <code>*** Begin Patch</code>，结尾是 <code>*** End Patch</code>。中间是若干 <b>hunk</b>（补丁块）。三种 hunk：</p>
+<pre><code>*** Begin Patch
+*** Add File: src/new.rs
++pub fn hello() {}
+
+*** Delete File: src/old.rs
+
+*** Update File: src/main.rs
+@@ fn main() @@
+-    println!("old");
++    println!("new");
+*** End of File
+*** End Patch</code></pre>
+<p>关键标记常量在 <code>parser.rs:37-46</code>：<code>BEGIN_PATCH_MARKER</code> / <code>END_PATCH_MARKER</code> / <code>ADD_FILE_MARKER</code> / <code>DELETE_FILE_MARKER</code> / <code>UPDATE_FILE_MARKER</code> / <code>MOVE_TO_MARKER</code> / <code>EOF_MARKER</code>。</p>
+
+<div class="fn" id="f-hunk">
+  <h4><span class="num">1</span>Hunk 枚举（parser.rs:66-82）</h4>
+  <p class="sig">pub enum Hunk { AddFile { path, contents }, DeleteFile { path }, UpdateFile { path, move_path, chunks } }</p>
+  <p class="loc">apply-patch/src/parser.rs:66</p>
+  <p>三种 hunk 用一个 enum 表示。<code>UpdateFile</code> 持有 <code>Vec&lt;UpdateFileChunk&gt;</code>——一个文件里可以有多个独立的"上下文块 + 改动行"。</p>
+<pre><code>#[derive(Debug, PartialEq, Clone)]
+pub enum Hunk {
+    AddFile {
+        path: PathBuf,
+        contents: String,
+    },
+    DeleteFile {
+        path: PathBuf,
+    },
+    UpdateFile {
+        path: PathBuf,
+        move_path: Option&lt;PathBuf&gt;,
+        chunks: Vec&lt;UpdateFileChunk&gt;,
+    },
+}</code></pre>
+</div>
+
+<div class="fn" id="f-update-chunk">
+  <h4><span class="num">2</span>UpdateFileChunk（parser.rs:115）</h4>
+  <p class="sig">pub struct UpdateFileChunk { change_context: String, change_lines: Vec&lt;ChangeLine&gt;, eof: bool }</p>
+  <p class="loc">apply-patch/src/parser.rs:115</p>
+  <p>每个 chunk 由"上下文锚点"（<code>@@ ... @@</code>，即 <code>change_context</code>）+ 改动行列表组成。<code>eof</code> 标记这块改动是否延伸到文件末尾。<b>锚点不是行号</b>，而是文件里的一段文本——apply 时用 <code>similar</code> 库（文本 diff）定位。这比行号鲁棒得多：模型哪怕记错了行号，只要上下文文本还在，就能对上。</p>
+</div>
+
+<h3>1.2 流式解析：让 TUI 边收边显示</h3>
+<div class="fn" id="f-streaming-parser">
+  <h4><span class="num">3</span>StreamingPatchParser（streaming_parser.rs:22-154）</h4>
+  <p class="sig">pub struct StreamingPatchParser { ... }; fn push_delta(&mut self, delta: &str) -> Result&lt;Vec&lt;Hunk&gt;, ParseError&gt;; fn finish(&mut self) -> Result&lt;Vec&lt;Hunk&gt;, ParseError&gt;</p>
+  <p class="loc">apply-patch/src/streaming_parser.rs:22</p>
+  <p>模型流式吐 token，补丁是一点一点攒出来的。<code>StreamingPatchParser</code> 接收每个 delta，内部维护一个行缓冲；每凑成一个完整 hunk 就返回。<code>finish()</code> 在流结束时调用，收尾。</p>
+  <div class="note clever"><span class="t">★ 为什么要流式？</span>
+    apply_patch 在 TUI 里是<b>逐文件 diff 展示</b>的——用户能在模型还没说完时就看到"这个文件会变成这样"。非流式解析只能等模型吐完整个 <code>*** End Patch</code> 再处理，延迟太高。
+  </div>
+</div>
+
+<h3>1.3 应用：把 hunk 落到文件系统</h3>
+<div class="fn" id="f-apply">
+  <h4><span class="num">4</span>apply 主流程（lib.rs:833+ AppliedPatchDelta / ApplyPatchFailure）</h4>
+  <p class="loc">apply-patch/src/lib.rs:833（ApplyPatchFileUpdate）、lib.rs:184（AppliedPatchDelta）、lib.rs:251（ApplyPatchFailure）</p>
+  <p>应用逻辑在 <code>lib.rs</code> 中段。整体流程：</p>
+  <ul>
+    <li><b>校验路径</b>：所有 hunk 的 <code>path</code> 必须落在沙箱允许的工作区内（<code>resolve_path</code> + 上层 permission）。</li>
+    <li><b>逐 hunk 应用</b>：
+      <ul>
+        <li><code>AddFile</code> —— 创建新文件，写入 <code>contents</code>。</li>
+        <li><code>DeleteFile</code> —— 删除文件。</li>
+        <li><code>UpdateFile</code> —— 读现有内容，对每个 chunk 用文本匹配定位 <code>change_context</code>，替换 <code>change_lines</code>。</li>
+      </ul>
+    </li>
+    <li><b>收集 delta</b>：<code>AppliedPatchDelta</code>（lib.rs:184）累积每个文件的实际变化（<code>AppliedPatchChange</code>），供 diff 追踪器 <code>TurnDiffTracker</code> 使用。</li>
+    <li><b>失败证据</b>：任意一个 hunk 失败，返回 <code>ApplyPatchFailure</code>（lib.rs:251），包含 <code>ApplyPatchError</code> 和 <code>AppliedPatchDelta</code>（已成功应用的部分）。<b>没有事务性的全量回滚</b>；若写操作可能先改文件再报错，delta 还会把 <code>exact</code> 置为 false。源码能证明的是“如实暴露部分副作用”，不能进一步推断这是为了让用户保留进度。</li>
+  </ul>
+  <div class="note warn"><span class="t">⚠ 部分应用的风险</span>
+    apply_patch 失败不会自动撤销已成功的 hunk。git 工作区通常可以人工恢复，但 <code>apply-patch</code> crate 本身没有“失败时自动 git rollback”的保证；非 git 工作区或未提交改动更需要预先 snapshot/staging。
+  </div>
+</div>
+
+<h3>1.4 鲁棒性：为什么要"宽容解析"？</h3>
+<p><code>parser.rs:53</code> 有一行注释：<b>gpt-4.1 会产出不完全合规的补丁</b>。所以解析器默认 <code>PARSE_IN_STRICT_MODE = false</code>，对空白、换行符、标记大小写做宽容处理。这是一个很现实的工程妥协——模型不是规则引擎，输出总会有瑕疵。</p>
+
+<hr>
+
+<!-- ==================== linux-sandbox ==================== -->
+<h2>二、<code>linux-sandbox</code>：可切换后端的命令隔离</h2>
+<p class="lead">模型调 <code>shell</code> 工具时，Codex 不会无条件直接执行。在 Linux 上，受限命令先经过 <code>codex-linux-sandbox</code>；当前默认文件系统后端是 bubblewrap，进程内再安装 seccomp 网络过滤。Landlock + mount protection 是显式开启的 legacy 路径，并非三者始终叠加。</p>
+
+<div class="key">
+  <b class="hl">两条文件系统路径 + 共同的运行时硬化</b>
+  <ul style="font-size:13.6px;margin:6px 0">
+    <li><b>bubblewrap（默认）</b>—— 用 mount/user/PID（按网络策略也可含 network）namespace 构造只读基线，再叠加可写根和受保护子路径。</li>
+    <li><b>legacy Landlock</b>—— 在显式 feature 下提供兼容文件系统约束与 mount protections；不是默认路径上再叠的一层。</li>
+    <li><b>共同硬化</b>—— <code>no_new_privs</code> 与 seccomp 网络过滤；managed network 模式再通过隔离 network namespace 和代理桥控制出口。</li>
+  </ul>
+</div>
+
+<h3>2.1 入口：<code>codex-linux-sandbox</code> 二进制</h3>
+<div class="fn" id="f-sandbox-main">
+  <h4><span class="num">5</span>run_main（lib.rs:39）</h4>
+  <p class="sig">pub fn run_main() -&gt; !</p>
+  <p class="loc">linux-sandbox/src/lib.rs:39</p>
+  <p>入口很简单：在 Linux 上调 <code>linux_run_main::run_main()</code>，否则 panic。<b>真正的逻辑在 <code>linux_run_main.rs</code></b>。这个二进制被设计成<b>自包含</b>：它自己就是受限执行的根。</p>
+</div>
+
+<h3>2.2 bubblewrap 默认路径与 legacy Landlock</h3>
+<p>源码包含系统/随包分发等 bubblewrap 获取与启动逻辑，以适配不同部署环境：</p>
+<table>
+  <tr><th>模块</th><th>场景</th><th>关键点</th></tr>
+  <tr><td><code>bundled_bwrap.rs</code></td><td>自带 bubblewrap 二进制</td><td>不依赖系统 <code>bwrap</code>，保证始终可用</td></tr>
+  <tr><td><code>bazel_bwrap.rs</code></td><td>Bazel 构建</td><td>处理 Bazel 的 sandboxfs / 输出树布局</td></tr>
+  <tr><td><code>bwrap.rs</code></td><td>标准系统 bwrap</td><td>直接调 <code>/usr/bin/bwrap</code></td></tr>
+</table>
+<div class="note plain"><span class="t">设计要点</span>当前实现优先使用工作目录之外 <code>PATH</code> 中的 <code>bwrap</code>，缺失时回退到随 Codex 分发的 bundled binary；bubblewrap 路径以只读根挂载为基线，再叠加 writable roots 和受保护的只读子路径，并安装 <code>no_new_privs</code> 与 seccomp 网络过滤。<code>features.use_legacy_landlock</code> 才切到兼容的 Landlock 路径。这里的亮点不是“固定三重沙箱”，而是<b>同一 permission profile 可编译到不同平台/后端</b>。</div>
+
+<h3>2.3 代理生命周期：网络出口控制</h3>
+<div class="fn" id="f-proxy">
+  <h4><span class="num">6</span>proxy_lifecycle / proxy_routing（lib.rs:26-27）</h4>
+  <p class="loc">linux-sandbox/src/proxy_lifecycle.rs、proxy_routing.rs</p>
+  <p>沙箱不只是限制文件读写。网络可以整体隔离；在<b>managed proxy 模式</b>下，bubblewrap 隔离网络 namespace，再经内部 TCP→UDS→TCP bridge 把工具流量送到配置的代理端点。此时才可以实施比“能否联网”更细的出口规则；不能概括为所有 Codex 命令始终经过域名代理。</p>
+</div>
+
+<h3>2.4 启动器：把命令送进沙箱</h3>
+<div class="fn" id="f-launcher">
+  <h4><span class="num">7</span>launcher（lib.rs:24）</h4>
+  <p class="loc">linux-sandbox/src/launcher.rs</p>
+  <p><code>launcher</code> 负责<b>组装完整的沙箱启动命令</b>：先 spawn <code>codex-linux-sandbox</code> 自己（作为 sandbox 入口），再在内部用 bwrap + landlock + seccomp 包裹真正的用户命令。输出通过管道回传给 agent loop。</p>
+</div>
+
+<hr>
+
+<!-- ==================== execpolicy ==================== -->
+<h2>三、<code>execpolicy</code>：命令行准入策略</h2>
+<p class="lead">沙箱管"执行时的隔离"，<code>execpolicy</code> 管"这条命令到底该不该跑"。它是 agent loop 在 dispatch shell 工具前的<b>第一道闸</b>。</p>
+
+<h3>3.1 三种裁决</h3>
+<p>每条命令会被归入三类：</p>
+<table>
+  <tr><th>裁决</th><th>含义</th><th>后续动作</th></tr>
+  <tr><td><code>Allow</code></td><td>命令在白名单 / 无危险特征</td><td>直接进沙箱执行</td></tr>
+  <tr><td><code>Deny</code></td><td>命令命中黑名单（如 <code>rm -rf /</code>）</td><td>拒绝执行，把拒绝原因回传模型</td></tr>
+  <tr><td><code>Ask</code></td><td>命令需要用户确认</td><td>走 app-server 审批流程（见 ③）</td></tr>
+</table>
+
+<div class="note clever"><span class="t">★ 拒绝也是一种反馈</span>
+  和很多 agent 框架"拒绝就报错退出"不同，Codex 把 <code>Deny</code> 的原因<b>当成 tool result 回传给模型</b>。模型看到"这条命令被拒绝因为 X"，可以自己换个写法再试。这是一种<b>用环境约束教模型</b>的设计。
+</div>
+
+<h3>3.2 准入规则的来源</h3>
+<p><code>execpolicy</code> 的规则不是从 <code>AGENTS.md</code> 文本中解析；<code>AGENTS.md</code> 是模型可见的项目指令。可执行策略来自配置 layer stack 中用户/项目的 <code>rules/*.rules</code>、托管 requirements policy，以及会话中获批后形成的 amendment。规则偏向命令前缀/模式匹配，并与 permission profile（文件系统、网络等运行时权限）分工：前者决定 allow / prompt / forbidden，后者决定即使获准后进程还能访问什么。</p>
+
+<hr>
+
+<!-- ==================== 串起来 ==================== -->
+<h2>四、一条命令的完整生命周期</h2>
+<p>把上面三个模块串起来，模型调 <code>shell</code> 工具时发生的事：</p>
+<pre><code>① 模型流式吐 function_call: shell("cargo test")
+   ↓
+② agent loop 的 handle_output_item_done 收到完整 tool call
+   ↓
+③ ToolRouter::dispatch → shell 工具实现
+   ↓
+④ execpolicy 评估 "cargo test"
+   ├─ Allow → 继续
+   ├─ Ask   → 发 ServerRequest::AskForApproval，等用户
+   └─ Deny  → 返回拒绝原因给模型，本轮结束
+   ↓
+⑤ 平台 sandbox transform 启动
+   ├─ Linux 默认 bwrap 构造受限文件系统视图
+   ├─ 安装 no_new_privs / seccomp 网络过滤
+   ├─ 显式配置时改走 legacy Landlock
+   └─ managed network 时走代理桥与出口规则
+   ↓
+⑥ 命令在沙箱内执行，stdout/stderr 通过管道回传
+   ↓
+⑦ tool result 塞回 conversation history
+   ↓
+⑧ agent loop 回到 loop 顶，做下一次采样
+   (模型现在能看到 "cargo test" 的输出了)
+</code></pre>
+
+<div class="note plain"><span class="t">与 apply_patch 的对比</span>
+  <code>apply_patch</code> 不走 execpolicy 的命令行评估——它是<b>结构化编辑工具</b>，不是 shell 命令。但 apply_patch 同样受 permission profile 的<b>路径级</b>准入控制：模型只能在配置允许的工作区里改文件。两条准入路径：命令行走 execpolicy，文件路径走 permission profile。
+</div>
+
+<hr>
+
+<h2>本篇小结：执行层的三个正交维度</h2>
+<table>
+  <tr><th>维度</th><th>负责 crate</th><th>解决的问题</th></tr>
+  <tr><td><b>格式</b></td><td><code>apply-patch</code></td><td>模型怎么表达"改这个文件"？用结构化补丁，不用 sed/awk。</td></tr>
+  <tr><td><b>隔离</b></td><td><code>sandboxing</code> + 各平台 sandbox</td><td>把 permission profile 翻译为 Linux bwrap/seccomp（或 legacy Landlock）、macOS Seatbelt、Windows restricted token，并按配置限制网络。</td></tr>
+  <tr><td><b>准入</b></td><td><code>execpolicy</code> + permission profile</td><td>这条命令该不该跑？这个路径该不该写？三级裁决 + 路径白名单。</td></tr>
+</table>
+<p>三个维度<b>互相独立</b>：你可以换掉沙箱后端而不动 apply_patch；也可以加新的准入规则而不碰隔离实现。这是 Codex 把它们切成独立 crate 的根本原因。</p>
+
+<p style="margin-top:30px"><a href="03_server.html">→ 继续 ③ app-server & TUI</a></p>
+
+<footer>
+  <b>Codex (Rust) 架构精读</b> · ② 执行 & 沙箱 · 源码版本 <code>0a0ebb8535</code><br>
+  对照参考：<code>AgentScope 2.0 · ② 模块解剖</code>
+</footer>
+
+</div>
+</body>
+</html>
