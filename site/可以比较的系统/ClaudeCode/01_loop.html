@@ -1,0 +1,25 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Claude Code · Agent loop</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a class="cur" href="01_loop.html">① Agent loop</a><a href="02_tools.html">② 工具与权限</a><a href="03_context.html">③ 上下文</a><a href="04_agents.html">④ 子 Agent</a><a href="05_sessions.html">⑤ 会话与前端</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>① Agent loop：流式状态机，而非 ask/answer</h1><p class="sub"><code>query()</code> 是 async generator；它既吐模型事件，也吐工具进度、持久消息、tombstone 和压缩边界，最后返回终态。</p></header>
+<h2>主链</h2><pre><code>QueryEngine.submitMessage / REPL
+  └─ query(params): AsyncGenerator
+      └─ while (true)
+          ├─ memory + skill prefetch
+          ├─ project API view / compact
+          ├─ call model stream
+          │   └─ tool_use block arrives → StreamingToolExecutor.addTool()
+          ├─ finish / fallback / recovery
+          ├─ drain tool results in valid order
+          └─ state = {..., transition: next_turn} → loop</code></pre>
+<div class="src"><code>src/query.ts:181-238, 307-328, 563, 1382, 1718-1728</code></div>
+
+<h2>显式 State 与 Continue reason</h2><p>跨迭代变量集中在 <code>State</code>：消息、工具上下文、auto-compact 跟踪、max-output 恢复次数、reactive-compact guard、turn 数和上一跳 transition。各个 <code>continue</code> 不是裸跳转，而会写入 <code>reactive_compact_retry</code>、<code>max_output_tokens_escalate</code>、<code>stop_hook_blocking</code>、<code>token_budget_continuation</code> 或 <code>next_turn</code>。这使恢复路径可被测试直接断言。</p>
+<table><tr><th>阶段</th><th>关键行为</th><th>为什么重要</th></tr><tr><td>进入迭代</td><td>memory prefetch 每个用户 turn 一次；skill discovery 每轮一次，并与采样/工具重叠</td><td>把慢发现藏在关键路径之外</td></tr><tr><td>模型流</td><td>观察到 tool block 就算存在后续工具；明确不信任 <code>stop_reason === tool_use</code></td><td>事实来源是实际内容块，不是易错元数据</td></tr><tr><td>流式回退</td><td>tombstone 旧的 partial assistant；discard 已启动工具；去掉与模型绑定的 thinking signature</td><td>失败分支不污染新模型上下文</td></tr><tr><td>错误闭合</td><td>为未配对 tool use 生成 synthetic tool result</td><td>下一次 API 请求保持协议有效</td></tr><tr><td>停止</td><td>无 tool use 时仍可能被 Stop hook 或 token budget 要求继续</td><td>“模型结束”不等于“系统完成”</td></tr></table>
+
+<h2>工具执行与模型采样发生重叠</h2><p>传统循环等完整 assistant message 后才执行全部工具。这里的 <code>StreamingToolExecutor</code> 在 tool block 完成时立刻入队：并发安全的工具可一起跑，不安全工具成为排他屏障；进度可马上 yield，最终结果仍按接收顺序释放。</p><div class="key"><b>亮点：</b>这是 latency hiding，不是放弃确定性。系统允许“物理完成顺序”变化，但不允许“模型看到的结果序”随调度随机变化。</div>
+
+<h2>恢复阶梯</h2><div class="flow"><span class="step">正常采样</span><span class="arr">→</span><span class="step">collapse drain</span><span class="arr">→</span><span class="step">reactive compact</span><span class="arr">→</span><span class="step">max-output 升级/截断</span><span class="arr">→</span><span class="step">显式终态</span></div>
+<p>Prompt-too-long、media-size 与 max-output 错误会先被“withhold”，直到系统知道是否有可恢复路径。内部 collapse/reactive 实现缺失，但 <code>query.ts:800-816, 1067-1245</code> 能完整证明恢复顺序。若 feature 被编译掉，代码还处理“错误被 collapse 拦下但无恢复模块”的退路。</p>
+<div class="note warn"><span class="tag partial">仅接口可见</span>不能从调用点推断 collapse 的摘要算法或阈值；能确认的是它优先于更重的 reactive compact，并以保留 granular context 为目标。</div>
+
+<h2>QueryEngine 并非全系统唯一内核</h2><p><code>QueryEngine</code> 负责 headless/SDK 会话，每个 conversation 一个实例，每次 <code>submitMessage()</code> 开启一 turn。它会在进入 query 前先落 user message，使进程在采样前退出仍可恢复。但源码注释写的是“used by headless/SDK and (in a future phase) REPL”，所以 REPL 仍有自己的 UI 历史和状态投影，不能宣称 Claude Code 已完全统一到单一 session kernel。</p><div class="src"><code>src/QueryEngine.ts:176-184, 209, 436-452, 687-730</code></div>
+<footer>下一篇：<a href="02_tools.html">② 工具、权限与沙箱</a></footer></div></body></html>

@@ -1,0 +1,45 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Claude Code · 横向比较与 AutoResearch</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools.html">② 工具与权限</a><a href="03_context.html">③ 上下文</a><a href="04_agents.html">④ 子 Agent</a><a href="05_sessions.html">⑤ 会话与前端</a><a class="cur" href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>⑥ Claude Code × Codex × AutoResearch</h1><p class="sub">只比较本地源码能够同口径证明的机制；重点不是排座次，而是识别两种成熟 coding-agent 架构各自把复杂度放在哪里。</p></header>
+
+<h2>结论先行</h2><div class="key"><b>Claude Code 的强项：</b>在单个长会话内部，把流式工具并发、权限竞态、上下文减重、后台 agent 与可恢复 transcript 做得极细。<br><b>Codex 的强项：</b>把 thread/turn/event、执行治理和多前端 JSON-RPC 边界做成更硬、更独立的 Rust 组件。<br><b>AutoResearch 最佳组合：</b>用 Codex 式 run/event 协议作骨架，用 Claude Code 式 context/task/session 语义填充长期自主运行。</div>
+
+<h2>同口径对比</h2><table><tr><th>维度</th><th>Claude Code（本次源码树）</th><th>Codex Rust（本地已审计快照）</th></tr>
+<tr><td>Agent loop</td><td><code>query()</code> async generator；模型流中启动工具；显式恢复 transition</td><td><code>run_turn</code> 驱动 sampling / output item / ToolRouter 循环，经 Event 流上报</td></tr>
+<tr><td>并发工具</td><td>工具按 input 判定 concurrency-safe；物理并行、结果按模型顺序释放；Bash error 有 sibling cancellation</td><td>tool router / task 体系强调异步事件和受控 dispatch；本篇不把其并发细节夸成同一种 executor</td></tr>
+<tr><td>权限</td><td>rule + hook + classifier + dialog/bridge/channel + leader mailbox，决策带 provenance</td><td>execpolicy → approval → permission profile → platform sandbox，分层更硬</td></tr>
+<tr><td>Sandbox 证据</td><td>adapter 完整、runtime 外置；默认 settings 未启用，允许 unsandboxed 可配置</td><td>低层源码在仓：Linux 默认 bwrap+seccomp、legacy Landlock；macOS Seatbelt、Windows restricted token</td></tr>
+<tr><td>上下文</td><td>tool-result budget、microcompact、collapse/reactive gate、full compact + state attachments；强 cache-prefix 意识</td><td>compact/rollout/persistence 清晰，但本地研究未见同等多级的 client-side tool-result 减重链</td></tr>
+<tr><td>子 agent</td><td>sync/background/fork/resume/worktree/team mailbox；独立 sidechain transcript</td><td>thread/task/cloud 等事件语义更统一；不能由产品能力反推仓内存在完全同型 swarm</td></tr>
+<tr><td>持久化</td><td>JSONL parentUuid 图，多 leaf、logical compact parent、agent sidecar</td><td>rollout recorder + thread metadata；协议层 thread/turn/item 身份清晰</td></tr>
+<tr><td>多前端</td><td>共享 SDK Zod schema，但 REPL 与 QueryEngine 尚未完全统一；stdio/WS/bridge 多 adapter</td><td>主产品路径经 app-server JSON-RPC；in-process 与 remote 共 envelope</td></tr></table>
+<div class="src">Codex 对照证据见本站 <a href="../Codex/06_compare.html">Codex ⑥ 横向对比</a>、<a href="../Codex/02_exec.html">② 执行与沙箱</a>、<a href="../Codex/03_server.html">③ app-server</a>。</div>
+
+<h2>Claude Code 真正值得抄的五件事</h2><ol><li><b>并发执行不牺牲上下文确定性。</b>科研搜索/评估可乱序完成，但进入 reasoning context 与 provenance log 必须稳定排序。</li><li><b>恢复对象大于 messages。</b>还要恢复裁剪决策、工作目录、工具池、权限、预算、后台任务与缓存前缀。</li><li><b>压缩产物是结构化恢复包。</b>summary 之外保留 tail、文件、计划、skill 与任务状态。</li><li><b>权限必须带来源。</b>“允许”要回答由 policy、guardian、用户、sandbox 还是 worker leader 允许。</li><li><b>后台任务必须有稳定 ID、独立日志与可继续入口。</b>否则只是不可审计的 fire-and-forget coroutine。</li></ol>
+
+<h2>映射到 AutoResearch</h2><table><tr><th>Claude/Codex 机制</th><th>AutoResearch 抽象</th><th>最低字段</th></tr>
+<tr><td>Query state + Codex thread event</td><td><code>ResearchRun</code> + append-only <code>RunEvent</code></td><td>run_id, seq, parent_id, phase, actor, timestamp</td></tr>
+<tr><td>tool use/result pairing</td><td><code>ActionAttempt</code></td><td>action_id, tool, normalized_input, result_ref, status, error_class</td></tr>
+<tr><td>permission decision provenance</td><td><code>PolicyDecision</code></td><td>behavior, source, rule_id, scope, approver, sandbox_profile</td></tr>
+<tr><td>compact recovery package</td><td><code>ContextCheckpoint</code></td><td>summary, preserved_event_ids, artifact_refs, open_hypotheses, task_refs, token_stats</td></tr>
+<tr><td>sidechain transcript / task</td><td><code>ResearchTask</code></td><td>task_id, parent_run, owner, dependencies, workspace_ref, transcript_ref, resumable_state</td></tr>
+<tr><td>worktree</td><td><code>ExperimentWorkspace</code></td><td>repo_commit, branch/worktree, dataset snapshot, environment digest, dirty diff</td></tr>
+<tr><td>tool-result replacement</td><td><code>ArtifactRef</code> + context projection</td><td>content_hash, storage_uri, preview, replacement_reason, recoverable</td></tr></table>
+
+<h2>建议的最小状态机</h2><pre><code>ResearchRun
+  accepted → planning → running
+                       ├─ waiting_permission
+                       ├─ waiting_dependency
+                       ├─ compacting
+                       ├─ interrupted → resumable
+                       └─ evaluating → completed | failed
+
+ResearchTask
+  pending → claimed → in_progress → completed
+                    └─ blocked / stopped → resumable</code></pre>
+<p>每一次状态变化只追加事件；当前状态由 fold 得出。大文本与实验输出落 artifact store，事件只保留 hash/ref/preview。context projector 根据预算选择事件与 artifact preview，checkpoint 不能替换原始证据链。</p>
+
+<h2>不建议现在照搬的复杂度</h2><ul><li>不要一开始同时实现 in-process、tmux、remote 三种 worker backend；先让一个 task state machine 可恢复。</li><li>不要在只有一个 UI 时预付完整 JSON-RPC/app-server 版本兼容成本；先稳定内部 event schema。</li><li>不要依赖模型摘要作为唯一事实源；科研结果必须回指 dataset/code/env/seed 和原始 artifact。</li><li>不要把 feature gate 的存在当成功能完成；缺失实现必须在 capability registry 中显示 unavailable。</li><li>不要让权限 UI 与 policy engine 相互递归；先定义纯函数 decision 与 provenance，再加各种人工 channel。</li></ul>
+
+<h2>一个可执行的实现顺序</h2><ol><li>先建立 <code>RunEvent</code>、<code>ActionAttempt</code> 与 artifact content-addressing。</li><li>让单 agent 在进程中支持 interrupt/resume，并验证 crash 后 tool pairing 不破坏。</li><li>加入 <code>ContextCheckpoint</code>，从 tool-result preview 与 preserved tail 开始，不先做复杂摘要树。</li><li>引入一个 background task backend、稳定 task_id 与独立 transcript。</li><li>最后再加 policy provenance、worktree/container isolation 和远程 transport。</li></ol>
+<div class="note"><b>最终判断：</b>Claude Code 给 AutoResearch 的最大启发不是“多开几个 agent”，而是把长程自治中最容易丢失的东西——分支、权限来源、上下文损耗、后台任务身份和工作区——全部变成可持久化、可恢复、可解释的状态。</div>
+<footer><a href="index.html">回到 Claude Code 总览</a> · 与 <a href="../Codex/index.html">Codex 源码精读</a>配套阅读</footer></div></body></html>

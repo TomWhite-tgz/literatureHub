@@ -1,0 +1,23 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Claude Code · 会话与前端</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools.html">② 工具与权限</a><a href="03_context.html">③ 上下文</a><a href="04_agents.html">④ 子 Agent</a><a class="cur" href="05_sessions.html">⑤ 会话与前端</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>⑤ 会话、前端与扩展：JSONL 图是恢复底座</h1><p class="sub">Claude Code 在本地用 append-oriented transcript 保存事实，用 parentUuid 表达分支；同一 SDK message schema 又连接 stdio、remote 与 bridge。</p></header>
+
+<h2>Transcript 是事件日志，也是图</h2><pre><code>project-dir/session-id.jsonl
+  message A {uuid, parentUuid:null}
+    └─ message B {uuid, parentUuid:A}
+       ├─ branch C ...
+       └─ branch D ...   ← newest non-sidechain leaf → /resume 主链
+
+project-dir/session-id/subagents/agent-&lt;id&gt;.jsonl
+project-dir/session-id/subagents/agent-&lt;id&gt;.meta.json</code></pre>
+<p>loader 先读所有 message，计算“没有被其他 parentUuid 指向”的 leaves，再选最新非 sidechain leaf，沿 parent 链回溯。一个 JSONL 因而可以保留 rewind/branch 后的多条链，而不必覆盖原历史。旧版本误把 progress 放进链时，loader 还会桥接父指针以兼容恢复。</p><div class="src"><code>src/utils/sessionStorage.ts:129-175, 227-289, 3472-3810, 3899-3921</code>；<code>conversationRecovery.ts:406-436</code></div>
+
+<h2>Compact boundary 的双父语义</h2><p>写 compact boundary 时，物理 <code>parentUuid</code> 设为 null，让恢复无需再载入被摘要的全量前史；旧父节点保存在 <code>logicalParentUuid</code>，保留逻辑血缘。写入前 QueryEngine flush precompact tail，避免 crash 后边界先落盘、依赖消息仍在内存。</p><div class="key"><b>日志不是 UI dump。</b>progress 明确被视为 ephemeral UI state，不参加 parent 链；assistant/user/compact boundary 才是恢复事实。这个分层阻止“展示事件”意外成为会话真相。</div><div class="src"><code>src/utils/sessionStorage.ts:1030-1067</code>；<code>src/QueryEngine.ts:687-730</code></div>
+
+<h2>写入模型</h2><p><code>Project</code> 为每个文件维护 write queue，定时批量 append，并提供 flush barrier。单条 user message 在进入 query 前被同步等待持久化；清理 handler 会先 flush，再把会话 metadata 重新追加到末尾，确保 resume picker 读取轻量首尾片段时拿到最新标题/模式。</p><p>源码还给 raw transcript 设置 50 MB 快速读取上限，因为现实 JSONL 可增长到 GB 级。这说明 append log 的优势（简单、可追溯）也带来索引与 compaction 成本。</p><div class="src"><code>src/utils/sessionStorage.ts:227-228, 532-859, 955-1072</code></div>
+
+<h2>前端边界：共享消息协议，不是单一 RPC 内核</h2><table><tr><th>路径</th><th>核心</th><th>传输</th></tr><tr><td>交互 CLI</td><td>React/Ink REPL，保留完整 scrollback 和 UI state</td><td>进程内调用 query 相关逻辑</td></tr><tr><td><code>--print</code> / Agent SDK</td><td><code>QueryEngine</code> + <code>StructuredIO</code></td><td>text/json/stream-json；stdin/stdout 控制消息</td></tr><tr><td>Remote session</td><td><code>RemoteSessionManager</code></td><td>WebSocket 收 SDK/control event，HTTP 发 user message</td></tr><tr><td>Remote-control bridge</td><td>REPL bridge / bridge daemon</td><td>claude.ai session transport 与 permission callback</td></tr></table>
+<p>Zod 的 <code>SDKMessageSchema</code> 联合了 assistant、user replay、result、partial、compact boundary、hook、tool progress、task、rate limit 等事件，是跨 transport 的公共语汇。但 <code>QueryEngine</code> 注释仍说 REPL 接入在未来，所以这不像 Codex app-server 那样由一个 JSON-RPC server 统一托管所有客户端。</p><div class="src"><code>src/entrypoints/sdk/coreSchemas.ts:1253-1879</code>；<code>src/cli/print.ts:587-672, 848-928</code>；<code>src/remote/RemoteSessionManager.ts:88-181</code></div>
+
+<h2>四个扩展面各自解决不同问题</h2><table><tr><th>扩展</th><th>单位</th><th>关键安全/生命周期</th></tr><tr><td>Skills</td><td><code>SKILL.md</code> 指令包</td><td>managed/user/project/add-dir/plugin/MCP 来源；支持路径条件与动态发现；gitignored nested skill 被跳过</td></tr><tr><td>Hooks</td><td>生命周期回调</td><td>Pre/PostToolUse、PermissionRequest、UserPromptSubmit、SessionStart、SubagentStart/Stop、Stop；可阻断或修改输入</td></tr><tr><td>MCP</td><td>外部 tool/resource/prompt server</td><td>连接、OAuth、elicitation、server policy；agent 可有专属 server</td></tr><tr><td>Plugins</td><td>打包分发单元</td><td>可携带 skills/hooks/agents/MCP；enterprise plugin-only policy 可锁定定制来源</td></tr></table>
+<div class="note"><b>结构上的好处：</b>Skill 改“模型知道什么”，Hook 改“生命周期发生什么”，MCP 改“能调用什么”，Plugin 改“如何一起分发”。这四种能力没有被揉成一个万能扩展接口。</div><div class="src"><code>src/skills/loadSkillsDir.ts:404-799, 818-1054</code>；<code>src/utils/hooks.ts:3410-4176</code>；<code>src/services/mcp/</code>；<code>src/utils/plugins/</code></div>
+<footer>下一篇：<a href="06_compare.html">⑥ 横向比较与 AutoResearch 借鉴</a></footer></div></body></html>

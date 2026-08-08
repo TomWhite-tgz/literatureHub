@@ -1,0 +1,27 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Claude Code · 工具与权限</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a class="cur" href="02_tools.html">② 工具与权限</a><a href="03_context.html">③ 上下文</a><a href="04_agents.html">④ 子 Agent</a><a href="05_sessions.html">⑤ 会话与前端</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>② 工具、权限与沙箱：三层安全语义</h1><p class="sub">工具先声明能力，编排器决定并发，执行管线再做 schema、hook、permission 与结果闭合；sandbox 是其后的可配置执行边界。</p></header>
+<h2>Tool 接口把“能否并发”做到输入级</h2><table><tr><th>契约</th><th>语义</th></tr><tr><td><code>inputSchema</code> / <code>validateInput</code></td><td>结构验证与领域验证分开</td></tr><tr><td><code>isConcurrencySafe(input)</code></td><td>同一工具可因不同参数有不同并发性</td></tr><tr><td><code>isReadOnly(input)</code></td><td>读写性质也由实际操作决定</td></tr><tr><td><code>checkPermissions(...)</code></td><td>工具自身给出规则判断，再汇入通用 permission system</td></tr><tr><td><code>maxResultSizeChars</code></td><td>工具结果进入上下文前有独立上限</td></tr></table>
+<p>缺省值刻意保守：未知并发性视为 false、未知读写视为写；这样新增工具不会因忘记声明就获得并发写权限。通用 permission 默认仍会继续裁决，不等于无条件放行。</p><div class="src"><code>src/Tool.ts:158, 402-404, 466, 500, 750-762</code></div>
+
+<h2>批执行：并发 IO，顺序语义</h2><p><code>runTools()</code> 将连续的 concurrency-safe 工具组成批次，非安全工具单独串行；默认最大并发 10，可由 <code>CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY</code> 调整。流式执行器进一步允许安全工具在模型输出尚未结束时开跑。</p>
+<div class="grid2"><div class="card"><h3>完成顺序可乱</h3><p>Read A、Grep B、WebFetch C 可以物理并行，progress 消息即时释放。</p></div><div class="card"><h3>可见顺序不乱</h3><p>最终 results 按 tool block 顺序缓冲；遇到 executing 的排他工具时停止越过。</p></div></div>
+<p>Bash 的错误会取消并行 sibling（代码认为 shell 命令常有隐式依赖链），普通 Read/WebFetch 失败不会株连。fallback、用户打断或 sibling error 都会造 synthetic result；discard 则确保旧模型分支的真实结果不再进入对话。</p><div class="src"><code>src/services/tools/toolOrchestration.ts:10-19</code>；<code>StreamingToolExecutor.ts:38-76, 356-388, 412-487</code></div>
+
+<h2>执行管线</h2><pre><code>tool_use block
+  → Zod safeParse → validateInput
+  → speculative Bash classifier（与 hooks 准备重叠）
+  → backfill observable clone
+  → PreToolUse hooks（可改输入/阻止/给 permission）
+  → tool.checkPermissions + canUseTool
+  → tool.call(original model input)
+  → map result + size budget
+  → PostToolUse / PostToolUseFailure
+  → context modifier</code></pre>
+<div class="key"><b>微妙但重要：</b><code>backfillObservableInput</code> 只修改给 hook 与权限观察的 clone，实际调用和 transcript 继续使用模型原始输入。这避免 UI 补全字段改变 VCR/hash/序列化身份，是一种“可观察视图”和“事实记录”分离。</div><div class="src"><code>src/services/tools/toolExecution.ts:337, 599-615, 785-791</code></div>
+
+<h2>权限是带 provenance 的竞态</h2><p>规则层先返回 allow / deny / ask；若为 ask，不同运行角色进入不同 handler。</p><table><tr><th>角色</th><th>自动路径</th><th>人工路径</th></tr><tr><td>主交互 agent</td><td>permission hooks、Bash classifier 在后台竞态</td><td>本地 dialog；也可与 claude.ai bridge、Telegram/iMessage 等 channel response 竞态</td></tr><tr><td>Coordinator</td><td>先 hook，再 classifier</td><td>无结果才下沉</td></tr><tr><td>Swarm worker</td><td>先 classifier</td><td>通过 mailbox 把请求转给 leader</td></tr></table>
+<p>决策携带 <code>rule</code>、<code>hook</code>、<code>classifier</code>、<code>mode</code>、<code>sandboxOverride</code>、<code>workingDir</code> 等原因；配置来源覆盖 policy/project/user/session/CLI。它既用于解释 UI，也用于遥测和持久化 permission update。</p><div class="src"><code>src/hooks/useCanUseTool.tsx:27-149</code>；<code>src/hooks/toolPermission/handlers/*.ts</code>；<code>src/utils/permissions/permissions.ts:70-170</code></div>
+
+<h2>Sandbox：adapter 可证，runtime 不可证</h2><p>沙箱默认由 settings 的 <code>sandbox.enabled ?? false</code> 控制，并非始终开启。adapter 将 WebFetch/permission rules 与 sandbox settings 编译成 network domain、filesystem allow/deny 和 socket 策略；默认 <code>autoAllowBashIfSandboxed=true</code>、<code>allowUnsandboxedCommands=true</code>，另有 unavailable/fail 配置和平台检查。</p>
+<div class="note warn"><span class="tag external">外部依赖</span>底层隔离由 <code>@anthropic-ai/sandbox-runtime</code> 提供。本树能看到初始化、更新、wrap 和配置生成，不能审计其 namespace/seccomp 等低层实现。与本地 Codex Rust 源码能直接看到 bubblewrap/Seatbelt/Windows 实现的证据强度不同。</div><div class="src"><code>src/utils/sandbox/sandbox-adapter.ts:170-369, 453-492, 719-802, 927-964</code></div>
+<footer>下一篇：<a href="03_context.html">③ 上下文工程</a></footer></div></body></html>

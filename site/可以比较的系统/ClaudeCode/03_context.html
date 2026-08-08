@@ -1,0 +1,28 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Claude Code · 上下文工程</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools.html">② 工具与权限</a><a class="cur" href="03_context.html">③ 上下文</a><a href="04_agents.html">④ 子 Agent</a><a href="05_sessions.html">⑤ 会话与前端</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>③ 上下文工程：不是一次 compact，而是一条减重流水线</h1><p class="sub">Claude Code 同时维护“完整可恢复历史”“REPL 可滚动视图”和“发给 API 的投影视图”；压缩只改变后者或建立新边界。</p></header>
+
+<h2>API view 的固定顺序</h2><pre><code>full conversation messages
+  → getMessagesAfterCompactBoundary
+  → aggregate tool-result budget（替换过大内容，可持久化）
+  → HISTORY_SNIP（feature）
+  → microcompact（清旧 tool_result / cache edits）
+  → CONTEXT_COLLAPSE projection（feature，内部实现缺失）
+  → autocompact（必要时摘要 + boundary + 恢复附件）
+  → model request</code></pre><div class="src"><code>src/query.ts:355-449</code></div>
+<div class="key"><b>设计重点：</b>各层处理不同损耗单位，因此可以组合。tool-result budget 按单条消息/字符替换；microcompact 按 tool-use id 清内容；collapse 尝试保留细粒度摘要；full compact 才把旧对话归并为总摘要。</div>
+
+<h2>第一层：工具结果预算</h2><p>工具输出通常是上下文增长最快的部分。<code>applyToolResultBudget()</code> 在 microcompact 前运行；对主线程和 agent sidechain 可把 replacement record 写入 transcript，resume 时据此重建状态。工具若显式声明无限 <code>maxResultSizeChars</code> 可免除此层。</p><p>这不是删除事实而不留痕：替换记录与原消息身份分开持久化，恢复链知道哪些内容曾被预算裁剪。</p><div class="src"><code>src/query.ts:369-397</code>；<code>src/utils/toolResultStorage.ts:367-740</code></div>
+
+<h2>第二层：microcompact</h2><p>可见实现会把较旧、可压缩的 tool result 内容替换为 <code>[Old tool result content cleared]</code>，至少保留最近一个，避免模型完全失去工作集。时间型触发还考虑最后一次主循环 assistant 消息后的空闲时间：若服务端 prompt cache 已大概率过期，与其为旧前缀重新付 cache creation，不如主动清旧内容。</p><table><tr><th>保留</th><th>清理</th><th>不变量</th></tr><tr><td>最近 N 个 tool result、工具调用结构</td><td>更旧的 result payload</td><td>tool_use / tool_result 配对仍合法；至少有一个近期工作结果</td></tr></table><div class="src"><code>src/services/compact/microCompact.ts:36, 253-388, 403-513</code></div>
+
+<h2>第三层：collapse / reactive compact</h2><p><code>query.ts</code> 注释说明 collapse 是对完整 REPL history 的 read-time projection：summary 存在独立 commit store，每轮重放；若 collapse 已把请求降到阈值以下，就避免 full compact，保留更 granular 的上下文。溢出恢复时先 drain collapse，再做 reactive compact。</p><div class="note warn"><span class="tag partial">仅接口可见</span><code>src/services/contextCollapse/</code>、<code>reactiveCompact.ts</code> 和 <code>cachedMicrocompact.ts</code> 不在本树中。session schema 中能看到 commit/snapshot 的持久化类型和恢复入口，但算法、阈值、摘要 prompt 均不能当作已审计。</div>
+
+<h2>第四层：full compact 是“摘要 + 恢复包”</h2><p><code>compactConversation()</code> 摘要旧消息并保留近期 history；结果顺序固定为：</p><pre><code>compact boundary
+  + summary messages
+  + messagesToKeep
+  + attachments
+  + hook results</code></pre>
+<p>附件不是装饰：系统会按预算恢复最近读取文件（最多 5 个、总 50k token、单文件 5k）、plan/plan-mode、已调用 skill（单 skill 5k、总 25k）以及后台 agent 状态。摘要本身无法可靠保留这些可操作状态，所以用结构化附件重建工作面。</p><div class="src"><code>src/services/compact/compact.ts:122-130, 326-387, 533-558, 1415-1568</code></div>
+
+<h2>Prompt cache 是一等架构约束</h2><p>compact 可用 forked-agent 路径复用主对话的 cache-safe prefix；fork 子 agent 也线程化传递已渲染 system prompt，避免重新计算时 feature/config 冷热状态不同导致字节漂移。这里把“缓存前缀字节相同”当成正确性约束，而不只是性能优化。</p><div class="note"><b>可迁移原则：</b>压缩不要只返回一段文字。应返回 <code>{boundary, summary, preservedTail, stateAttachments, provenance}</code>，并明确哪一段仍能命中缓存、哪一段必须重建。</div>
+<footer>下一篇：<a href="04_agents.html">④ 子 Agent 与团队</a></footer></div></body></html>

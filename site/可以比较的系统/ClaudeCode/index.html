@@ -1,0 +1,28 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Claude Code 源码深读 · 总览</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a class="cur" href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools.html">② 工具与权限</a><a href="03_context.html">③ 上下文</a><a href="04_agents.html">④ 子 Agent</a><a href="05_sessions.html">⑤ 会话与前端</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>Claude Code · TypeScript 源码深读</h1><p class="sub">从模型流到工具执行、权限竞态、上下文压缩、可恢复子 agent 与多种前端适配，追踪一条真实 coding-agent 主链。</p><div class="meta"><b>审计对象</b> <code>/home/tomwhite/coding/claude-code/src</code> · <b>复核日期</b> 2026-08-08 · <b>源码形态</b> source-map backed 展开树</div></header>
+
+<h2>先说结论</h2>
+<p class="lead">这份实现最鲜明的特征不是“会调用 Bash”，而是把 coding agent 当作一个<b>持续流动、随时可恢复的并发会话</b>：模型流到一半即可启动安全工具；每次 tool use 必须闭合成 result；权限由多种自动与人工来源竞态裁决；上下文不只做一次摘要，而是逐层减重；后台 agent 拥有独立 transcript、cwd 与生命周期。</p>
+<div class="key"><b>一句话架构：</b><code>QueryEngine / REPL</code> 管会话，<code>query()</code> 驱动 agent loop，<code>StreamingToolExecutor</code> 在模型流下隐藏工具延迟，JSONL 的 <code>parentUuid</code> 图承担恢复与分支；Skills / Hooks / MCP / Plugins 则从四个方向扩展系统。</div>
+
+<h2>研究边界：哪些能信到什么程度</h2>
+<table><tr><th>证据等级</th><th>本次材料</th><th>使用规则</th></tr>
+<tr><td><span class="tag full">完整可证</span></td><td>1,902 个文件；1,884 个 TS/TSX，约 512,664 行；核心 query、tool、session、agent、SDK/REPL 实现可读</td><td>可以按函数与行号解释调用顺序和不变量</td></tr>
+<tr><td><span class="tag partial">仅接口可见</span></td><td><code>CONTEXT_COLLAPSE</code>、<code>REACTIVE_COMPACT</code>、<code>CACHED_MICROCOMPACT</code> 等调用点存在，但目标文件缺失</td><td>只讨论 feature gate、输入输出和恢复顺序，不猜内部算法</td></tr>
+<tr><td><span class="tag external">外部依赖</span></td><td>沙箱底层来自 <code>@anthropic-ai/sandbox-runtime</code>；模型服务端行为也不在树内</td><td>只陈述 adapter 如何编译配置及调用，不能声称审计了底层隔离实现</td></tr></table>
+<div class="note warn"><b>不是官方 Git 快照。</b>目录没有 <code>.git</code>、<code>package.json</code> 或 lockfile；版本使用构建期 <code>MACRO.VERSION</code> 内联，无法从本树恢复。因此本篇不写伪提交号、不把它称作“官方开源仓库”，也不据此推断可复现构建。<code>query.ts</code> 的 task-budget beta 注释只能证明该功能语义出现在快照中，不能替代版本号。</div>
+
+<h2>阅读路线</h2><div class="hub">
+<a href="01_loop.html"><h3>① Agent loop</h3><p>逐段追踪 query 的无限循环、流式回退、错误恢复与终止条件。</p></a>
+<a href="02_tools.html"><h3>② 工具、权限与沙箱</h3><p>并发屏障、确定性结果顺序、权限竞态及外部 sandbox adapter。</p></a>
+<a href="03_context.html"><h3>③ 上下文工程</h3><p>tool-result budget → microcompact → collapse → full compact 的多级减重。</p></a>
+<a href="04_agents.html"><h3>④ 子 Agent 与团队</h3><p>fork、background、resume、worktree、mailbox 与任务领取。</p></a>
+<a href="05_sessions.html"><h3>⑤ 会话、前端与扩展</h3><p>JSONL 会话图、QueryEngine/REPL 边界、SDK 协议与四类扩展面。</p></a>
+<a href="06_compare.html"><h3>⑥ 横向比较与 AutoResearch</h3><p>与本地 Codex 源码逐项对照，抽取可迁移设计和不该照搬的复杂度。</p></a></div>
+
+<h2>目录不是架构，但能显示重心</h2>
+<table><tr><th>区域</th><th>作用</th><th>观察</th></tr><tr><td><code>query.ts</code> / <code>QueryEngine.ts</code></td><td>单 turn 循环与 headless 会话封装</td><td>内核已经抽出，但注释明确 REPL 仍是“future phase”的消费者</td></tr><tr><td><code>tools/</code> / <code>services/tools/</code></td><td>工具定义、编排、执行、hook 和 permission</td><td>接口保守默认；并发安全由工具按输入判定</td></tr><tr><td><code>services/compact/</code></td><td>微压缩、自动/手动摘要、恢复附件</td><td>把 token、prompt cache 和可恢复性同时作为设计变量</td></tr><tr><td><code>tasks/</code> / <code>tools/AgentTool/</code> / <code>utils/swarm/</code></td><td>后台 agent、团队 worker、任务和邮箱</td><td>同时存在一进程与 pane/process 后端</td></tr><tr><td><code>cli/</code> / <code>bridge/</code> / <code>remote/</code></td><td>交互 TUI、stream-json、远程控制</td><td>共享 SDK message schema，但并非单一 JSON-RPC server 边界</td></tr></table>
+<div class="src">规模命令：<code>find src -type f</code>、<code>rg --files src | rg '\.tsx?$'</code>、<code>wc -l</code>。行数是展开树 raw LoC，不是可维护性评分。</div>
+<footer>Claude Code 源码深读 · 总览 · 证据均来自本地展开源码树，复核于 2026-08-08</footer></div></body></html>
