@@ -1,0 +1,62 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · 上下文与会话</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a class="cur" href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>③ 上下文与会话：三份历史，而不是一份 messages</h1><p class="sub">持久 transcript 是事实来源，工作图负责变换，API history 是一次请求的投影；另有 checkpoint 负责文件世界。理解这些边界，才能解释压缩、恢复和 rewind。</p></header>
+
+<h2>先建立正确模型：历史至少有四层</h2>
+<table><tr><th>层</th><th>载体</th><th>职责</th><th>是否直接发给模型</th></tr><tr><td>持久会话</td><td><code>ChatRecordingService</code> JSONL</td><td>记录用户/模型消息、tool call/result、thought、token、metadata</td><td>恢复后先转换，不原样发送</td></tr><tr><td>durable chat</td><td><code>AgentChatHistory&lt;HistoryTurn&gt;</code></td><td>当前会话的强引用、稳定 turn id、set/push/rollback</td><td>是 ContextManager 的事实输入</td></tr><tr><td>working graph</td><td><code>ContextManager</code> graph</td><td>mask、distill、truncate、snapshot，保留 lineage</td><td>否，它是可演化中间表示</td></tr><tr><td>请求投影</td><td><code>apiHistory + pendingApiHistory</code></td><td>header、late binding、role/tool pairing hardening 后的一次 API payload</td><td>是</td></tr><tr><td>文件 checkpoint</td><td><code>CheckpointData + Git commit</code></td><td>恢复 edit/write 等工具造成的工作区变化</td><td>否</td></tr></table>
+<p><code>AgentChatHistory</code> 本身很薄：给历史项补稳定 ID，并提供同步修改。真正复杂的是“如何把 durable history 变成下一次 API 所需 history”。当前源码保留了两条实现路径。</p>
+<div class="src"><code>packages/core/src/core/agentChatHistory.ts:9-88</code>；<code>packages/core/src/services/chatRecordingTypes.ts:12-139</code></div>
+
+<h2>双轨现状：legacy compression 默认，新 ContextManager 实验中</h2>
+<table><tr><th></th><th>Legacy</th><th>ContextManager</th></tr><tr><td>开关</td><td>默认路径</td><td><code>contextManagement.enabled</code> 默认 <code>false</code></td></tr><tr><td>基本单位</td><td>线性 <code>Content[]</code></td><td>稳定 ID 的语义节点图</td></tr><tr><td>何时变换</td><td>超过阈值时整段 summary；另可 mask tool output</td><td>每次请求的 sync pipeline + 后台 async pipeline</td></tr><tr><td>历史可解释性</td><td>summary 替换前缀，保留最近尾部</td><td><code>replacesId</code>/<code>abstractsIds</code> 明示 lineage</td></tr><tr><td>API 特有内容</td><td>直接操作 chat history</td><td>late-bound part 可只进入 API projection，不污染 durable history</td></tr></table>
+<div class="note warn"><b>不能把新架构写成当前默认行为。</b><code>Config</code> 明确使用 <code>params.contextManagement?.enabled ?? false</code>；只有开关开启时，<code>GeminiClient.processTurn()</code> 才走 <code>ContextManager.renderHistory()</code>。</div>
+<div class="src"><code>packages/core/src/config/config.ts:1196-1232, 2622-2624</code>；<code>packages/core/src/core/client.ts:643-687</code></div>
+
+<h2>Legacy 压缩：先截工具输出，再做两次模型调用</h2>
+<p>默认触发阈值是模型 context limit 的 50%，目标是保留最新约 30%。切分点只选在不含 <code>functionResponse</code> 的 user turn，避免把 function call 与 response 拆开；若最后一条是无 function call 的 model turn，才允许把全部历史压缩。</p>
+<div class="flow"><span class="step">PreCompress hook</span><span class="arr">→</span><span class="step">检查阈值</span><span class="arr">→</span><span class="step">反向分配 50k tool-response 预算</span><span class="arr">→</span><span class="step">选择合法 split</span><span class="arr">→</span><span class="step">摘要 LLM</span><span class="arr">→</span><span class="step">验证/补漏 LLM</span><span class="arr">→</span><span class="step">token 复核</span></div>
+<p>工具响应从新到旧分预算；超限结果截断，并把原文保存到 project temp。摘要 prompt 会带上既有 <code>&lt;state_snapshot&gt;</code>，再由第二次模型调用审阅第一版、补回遗漏。空摘要直接失败；新 history 若反而比旧 history token 更多，也拒绝替换。一次自动摘要膨胀失败后，后续只做 truncation，避免每轮重复烧两次请求。</p>
+<p>成功后 client 以 summary user turn + model acknowledgement + 未压缩尾部重启 chat，同时强制下一轮刷新 IDE context；仅发生工具截断时则原地 <code>setHistory</code>。</p>
+<div class="src"><code>packages/core/src/context/chatCompressionService.ts:37-100, 124-237, 239-482</code>；<code>packages/core/src/core/client.ts:1196-1265</code></div>
+
+<h2>新 ContextManager：working buffer 是可追踪的变换图</h2>
+<p>具体 node 与一个 Gemini <code>Part</code> 一一对应，类型包括 USER_PROMPT、SYSTEM_EVENT、AGENT_THOUGHT、TOOL_EXECUTION、MASKED_TOOL、AGENT_YIELD、SNAPSHOT、ROLLING_SUMMARY。每个 node 有稳定 id/turnId；派生节点用 <code>replacesId</code> 或 <code>abstractsIds</code> 指回来源。这比“直接改 messages 数组”多出一层 provenance。</p>
+<p>一次 <code>renderHistory()</code> 的顺序很严格：</p>
+<ol><li>从 durable <code>AgentChatHistory</code> 同步 pristine/active graph。</li><li>把本轮 pending request 映射为 ephemeral nodes，先跑 <code>new_message</code> 同步 pipeline。</li><li>首次请求用 <code>countTokens</code> 校准估算；压力过线时等待正在运行的 async pipeline。</li><li>评估 retained/max budget、节点年龄与 coalescing/hysteresis，触发对应 pipeline。</li><li>渲染 header、受保护节点和 late-bound 内容。</li><li>只把 master graph 的 durable 变换同步回 chat；ephemeral request 不落入历史。</li><li>执行 role/tool pairing hardening，再拆成历史与本轮 request。</li></ol>
+<div class="src"><code>packages/core/src/context/contextManager.ts:78-275, 307-492</code>；<code>packages/core/src/context/graph/types.ts:14-122</code></div>
+
+<h2>Pipeline：同步先决定本轮，异步只准备未来</h2>
+<p>Orchestrator 对 sync processors 顺序执行，processor 异常只记录，不让整个请求崩溃；随后按 pipeline key 调度异步工作。相同 async pipeline 有 mutex/coalescing，运行时重新读取最新 nodes。若 token pressure 逼近上限，下一次 render 会通过 barrier 等所有 pending pipeline settled，确保后台整理不会与紧急请求竞态。</p>
+<p>generalist profile 的默认数字很有信息量：retained budget 65k、max 150k、coalescing 5k；新消息到达时可对超过 8k 的 tool output 做 masking、超过 15k 的 node 做 distillation；retained 超限时对 3k 以上节点再 distill，并把单节点限制到 4k；aged-out/GC snapshot 最多约 4k、5 turns。这里的预算是 profile 策略，不等于模型固定 context window。</p>
+<div class="src"><code>packages/core/src/context/pipeline/orchestrator.ts:18-227</code>；<code>packages/core/src/context/config/profiles.ts:66-169</code></div>
+
+<h2>保护与 hardening：压缩不能破坏协议</h2>
+<p>环境首轮、最近窗口与 active task 相关节点会被标记 protected。变换结束后，<code>hardenHistory()</code> 再做协议修复：保证合法起止 role、user/model 交替、function call/response 成对；缺失 response 或 call 会注入 sentinel，响应按模型 call 顺序重排，必要时补 continuation turn。最后 scrub ContextManager 的自定义字段，避免内部 metadata 泄漏到 API。</p>
+<div class="note blue">这不是为了伪造成功结果，而是保证被压缩、恢复或旧版本生成的 history 仍满足 Gemini API 的结构约束。sentinel 内容明确表示缺失/跳过，模型仍能看到异常语义。</div>
+<div class="src"><code>packages/core/src/context/contextManager.ts:439-467</code>；<code>packages/core/src/utils/historyHardening.ts:27-65, 127-377</code></div>
+
+<h2>会话格式：JSONL 追加日志，加载时归并成当前视图</h2>
+<p>主会话文件名含 timestamp 与 session id；subagent 会话放在父 session 专属目录。第一条是 metadata，后续是 message 或控制记录。写入使用同步 append，崩溃最多留下坏尾行；loader 逐行解析并跳过单行错误，也支持旧版 whole-JSON fallback。</p>
+<pre><code>{ "sessionId": "…", "projectHash": "…", "startTime": "…" }
+{ "id": "m1", "type": "user", "content": […] }
+{ "id": "m2", "type": "gemini", "content": […], "toolCalls": […] }
+{ "$set": { "summary": "…" } }
+{ "$rewindTo": "m2" }</code></pre>
+<p>loader 用 message id 的 Map 归并：同 id 的后写记录替换先前内容但保持原位置。<code>$set.messages</code> 是全量 checkpoint，清空后重建 messages；普通 <code>$set</code> 合并 metadata；<code>$rewindTo</code> 删除目标消息及之后的逻辑视图。rewind 只追加控制事件，不物理截断原文件。</p>
+<p>ContextManager mask/summary 后，<code>updateMessagesFromHistory()</code> 会同步 message content 与 tool result；若有变化，通过 <code>$set</code> 写入新的 messages checkpoint。因此恢复看到的是最新逻辑历史，而 JSONL 仍保留此前事件。</p>
+<div class="src"><code>packages/core/src/services/chatRecordingService.ts:133-400, 402-640, 927-1019</code>；<code>packages/core/src/services/chatRecordingTypes.ts:12-139</code></div>
+
+<h2>Resume 是投影重建，不是反序列化一个 chat 对象</h2>
+<p>恢复时，转换器忽略 info/error/warning 与内部 slash、session-context、hook-context 消息。现代 gemini record 的 content 是事实来源；旧 record 缺内容时才从 thoughts/toolCalls 重构，并把 tool results 生成为相邻 user function-response turn。<code>ensureStableToolIds()</code> 给旧调用确定性补 ID，并在相邻轮次配对。</p>
+<p><code>GeminiChat</code> 优先接受显式 history，否则从 recording resume；每次 send 由 promise 链串行化。普通用户内容和 function responses 都进入 durable recording。<code>getHistoryTurns()</code> 可返回 curated 或 comprehensive 视图；<code>setHistory()</code> 同时回写 recording，使内存变换和下次恢复保持一致。</p>
+<div class="src"><code>packages/core/src/utils/sessionUtils.ts:14-79, 110-227</code>；<code>packages/core/src/core/geminiChat.ts:291-344, 396-610, 1050-1110</code></div>
+
+<h2>Rewind 与 checkpoint 是两件事</h2>
+<table><tr><th></th><th>Session rewind</th><th>Tool checkpoint restore</th></tr><tr><td>恢复对象</td><td>对话 messages 的逻辑前缀</td><td>client/UI history + Git 工作区快照</td></tr><tr><td>持久方式</td><td>追加 <code>$rewindTo</code></td><td>checkpoint JSON 指向 shadow Git commit</td></tr><tr><td>文件回滚</td><td>本身不保证</td><td>调用 Git service restore snapshot</td></tr><tr><td>覆盖范围</td><td>任意已记录消息</td><td>开启 checkpointing 且工具 invocation 可恢复时</td></tr></table>
+<p>创建 checkpoint 时保存 restorable tool 的 name/args、messageId、client/UI history 与 Git snapshot；若 snapshot 创建失败可记录当前 commit。restore 会分别恢复 histories 和 Git snapshot，commit 不存在则明确报错。因此“倒回聊天”不应被描述成通用事务回滚，checkpoint 也不是所有副作用的 durable transaction log。</p>
+<div class="src"><code>packages/core/src/utils/checkpointUtils.ts:15-186</code>；<code>packages/core/src/commands/restore.ts:11-58</code></div>
+
+<h2>本章结论</h2>
+<ul><li>默认上下文治理仍是线性 summary + tool truncation；图式 ContextManager 的设计更先进，但必须标注 experimental/default-off。</li><li>新路径把 durable history、变换图和 API projection 分离，并用 lineage、保护集、压力 barrier 与 hardening 控制一致性。</li><li>JSONL 是可恢复的追加日志：重复 ID、<code>$set</code>、<code>$rewindTo</code> 在加载时折叠为当前会话。</li><li>session resume 恢复模型语义；checkpoint restore 才尝试恢复文件世界。两者都不是跨任意外部工具的事务。</li></ul>
+<footer>Gemini CLI 源码深读 · ③ 上下文与会话 · 基于本地提交 <code>cf22ac7e86f3</code></footer></div></body></html>

@@ -1,0 +1,56 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · 总览</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a class="cur" href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>Gemini CLI · TypeScript 源码深读</h1><p class="sub">从 CLI 再执行边界进入 GeminiClient、Turn、Scheduler 与 function-response 回注循环，并追踪策略、沙箱、上下文、会话、子 agent 和多前端协议。</p><div class="meta"><b>审计对象</b> <code>/home/tomwhite/coding/gemini-cli</code> · <b>提交</b> <code>cf22ac7e86f3</code> · <b>包版本</b> <code>0.56.0-nightly.20260806.g761f604c1</code> · <b>复核日期</b> 2026-08-09</div></header>
+
+<h2>先说结论</h2>
+<p class="lead">Gemini CLI 的架构重心不是一个孤立的 while-loop，而是三层协作：<b><code>GeminiClient/Turn</code> 把模型流翻译成稳定事件，Core <code>Scheduler</code> 把工具调用推进为可确认、可并行、可取消的状态机，CLI 或 <code>LegacyAgentProtocol</code> 再把完成的 function responses 回注模型</b>。它正在迁往统一的 <code>AgentProtocol/AgentSession</code> 消费面，但默认路径仍保留既有 loop，因此当前源码应按“成熟内核 + 迁移适配层”来读。</p>
+<div class="key"><b>一句话架构：</b><code>gemini.tsx</code> 完成配置、认证与可选 sandbox 再执行；交互 TUI、非交互 CLI、ACP、SDK 和 A2A 各自适配 Core；Core 内部以 <code>GeminiChat → Turn → GeminiClient → Scheduler</code> 形成 reasoning/action 主链，MessageBus、PolicyEngine、HookSystem、ChatRecordingService 与 ContextManager 横切其上。</div>
+
+<h2>研究边界：哪些能信到什么程度</h2>
+<table><tr><th>证据等级</th><th>本次材料</th><th>使用规则</th></tr>
+<tr><td><span class="tag full">完整可证</span></td><td>官方 Git 工作树；<code>packages/</code> 共 2,320 个文件，其中 1,994 个 TS/TSX，约 97,741 行；CLI、Core、SDK、A2A server、IDE companion 均有实现和测试</td><td>可以按提交、函数与行号说明客户端控制流和不变量</td></tr>
+<tr><td><span class="tag migration">迁移中</span></td><td><code>AgentSession</code> 已用于新消费协议，但 interactive、noninteractive、subagent 三个开关默认均为 false；当前适配类名称也明确为 <code>LegacyAgentSession/LegacyAgentProtocol</code></td><td>分别描述默认主链与实验路径，不把接口存在等同于全面接管</td></tr>
+<tr><td><span class="tag external">外部边界</span></td><td>Gemini/Code Assist 服务端、Google 身份服务、远程 A2A agent 与 MCP server 不在仓库内</td><td>只审计请求构造、重试、协议适配和客户端状态；不推断服务端推理或远端执行实现</td></tr></table>
+<div class="note warn"><b>快照很新，也很活跃。</b>审计提交日期为 2026-08-07，版本是 nightly；仓库里同时存在 legacy 命名和 2026 年新增的 AgentSession、context management、skills、native sandbox 等路径。本文把提交号作为结论边界，未来稳定版的默认开关和模块归属可能变化。</div>
+
+<h2>阅读路线</h2><div class="hub">
+<a href="01_loop.html"><h3>① Agent loop</h3><p>追踪输入预处理、模型流、Turn 事件、工具批次、结果回注、终止与迁移适配。</p></a>
+<a href="02_tools_policy.html"><h3>② 工具、策略与沙箱</h3><p>拆解 Scheduler 状态机、并行屏障、hooks、PolicyEngine、确认、sandbox expansion。</p></a>
+<a href="03_context_sessions.html"><h3>③ 上下文与会话</h3><p>区分 legacy compression 与新 ContextManager，并分析 JSONL 会话恢复、checkpoint 和 tool pairing。</p></a>
+<a href="04_agents.html"><h3>④ 子 Agent</h3><p>梳理 local/remote/session 三种 invocation、agent registry、A2A 与并发 scheduler。</p></a>
+<a href="05_frontends_extensions.html"><h3>⑤ 前端与扩展</h3><p>比较 Ink TUI、headless 输出、ACP、SDK、A2A server、IDE companion、MCP、skills 与 hooks。</p></a>
+<a href="06_compare.html"><h3>⑥ 横向比较与 AutoResearch</h3><p>和 Codex、Claude Code、Pi 同口径对照，提取适合长期科研 agent 的机制。</p></a></div>
+
+<h2>包切分与真实重心</h2>
+<table><tr><th>包/区域</th><th>职责</th><th>架构判断</th></tr>
+<tr><td><code>packages/cli</code></td><td>启动、设置、认证、Ink UI、noninteractive、ACP、slash command</td><td>不只是薄 UI：默认交互 loop 的回注编排仍在 React hook 内</td></tr>
+<tr><td><code>packages/core</code></td><td>模型 client、Turn、Scheduler、tools、policy、sandbox、context、sessions、agents、MCP、hooks</td><td>主要可嵌入运行时；Config 同时是依赖容器和 feature/capability 汇合点</td></tr>
+<tr><td><code>packages/sdk</code></td><td>程序化 session API、Zod tools、dynamic instructions</td><td>基于 Core client/Scheduler 自建薄 loop；不经 AgentSession，安全默认也不同于 CLI</td></tr>
+<tr><td><code>packages/a2a-server</code></td><td>HTTP/A2A 服务、任务与持久化</td><td>服务化适配器，不是所有 CLI 前端都必须经过的中心 server</td></tr>
+<tr><td><code>packages/vscode-ide-companion</code></td><td>IDE 上下文与 diff/command 互操作</td><td>编辑器状态通过专用连接进入 CLI，GeminiClient 发送 full/delta context</td></tr>
+<tr><td><code>packages/devtools</code></td><td>开发期活动流与调试可视化</td><td>观测通道，与生产 agent loop 解耦</td></tr></table>
+
+<h2>一条贯穿全篇的调用链</h2>
+<pre><code>gemini.tsx main
+  ├─ settings / args / session / auth
+  ├─ [optional] start_sandbox(...) → child process re-exec
+  ├─ interactive → AppContainer → useGeminiStream (default)
+  └─ noninteractive → runNonInteractive (default)
+          │
+          ▼
+GeminiClient.sendMessageStream
+  → processTurn → model routing / context management / loop detection
+  → Turn.run → GeminiChat.sendMessageStream
+  → Content | Thought | ToolCallRequest | Finished | Error ...
+          │
+          ▼
+Core Scheduler
+  validating → policy/hook → awaiting_approval → scheduled
+  → executing → success/error/cancelled
+          │
+          ▼
+functionResponse parts → same prompt_id continuation → next model turn
+  → no pending tool call / stop / abort / max turn / invalid stream → end</code></pre>
+<div class="src"><code>packages/cli/src/gemini.tsx:350-886</code>；<code>packages/cli/src/ui/AppContainer.tsx:1173-1211</code>；<code>packages/core/src/core/client.ts:614-1060</code>；<code>packages/core/src/core/turn.ts:253-522</code>；<code>packages/core/src/scheduler/scheduler.ts:303-959</code></div>
+<footer>Gemini CLI 源码深读 · 总览 · 基于本地提交 <code>cf22ac7e86f3</code>，复核于 2026-08-09</footer></div></body></html>

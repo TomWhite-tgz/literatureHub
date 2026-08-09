@@ -1,0 +1,87 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · 工具、策略与沙箱</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a class="cur" href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>② 工具、策略与沙箱：决策和执行是两条边界</h1><p class="sub">Tool schema 决定模型能请求什么，PolicyEngine 决定这次是否可做，SandboxManager 决定子进程实际上能碰到什么；三者不能互相替代。</p></header>
+
+<h2>工具抽象：definition 与 invocation 分离</h2>
+<p><code>DeclarativeTool</code> 保存稳定的 name、description、JSON schema、annotations 与展示能力；每次调用通过 <code>build(params)</code> 生成独立 <code>ToolInvocation</code>。Invocation 才拥有动态描述、确认详情、具体执行、实时输出和 abort 行为。这个拆分让 scheduler 能在执行前重新 build：before-tool hook 改参数、用户在编辑器改 diff、sandbox expansion 增加权限后，展示与执行对象都会基于新参数重建。</p>
+<table><tr><th>层</th><th>主要职责</th><th>何时创建</th></tr><tr><td><code>DeclarativeTool</code></td><td>模型声明、静态 metadata、参数验证、invocation factory</td><td>Config 初始化 / MCP 或 command discovery</td></tr><tr><td><code>ToolInvocation</code></td><td>一次调用的描述、确认、执行与结果</td><td>Scheduler ingestion；参数修改后可重建</td></tr><tr><td><code>ToolCall</code></td><td>request + tool + invocation + status + response/confirmation</td><td>Scheduler 状态机逐步收窄类型</td></tr></table>
+<div class="src"><code>packages/core/src/tools/tools.ts:52-103, 157-373, 428-590</code>；<code>packages/core/src/scheduler/types.ts</code></div>
+
+<h2>Registry：已知工具不等于本轮暴露工具</h2>
+<p>主 registry 按配置注册 ls/read/grep-or-ripgrep/glob/skill/edit/write/web/MCP resource/shell/background/search/ask-user，以及可选 plan、tracker 和 <code>invoke_agent</code>。随后执行 command discovery，并把 MCP 工具另行接入。排序固定为 built-in → command-discovered → MCP（按 server name），有利于 schema 顺序和 prompt cache 稳定。</p>
+<p><code>allKnownTools</code> 刻意保留被排除工具，以便会话中动态启用；真正送给模型前，<code>getActiveTools()</code> 根据 PolicyEngine 的静态 exclusions、legacy alias、topic narration、MCP resource 是否存在、plan mode 等再次过滤。因此：</p>
+<ul><li><b>未注册</b>：能力不存在，Scheduler 只能返回 tool-not-found。</li><li><b>已注册但 inactive</b>：当前不暴露给模型，但未来 policy/mode 变化可以恢复。</li><li><b>active</b>：模型能请求；运行时仍必须逐调用经过 policy、hook 和 confirmation。</li></ul>
+<div class="src"><code>packages/core/src/config/config.ts:3915-4069</code>；<code>packages/core/src/tools/tool-registry.ts:231-358, 527-620</code></div>
+
+<h2>Scheduler：一个有并行 wave 的状态机</h2>
+<pre><code>request
+  → validating
+      ├─ invalid args / no tool / hook error / policy deny → error
+      ├─ policy ask → awaiting_approval ─┬─ cancel → cancelled
+      │                                 └─ proceed/modify → scheduled
+      └─ policy allow → scheduled
+  → executing
+      ├─ tailToolCallRequest → replace current, unshift queue → validating
+      ├─ sandbox denial → awaiting_approval → permission retry
+      └─ success | error | cancelled
+  → completedBatch</code></pre>
+<p>StateManager 用 insertion-ordered Map 保存 active calls，用数组保存 queue 和 completed batch。每次 transition 都发布完整 snapshot 到 MessageBus，因此 TUI、subagent activity 与其他消费者无需直接持有 Scheduler 内部引用。</p>
+<div class="src"><code>packages/core/src/scheduler/state-manager.ts:43-166, 199-258</code></div>
+
+<h2>并行语义：连续分组 + 全组 ready barrier</h2>
+<p>Scheduler 不是“只并发 read tool”。规则更直接：除 <code>update_topic</code> 和 edit 工具强制串行外，默认并行；调用可用 <code>wait_for_previous: true</code> 强制屏障，也可对普通 write 显式传 false 进入并行组。队首若可并行，Scheduler 会连续 dequeue 后续可并行项，遇到顺序项即停止扩组。</p>
+<p>组内 validation（hook/policy/confirmation）并发推进，但执行有一个关键 barrier：<b>只有全部 active calls 都为 scheduled 或 terminal，才 <code>Promise.all</code> 启动 scheduled calls</b>。这避免同批 A 已获准就先写盘，而 B 仍弹着确认框；用户看到并裁决的是完整 wave。</p>
+<table><tr><th>输入序列</th><th>执行 waves</th></tr><tr><td>read A, read B, edit C, read D</td><td><code>[A ∥ B] → [C] → [D]</code></td></tr><tr><td>write A(false), write B(false)</td><td><code>[A ∥ B]</code></td></tr><tr><td>read A, read B(wait=true)</td><td><code>[A] → [B]</code></td></tr><tr><td>任意调用 + update_topic</td><td>topic 会先排序到 batch 首，且独立顺序执行</td></tr></table>
+<p>并发工具可按物理完成顺序更新 UI；但 Scheduler 等整组 Promise.all 返回后，按 active Map 的原插入顺序 finalize，所以正常 batch 的 function responses 保持模型调用顺序。异常的 queue cancellation 则按剩余队列顺序补 cancelled results。</p>
+<div class="src"><code>packages/core/src/scheduler/scheduler.ts:303-353, 429-578</code>；<code>packages/core/src/scheduler/state-manager.ts:70-93, 155-165, 212-227</code>；<code>packages/core/src/scheduler/scheduler_parallel.test.ts:372-649</code></div>
+
+<h2>PolicyEngine：高优先级第一条匹配，不是规则投票</h2>
+<p>Policy rule 可匹配 tool name/alias、subagent、MCP server、annotations、stable-stringified args regex、approval mode 和 interactive 状态。规则按 priority 降序，<b>第一条匹配规则决定初始 decision</b>。TOML priority 被映射到分层数轴：</p>
+<pre><code>default  1.xxx
+extension 2.xxx
+workspace 3.xxx
+user      4.xxx
+admin     5.xxx
+
+同 tier 内：TOML priority 0..999 → tier + priority/1000</code></pre>
+<p>因此来源层级先于文件内数字：普通 admin rule 会压过最高的 user rule。动态 settings rule 也被安置到明确 tier/offset。Rule source 随 decision 返回，拒绝时可给模型/用户展示来源和定制 denyMessage。</p>
+<div class="src"><code>packages/core/src/policy/types.ts:114-193</code>；<code>packages/core/src/policy/toml-loader.ts:194-203, 299-307, 455-497</code>；<code>packages/core/src/policy/config.ts:372-410</code>；<code>packages/core/src/policy/policy-engine.ts:198-260, 555-632</code></div>
+
+<h2>默认不是一律 ask：mode policy 先表达产品意图</h2>
+<table><tr><th>模式/来源</th><th>典型规则</th><th>边界</th></tr><tr><td>read-only defaults</td><td>read/list/search/glob 等 allow</td><td>仍受更高 tier deny 和 safety checker 约束</td></tr><tr><td>write defaults</td><td>write/edit/shell 等 ask-user</td><td>auto-edit 可对特定编辑能力提升</td></tr><tr><td>plan</td><td>大多数 action deny；只允许指定 plan Markdown 路径</td><td>由 argsPattern 精确限定路径，catch-all deny 在较低 priority</td></tr><tr><td>yolo</td><td>最高 default priority allow-all</td><td>高 tier admin/user deny 仍可覆盖；shell parser 的受限规则失败可 deny</td></tr><tr><td>noninteractive</td><td><code>ask_user</code> 明确 deny</td><td>无匹配的默认 decision 也是 deny，而非等待不存在的 UI</td></tr><tr><td>discovered tools</td><td>interactive ask、noninteractive deny</td><td>任意外部脚本不会因发现成功自动获信任</td></tr></table>
+<div class="src"><code>packages/core/src/policy/policies/*.toml</code>；<code>packages/core/src/policy/policy-engine.ts:253-260, 634-673</code></div>
+
+<h2>Shell 还有第二层结构化审查</h2>
+<p>命中普通 tool rule 后，shell 不会直接执行。PolicyEngine 用 tree-sitter/shell-quote 拆分复合命令，分别检查子命令；重定向默认把 ALLOW 降为 ASK_USER（auto-edit/yolo 或规则显式允许除外）。解析失败时采取 fail-aware 策略：已有 DENY 继续 deny；YOLO 下若规则含 args restriction 则 deny；普通交互回退默认 ask；noninteractive 回退 deny。</p>
+<p>SandboxManager 还提供 known-safe/dangerous command heuristics。危险命令在非 YOLO 模式强制 ask；已知安全命令可把默认 ask 提升为 allow。但 heuristics 不越过明确 deny。对于 <code>additional_permissions</code>，即使初始 allow，只要路径越出 workspace 也降回 ask。</p>
+<div class="src"><code>packages/core/src/policy/policy-engine.ts:284-499, 634-703</code></div>
+
+<h2>Safety checker：只能收紧，不会把 deny 变 allow</h2>
+<p>Policy decision 非 deny 时，匹配的 checker 才依优先级执行。checker 返回 DENY 会立即结束；ASK_USER 可把 allow 降级；checker throw 按 fail-closed 返回 deny。仓库支持 in-process 和 external checker。BeforeTool hook 位于 policy 之前，可 block、ask 或修改参数；hook 的 ask 会覆盖 policy allow，但 hook 不能把 policy deny 翻成 allow。</p>
+<div class="flow"><span class="step">BeforeTool hook</span><span class="arr">→</span><span class="step">highest policy rule</span><span class="arr">→</span><span class="step">shell heuristics</span><span class="arr">→</span><span class="step">safety checkers</span><span class="arr">→</span><span class="step">allow / ask / deny</span></div>
+<div class="src"><code>packages/core/src/scheduler/scheduler.ts:612-675</code>；<code>packages/core/src/policy/policy-engine.ts:705-759</code>；<code>packages/core/src/safety/checker-runner.ts</code></div>
+
+<h2>确认：MessageBus 与 IDE 竞速，参数可在中途修改</h2>
+<p>ASK_USER 不等于一个简单 boolean。Invocation 生成类型化确认详情（exec/edit/MCP/sandbox expansion 等），Scheduler 为它分配 correlationId 并进入 awaiting_approval。TUI 通过 MessageBus 回复；若 invocation 同时提供 IDE diff confirmation，两者 <code>Promise.race</code>，胜者决定，loser 的 iterator 会被 AbortController 清理。</p>
+<p>用户可以 proceed once、cancel、always allow，或进入 external editor/inline diff 修改。修改后 Scheduler 用新参数重建 invocation，再回到确认循环显示新 diff；always-allow 等结果通过 <code>updatePolicy()</code> 持久化为后续 policy，而不是绕开当前状态机。</p>
+<div class="src"><code>packages/core/src/scheduler/confirmation.ts:51-103, 105-199, 293-348</code>；<code>packages/core/src/scheduler/scheduler.ts:677-723</code></div>
+
+<h2>两套 sandbox 必须分清</h2>
+<table><tr><th>层</th><th>范围</th><th>实现</th><th>启用时机</th></tr><tr><td>CLI 进程 sandbox</td><td>整个 Gemini CLI 子进程及其工具</td><td>Docker/Podman、macOS <code>sandbox-exec</code>、runsc/LXC 适配</td><td><code>gemini.tsx</code> 初始化前 re-exec</td></tr><tr><td>Core command sandbox</td><td>每次 shell/discovery 子进程</td><td>Linux bubblewrap、macOS Seatbelt、Windows native helper；未启用为 Noop</td><td><code>ShellExecutionService.prepareExecution</code></td></tr></table>
+<p>第二套 <code>SandboxManager</code> 同时做环境变量清洗与 OS 隔离。Linux builder 组织 ro/rw bind 和 network namespace；macOS 生成 Seatbelt profile；Windows 生成 allowed/forbidden manifest 给 helper。路径解析同时保留 symlink 原路径与 realpath，显式隐藏 <code>.env*</code>，把 <code>.git/.gitignore/.geminiignore</code> 当 governance files 保护，并识别 worktree 的真实 Git dir。</p>
+<div class="note warn"><b>关闭 sandbox 时仍有 policy，但没有 OS 边界。</b><code>NoopSandboxManager</code> 会清洗 environment 并参与 safe/dangerous heuristic，却把原 command/args 直接交给系统。Policy allow 只是决策；只有 native/container manager 才是实际强制。</div>
+<div class="src"><code>packages/cli/src/gemini.tsx:568-621</code>；<code>packages/core/src/services/sandboxManager.ts:64-192, 194-333, 366-452</code>；<code>packages/core/src/services/sandboxManagerFactory.ts:19-43</code>；<code>packages/core/src/services/shellExecutionService.ts:422-546</code></div>
+
+<h2>沙箱拒绝后的扩权重试</h2>
+<p>Command sandbox 可把拒绝解析为所需 file read/write paths 或 network permission，并返回 <code>sandbox_expansion_required</code>。Scheduler 不把它直接交给模型，而是生成专门 confirmation：把权限写入 <code>additional_permissions</code>、重建 invocation、更新 state 后等待用户。拒绝则保留原 sandbox error 为工具失败；同意则清空 live error display，并在同一 call id 上递归重执行。</p>
+<p>扩权参数还要再过 PolicyEngine：workspace 外路径会把 allow 降为 ask。这个闭环把“第一次最小权限试跑”和“按实际 denial 精确申请”结合起来，也保留了用户决策和 function-call identity。</p>
+<div class="src"><code>packages/core/src/scheduler/scheduler.ts:836-938</code>；<code>packages/core/src/policy/policy-engine.ts:675-703</code></div>
+
+<h2>输出进入模型前还有治理</h2>
+<p>ToolExecutor 将 success/error/cancel 都规范为带相同 call id/name 的 functionResponse。Legacy context 路径对过长 shell/MCP 文本截断并把全文存到 project temp；新 context management 路径改由 <code>ToolOutputDistillationService</code> 处理。取消若已有部分输出，会保留截断后的内容并在 response object 注入 cancellation error，避免丢失已发生的观察。</p>
+<div class="src"><code>packages/core/src/scheduler/tool-executor.ts:54-198, 200-368</code></div>
+
+<h2>本章结论</h2>
+<ul><li>Gemini CLI 把 schema exposure、policy decision、human confirmation、OS enforcement 和 LLM result projection 分成五层。</li><li>并行默认由调用参数和少量强制顺序工具控制；全组 ready barrier 比“只并发只读”更关键。</li><li>Policy 是分层、first-match、可归因的；admin/user/workspace/extension/default 来源优先级高于 tier 内数字。</li><li>无 sandbox 时 PolicyEngine 不是安全边界；有 sandbox 时扩权也必须重新经过用户与 policy。</li><li>成功、失败、取消最终都闭合成 functionResponse，这是 agent loop 可继续的协议基础。</li></ul>
+<footer>Gemini CLI 源码深读 · ② 工具、策略与沙箱 · 基于本地提交 <code>cf22ac7e86f3</code></footer></div></body></html>

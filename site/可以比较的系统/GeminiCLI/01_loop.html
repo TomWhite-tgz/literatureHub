@@ -1,0 +1,81 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · Agent loop</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a href="index.html">总览</a><a class="cur" href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>① Agent loop：模型 turn 与工具 batch 交替推进</h1><p class="sub">默认交互 loop 分跨 CLI hook、Core client、Turn 与 Scheduler 四层；理解它的关键是区分“模型的一次流”“工具的一批执行”和“用户的一次 prompt sequence”。</p></header>
+
+<h2>先把三个循环单位分开</h2>
+<table><tr><th>单位</th><th>源码对象</th><th>结束边界</th></tr>
+<tr><td>模型 turn</td><td><code>Turn</code></td><td>一次 <code>GeminiChat.sendMessageStream</code>；可产生文本、thought、多个 function calls 和 finish reason</td></tr>
+<tr><td>工具 batch</td><td><code>Scheduler.schedule(requests)</code></td><td>同一模型 turn 收集到的调用全部进入 terminal state；允许其中一段并行</td></tr>
+<tr><td>prompt sequence</td><td><code>prompt_id</code> + 多次 <code>submitQuery(...isContinuation)</code></td><td>模型不再调用工具，或 stop/abort/error/overflow/max-turn/loop 等条件终止</td></tr></table>
+<div class="key"><b>最容易误读的地方：</b><code>GeminiClient.sendMessageStream</code> 的名字像“一次 API 请求”，实际还会做上下文管理、模型路由、loop detection、next-speaker continuation 和 before/after-agent hooks；但工具执行仍在调用者一侧完成，再以 function response 发起下一次 continuation。</div>
+
+<h2>第零层：进程启动先决定运行边界</h2>
+<p><code>main()</code> 先安装 cleanup/signal/stdio handler，加载 settings 与参数，解析 resume session，再做一次“跳过 extensions”的 partial config 和认证。若启用 sandbox 且当前不在 sandbox 内，它读取 stdin、把内容注入参数，然后调用 <code>start_sandbox</code> 启动子进程；父进程等待并退出。只有越过这条再执行边界后，才加载完整 config、初始化 storage/policy/message bus/hooks 和昂贵组件。</p>
+<div class="flow"><span class="step">load settings/args</span><span class="arr">→</span><span class="step">partial Config + auth</span><span class="arr">→</span><span class="step">optional sandbox re-exec</span><span class="arr">→</span><span class="step">full Config.initialize</span><span class="arr">→</span><span class="step">ACP / TUI / headless 分流</span></div>
+<p>这个顺序有两个安全含义：OAuth 浏览器跳转在 sandbox 外完成；extension 也不会在认证和选择 sandbox 前影响启动。进入完整运行时后，interactive 走动态加载的 Ink UI，noninteractive 走显式 while-loop，ACP 则走独立 client adapter。</p>
+<div class="src"><code>packages/cli/src/gemini.tsx:350-621, 623-760, 781-886</code></div>
+
+<h2>第一层：交互输入先在客户端消歧</h2>
+<p>默认 TUI 使用 <code>useGeminiStream</code>。<code>prepareQueryForGemini()</code> 并非只 trim 字符串，而是按顺序识别：</p>
+<ol><li>UI slash command：可能完全本地处理、直接 schedule 一个 client-initiated tool，或转换成 prompt；</li><li>shell mode command：由本地 shell handler 消费，不进入模型；</li><li><code>@</code> reference：先显示原始用户消息，再解析文件/资源并生成结构化 parts；</li><li>普通文本：写 UI history 后直接作为模型请求；</li><li>非字符串 parts：通常是上一批工具的 function responses，作为 continuation 原样进入。</li></ol>
+<p><code>submitQuery()</code> 用 UI state 与 ref 双重阻止并发普通提交，但允许内部 continuation；它为新 prompt 重置 quota/billing/错误计数，创建 AbortController，并生成 <code>sessionId########promptCount</code>。同一工具链的后续请求复用这个 prompt id，使 hooks、telemetry、loop detector 和工具调用保持同一 sequence 身份。</p>
+<div class="src"><code>packages/cli/src/ui/hooks/useGeminiStream.ts:949-1081, 1650-1746</code></div>
+
+<h2>第二层：GeminiClient 在采样前重写运行上下文</h2>
+<p><code>sendMessageStream()</code> 先在新 prompt id 上重置 loop detector、hook state 和本 sequence 的 sticky model。BeforeAgent hook 可以停止、阻断或附加 <code>&lt;hook_context&gt;</code>。随后 <code>processTurn()</code> 执行真正的采样前治理：</p>
+<ul><li><b>上下文：</b>新 ContextManager 路径可分别生成 durable history、API history 和处理后的 pending request；否则走旧的 agent history management 或 <code>tryCompressChat</code>。</li><li><b>容量：</b>基于当前模型 token limit 与上次 prompt tokens 计算余量，对本次请求估算或调用 countTokens；超出即发 <code>ContextWindowWillOverflow</code>，不盲目请求。</li><li><b>tool pairing：</b>若 history 末尾是 model function call，不插入 IDE context，保证下一条 user message 紧邻 function response。</li><li><b>loop detection：</b>turn 开始和流中事件都检查；首次命中尝试 recovery，再次命中停止。</li><li><b>模型：</b>sequence 首 turn 经过 router 与 availability selection，后续 turn 使用 <code>currentSequenceModel</code> 保持粘性；选定后再刷新 model-dependent tool descriptions。</li></ul>
+<div class="src"><code>packages/core/src/core/client.ts:614-807, 910-960</code></div>
+
+<h2>第三层：Turn 把供应商流翻译成 agent 事件</h2>
+<p><code>Turn.run()</code> 消费 <code>GeminiChat.sendMessageStream()</code> 的 retry/chunk/stop/block 事件。对每个 response chunk，它先提取 thought，再提取普通 text，再把每个 function call 转成带稳定前缀的 <code>ToolCallRequestInfo</code>；citation 被集合去重并在 finish 时排序输出。只有 chunk 真正包含 <code>finishReason</code> 才发 Finished。</p>
+<pre><code>provider stream event
+  retry                    → Retry
+  agent_execution_stopped  → AgentExecutionStopped → return
+  agent_execution_blocked  → AgentExecutionBlocked → continue
+  response chunk
+    thought parts          → Thought
+    visible text           → Content
+    functionCalls[]        → ToolCallRequest × N
+    finishReason           → Citation? → Finished</code></pre>
+<p>function call id 会标准化为 <code>${toolName}__${rawId}</code>，并回写原始 functionCall 对象，让后续 history consolidation 沿用同一 id。Tool 不存在也不在 Turn 层报错：Turn 仍创建 request，交给 Scheduler 规范化成 tool-not-found 结果，这保证模型最终能收到闭合 response。</p>
+<div class="src"><code>packages/core/src/core/turn.ts:269-465, 467-522</code></div>
+
+<h2>第四层：UI 等模型流结束，再提交整个工具 batch</h2>
+<p><code>processGeminiStreamEvents()</code> 流式更新 thought/text/UI 状态，但对 ToolCallRequest 只追加到数组。直到模型流结束，它才先 flush 尚未落入 history 的 rationale，然后 <code>await scheduleToolCalls(toolCallRequests)</code>。因此默认 Gemini CLI 没有像本地 Claude Code 快照那样在 assistant stream 尚未结束时抢跑工具。</p>
+<p>Core Scheduler 对一个 batch 的基本规则是：</p>
+<ul><li><code>update_topic</code> 与编辑类工具强制串行；其他工具默认可并行，调用参数 <code>wait_for_previous: true</code> 可建立顺序屏障。</li><li>只把队首连续的 parallelizable 调用组成 active group；验证/策略检查可并发，但只有组内所有调用都已 scheduled 或 terminal，才一起执行，避免部分工具在另一个仍等待确认时提前产生副作用。</li><li>每个调用经过 <code>validating → awaiting_approval? → scheduled → executing → success/error/cancelled</code>；before-tool hook 可改参数，PolicyEngine 决定 allow/deny/ask，用户取消会级联取消队列。</li></ul>
+<div class="src"><code>packages/cli/src/ui/hooks/useGeminiStream.ts:1522-1626</code>；<code>packages/core/src/scheduler/scheduler.ts:303-353, 429-578, 612-723</code></div>
+
+<h2>第五层：工具结果回注形成下一圈</h2>
+<p><code>useToolScheduler</code> await Core Scheduler，随后调用 <code>handleCompletedTools()</code>。后者只选 terminal 且已有 <code>responseParts</code> 的调用；client-initiated tools 通常不回注（skill activation 会合成 call/result history），model-initiated tools 则按 completed batch 数组顺序 flatten 为 parts。</p>
+<p>几个失败分支专门保护 history：</p>
+<ul><li>用户在工具执行期取消：仍把 model-initiated response parts 追加为 user history，避免孤立 function call。</li><li>整批可拒绝工具都取消：同样手工配对 history，但不再让模型继续。</li><li>quota 导致模型切换：不 continuation，却仍记录 responses，因为未配对的 function call 会污染所有后续请求。</li><li>正常完成：先标记 UI call 已提交，再以原 <code>prompt_id</code> 调用 <code>submitQuery(responses, {isContinuation:true})</code>。</li></ul>
+<div class="flow"><span class="step">tool results</span><span class="arr">→</span><span class="step">responseParts flatten</span><span class="arr">→</span><span class="step">same prompt_id continuation</span><span class="arr">→</span><span class="step">GeminiClient processTurn</span><span class="arr">↺</span></div>
+<div class="src"><code>packages/cli/src/ui/hooks/useToolScheduler.ts:210-227</code>；<code>packages/cli/src/ui/hooks/useGeminiStream.ts:1931-2155</code></div>
+
+<h2>第六层：谁决定“继续”，谁决定“结束”</h2>
+<table><tr><th>条件</th><th>位置</th><th>结果</th></tr>
+<tr><td>有 function calls</td><td>CLI/Scheduler</td><td>执行并回注，进入下一模型 turn</td></tr>
+<tr><td>无 tools，但 next-speaker 判定仍应由 model 发言</td><td><code>GeminiClient.processTurn</code></td><td>内部递归发送 <code>Please continue.</code>，消耗 bounded turn</td></tr>
+<tr><td>AfterAgent hook 返回 blocking</td><td><code>GeminiClient.sendMessageStream</code></td><td>发 Blocked event，再把 reason 作为新请求递归；hook state 重新武装</td></tr>
+<tr><td>AfterAgent hook stop</td><td>同上</td><td>发 Stopped；可按 hook 指令清空 chat</td></tr>
+<tr><td>abort / invalid stream / context overflow / max session turns</td><td>Turn/Client/UI</td><td>发类型化事件并停止当前 sequence</td></tr>
+<tr><td>loop detector 首次命中</td><td>Client</td><td>自动 recovery；再次命中发 LoopDetected。TUI 可让用户关闭本 session 检测并重试</td></tr>
+<tr><td>无 tools、无需 model continuation</td><td>调用者</td><td>不再 submit continuation，prompt sequence 自然结束</td></tr></table>
+<div class="src"><code>packages/core/src/core/client.ts:747-907, 973-1058</code>；<code>packages/cli/src/ui/hooks/useGeminiStream.ts:1752-1790</code></div>
+
+<h2>非交互 loop：更直白，也暴露真正不变量</h2>
+<p>默认 noninteractive 路径把同一机制写成显式 <code>while (true)</code>：以当前 user parts 调模型、收集 ToolCallRequest、await Scheduler、拼接 response parts，并把它们设成下一圈的唯一 current message；没有工具就输出 RESULT 并 return。它还为 text/json/stream-json 分别输出 delta、tool_use、tool_result、错误和统计。</p>
+<p>这条路径证明 agent loop 的最小闭环并不依赖 React：<b>模型流 → 工具请求数组 → Scheduler → function responses → 下一圈</b>。TUI hook 额外承担的是 UI pending state、命令分流、steering hints、background 展示和恢复交互。</p>
+<div class="src"><code>packages/cli/src/nonInteractiveCli.ts:234-240, 311-620</code></div>
+
+<h2>AgentSession 迁移：协议统一了，执行内核尚未替换</h2>
+<p>新 <code>AgentSession</code> 本身是对任意 <code>AgentProtocol</code> 的轻包装，提供 send/subscribe/abort/events 和带 replay/reattach 的 async iterable。现阶段主 CLI 打开实验开关后创建的仍是 <code>LegacyAgentProtocol</code> 或 <code>LegacyAgentSession</code>：它们把上述 GeminiClient + Scheduler 事件翻译成统一 AgentEvent，而不是另起一套全新 reasoning runtime。</p>
+<table><tr><th>路径</th><th>默认</th><th>开关后</th></tr><tr><td>Interactive</td><td><code>useGeminiStream</code></td><td><code>LegacyAgentProtocol → useAgentStream</code></td></tr><tr><td>Noninteractive</td><td><code>runNonInteractive</code> 显式 while-loop</td><td><code>LegacyAgentSession</code> + event formatter</td></tr><tr><td>Subagent</td><td>legacy local/remote executor 路径</td><td>route through AgentSession protocol</td></tr></table>
+<p>三个配置值在 Config 构造时默认都是 false，环境变量 <code>GEMINI_CLI_EXP_AGENT=true</code> 可同时打开 interactive/noninteractive 两条主路径。这是典型的 strangler migration：先稳定消费者协议，再逐步替换前端编排。</p>
+<div class="src"><code>packages/core/src/agent/agent-session.ts:15-103</code>；<code>packages/core/src/agent/legacy-agent-session.ts:8-121, 496-500</code>；<code>packages/cli/src/ui/AppContainer.tsx:1173-1211</code>；<code>packages/core/src/config/config.ts:1369-1374, 3852-3863</code></div>
+
+<h2>本章结论</h2>
+<ul><li>Gemini CLI 的“agent loop”横跨前端编排与 Core，不应只用一个文件代表。</li><li>默认工具启动点在模型流结束后；并发发生在同一 tool batch 内，而非 model/tool 两条流之间。</li><li><code>prompt_id</code> 是跨模型 turn、工具 batch、hook 和 telemetry 的 sequence 关联键；session id 则是更长生命周期。</li><li>tool call/result 配对被当成硬协议不变量，即使取消或 quota fallback 也要补齐 history。</li><li>新 AgentSession 当前主要统一事件消费与重放表面；底层仍适配成熟的 GeminiClient/Scheduler loop。</li></ul>
+<footer>Gemini CLI 源码深读 · ① Agent loop · 基于本地提交 <code>cf22ac7e86f3</code></footer></div></body></html>

@@ -1,0 +1,62 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · 比较与借鉴</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a class="cur" href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>⑥ Gemini CLI × Codex × Claude Code × Pi</h1><p class="sub">Gemini CLI 最值得学的不是某个 prompt，而是 policy/Scheduler 的结构化治理、协议适配广度和正在形成的统一事件/上下文中间层。</p></header>
+
+<h2>先给结论：它在哪些轴上最强</h2>
+<table><tr><th>架构轴</th><th>Gemini CLI</th><th>相对位置</th></tr><tr><td>工具治理</td><td>分层 first-match policy + safety checker + confirmation + native sandbox expansion</td><td><b>四者中最显式、最可归因</b></td></tr><tr><td>协议/产品面</td><td>TUI、headless、ACP、SDK、A2A server、IDE MCP</td><td><b>最广</b>，但编排尚未完全统一</td></tr><tr><td>并行工具</td><td>连续 wave、全组 ready barrier、确定性 response order</td><td>一致性设计优秀；没有 Claude 的流式 latency hiding</td></tr><tr><td>上下文</td><td>成熟 legacy summary + default-off 图式 pipeline</td><td>新设计有潜力，当前成熟度落后于接口野心</td></tr><tr><td>会话</td><td>线性 JSONL 追加日志 + current-view controls</td><td>恢复实用；分支/operation durability 弱于 Pi/Claude</td></tr><tr><td>子 Agent</td><td>声明式 local/A2A、一层并行 fan-out</td><td>隔离清楚；缺 durable background/fork/worktree/team</td></tr><tr><td>扩展</td><td>声明式能力包，分接 MCP/hooks/skills/policy/agents/themes</td><td>安全可治理；不如 Pi runtime extension 灵活</td></tr></table>
+
+<h2>Loop：Gemini 更确定，Claude 更会隐藏延迟</h2>
+<table><tr><th></th><th>采样与工具重叠</th><th>并发判定</th><th>结果顺序</th></tr><tr><td>Gemini CLI</td><td>完整模型流结束后才 schedule batch</td><td>默认可并行，edit/topic/wait 参数形成 barrier</td><td>按 call 插入顺序 finalize</td></tr><tr><td>Claude Code</td><td>tool block 完成即交 StreamingToolExecutor</td><td>工具声明 concurrency-safe；unsafe 是排他屏障</td><td>物理完成可乱，向模型释放有序</td></tr><tr><td>Codex</td><td>完整 output item 后 dispatch，同 step 等 tools</td><td>工具 runtime 并发，跨 step 串行</td><td>conversation item 协议闭合</td></tr><tr><td>Pi</td><td>小型经典 loop，tool_execution_start/end 事件清楚</td><td>当前 loop 偏直接，复杂编排留给 harness 设计</td><td>线性回注</td></tr></table>
+<p>Gemini 的全组 ready barrier 是独到优点：A 已获准也不会在 B 仍弹确认时提前执行。代价是即使模型早已完整吐出第一个昂贵工具，也不能和后续 token 生成重叠。AutoResearch 的训练/下载/评测常耗时很长，可以组合两者：<b>tool call block 完整后预验证，整组 admission 决定后按资源 wave 启动；模型上下文仍按稳定 action sequence 回收结果</b>。</p>
+<div class="src">Gemini：<code>packages/core/src/scheduler/scheduler.ts:303-353, 429-578</code>；对照：<a href="../ClaudeCode/01_loop.html">Claude Code ①</a>、<a href="../Codex/01_loop.html">Codex ①</a>、<a href="../Pi/01_loop.html">Pi ①</a></div>
+
+<h2>Policy：Gemini 把“为什么允许”提升成数据</h2>
+<p>Codex 很清楚地区分 execpolicy 与 permission profile，Claude Code 区分 permission rules 与 sandbox enforcement；Gemini 再前进一步，把 default/extension/workspace/user/admin 映射到数值 tier，rule decision 带 source，之后还串 shell structural analysis 与 prioritized safety checkers。拒绝不是模糊的“不安全”，而是可定位到某条规则/来源。</p>
+<p>尤其值得借鉴的三个点：</p>
+<ul><li><b>最高优先级第一条命中</b>，不用多规则投票制造难以解释的组合结果。</li><li><b>checker 只能收紧</b>，扩展检查器不能把 admin deny 翻成 allow。</li><li><b>权限失败可扩权重试</b>，先以最小 sandbox 运行，根据真实 denial 精确请求 path/network capability。</li></ul>
+<p>AutoResearch 应把同一模型扩展到 GPU、数据许可证、外网域名、API 预算和实验队列：<code>admission decision</code> 说明实验应不应该做，<code>capability lease</code> 才决定 worker 实际能使用什么；二者都要有 source/provenance。</p>
+<div class="src">Gemini：<code>packages/core/src/policy/policy-engine.ts:198-260, 555-759</code>；<code>packages/core/src/scheduler/scheduler.ts:836-938</code>；对照：<a href="../Codex/02_exec.html">Codex ②</a>、<a href="../ClaudeCode/02_tools.html">Claude Code ②</a></div>
+
+<h2>Context：Gemini 的新图正确，但“默认关闭”就是成熟度证据</h2>
+<table><tr><th>系统</th><th>当前主要表示</th><th>压缩/投影特色</th></tr><tr><td>Gemini CLI</td><td>默认线性 history；实验 working graph</td><td>lineage nodes、sync/async pipelines、pressure barrier、hardening</td></tr><tr><td>Claude Code</td><td>transcript + replacement/compact records</td><td>tool budget → microcompact → collapse → full compact，多级减重</td></tr><tr><td>Pi</td><td>append-only session tree</td><td>leaf-to-root 投影，compaction/branch summary 是一等 entry</td></tr><tr><td>Codex</td><td>session history + rollout</td><td>compact 后重注 initial context，避免丢 AGENTS/MCP 等</td></tr></table>
+<p>Gemini 新 ContextManager 最重要的思想是把“持久事实、变换图、API projection”拆开；Claude 的优势是减重层级已进入主路径；Pi 的优势是 branch/compaction 从 session schema 就可表达；Codex 的优势是压缩后再注入关键环境。最合适的研究系统应四者合并：</p>
+<pre><code>durable research journal
+  → current branch / experiment lane projection
+  → lineage-preserving reducers (mask/distill/snapshot)
+  → re-inject active objective, dataset/model contracts, budget
+  → provider-specific API history hardening</code></pre>
+<div class="note warn">不要复制 Gemini 的迁移状态：同一系统长期保留 legacy compression 与 default-off pipeline，会让测试矩阵、恢复语义和前端行为翻倍。AutoResearch 应先定义 canonical context IR，再让旧入口成为短期 adapter，并设删除条件。</div>
+<div class="src">Gemini：<code>packages/core/src/context/contextManager.ts:78-492</code>；对照：<a href="../ClaudeCode/03_context.html">Claude Code ③</a>、<a href="../Pi/03_sessions_context.html">Pi ③</a>、<a href="../Codex/01_loop.html">Codex ①</a></div>
+
+<h2>Session durability：Gemini 可恢复聊天，不等于可恢复 operation</h2>
+<p>Gemini JSONL 对坏行容忍、重复 ID 覆盖、<code>$set.messages</code> checkpoint 和 <code>$rewindTo</code> 都很实用；但它的主结构仍是线性 messages current view，没有 parent/leaf 分支，也没有“tool intent 已 durable、effect 尚未发生”的 operation record。remote A2A context/task ID 甚至只在 static Map 中。</p>
+<p>Pi 当前 v3 的 append-only tree 比 Gemini 更适合分叉探索；Pi Harness v2 设计又明确 lane、operation、intent-before-effect 和 replay declaration，不过 operation engine 仍未落地。Claude Code 的 UUID parent graph、sidechain/background metadata 和 worktree resume 更接近可恢复多 Agent；Codex rollout journal 则适合审计单线执行。</p>
+<div class="key"><b>AutoResearch 的事实底座不能只是聊天记录。</b>一次训练或评测在进程死掉后，必须能区分 never started、running/unknown、committed result、safe-to-replay；会话文本只负责给模型解释，operation journal 才负责恢复。</div>
+<div class="src">Gemini：<code>packages/core/src/services/chatRecordingService.ts:133-400, 927-1019</code>；对照：<a href="../Pi/05_harness_protocol.html">Pi ⑤</a>、<a href="../ClaudeCode/05_sessions.html">Claude Code ⑤</a>、<a href="../Codex/06_compare.html">Codex ⑥</a></div>
+
+<h2>子 Agent：Gemini 擅长能力隔离，不擅长生命周期编排</h2>
+<table><tr><th>能力</th><th>Gemini CLI</th><th>Claude Code</th><th>AutoResearch 需要</th></tr><tr><td>独立 history/model/tools</td><td>有，definition 明确</td><td>有</td><td>有，按研究角色 profile</td></tr><tr><td>并行 fan-out</td><td>有；主 Scheduler wave</td><td>有</td><td>有，受 GPU/预算 scheduler 约束</td></tr><tr><td>递归委派</td><td>local 明确禁止</td><td>fork path 运行时限制</td><td>默认禁止；显式深度/预算才开</td></tr><tr><td>background durable task</td><td>无通用 local 实现</td><td>有 async task + resume metadata</td><td>必须有，训练通常跨 turn</td></tr><tr><td>worktree isolation</td><td>只有 scoped directories，无 child worktree</td><td>内建 worktree lifecycle</td><td>代码/配置分支需要；数据 artifact 另行隔离</td></tr><tr><td>远程标准</td><td>A2A client + server</td><td>内部 task/team abstraction</td><td>A2A 可做边界协议，但内部 journal 不能依赖它</td></tr></table>
+<p>Gemini local executor 复制局部 registries、派生 MessageBus、共享 policy/sandbox，这是很好的 capability scoping；强制 <code>complete_task</code> 和最后 grace turn也比“Promise resolve 就算成功”可靠。但长周期实验还需要 stable task id、lease、heartbeat、artifact commit、resume/reconcile，而不是把子 Agent 的最终文本塞回 functionResponse 就结束。</p>
+<div class="src">Gemini：<code>packages/core/src/agents/local-executor.ts:120-317, 329-905</code>；对照：<a href="../ClaudeCode/04_agents.html">Claude Code ④</a></div>
+
+<h2>Frontends：Gemini 证明了 adapter strategy，也暴露了 drift 风险</h2>
+<p>ACP、SDK、A2A、IDE MCP 的覆盖非常有价值：同一套能力能进入终端、编辑器、程序和远程 task protocol。AgentSession 的 <code>AgentEvent</code> 正在成为统一事件面，这个方向应当借鉴。</p>
+<p>但源码同时给出反例：TUI hook、headless、ACP、SDK、A2A 各自有 loop；ACP 甚至不走中央 Scheduler。共享 Tool 类型并不足以保证共享语义。每新增入口都可能在“并行、policy、hook、取消、token usage、session commit”中漏掉一项。</p>
+<div class="note blue"><b>建议：</b>AutoResearch 只保留一个 headless runtime：<code>accept operation → emit canonical events → wait effects/approval → commit</code>。TUI、Web、CLI JSONL、Python SDK、A2A 都只做 protocol adapter，不各写 while loop。可用 Gemini AgentSession 的迁移方向作正例，用 ACP drift 作测试反例。</div>
+
+<h2>Extensions：声明式 bundle 比任意代码注入更可治理</h2>
+<p>Gemini extension 把 MCP、policy、hooks、skills、agents、context 和 themes 分别交给专门 loader，每种能力仍经过 trust/consent/admin control。Pi runtime extension 能拦截和注册更多内核行为，开发体验更自由，但同样扩大 in-process trust surface。对研究平台，默认应选 Gemini 式声明能力：</p>
+<ul><li>数据源/评测器/外部服务：MCP 或 typed service connector；</li><li>研究策略：lazy skill + version/hash；</li><li>实验准入：分层 policy；</li><li>生命周期集成：typed hook，默认外进程、timeout、结构化 stdin/stdout；</li><li>专门角色：declarative agent definition；</li><li>只有核心算法插件经过签名/管理员安装后才允许进程内代码。</li></ul>
+<div class="src">Gemini：<code>packages/cli/src/config/extension-manager.ts:678-987</code>；对照：<a href="../Pi/04_extensions_frontends.html">Pi ④</a></div>
+
+<h2>给 AutoResearch 的落地优先级</h2>
+<table><tr><th>优先级</th><th>建设项</th><th>直接借鉴</th><th>验收不变量</th></tr><tr><td>P0</td><td>Canonical operation journal</td><td>Pi harness intent/effect；Gemini JSONL tolerant loader；Codex rollout</td><td>accepted action 崩溃后必可分类；每个 call id 终态闭合</td></tr><tr><td>P0</td><td>Policy + capability lease</td><td>Gemini tier/first-match/checker/expansion；Codex permission profile</td><td>decision 有 source；checker 只能收紧；worker 实际越不了界</td></tr><tr><td>P0</td><td>Artifact staging/commit</td><td>Codex patch delta 的精确副作用思想</td><td>checkpoint、数据、指标不可半发布；journal 只存 content address/ref</td></tr><tr><td>P1</td><td>单一 event-driven runtime</td><td>Gemini AgentSession 方向；Claude QueryEngine</td><td>所有 frontends 通过同一 conformance suite</td></tr><tr><td>P1</td><td>Context IR + projection</td><td>Gemini graph lineage；Claude 多级 reducer；Pi branch projection</td><td>durable facts 不被 API-specific compact 破坏；tool pairing 始终合法</td></tr><tr><td>P1</td><td>Resource-aware waves</td><td>Gemini ready barrier + deterministic order；Claude early execution</td><td>CPU/GPU/network lease 后才执行；结果顺序稳定</td></tr><tr><td>P2</td><td>Durable research workers</td><td>Gemini definition/scoped registries；Claude background/worktree</td><td>可 pause/resume/reconcile；parent exit 不丢 task</td></tr><tr><td>P2</td><td>Declarative extension bundle</td><td>Gemini extension + skill/MCP/hook</td><td>安装差异可审计；每种 capability 有独立 trust boundary</td></tr></table>
+
+<h2>哪些东西不应照搬</h2>
+<ul><li><b>不要复制多套 loop。</b>入口短期并存可以，不能让 TUI/ACP/SDK 各自永久定义执行语义。</li><li><b>不要把 default-off 新架构写成能力完成。</b>ContextManager/AgentSession 的接口很漂亮，生产证据仍是默认开关和实际调用链。</li><li><b>不要用 chat rewind 代替实验回滚。</b>训练、下载、外部 API 与发布需要各自补偿/幂等协议。</li><li><b>不要用进程内 Map 保存远程 task continuity。</b>contextId/taskId 必须进入 operation state，并关联 endpoint/auth identity。</li><li><b>不要默认所有 SDK tool 都可信。</b>Gemini SDK 的 default ALLOW 适用于受信任宿主库，不适合加载第三方研究插件。</li><li><b>不要混淆 policy 与 sandbox。</b>“系统认为可做”和“操作系统实际限制”必须分别验证。</li></ul>
+
+<h2>最终判断</h2>
+<p>Gemini CLI 是一个<b>能力面极宽、治理层很成熟、运行时统一化正在进行</b>的系统。Scheduler/PolicyEngine/SandboxManager 的分工、局部 agent registries、A2A task approval、IDE MCP 和声明式 extension bundle 都值得直接研究；ContextManager 与 AgentSession 更适合作为方向性参考，而不是已验证完成品。</p>
+<p>对 AutoResearch，最有价值的组合不是“做一个 Gemini CLI for research”，而是：<b>Gemini 的可归因治理 + Claude 的流式/后台生命周期 + Pi 的分支与 durable operation 设计 + Codex 的执行隔离与副作用证据</b>。先把 operation journal 和 capability enforcement 建牢，再谈更聪明的多 Agent。</p>
+<footer>Gemini CLI 源码深读 · ⑥ 比较与借鉴 · 基于本地提交 <code>cf22ac7e86f3</code></footer></div></body></html>

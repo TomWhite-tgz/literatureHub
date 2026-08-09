@@ -1,0 +1,79 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · 子 Agent</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a class="cur" href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>④ 子 Agent：一个工具入口，两种执行后端</h1><p class="sub"><code>invoke_agent</code> 对主模型只有统一 schema；registry 决定可选角色，local executor 跑独立 ReAct loop，remote invocation 把请求桥接到 A2A。</p></header>
+
+<h2>统一入口：模型只看到 agent_name + prompt</h2>
+<pre><code>main model → invoke_agent({ agent_name, prompt })
+  → AgentRegistry.getDefinition(agent_name)
+  → 把 prompt 映射到该 definition 的单一 input key
+  → DelegateInvocation
+      ├─ local  → LocalSubagentInvocation → LocalAgentExecutor
+      └─ remote → RemoteAgentInvocation   → A2AClientManager</code></pre>
+<p>如果 definition 的 input schema 恰有一个 property，<code>prompt</code> 会映射到那个键（如 request/objective/question）；否则保留为 <code>{prompt}</code>。DelegateInvocation 在确认和执行时都会重新构造具体 child invocation，所以 policy 确认与真正执行使用相同 agent definition。</p>
+<p>多个 <code>invoke_agent</code> 在主 Scheduler 中没有被强制顺序化，因而同一 model batch 可并行；但 local executor 在复制工具时明确过滤 <code>Kind.Agent</code>，所以子 Agent 不能再调用子 Agent。它是“一层 fan-out”，不是递归 agent tree。</p>
+<div class="src"><code>packages/core/src/agents/agent-tool.ts:43-119, 127-236</code>；<code>packages/core/src/agents/local-executor.ts:159-291</code>；<code>packages/core/src/scheduler/scheduler.ts:561-578</code></div>
+
+<h2>Definition：角色、资源与退出协议都声明化</h2>
+<table><tr><th>字段</th><th>含义</th></tr><tr><td><code>inputConfig</code></td><td>AJV/JSON schema，规定委派输入</td></tr><tr><td><code>promptConfig</code></td><td>system prompt、few-shot initial messages、首个 query template</td></tr><tr><td><code>modelConfig</code></td><td>模型、thinking、temperature 等；可 <code>inherit</code></td></tr><tr><td><code>toolConfig</code></td><td>工具名、MCP wildcard、实例或 function declaration</td></tr><tr><td><code>outputConfig</code></td><td>Zod schema、输出字段及可选 postprocessor</td></tr><tr><td><code>runConfig</code></td><td>max turns / max time，默认 30 turns / 10 minutes</td></tr><tr><td>scope 字段</td><td>附加 workspace、memory inbox、extension context、inline MCP 等窄授权</td></tr></table>
+<p>local 与 remote 共用 name/description/input/output metadata；local 才拥有 prompt/model/run/tools，remote 则用 Agent Card URL/inline JSON 与 auth config。Definition 因而不是“另一段 prompt”，而是一个可验证的执行契约。</p>
+<div class="src"><code>packages/core/src/agents/types.ts:38-67, 187-355</code></div>
+
+<h2>Registry：内建 → 项目 → 用户 → 扩展，但先注册者占名</h2>
+<p>初始化先注册内建 <code>codebase_investigator</code>、<code>cli_help</code>、<code>generalist</code>，按设置可加入 browser agent；再扫描项目 <code>.gemini/agents/</code>、用户目录与 extension agents。这里有一个容易按注释读错的细节：<code>registerAgent()</code> 注释称后者覆盖，但实现检测到同名不同对象后 warning 并 <b>ignore later definition</b>。所以实际 name precedence 是更早来源优先，内建名字也被保留。</p>
+<p>项目 agent 还受 folder trust 约束。每个 Markdown 内容算 SHA-256；未确认的 hash 只发 discovered event，不进入 active registry。文件内容变更会改变 hash，要求重新 acknowledgment。用户目录与 extension definition 没走这套项目 hash 确认。</p>
+<p>experimental definition 默认 disabled，可用 settings override 开启；local override 可改 model/run/tools/MCP。model 改变时 local definitions 会 refresh；reload 会清 A2A client/card cache并报告新增、更新、删除。</p>
+<div class="src"><code>packages/core/src/agents/registry.ts:49-153, 155-326, 328-438</code>；<code>packages/core/src/agents/agentLoader.ts:329-471, 640-694</code>；<code>packages/core/src/agents/acknowledgedAgents.ts:18-86</code></div>
+
+<h2>Markdown agent：正文就是 local system prompt</h2>
+<p>loader 只读目录第一层中非下划线开头的 <code>.md</code>。YAML frontmatter 经严格 Zod schema 验证：未知字段也报错；local 正文 trim 后作为 system prompt，frontmatter 可设 tools、inline MCP、model、temperature、turn/time limit。remote 可单个声明，也允许 YAML 顶层数组，并要求 Agent Card URL 或合法 inline JSON。</p>
+<pre><code>---
+kind: local
+name: reviewer
+description: Review a change
+tools: [read_file, grep_search]
+model: inherit
+max_turns: 12
+---
+You are a focused reviewer…</code></pre>
+<div class="src"><code>packages/core/src/agents/agentLoader.ts:42-203, 329-471, 494-628, 640-694</code></div>
+
+<h2>内建角色不是同一 Agent 换名字</h2>
+<table><tr><th>内建 agent</th><th>模型/工具边界</th><th>输出</th></tr><tr><td><code>generalist</code></td><td>继承主模型与主 registry 工具；复用 core prompt 的 noninteractive 版本；20 turns</td><td>response string</td></tr><tr><td><code>codebase_investigator</code></td><td>低温度、高 thinking；仅 ls/read/glob/grep；50 turns</td><td>summary、exploration trace、locations 的结构化报告</td></tr><tr><td><code>cli_help</code></td><td>Flash alias；只有 internal-docs tool；10 turns / 3 min</td><td>answer + sources</td></tr><tr><td><code>browser</code></td><td>动态 browser/MCP 工具与专用 invocation；容器模式受 Chrome 连接方式限制</td><td>browser task result</td></tr></table>
+<p>这几种设计体现了不同隔离方式：investigator 用 tool capability 做硬收窄；cli_help 用单一知识入口；generalist 用独立 history 隔离长任务，但能力接近主 Agent。</p>
+<div class="src"><code>packages/core/src/agents/generalist-agent.ts:17-77</code>；<code>packages/core/src/agents/codebase-investigator.ts:47-151</code>；<code>packages/core/src/agents/cli-help-agent.ts:22-94</code>；<code>packages/core/src/agents/registry.ts:270-326</code></div>
+
+<h2>Local executor：独立 registries，共享 policy 与系统服务</h2>
+<p>每次 invocation 新建 Tool/Prompt/Resource registries，并从父 registry 按 definition 克隆工具到派生 MessageBus；agent 自带 MCP server 也被发现到这些局部 registries。这样工具实例状态和 MCP 可见性隔离，但 Config、PolicyEngine、Gemini client、sandbox manager 仍来自父 context。所有 local agent 额外注册强制 <code>complete_task</code>。</p>
+<p>workspace extension 通过 AsyncLocal scope 暂时扩展，不修改共享 Config；filesystem root 会被拒绝。memory inbox 和 auto-memory extraction 也各用窄 scope。这比给整个子 Agent 复制一份全局配置更适合并行执行。</p>
+<div class="src"><code>packages/core/src/agents/local-executor.ts:120-317, 540-570</code></div>
+
+<h2>Local loop：只有 complete_task 才算完成</h2>
+<div class="flow"><span class="step">template inputs/runtime</span><span class="arr">→</span><span class="step">独立 GeminiChat</span><span class="arr">→</span><span class="step">model function calls</span><span class="arr">→</span><span class="step">Agent Scheduler</span><span class="arr">→</span><span class="step">function responses</span><span class="arr">↻</span></div>
+<p>每轮先做 legacy chat compression，再运行 definition 的 <code>onBeforeTurn</code>，随后调用模型。没有任何 function call 却未调用 <code>complete_task</code> 被视为协议错误；只有 completion tool 返回 <code>taskCompleted</code> 才得到 GOAL。普通 tool denial 是“软拒绝”：响应会指导模型换策略，loop 不立即 abort；真正外部取消才终止。</p>
+<p>达到 timeout、max turns 或无 completion call 时，还有一个短 grace turn：只允许模型立即调用 <code>complete_task</code> 交付 best-effort。等待用户确认期间 deadline timer 暂停，不把人的思考时间算进 agent budget。默认终止类型还区分 ERROR、TIMEOUT、GOAL、MAX_TURNS、ABORTED 与协议错误。</p>
+<div class="src"><code>packages/core/src/agents/local-executor.ts:329-489, 540-905, 1055-1095, 1097-1329, 1455-1471</code></div>
+
+<h2>工具执行仍走主 Scheduler，不是子 Agent 后门</h2>
+<p>模型返回 calls 后，executor 先校验参数和局部 allow set；越权工具被转成同 call id 的 error response。合法 calls 交给一个短生命周期 Scheduler，携带 subagent name、parent call id 和专属 registries，因而继续执行 before-tool hooks、PolicyEngine、confirmation、sandbox 和批次并行。结束后结果写入该 subagent 的独立 chat recording。</p>
+<p>确认请求使用从父 MessageBus derive 的 bus，携带 subagent identity；main TUI 能看到是谁请求了什么。活动另翻译成 thought/tool start/tool end/error，并做内容与参数 sanitization 后作为 <code>SubagentProgress</code> 实时输出。</p>
+<div class="src"><code>packages/core/src/agents/agent-scheduler.ts:19-93</code>；<code>packages/core/src/agents/local-executor.ts:1097-1329</code>；<code>packages/core/src/agents/local-invocation.ts:73-318</code></div>
+
+<h2>用户 steering：local 是直播订阅，remote 是调用前快照</h2>
+<p>local executor 启动后订阅 InjectionService，把新的 user steering 与 background completion 排入队列，在下一轮 function-response message 前置注入；因此正在运行的多个 local agents 都能收到后续 hint。remote DelegateInvocation 记录创建时 injection index，在确认/执行构造 child invocation 时，把此后 user steering 拼到原 query；A2A 流开始后则没有同样的逐轮本地注入点。</p>
+<div class="src"><code>packages/core/src/agents/local-executor.ts:624-757</code>；<code>packages/core/src/agents/agent-tool.ts:145-236</code></div>
+
+<h2>Remote A2A：card 决定协议，客户端重组流</h2>
+<p>registry 加载 remote definition 时解析 Agent Card，把用户描述、card description 与 skills 合并；auth 支持 API key、HTTP、Google credentials、OAuth2。取 card 先匿名，401/403 才带 auth 重试；调用传输同时注册 REST、JSON-RPC、gRPC，由 SDK/Card 协商。远程长任务使用 30 分钟专属 transport timeout。</p>
+<p><code>A2AResultReassembler</code> 把 Message、Task、status update、artifact update 的增量重新拼为文本和 activity。每个 chunk 还提取 <code>contextId/taskId</code>，后续同 agent invocation 继续对话；task 完结时可清 taskId。远程调用即便中途失败也保存已获得的 ID。</p>
+<div class="note warn"><b>这种连续性是进程内的，不是 session JSONL 的 durable 状态。</b>legacy implementation 的 static Map 只按 agent name；新 session adapter 改为 name + target URL，但相应 <code>agentSessionSubagentEnabled</code> 默认仍为 false。CLI 重启后两者都会丢失。</div>
+<div class="src"><code>packages/core/src/agents/registry.ts:439-556</code>；<code>packages/core/src/agents/a2a-client-manager.ts:42-230</code>；<code>packages/core/src/agents/remote-invocation.ts:42-275</code>；<code>packages/core/src/agents/remote-session-invocation.ts:47-218</code>；<code>packages/core/src/config/config.ts:1369-1374, 2626-2628</code></div>
+
+<h2>AgentSession 迁移：统一事件面，不替换执行内核</h2>
+<p>开关开启时，DelegateInvocation 选择 Local/Remote SessionInvocation。LocalSubagentProtocol 内部仍创建并运行 <code>LocalAgentExecutor</code>，只是把 activity 翻译为统一 <code>agent_start/message/tool_request/tool_response/error/agent_end</code> 事件；remote protocol 同理包裹 A2A stream。父 session 可以 subscribe，外部 abort 也统一代理给 protocol。</p>
+<p>所以这次迁移的价值主要是“统一生命周期与可观察性协议”；它不是新 planner，也没有改变 local loop 的 completion、policy 或工具边界。</p>
+<div class="src"><code>packages/core/src/agents/local-subagent-protocol.ts:69-438</code>；<code>packages/core/src/agents/remote-subagent-protocol.ts:54-451</code>；<code>packages/core/src/agents/local-session-invocation.ts:56-335</code></div>
+
+<h2>本章结论</h2>
+<ul><li><code>invoke_agent</code> 是普通受治理工具；并行委派可行，但 local 子 Agent 被明确禁止递归委派。</li><li>definition 同时界定 prompt、model、tools、workspace、budget 和结构化完成协议，远比角色提示词更完整。</li><li>local agent 有隔离 history/registries，却共享 policy、sandbox 与确认通道；它不是权限逃逸边界。</li><li>remote A2A 有协议协商、鉴权和流重组，但 context/task 连续状态目前只存在内存。</li><li>AgentSession 路径统一事件 API，当前默认关闭，底下仍复用成熟 local/A2A 后端。</li></ul>
+<footer>Gemini CLI 源码深读 · ④ 子 Agent · 基于本地提交 <code>cf22ac7e86f3</code></footer></div></body></html>

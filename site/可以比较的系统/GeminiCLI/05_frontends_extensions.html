@@ -1,0 +1,65 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · 前端与扩展</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a class="cur" href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<header><h1>⑤ 前端与扩展：共享 Core，不等于共享编排</h1><p class="sub">monorepo 同时交付 Ink TUI、headless CLI、ACP agent、嵌入式 SDK、A2A server 和 IDE companion；它们复用能力层，但 loop、确认和输出协议各有适配。</p></header>
+
+<h2>Monorepo 的真正分层</h2>
+<table><tr><th>package</th><th>定位</th><th>核心复用</th></tr><tr><td><code>@google/gemini-cli-core</code></td><td>模型、Turn、tools、Scheduler、policy、context、session、MCP、hooks、agents</td><td>事实上的 engine</td></tr><tr><td><code>cli</code></td><td>启动配置、Ink UI、headless、ACP、扩展安装管理</td><td>Core 上的产品与交互层</td></tr><tr><td><code>sdk</code></td><td>TS embedding API、Zod tools、dynamic instructions</td><td>自己写薄 loop，调用 Core client/Scheduler</td></tr><tr><td><code>a2a-server</code></td><td>把 coding agent 暴露成 A2A Task server</td><td>Core client/Scheduler + A2A task state</td></tr><tr><td><code>vscode-ide-companion</code></td><td>编辑器上下文与 diff review server</td><td>以 MCP transport 与 Core IDE client 对接</td></tr><tr><td><code>devtools</code></td><td>活动/telemetry 调试 UI</td><td>消费运行事件</td></tr></table>
+<p>因此应把 Core 看作“能力内核”，而不是一个已经封装好的唯一 Agent runtime。各入口是否使用 Scheduler、怎样呈现确认、何时停止，仍由入口代码决定。</p>
+
+<h2>交互 TUI：Ink 负责状态投影，hook 仍握着 legacy loop</h2>
+<p><code>interactiveCli.tsx</code> 先包 Settings、keyboard、mouse、terminal、scroll、overflow、session metrics、vim 等 providers；<code>AppContainer</code> 再管理 UI/input/quota/config/tool actions。输入预处理、模型流和工具结果回注集中在 <code>useGeminiStream</code>，layout 只渲染状态；screen-reader 另有专用 layout。</p>
+<p>AppContainer 根据默认关闭的开关选择 <code>useGeminiStream</code> 或 <code>useAgentStream + LegacyAgentProtocol</code>。这正说明 React hook 仍是当前生产编排边界，AgentSession 事件层正在逐步替换，而非早已完成。</p>
+<div class="src"><code>packages/cli/src/interactiveCli.tsx:84-134</code>；<code>packages/cli/src/ui/AppContainer.tsx:223-2866, 1173-1211</code>；<code>packages/cli/src/ui/hooks/useGeminiStream.ts:949-1081, 1522-1848, 1931-2155</code></div>
+
+<h2>Headless：同一工具协议，三种 stdout contract</h2>
+<table><tr><th>格式</th><th>输出契约</th></tr><tr><td><code>text</code></td><td>面向人类的最终/流式文本，日志和反馈走 stderr</td></tr><tr><td><code>json</code></td><td>单个漂亮打印对象：session_id、response、完整 stats、error、warnings</td></tr><tr><td><code>stream-json</code></td><td>JSONL 事件：init、message、tool_use、tool_result、error、result</td></tr></table>
+<p>programmatic formats 对消息 strip ANSI，避免下游解析污染。headless loop 收集完整 model stream 后才调 Scheduler，再把 function responses 作为下一轮输入；Ctrl+C 通过 AbortController 传播。它也有 default-off 的 AgentSession 替代实现。</p>
+<div class="src"><code>packages/cli/src/nonInteractiveCli.ts:45-210, 234-620</code>；<code>packages/core/src/output/types.ts:9-109</code>；<code>packages/core/src/output/json-formatter.ts:14-58</code>；<code>packages/core/src/output/stream-json-formatter.ts:15-88</code></div>
+
+<h2>ACP：把 IDE/client 协议翻译成 Gemini CLI 语义</h2>
+<p>ACP stdio dispatcher 暴露 authenticate、new/load session、prompt、cancel、set mode/model。每个 session 有独立 Config/Chat；load 时从 JSONL 转回 client history，并把历史逐条重放为 ACP message/thought/tool updates。client capabilities 可提供 filesystem proxy，prompt 支持 text/image/audio/embedded context，client 还可注入 HTTP/SSE MCP servers。</p>
+<p>一次 prompt 显式循环 model stream，累计 token/model usage；slash 与 <code>$</code> command 在进模型前截获。工具逐个顺序 <code>runTool()</code>，将 edit 映射为 ACP diff content，通过 <code>connection.requestPermission()</code> 获得 proceed/cancel/always outcome，并回写永久 policy。</p>
+<div class="note warn"><b>ACP 工具路径与 TUI/headless 并不等价。</b>当前 <code>runTool()</code> 直接 build invocation、调用 <code>shouldConfirmExecute()</code> 和 <code>execute()</code>，没有创建中央 Scheduler，也没有显式调用 PolicyEngine。它保留 invocation 自身确认与 policy 更新，但不具备 Scheduler 的并行 wave、before-tool policy pipeline 和 sandbox-expansion 状态机。</div>
+<div class="src"><code>packages/cli/src/acp/acpRpcDispatcher.ts:24-219</code>；<code>packages/cli/src/acp/acpSessionManager.ts:33-258</code>；<code>packages/cli/src/acp/acpSession.ts:216-618, 645-938</code></div>
+
+<h2>SDK：适合嵌入，但安全默认与 CLI 不同</h2>
+<p><code>GeminiCliAgent</code> 创建/恢复 <code>GeminiCliSession</code>；<code>sendStream()</code> 是一个清晰的模型流 → 收集 calls → Scheduler → function responses 循环。调用者可给静态 instructions，也可给函数：每轮函数会收到 session id、transcript、cwd、filesystem、shell、agent/session，再动态更新 system instruction。</p>
+<p><code>tool()</code> 用 Zod 推导参数类型并转 JSON schema；执行时绑定本轮 SessionContext。普通异常默认抛给宿主，只有 <code>sendErrorsToModel</code> 或 <code>ModelVisibleError</code> 才变成模型可见工具错误。额外 skill directory 可被加载并重新注册 activate tool。</p>
+<div class="note warn"><b>SDK 是有意收窄、同时更信任宿主的 profile。</b>构造 Config 时关闭 hooks、MCP、extensions，并把 PolicyEngine defaultDecision 设为 ALLOW，源码还留有“未来接 approvals”的 TODO。嵌入方必须把 tool action 当本地可信代码，不能把 CLI 的交互确认假定为 SDK 默认。</div>
+<div class="src"><code>packages/sdk/src/agent.ts:20-119</code>；<code>packages/sdk/src/session.ts:42-316</code>；<code>packages/sdk/src/tool.ts:23-235</code>；<code>packages/sdk/src/types.ts:13-183</code></div>
+
+<h2>A2A server：把工具确认变成可暂停的 Task</h2>
+<p>server 侧的 <code>CoderAgentExecutor</code> 按 task 建 Config，并用 AsyncLocal environment 隔离 cwd/env；先计算 folder trust，再加载该 workspace 的 settings/extensions。它防重入初始化、跟踪每 task 的 abort controllers，并可从 TaskStore metadata 重建 agent settings 与 task state。</p>
+<p><code>Task</code> 仍使用 Core GeminiClient + Scheduler。Scheduler snapshot 被翻译为 A2A status/artifact：只剩 awaiting-approval calls 时，task 转为 <code>input-required</code> 并结束当前 server turn；client 后续消息携带确认 outcome，MessageBus 唤醒原 Scheduler，执行完成后 tool responses 再喂回模型。多工具确认因而不需要让一个 HTTP stream 永久悬挂。</p>
+<p>无 GCS 配置时 TaskStore 是内存；有 bucket 时使用 GCS store，并以 NoOp wrapper 避免 A2A handler 与 executor 重复持久化。另有任务 metadata、command 等 HTTP endpoints，但核心 Agent 协议仍由 A2A SDK routes 提供。</p>
+<div class="src"><code>packages/a2a-server/src/agent/executor.ts:55-337</code>；<code>packages/a2a-server/src/agent/task.ts:74-262, 423-585, 719-821, 951-1228</code>；<code>packages/a2a-server/src/http/app.ts:240-390</code></div>
+
+<h2>IDE companion：编辑器是一个本地、鉴权的 MCP server</h2>
+<p>VS Code extension 启动 localhost Streamable HTTP MCP server，生成随机 bearer token，并把 port/workspace/token 写入 0600 临时文件和 terminal environment。请求还校验 Host 只能是 localhost/127.0.0.1，并拒绝有浏览器 Origin 的 CORS 请求。Core <code>IdeClient</code> 从父 IDE 进程对应配置或 env 找连接，先验证 cwd 落在 IDE workspace，才连接 HTTP/stdio。</p>
+<p>OpenFilesManager 最多维护最近 10 个文件及 active/cursor/selection/trust，变化以 <code>ide/contextUpdate</code> 推送。DiffManager 支持 open/close/accept/reject；Core 侧用 mutex 保证一次只开一个 diff，接受时可带用户在 IDE 中改过的最终内容。它既是 context producer，也是 confirmation UI。</p>
+<div class="src"><code>packages/vscode-ide-companion/src/ide-server.ts:42-293</code>；<code>packages/vscode-ide-companion/src/open-files-manager.ts:17-181</code>；<code>packages/vscode-ide-companion/src/diff-manager.ts:52-256</code>；<code>packages/core/src/ide/ide-client.ts:50-260</code></div>
+
+<h2>扩展不是动态 JS plugin，而是声明式能力包</h2>
+<p><code>gemini-extension.json</code> 可声明 MCP servers、context files、excludeTools、typed settings、themes、plan directory；目录约定再贡献 <code>hooks/hooks.json</code>、<code>skills/</code>、<code>policies/</code>、<code>agents/</code>。ExtensionManager 做安装/更新/启停和变量 hydration，最终把结构化数据交给 Core。没有一个通用“import extension JavaScript into CLI process”的主入口。</p>
+<p>安全控制包括 admin 全局禁用、allowedExtensions、禁止 Git remote install、workspace trust、安装/更新 consent；MCP 还经过 admin allowlist，hooks 和 skills 变化也进入 consent 展示。扩展 policy 只处于 extension tier，仍会被 workspace/user/admin tier 覆盖。</p>
+<div class="src"><code>packages/cli/src/config/extension.ts:18-55</code>；<code>packages/cli/src/config/extension-manager.ts:103-452, 608-681, 678-987</code>；<code>packages/cli/src/config/extensions/consent.ts</code></div>
+
+<h2>MCP：一次连接同时灌入三种 registry</h2>
+<p>MCP 支持 stdio、Streamable HTTP、SSE fallback、OAuth discovery/token storage，以及 Google/service-account 等 auth provider。连接后分别发现 tools、prompts、resources，注册进 ToolRegistry、PromptRegistry、ResourceRegistry；server/tool include/exclude filter 中 exclude 优先。stdio server 在不可信 workspace 明确拒绝启动。</p>
+<p>MCP tool 仍只是 <code>DiscoveredMCPTool</code>：调用要走 PolicyEngine/confirmation（server <code>trust</code> 会影响确认），输出也走统一截断/投影。发现成功不等于绕过治理。</p>
+<div class="src"><code>packages/core/src/tools/mcp-client.ts:1205-1274, 1282-1408, 1495-1579, 1829-2177, 2328-2350, 2437-2450</code></div>
+
+<h2>Skills：先只给目录，按需把正文注入工具结果</h2>
+<p>发现优先级从低到高是 built-in → extension → user → user <code>.agents/skills</code> alias → trusted workspace → workspace alias，同名后者覆盖。未信任 workspace 不加载项目 skill。初始 prompt 只枚举 name/description/location；模型调用 <code>activate_skill</code> 后才取得完整 body 与目录树，并把 skill directory 加入 workspace context。</p>
+<p>非 built-in activation 需要确认，并可通过 policy 记住。active names 是 session-scoped Set；资源文件仍须后续 read 工具读取。这种 progressive disclosure 避免所有技能正文占满 system prompt，也把资源授权推迟到真正使用时。</p>
+<div class="src"><code>packages/core/src/skills/skillManager.ts:19-192</code>；<code>packages/core/src/tools/activate-skill.ts:28-190</code></div>
+
+<h2>Hooks：外部命令可改请求，也可阻断动作</h2>
+<p>事件覆盖 Before/AfterAgent、Before/AfterModel、BeforeToolSelection、Before/AfterTool、Notification、SessionStart/End、PreCompress。Planner 先按 tool regex 或 trigger/source matcher 选 hooks、去重；只要任一 definition 标记 sequential，全组顺序执行，否则并行。Aggregator 针对事件使用 OR-decision、字段替换或简单 merge，不是一个统一合并算法。</p>
+<p>command hook 从 stdin 接收 JSON，stdout JSON/文本转结构化 output，默认 60 秒 timeout；runtime hook 则在进程内执行。Runner 二次阻止 untrusted folder 的 project hook。BeforeModel 可改 request/阻断，BeforeToolSelection 可改 tool config，BeforeTool 可改 args/ask/block；这也是 hooks 必须在安装 consent 和 trust 边界内的原因。</p>
+<div class="src"><code>packages/core/src/hooks/types.ts:21-123, 43-54, 496-725</code>；<code>packages/core/src/hooks/hookPlanner.ts:20-122</code>；<code>packages/core/src/hooks/hookRunner.ts:34-177, 249-558</code>；<code>packages/core/src/hooks/hookAggregator.ts:33-354</code></div>
+
+<h2>本章结论</h2>
+<ul><li>Gemini CLI 的“多前端”共享 Core primitives，但没有完全共享一个 orchestration runtime；尤其 ACP 仍是独立工具执行路径。</li><li>SDK 提供最干净的嵌入 API，也明确采用宿主可信、default allow 的安全假设。</li><li>A2A server 把确认等待建模为可恢复的 task state，适合跨请求协议。</li><li>extension 是 MCP/context/policy/hook/skill/agent/theme 的声明式组合；各子系统仍保有自己的优先级与信任边界。</li><li>IDE companion 用 localhost + token + workspace validation 把编辑器上下文和 diff confirmation 接入，而不是直接读写 VS Code 内存。</li></ul>
+<footer>Gemini CLI 源码深读 · ⑤ 前端与扩展 · 基于本地提交 <code>cf22ac7e86f3</code></footer></div></body></html>
