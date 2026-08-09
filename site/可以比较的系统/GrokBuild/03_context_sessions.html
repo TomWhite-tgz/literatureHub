@@ -1,0 +1,49 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Grok Build 源码深读 · 上下文与会话</title><link rel="stylesheet" href="../GeminiCLI/style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a class="cur" href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents_workflows.html">④ 子 Agent 与工作流</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 优点与借鉴</a></nav>
+<header><h1>③ 上下文与会话：actor 管热状态，JSONL 管耐久事实</h1><p class="sub">Grok Build 没把 conversation 塞进 SessionActor 的大锁，而是用专门 actor 串行化突变，再用异步 persistence actor 把事件写到磁盘。</p></header>
+
+<h2>ChatStateActor 是单一可变状态所有者</h2>
+<p><code>ChatState</code> 保存 conversation、sampling config、prompt index、累计 token、agent 编辑路径、上次 compaction 位置、credentials、usage、turn capture 与 harness trace。外界只通过 <code>ChatStateHandle</code> 发 command；需要顺序确认的操作带 oneshot ack，纯通知可 fire-and-forget。</p>
+<div class="key"><b>并发模型：</b>把“谁能改对话”变成消息顺序问题，而不是让采样、工具、UI、持久化同时争抢一把锁。SessionActor 可以 await 网络与工具，但聊天状态突变仍由一个 actor 排队。</div>
+<div class="src"><code>xai-chat-state/src/actor/state.rs:120-198</code>；<code>xai-chat-state/src/actor/mod.rs:55-100, 190-390</code>；<code>xai-chat-state/src/handle.rs</code></div>
+
+<h2>构造 API 请求时做三类修复</h2>
+<ol><li><b>tool pairing repair：</b>清理悬空 tool call/result，避免供应商因历史不合法持续返回 400。</li><li><b>旧工具结果裁剪：</b>上下文利用率超过阈值时，在请求副本中清空久远大结果；最近 turn 保留。更老的内存历史也可 eager hard-clear，以控制长会话常驻内存。</li><li><b>memory/reminder 注入：</b>按策略把跨 turn 状态放入请求，但不破坏稳定前缀。</li></ol>
+<p>默认 pruning gate 使用 token 估算与 context window：测试明确覆盖 50% 不触发、60% 触发。它不仅追求“塞得下”，还维护 prompt cache 友好的 prefix stability。</p>
+<div class="src"><code>xai-chat-state/src/actor/request_builder.rs:1-217</code>；<code>xai-chat-state/src/actor/mutations.rs:168-313</code>；<code>xai-chat-state/src/compaction_utils.rs:982-1040</code></div>
+
+<h2>图片按真实 wire bytes 受控淘汰</h2>
+<p>请求代理有 50 MB body 上限。request builder 不用 token 近似图片大小，而是计算序列化后 body bytes；在上限前预留 3 MB headroom，触发后从最旧 inline images 开始用文本占位替换，并通过 hysteresis 回收约一半空间，避免每次请求在阈值附近抖动。</p>
+<div class="note"><b>设计细节：</b>图片淘汰只发生在需要的请求副本上，并维持稳定前缀；小图片不会因为 token compaction 被无谓删除。</div>
+<div class="src"><code>xai-chat-state/src/actor/request_builder.rs:23-121, 217-379</code></div>
+
+<h2>Compaction 是共享引擎，不是一段 summary prompt</h2>
+<p><code>xai-grok-compaction</code> 单独成 crate，包含 intra/inter compaction、代码内容处理、history validation 与分步执行。session 在采样前做 overflow preflight，压缩时保存 checkpoint/request，并把 todo、运行中后台任务、子 Agent、artifact、编辑状态等纳入摘要上下文；完成后以受控 replacement 更新 ChatState。</p>
+<p>因此 compaction 的产物不是一段脱离现场的聊天摘要，而是恢复继续工作的状态包。turn capture 还记录压缩前后的消息，让 goal planner/verifier 的证据不会因普通 rewind 或裁剪无声丢失。</p>
+<div class="src"><code>crates/common/xai-grok-compaction/</code>；<code>xai-chat-state/src/compaction_utils.rs</code>；<code>xai-grok-shell/src/session/compaction.rs</code>；<code>compaction_segments.rs</code></div>
+
+<h2>PersistenceActor 把展示流和模型历史分开</h2>
+<p>持久化 actor 接收 session updates 与 chat items，合并高频 ACP text chunks，随后写入适配器。xAI 原生 chat items 可直接保存；UI 更新、聊天历史和 summary 分文件，避免为了恢复模型上下文而重放所有渲染细节。显式 flush/durable append 用于关键 commit point。</p>
+<div class="src"><code>xai-grok-shell/src/session/persistence.rs:1531-2100</code></div>
+
+<h2>一个会话不是单个 JSONL 文件</h2>
+<pre><code>{grok_home}/sessions/{url_encoded_cwd}/{session_id}/
+  summary.json
+  updates.jsonl
+  chat_history.jsonl
+  plan.md / plan_mode...
+  signals.jsonl / feedback.jsonl / btw_history.jsonl
+  goal_state... / workflows/
+  rewind_points.jsonl
+  compaction_checkpoints/ + compaction_requests/
+  subagents/{subagent_id}/...</code></pre>
+<p>目录结构把独立恢复域显式化：子 Agent 保存在父会话目录下；workflow 有自己的 journal；compaction checkpoint 不混入展示事件。fork 会复制选定 checkpoint 并截断新分支，代码专门避免追随 symlink；跨目录 relocation 通过 journal 恢复中断搬迁。</p>
+<div class="src"><code>xai-grok-shell/src/session/storage/jsonl/mod.rs:55-150, 1545-1620</code>；<code>xai-grok-shell/src/session/fork.rs</code>；<code>xai-grok-shell/src/session/storage/relocation/</code></div>
+
+<h2>JSONL 写入专门考虑 torn tail</h2>
+<p>append 前会检查旧文件末尾是否完整换行；若上次崩溃留下半条记录，先补换行，把损坏限制在恰好一行，再追加新记录。读取器跳过无法解析的行。durable 路径不仅 <code>sync_all</code> 文件，也同步父目录，提升断电后目录项可见性。</p>
+<div class="key"><b>恢复哲学：</b>不假设每次写入原子，也不因为一条坏记录放弃整个会话；让损坏局部化、可跳过，并把关键状态放在可单独校验的文件中。</div>
+<div class="src"><code>xai-grok-shell/src/session/storage/jsonl/mod.rs:257-321, 458-477, 558-604, 764-891</code></div>
+
+<h2>本章结论</h2><ul><li>热状态用 actor 串行化，磁盘状态用独立 persistence actor 异步落盘。</li><li>请求构造会修复 tool pairing，并按 token 与真实 body bytes 分别治理文本和图片。</li><li>Compaction 保存任务现场与运行中资源，不只是聊天摘要。</li><li>会话目录按数据用途拆分，支持 resume、fork、rewind、relocation 与子会话。</li><li>JSONL 采用 torn-tail healing、容错读取和 durable sync，把崩溃损坏限制在局部。</li></ul>
+<footer>Grok Build 源码深读 · ③ 上下文与会话 · 基于 Git <code>8a14c91d8887</code></footer></div></body></html>

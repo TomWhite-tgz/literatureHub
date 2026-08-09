@@ -1,0 +1,51 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Grok Build 源码深读 · 总览</title><link rel="stylesheet" href="../GeminiCLI/style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a class="cur" href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents_workflows.html">④ 子 Agent 与工作流</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 优点与借鉴</a></nav>
+<header><h1>Grok Build · Rust 源码深读</h1><p class="sub">从二进制入口追到 SessionActor 的真实推理循环，拆解批量准入、并行工具、独立聊天状态、崩溃容错会话、子 Agent、确定性工作流与多前端协议。</p><div class="meta"><b>分类</b> Coding Agent · <b>审计对象</b> <code>/home/tomwhite/coding/grok-build</code> · <b>Git 提交</b> <code>8a14c91d8887</code> · <b>上游 SOURCE_REV</b> <code>27b3c66635e2</code> · <b>复核日期</b> 2026-08-09</div></header>
+
+<h2>先说结论</h2>
+<p class="lead">Grok Build 的核心不是 <code>xai-grok-agent::Agent</code>，而是 <b><code>xai-grok-shell</code> 中的 session actor</b>。<code>Agent</code> 是近乎不可变的 prompt、tool bridge 和策略包；<code>SessionActor::process_conversation_turn</code> 才负责采样、流事件、工具调用、恢复、压缩与终止。工具批次先统一完成准入，再用 <code>FuturesUnordered</code> 并发执行；会话可变状态另交给单线程 <code>ChatStateActor</code> 串行持有。</p>
+<div class="key"><b>一句话架构：</b><code>xai-grok-pager-bin</code> 分流 TUI、headless、ACP 与 leader；它们汇入同一个 shell/session 内核；session 通过 sampler 调模型、通过 workspace/tool bridge 执行工具、通过 chat-state actor 管对话，并把 UI 更新与聊天记录写入可恢复的 JSONL 存储。</div>
+
+<h2>研究边界</h2>
+<table><tr><th>证据等级</th><th>本次材料</th><th>结论边界</th></tr>
+<tr><td><span class="tag full">完整可证</span></td><td>当前 Git 工作树；81 个 workspace members；排除 <code>target</code> 后约 2,500 个 Rust 文件、74 万行；CLI、TUI、shell、tools、workspace、chat-state、sampler、workflow 及大量测试均在仓库内</td><td>客户端控制流、权限规则、持久化格式和不变量可定位到函数与行号</td></tr>
+<tr><td><span class="tag migration">同步快照</span></td><td>README 明示代码定期从 SpaceXAI monorepo 同步；Git 提交与 <code>SOURCE_REV</code> 是两个版本标识</td><td>本文同时记录二者；不假设公开快照包含 monorepo 的全部服务</td></tr>
+<tr><td><span class="tag external">外部边界</span></td><td>xAI 模型推理、认证服务和服务端托管搜索不在仓库内；MCP server 也可来自第三方</td><td>只分析请求、流事件、重试与客户端编排，不推断不可见的服务端实现</td></tr></table>
+<div class="note warn"><b>一个重要安全边界：</b>OS sandbox 默认关闭；默认 shell 环境策略也基本原样继承环境。权限策略与 sandbox 是两道不同防线，不能因为前者存在就假定后者已启用。</div>
+
+<h2>阅读路线</h2><div class="hub">
+<a href="01_loop.html"><h3>① Agent loop</h3><p>从 prompt 生命周期进入采样—工具—回注循环，说明恢复、上限和反停滞。</p></a>
+<a href="02_tools_policy.html"><h3>② 工具、权限与沙箱</h3><p>分析整批准入、并行执行、同路径锁、Bash 分解、配置来源与 OS 隔离。</p></a>
+<a href="03_context_sessions.html"><h3>③ 上下文与会话</h3><p>追踪 ChatStateActor、修复/裁剪/压缩、JSONL、耐撕裂写入、fork/rewind。</p></a>
+<a href="04_agents_workflows.html"><h3>④ 子 Agent 与工作流</h3><p>区分模型驱动委派与 Rhai 确定性编排，覆盖后台、恢复、journal 与预算。</p></a>
+<a href="05_frontends_extensions.html"><h3>⑤ 前端与扩展</h3><p>比较 TUI、headless、ACP、leader，并梳理 skills、plugins、MCP、hooks、memory。</p></a>
+<a href="06_compare.html"><h3>⑥ 优点与 AutoResearch 借鉴</h3><p>把优势、代价与可迁移机制落到长期科研 Agent 的具体设计。</p></a></div>
+
+<h2>crate 切分与真实重心</h2>
+<table><tr><th>区域</th><th>职责</th><th>判断</th></tr>
+<tr><td><code>xai-grok-pager-bin / pager</code></td><td>参数、启动、TUI 与用户交互</td><td>入口和展示层；并非推理循环所有者</td></tr>
+<tr><td><code>xai-grok-shell</code></td><td>session、turn、采样编排、工具调用、持久化、leader、goal</td><td>运行时中枢，也是本次阅读主线</td></tr>
+<tr><td><code>xai-grok-agent</code></td><td>AgentDefinition、prompt context、tool bridge、reminder/compaction policy</td><td>近乎不可变的能力与策略描述</td></tr>
+<tr><td><code>xai-chat-state</code></td><td>对话、token、凭据、编辑路径、turn capture</td><td>独立 actor 串行化所有可变聊天状态</td></tr>
+<tr><td><code>xai-grok-workspace / tools</code></td><td>工具实现、权限解析与工作区操作</td><td>副作用与治理边界</td></tr>
+<tr><td><code>xai-grok-sampler</code></td><td>多 API 方言、流式响应、认证、重试、服务端 hosted loop</td><td>模型供应商适配层</td></tr>
+<tr><td><code>xai-workflow</code></td><td>Rhai 脚本、host call journal、恢复与预算</td><td>确定性、耐久的高层编排器</td></tr></table>
+
+<h2>贯穿全篇的主调用链</h2>
+<pre><code>xai-grok-pager-bin::main
+  → TUI | run_headless | run_stdio_agent | run_leader
+  → SessionActor::handle_prompt
+  → process_conversation_turn_with_recovery
+  → process_conversation_turn loop
+       ├─ ChatStateHandle::build_conversation_request
+       ├─ sampler_turn → xai-grok-sampler → xAI API
+       ├─ stream → assistant text / tool calls / usage / signals
+       ├─ execute_tool_calls
+       │    ├─ prepare + permission for whole batch
+       │    ├─ same-path locks
+       │    └─ FuturesUnordered → WorkspaceOps::call_tool
+       └─ tool results → ChatStateActor → next sampling round
+  → persistence actor → updates.jsonl / chat_history.jsonl / summary...</code></pre>
+<div class="src"><code>xai-grok-pager-bin/src/main.rs:40, 1410-1495, 1822</code>；<code>xai-grok-shell/src/session/acp_session_impl/turn.rs:241, 1522, 1895-2728</code>；<code>xai-grok-agent/src/agent.rs:21-46</code></div>
+<footer>Grok Build 源码深读 · 总览 · Git <code>8a14c91d8887</code> / SOURCE_REV <code>27b3c66635e2</code></footer></div></body></html>

@@ -1,0 +1,49 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Grok Build · 优点与 AutoResearch 借鉴</title><link rel="stylesheet" href="../GeminiCLI/style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents_workflows.html">④ 子 Agent 与工作流</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a class="cur" href="06_compare.html">⑥ 优点与借鉴</a></nav>
+<header><h1>⑥ Grok Build 的优点，以及 AutoResearch 可借鉴什么</h1><p class="sub">不按功能数量打分，而看哪些机制真正降低了长期 Agent 的错误面、恢复成本和前端耦合。</p></header>
+
+<h2>最突出的六个优点</h2>
+<table><tr><th>优点</th><th>源码中的机制</th><th>为什么重要</th></tr>
+<tr><td>状态所有权清楚</td><td>Agent 近乎不可变；SessionActor 编排；ChatStateActor 独占聊天突变</td><td>网络等待、工具并发与历史更新不会混成一把大锁</td></tr>
+<tr><td>工具并发有事务感</td><td>整批准入后并发；同路径锁；拒绝后合成闭合结果</td><td>兼顾吞吐、用户知情和 history pairing</td></tr>
+<tr><td>恢复是一级能力</td><td>多文件 session、torn-tail healing、durable append、fork/rewind/relocation</td><td>长任务不把一次进程崩溃变成整段工作丢失</td></tr>
+<tr><td>长流程可确定性重放</td><td>受限 Rhai + host-call request hash journal</td><td>恢复时不重复真实副作用，脚本变化会显式 divergence</td></tr>
+<tr><td>扩展有来源与信任</td><td>folder trust、policy provenance、plugin 资源回归原子子系统</td><td>仓库内配置不能默认变成任意代码执行</td></tr>
+<tr><td>多前端共用协议接缝</td><td>TUI 也经 typed ACP channel；headless/agent/leader 共用 session</td><td>UI 与运行时可独立演进，自动化无需模拟终端</td></tr></table>
+
+<h2>它的代价与边界也很明显</h2>
+<ul><li><b>规模与认知成本高：</b>81 个 workspace members、约 74 万行 Rust，session concern 分散在大量文件；正确入口不容易从 crate 名字猜出。</li><li><b>默认强隔离不足：</b>sandbox 默认 off，shell 环境默认广泛继承；权限 prompt 不能防御工具实现漏洞或泄密进程。</li><li><b>内置 sandbox 可降级：</b>部分 profile 应用失败会警告后继续，必须消费 enforcement metadata 才能知道真实边界。</li><li><b>Hook 不应被误当安全层：</b>超时/崩溃 fail-open，Stop gate 也有强制上限。</li><li><b>协议扩展形成能力梯度：</b>标准 ACP client 可用，但完整 Git/worktree/terminal/rewind 体验依赖 <code>x.ai/*</code>。</li><li><b>服务端不可审计：</b>模型和 hosted search 的决策只在客户端看到请求与事件，不能据此评价服务端实现。</li></ul>
+
+<h2>与现有四套 Coding Agent 的定位差异</h2>
+<table><tr><th>系统</th><th>最值得记住的内核</th><th>相对 Grok Build 的差异</th></tr>
+<tr><td>Codex</td><td>事件驱动 core + exec policy + 平台 sandbox + app-server</td><td>隔离与平台治理边界更集中；Grok 的 workflow journal 与 session 文件体系更显眼</td></tr>
+<tr><td>Claude Code</td><td>流式工具、权限来源、JSONL 会话图、后台 agent</td><td>两者都重视恢复与 hooks；Grok 明确加入确定性 Rhai 编排和同路径工具锁</td></tr>
+<tr><td>Pi</td><td>极小可嵌入 loop、消息投影、会话树、自由扩展</td><td>Pi 偏小内核与可塑性；Grok 偏完整产品治理与大量专用 actor/service</td></tr>
+<tr><td>Gemini CLI</td><td>Turn/Scheduler、分层 policy、legacy→AgentSession 迁移</td><td>都采用 batch 工具屏障和多前端；Grok 的主 loop 更集中在 SessionActor</td></tr>
+<tr><td>Grok Build</td><td>SessionActor + ChatStateActor + durable JSONL + replayable workflow</td><td>最大辨识度是“交互 agent”与“确定性耐久编排”在同一产品内并存</td></tr></table>
+<div class="note"><b>横向比较限制：</b>这些结论基于各自已审计快照，不代表产品长期优劣；尤其 Grok Build 是 monorepo 同步快照，远端推理服务不在比较范围。</div>
+
+<h2>AutoResearch：建议直接借鉴的 P0 机制</h2>
+<ol><li><b>把研究状态变成单一 actor/事务所有者。</b>运行中假设、证据索引、预算、artifact、已编辑文件不应散落在 prompt 与 UI state；所有突变走 command + ack。</li><li><b>为工具批次增加准入屏障与资源键。</b>先完成整批 policy 决策，再并发；为文件、数据集、实验 run、GPU slot 提取 resource key，只串行冲突项。</li><li><b>把“完成”改成有证据的状态转换。</b>完成 verifier 要检查真实实验入口、产物存在、评估指标、复现实验与 git/worktree 状态，而非只读最终回答。</li><li><b>建立 append-only journal。</b>每个外部 host call 写 <code>seq + canonical request hash + result/artifact refs</code>；恢复只 replay 相同请求，变化就 divergence。</li><li><b>让 crash 损坏局部化。</b>JSONL append 检测 torn tail；关键 checkpoint 使用 durable file + parent-dir sync；加载时跳过坏展示事件但严格验证不可重放的副作用记录。</li></ol>
+
+<h2>P1：适合长期科研任务的增强</h2>
+<table><tr><th>建议</th><th>落地方式</th><th>科研收益</th></tr>
+<tr><td>Artifact-aware compaction</td><td>摘要保存数据版本、命令、指标、失败实验、运行中 job 与文件 hash；大输出外置</td><td>压缩后仍能复现和继续，不把证据压成结论</td></tr>
+<tr><td>角色与能力分离</td><td>reader、experimenter、reviewer 用 capability mode；persona 只控制方法与输出契约</td><td>审稿 Agent 不必获得写代码或提交作业权限</td></tr>
+<tr><td>隔离分支</td><td>每个实施/消融 subagent 使用 worktree，最终显式 apply</td><td>并行实验不会污染主工作区，可比较不同方案</td></tr>
+<tr><td>后台任务统一 registry</td><td>训练、评测、下载、subagent 共用 id/status/output/cancel/wait</td><td>主 loop 可以释放上下文并在事件发生时恢复</td></tr>
+<tr><td>协议化前端</td><td>Web UI、CLI、notebook 都消费统一 typed events</td><td>研究 runtime 不再绑死某个交互界面</td></tr></table>
+
+<h2>不应照搬的部分</h2>
+<ul><li>不要为了“架构完整”一开始就拆成几十个 crate；先确定状态所有权和持久化协议，再按部署/依赖边界拆包。</li><li>不要接受 sandbox 请求失败后静默继续。AutoResearch 若处理数据凭据或任意论文代码，应把关键 profile 设为 fail closed，并展示实际 enforcement。</li><li>不要默认向 shell 继承所有环境；用 allowlist 注入每个实验真正需要的凭据。</li><li>不要让 hook 成为唯一验证器。Hook 适合扩展，核心完成标准应是 runtime 内的类型化 verifier。</li><li>不要把完整 child transcript 回注主模型；回注结构化 findings、artifact refs、未决问题和可验证 provenance。</li></ul>
+
+<h2>推荐的最小演进顺序</h2>
+<pre><code>阶段 1：ResearchState actor + typed events + resource-key tool scheduler
+阶段 2：session directory + append-only journal + durable checkpoints
+阶段 3：artifact-aware compaction + evidence-based completion verifier
+阶段 4：capability-scoped subagents + worktree / experiment isolation
+阶段 5：deterministic workflow DSL + request-hash replay + budget ledger</code></pre>
+<div class="key"><b>最终判断：</b>Grok Build 对 AutoResearch 最有价值的不是某个工具或 TUI，而是把“模型的概率性决策”包在可审计、可恢复、可限额的确定性外壳里。优先搬运状态、journal、证据与资源冲突协议，收益远高于复制功能列表。</div>
+
+<h2>本页证据索引</h2><p class="src"><code>xai-grok-agent/src/agent.rs:21-46</code>；<code>xai-grok-shell/src/session/acp_session_impl/tool_calls.rs:355-703</code>；<code>xai-chat-state/src/actor/</code>；<code>xai-grok-shell/src/session/storage/jsonl/mod.rs:257-477</code>；<code>xai-workflow/src/journal.rs</code>；<code>xai-workflow/src/run.rs</code>；<code>xai-grok-pager/docs/user-guide/15-agent-mode.md</code>；<code>18-sandbox.md</code></p>
+<footer>Grok Build 源码深读 · ⑥ 优点与 AutoResearch 借鉴 · 基于 Git <code>8a14c91d8887</code></footer></div></body></html>

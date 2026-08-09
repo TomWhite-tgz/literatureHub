@@ -1,0 +1,55 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Grok Build 源码深读 · Agent loop</title><link rel="stylesheet" href="../GeminiCLI/style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a class="cur" href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents_workflows.html">④ 子 Agent 与工作流</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 优点与借鉴</a></nav>
+<header><h1>① Agent loop：SessionActor 才是真正的执行者</h1><p class="sub">同一个 prompt 生命周期里，入口分流、命令预处理、采样循环、工具批次和恢复逻辑分别位于不同层。</p></header>
+
+<h2>先纠正命名造成的误导</h2>
+<p><code>xai-grok-agent::Agent</code> 的源码注释明确说它构造后“effectively immutable”。它保存 definition、已渲染 system prompt、tool bridge、reminder 与 compaction policy、hosted tools 等；真正变化的 conversation、token、edited paths 与 credentials 不在这里。运行循环位于 <code>xai-grok-shell/session/acp_session_impl/turn.rs</code> 的 <code>SessionActor</code> 实现中。</p>
+<div class="key"><b>分工：</b><code>Agent = 能力/提示/策略包</code>；<code>SessionActor = turn 生命周期与副作用编排</code>；<code>ChatStateActor = 可变对话状态</code>。这三者不要合并理解。</div>
+<div class="src"><code>xai-grok-agent/src/agent.rs:21-46</code>；<code>xai-chat-state/src/actor/state.rs:120-198</code></div>
+
+<h2>入口先决定运行形态</h2>
+<p>二进制 <code>main</code> 解析认证、配置与命令后分流：默认 TUI，<code>-p</code> 进入 headless，agent stdio/server 进入 ACP，leader 负责多客户端会话复用。不同前端最终创建相同的 shell agent/session，而不是各维护一套 reasoning loop。</p>
+<div class="flow"><span class="step">main / args</span><span class="arr">→</span><span class="step">TUI | headless | ACP | leader</span><span class="arr">→</span><span class="step">MvpAgent / SessionActor</span><span class="arr">→</span><span class="step">handle_prompt</span></div>
+<div class="src"><code>xai-grok-pager-bin/src/main.rs:1410-1495, 1822-2050</code></div>
+
+<h2><code>handle_prompt</code> 是一次用户 turn 的外壳</h2>
+<p><code>handle_prompt</code> 先检查磁盘是否可写，建立 turn lifecycle 与取消边界，再处理不必进入模型的路径：直接 Bash、slash commands、skills/workflows 等。普通 prompt 会写入状态和持久化流，启动 turn capture，然后调用带恢复包装的 conversation turn；结束时统一发事件、刷新状态并记录耗时。</p>
+<p>这层把“用户提交一次请求”与“模型可能采样多轮”分开，因此 cancellation、持久化 commit point、前端通知和 goal 状态可以围绕用户 turn 保持一致。</p>
+<div class="src"><code>xai-grok-shell/src/session/acp_session_impl/turn.rs:231-949</code></div>
+
+<h2>恢复包装不是简单 retry</h2>
+<p><code>process_conversation_turn_with_recovery</code> 根据 Agent 是否选择自动恢复来包装主循环。它区分可恢复错误与终止错误，并在重试前修补 conversation 或触发压缩；认证 401、上下文溢出和不完整工具配对分别由不同层处理，而不是对所有失败盲目重放副作用。</p>
+<div class="note"><b>关键含义：</b>模型采样可以重试，工具副作用不能被当成幂等请求随意重试。工具层只对明确的认证刷新路径做一次受控重试；会话层则通过已经记录的 tool result 继续推进。</div>
+<div class="src"><code>xai-grok-shell/src/session/acp_session_impl/turn.rs:1508-1632</code>；<code>xai-grok-shell/src/session/acp_session_impl/tool_calls.rs:403-703</code></div>
+
+<h2>主循环：构造请求、采样、执行、回注</h2>
+<pre><code>loop {
+  检查取消 / turn 上限 / preflight context overflow
+  request = ChatStateActor.build_conversation_request(...)
+  response = sampler_turn(request, tools, auth, hosted-search policy)
+  流式收集 text / reasoning / tool calls / usage / signals
+  若无 tool calls：检查完成条件并结束
+  tool_results = execute_tool_calls(tool_calls)
+  ChatStateActor 追加 tool results
+  检查重复调用 / noop / follow-up / final result
+}</code></pre>
+<p>采样层按配置支持 Chat Completions、Responses API 与 Messages 三种方言。MCP 工具定义可以阻塞等待，也可渐进加载；服务端 hosted search 走 sampler 的多轮协议。401 会刷新凭据后重试一次，doom-loop 信号与 headers 会被收集回 session。</p>
+<div class="src"><code>xai-grok-shell/src/session/acp_session_impl/turn.rs:1870-2720</code>；<code>xai-grok-shell/src/session/acp_session_impl/sampler_turn.rs</code>；<code>xai-grok-sampler/src/client.rs</code></div>
+
+<h2>工具调用不是边流式生成边抢跑</h2>
+<p>当前主链先完成一次模型响应收集，再把解析后的 <code>tool_call_responses</code> 交给 <code>execute_tool_calls</code>。工具层内部会并行，但没有证据表明尚未完成的 assistant stream 会与本地副作用交叠。这个边界简化了历史配对和权限批次的一致性。</p>
+<p>结果由 <code>FuturesUnordered</code> 按完成事件排出，因此本文不声称它按模型原始顺序写回；能确认的不变量是每个 call 都有闭合结果，拒绝/取消后余下调用也会获得合成结果。</p>
+<div class="src"><code>xai-grok-shell/src/session/acp_session_impl/turn.rs:2647-2680</code>；<code>xai-grok-shell/src/session/acp_session_impl/tool_calls.rs:403-703</code></div>
+
+<h2>终止不只靠模型说“完成”</h2>
+<table><tr><th>机制</th><th>行为</th></tr>
+<tr><td>最大 turn</td><td>在下一轮采样前硬性阻止无界循环</td></tr>
+<tr><td>上下文 preflight</td><td>请求发送前检测溢出并进入 compaction/recovery</td></tr>
+<tr><td>重复工具调用</td><td>连续 8 次相同调用先 nudge；普通调用 16 次硬停</td></tr>
+<tr><td>真正 noop</td><td>阈值更严，连续 4 次即硬停</td></tr>
+<tr><td>完成要求</td><td>goal/verification 路径可要求证据，不把一段自然语言结论直接等同于完成</td></tr>
+<tr><td>取消/拒绝/follow-up</td><td>关闭当前批次并把用户意图带回上层，而非留下悬空 tool calls</td></tr></table>
+<div class="src"><code>xai-grok-shell/src/session/acp_session_impl/turn.rs:2724-2784</code>；<code>xai-grok-shell/src/session/goal_classifier.rs</code></div>
+
+<h2>本章结论</h2><ul><li>Grok Build 的 loop 是 session actor 的职责，Agent 对象不是循环。</li><li>用户 turn 外壳、模型多轮循环和聊天状态 actor 是三个生命周期。</li><li>工具在完整模型响应之后成批进入准入与并发执行。</li><li>恢复按失败类型分层，避免把有副作用的工具当作普通网络请求重放。</li><li>重复调用检测、noop 阈值、turn 上限和完成验证共同构成停止治理。</li></ul>
+<footer>Grok Build 源码深读 · ① Agent loop · 基于 Git <code>8a14c91d8887</code></footer></div></body></html>

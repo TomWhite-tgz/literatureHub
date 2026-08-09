@@ -1,0 +1,51 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Grok Build 源码深读 · 工具与策略</title><link rel="stylesheet" href="../GeminiCLI/style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a class="cur" href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents_workflows.html">④ 子 Agent 与工作流</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 优点与借鉴</a></nav>
+<header><h1>② 工具、权限与沙箱：先批准整批，再受控并发</h1><p class="sub">Grok Build 把工具定义、准入、调度、工作区操作与 OS 隔离拆成多层；真正值得借鉴的是层间不变量。</p></header>
+
+<h2>工具批次的两阶段协议</h2>
+<p><code>execute_tool_calls_batch</code> 先逐个解析、查工具、校验参数、跑 permission prompt，生成 prepared calls；只有整个批次完成准入后才创建执行 futures。若某个权限交互返回拒绝、取消或用户 follow-up，后面的调用不会偷偷启动，而是得到合成 tool result，保持历史闭合。</p>
+<div class="flow"><span class="step">tool calls</span><span class="arr">→</span><span class="step">parse / validate</span><span class="arr">→</span><span class="step">permission for all</span><span class="arr">→</span><span class="step">locks + dispatch</span><span class="arr">→</span><span class="step">results</span></div>
+<div class="key"><b>批次屏障的价值：</b>一个无害工具不会在同批高风险工具仍等待确认时先改变世界；用户看到的是将要执行的完整意图，而不是已经发生一半的副作用。</div>
+<div class="src"><code>xai-grok-shell/src/session/acp_session_impl/tool_calls.rs:355-610</code></div>
+
+<h2>并发是默认，但冲突路径被局部串行化</h2>
+<p>批准后的调用进入 <code>FuturesUnordered</code>，彼此独立的 read、search、shell 或编辑可以并发。调度器从结构化参数提取目标路径，为同一目标共享锁；因此对同一文件的并发编辑串行，而不同文件仍保留吞吐。</p>
+<p>这是一种比“整个 batch 串行”更细的资源治理，但它依赖工具参数能被 <code>lock_path_for_args</code> 识别；隐式跨文件副作用、两个不同路径指向同一实体等仍需工具自身保证。</p>
+<div class="src"><code>xai-grok-shell/src/session/acp_session_impl/tool_calls.rs:503-611</code>；<code>xai-grok-shell/src/session/acp_session_impl/tool_dispatch.rs:42-70</code></div>
+
+<h2>ToolBridge 与 WorkspaceOps 划出副作用边界</h2>
+<p>Agent 持有 <code>Arc&lt;ToolBridge&gt;</code>，session 根据工具名和参数分派，真正本地操作经 <code>WorkspaceOps::call_tool</code>。agent session 默认使用进程内 toolset；MCP 和 hosted tools 则经各自协议。这样前端不需要知道 edit/bash/read 的实现细节，权限层也能在 dispatch 前统一介入。</p>
+<p>工具身份验证失败使用批次共享的 <code>OnceCell</code> 去重刷新，避免多个并发调用同时弹认证或刷新 token；刷新成功后只做一次受控 retry。</p>
+<div class="src"><code>xai-grok-agent/src/agent.rs:25-46</code>；<code>xai-grok-shell/src/session/acp_session_impl/tool_dispatch.rs</code>；<code>xai-grok-shell/src/session/acp_session_impl/tool_calls.rs:611-703</code></div>
+
+<h2>权限策略不是第一条匹配获胜</h2>
+<p>policy evaluator 汇总匹配结果，优先级是 <b>Deny &gt; Ask &gt; Allow</b>，与配置顺序无关。配置解析会合并用户级、项目 <code>.grok/config.toml</code>、受管/企业要求以及兼容的 Claude settings，并记录来源。项目提供的宽泛 allow 在未信任目录或受管 pin 下会被丢弃；显式 deny 在 bypass/always-approve 场景仍保留。</p>
+<table><tr><th>模式</th><th>默认倾向</th><th>仍然有效的约束</th></tr>
+<tr><td>default</td><td>未匹配的写/执行请求询问</td><td>所有 deny 与 hooks</td></tr>
+<tr><td>acceptEdits</td><td>编辑自动批准，其他风险操作仍问</td><td>deny、Bash/MCP 规则</td></tr>
+<tr><td>plan</td><td>兼容规划模式，抑制实施型能力</td><td>能力裁剪与 deny</td></tr>
+<tr><td>auto / dontAsk</td><td>分类或不弹窗，根据策略自动决策</td><td>不等同于无约束执行</td></tr>
+<tr><td>bypassPermissions</td><td>生成 catch-all allow</td><td>显式 deny 仍优先，hooks 仍可拒绝</td></tr></table>
+<div class="src"><code>xai-grok-workspace/src/permission/policy.rs</code>；<code>xai-grok-workspace/src/permission/resolution.rs:3049-3184</code></div>
+
+<h2>Bash 的授权对象是语义分段，不是原始字符串</h2>
+<p>策略会分解 shell chain，剥离常见 wrapper，并递归解析嵌套 <code>bash -c</code>。一条 compound command 只有所有片段都允许才算允许；任一 deny 阻断整条命令。无法可靠分解或语义含混时回退到 Ask，而不是因为前缀看起来安全就放行。</p>
+<pre><code>allow(git status) + deny(curl *)
+"git status && curl evil.example"  → 分成两段 → Deny
+
+allow(npm test)
+"env FOO=1 bash -c 'npm test; rm -rf x'" → 解 wrapper / 递归 → 非 Allow</code></pre>
+<div class="src"><code>xai-grok-workspace/src/permission/policy.rs</code>；<code>xai-grok-workspace/src/permission/manager/</code></div>
+
+<h2>OS sandbox 是独立、启动时、不可逆的边界</h2>
+<p>Sandbox 默认 <code>off</code>，可选 workspace、devbox、read-only、strict 或 custom。它在进程启动时应用，整个 Grok 进程、进程内文件工具和所有子进程共同继承；开启后不会在 session 中途切换，resume 也沿用保存的 profile。非 off profile 会拒绝 leader 路径，以免工具跑到隔离边界外的共享进程。</p>
+<table><tr><th>平台</th><th>实现</th><th>注意点</th></tr>
+<tr><td>Linux</td><td>Landlock；需要 deny/遮蔽时可用 bubblewrap bind-over；seccomp 限制子进程网络</td><td>内核/工具能力影响实际 enforcement</td></tr>
+<tr><td>macOS</td><td>Seatbelt profile</td><td>文档明确 child network restriction 在 macOS 是 no-op</td></tr>
+<tr><td>内置 profile 失败</td><td>警告并继续，metadata 记录是否 enforce</td><td>不能只看“请求了 strict”；还要检查 enforcement</td></tr>
+<tr><td>custom + deny 失败</td><td>fail closed</td><td>自定义强约束不会静默降级</td></tr></table>
+<div class="note warn"><b>默认环境不是秘密最小化：</b>shell env policy 默认 <code>inherit=all</code> 且忽略默认排除项。要保护 token/密钥，必须显式配置环境过滤或在外部提供更强隔离。</div>
+<div class="src"><code>xai-grok-pager/docs/user-guide/18-sandbox.md</code>；<code>xai-grok-sandbox/src/</code>；<code>xai-grok-tools</code> 的 shell environment policy</div>
+
+<h2>本章结论</h2><ul><li>工具执行采用“整批准入—局部资源锁—并发执行”三段式。</li><li>Deny 的优先级高于 Ask 和 Allow，配置顺序不能覆盖安全语义。</li><li>Bash policy 面向分解后的所有命令片段，含混输入回退 Ask。</li><li>权限是决策层，sandbox 是强制层；默认只保证前者存在，不保证后者启用。</li><li>内置 sandbox 可能警告后降级，调用方应检查实际 enforcement 状态。</li></ul>
+<footer>Grok Build 源码深读 · ② 工具与策略 · 基于 Git <code>8a14c91d8887</code></footer></div></body></html>

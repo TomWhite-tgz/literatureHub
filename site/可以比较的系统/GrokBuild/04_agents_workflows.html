@@ -1,0 +1,47 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Grok Build 源码深读 · 子 Agent 与工作流</title><link rel="stylesheet" href="../GeminiCLI/style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a class="cur" href="04_agents_workflows.html">④ 子 Agent 与工作流</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 优点与借鉴</a></nav>
+<header><h1>④ 子 Agent 与工作流：随机探索与确定性编排并存</h1><p class="sub">子 Agent 负责有独立上下文的模型工作；workflow 用受限 Rhai 和可重放 journal 负责长流程。二者是互补层，不是同一个概念的两种叫法。</p></header>
+
+<h2>子 Agent 是独立 session，不是 prompt 宏</h2>
+<p>内置类型包括 <code>general-purpose</code>、<code>explore</code> 和 <code>plan</code>。每个子 Agent 有自己的 conversation、session storage、模型/effort 解析和工具集；父会话只获得其状态与最终结果，不把完整子对话灌回主上下文。子会话目录嵌套在父 session 的 <code>subagents/{id}</code> 下。</p>
+<p>最大深度固定为 1：只有顶层会话可 spawn，子 Agent 再调用会得到 depth-limit error。这主动放弃任意树形自治，换取成本、并发与取消传播更容易推理。</p>
+<div class="src"><code>xai-grok-pager/docs/user-guide/16-subagents.md:43-70, 323-327</code>；<code>xai-grok-shell/src/session/storage/jsonl/mod.rs:55-73</code></div>
+
+<h2>能力、角色与 persona 分三层解析</h2>
+<table><tr><th>层</th><th>决定什么</th><th>例子</th></tr>
+<tr><td>Agent type</td><td>基础 session 定义与默认工具</td><td>explore/plan 不编辑；general-purpose 全能力</td></tr>
+<tr><td>capability mode</td><td>对子工具集做粗粒度上限</td><td>read-only、read-write、execute、all</td></tr>
+<tr><td>persona / role</td><td>行为指令、model、effort、默认 isolation、输入/输出契约</td><td>researcher、reviewer，或项目自定义角色</td></tr></table>
+<p>Persona 在 resolution 阶段叠加，不由主模型在 <code>spawn_subagent</code> 参数中任意指定。找不到、没有 instructions 或指令文件不可读会拒绝 spawn。输入/输出契约让多个 persona 能通过 artifact 串接，而不必共享整段自然语言 transcript。</p>
+<div class="src"><code>xai-grok-pager/docs/user-guide/16-subagents.md:72-137, 162-174</code></div>
+
+<h2>执行可阻塞、后台、续接或隔离</h2>
+<ul><li><b>blocking：</b>父 loop 等待 child 完成并直接拿结果。</li><li><b>background：</b>立即返回 subagent id，稍后用统一输出工具查询；TUI tasks pane 持续显示状态。</li><li><b><code>resume_from</code>：</b>新 child 续接一个已完成 child 的完整上下文，适合研究后实施。</li><li><b><code>cwd</code>：</b>在指定目录共享工作区。</li><li><b><code>isolation: worktree</code>：</b>创建独立 Git worktree，结果携带路径，再通过 <code>x.ai/git/worktree/*</code> apply。</li></ul>
+<p>MCP server 默认继承父会话已经连接的集合，但 agent frontmatter 可选 all、none、named 或 except。这里继承的是已建立能力，不是重新执行一遍未知项目配置。</p>
+<div class="src"><code>xai-grok-pager/docs/user-guide/16-subagents.md:145-230</code>；<code>xai-grok-pager/docs/user-guide/07-mcp-servers.md:325-329</code>；<code>xai-grok-shell/src/session/acp_session_impl/spawn.rs</code></div>
+
+<h2>后台任务是通用生命周期，不只服务子 Agent</h2>
+<p>Shell command、monitor 和 subagent 都可以作为后台任务出现在统一 registry。调用方可 get output、wait any/all（一次最多 20 个）或 kill；前台命令可用 Ctrl+B 转后台。<code>/loop</code> 与 scheduler 提供 session 内唤醒，循环有次数和最长持续时间上限，避免无界 cron。</p>
+<div class="src"><code>xai-grok-pager/docs/user-guide/20-background-tasks.md</code>；<code>xai-grok-shell/src/terminal/background_task.rs</code>；<code>xai-grok-tools/src/implementations/grok_build/task_output/</code></div>
+
+<h2>Goal loop 给开放任务加一层完成治理</h2>
+<p><code>xai-grok-shell/session</code> 中 goal planner、classifier、evaluator、strategist、stop detector、summarizer 与 tracker 组成独立编排。完成分类器要求用真实 entrypoint、行为测试、文件状态或外部可观察证据验证目标；它不把“模型声称完成”直接当作完成。</p>
+<p>这套 goal loop 仍是模型驱动的，所以适合开放式目标判断；需要严格可恢复控制流时，源码提供了另一条路径：workflow。</p>
+<div class="src"><code>xai-grok-shell/src/session/goal_classifier.rs</code>；<code>goal_evaluator.rs</code>；<code>goal_orchestrator.rs</code>；<code>goal_tracker.rs</code></div>
+
+<h2>Workflow：受限 Rhai 脚本编排 Agent 调用</h2>
+<p><code>xai-workflow</code> 运行确定性 Rhai 脚本。引擎禁用 wall-clock time、随机数、sleep 与 process exit；脚本只能通过显式 host API spawn/resume agent、等待、验证或暂停。默认 agent-call budget 为 128，最大 1,024，host calls 上限 10,000，phase 与名称也有边界。</p>
+<table><tr><th>Outcome</th><th>意义</th></tr>
+<tr><td>Completed</td><td>脚本与验证完成</td></tr><tr><td>Paused</td><td>因用户、backoff、no-progress、verification 或 infrastructure 等原因可恢复暂停</td></tr><tr><td>BudgetExceeded</td><td>在新调用前阻断，不继续消耗</td></tr><tr><td>Cancelled / Failed</td><td>显式终止，保留 journal 供诊断</td></tr></table>
+<div class="src"><code>xai-workflow/src/lib.rs:8-17</code>；<code>xai-workflow/src/run.rs:35-50</code>；<code>xai-workflow/src/engine.rs</code></div>
+
+<h2>Journal 让恢复等价于重放，而不是猜测</h2>
+<p>每次 host call 写入稠密递增 <code>seq</code>、调用 kind、request hash 与结果。恢复时脚本从头运行：若下一次 host call 与 journal 的 kind/hash 相同，就直接返回已记录结果，不再次执行副作用；不同则报 <code>Divergence</code>，说明脚本或输入发生变化。</p>
+<pre><code>第一次：agent_call(req A) → 真执行 → journal[0] = hash(A), result R
+恢复时：agent_call(req A) → hash 相同 → replay R
+修改后：agent_call(req B) → hash 不同 → Divergence（拒绝冒充同一次运行）</code></pre>
+<p>Journal 最大 64 MB，加载有条目/字节上限；会截断 torn tail，拒绝 symlink，并以 no-follow 方式打开。它把“耐久性”落实在 host-call 边界，而不是依赖模型重新阅读摘要猜测做到哪一步。</p>
+<div class="src"><code>xai-workflow/src/journal.rs:6-130, 180-340</code>；<code>xai-workflow/src/run.rs</code></div>
+
+<h2>本章结论</h2><ul><li>子 Agent 用独立 session 隔离上下文，树深固定为一以限制失控自治。</li><li>能力模式、agent type 与 persona/role 分离，工具上限和行为风格可分别治理。</li><li>worktree isolation 与 resume_from 分别解决写冲突和多阶段连续性。</li><li>Goal loop 解决开放式完成判断，workflow 解决确定性长流程。</li><li>基于请求 hash 的 journal replay 是 Grok Build 最适合长期任务的设计之一。</li></ul>
+<footer>Grok Build 源码深读 · ④ 子 Agent 与工作流 · 基于 Git <code>8a14c91d8887</code></footer></div></body></html>

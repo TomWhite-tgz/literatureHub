@@ -1,0 +1,43 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Grok Build 源码深读 · 前端与扩展</title><link rel="stylesheet" href="../GeminiCLI/style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents_workflows.html">④ 子 Agent 与工作流</a><a class="cur" href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 优点与借鉴</a></nav>
+<header><h1>⑤ 前端与扩展：ACP 是内部接缝，不只是 IDE 插件协议</h1><p class="sub">TUI、无头模式、stdio/WebSocket agent 与共享 leader 最终消费同一类 session updates；扩展则经过来源、信任与能力治理。</p></header>
+
+<h2>四种消费形态，共用一个运行时</h2>
+<table><tr><th>形态</th><th>入口/输出</th><th>适用场景</th></tr>
+<tr><td>全屏 TUI</td><td><code>xai-grok-pager</code>，ratatui UI</td><td>交互编码、diff、tasks pane、设置与 session 浏览</td></tr>
+<tr><td>Headless</td><td><code>grok -p</code>；plain/json/streaming-json/streaming-messages-json</td><td>脚本、CI、一次性调用；支持 tools、turn 上限、resume/fork、sandbox</td></tr>
+<tr><td>ACP stdio/server</td><td>JSON-RPC over stdio 或 WebSocket</td><td>IDE/外部 client；stream reply、tool update、permission、reconnect</td></tr>
+<tr><td>Leader</td><td>共享后台进程，多 client/session multiplex</td><td>复用昂贵资源与会话；启用 sandbox 时不采用</td></tr></table>
+<div class="src"><code>xai-grok-pager/docs/user-guide/14-headless-mode.md</code>；<code>15-agent-mode.md</code>；<code>xai-grok-pager-bin/src/main.rs:1410-1495</code></div>
+
+<h2>TUI 自己也走 ACP 形态的 typed channel</h2>
+<p><code>xai-grok-pager/src/acp/mod.rs</code> 可以连接进程内 agent 或 leader，并向 UI 返回相同的 ACP tx/rx。进程内模式通过 simplex streams 启动 <code>MvpAgent</code> 与 <code>AgentSideConnection</code>，leader 则把这条连接远程化。</p>
+<div class="key"><b>架构意义：</b>ACP 不是最后贴上的 IDE adapter，而是 UI 与 runtime 的内部协议接缝。前端切换不会复制 session loop，测试也能在同一事件面模拟 client。</div>
+<div class="src"><code>xai-grok-pager/src/acp/mod.rs</code>；<code>xai-grok-shell/src/leader/in_process.rs</code>；<code>xai-grok-shell/src/leader/server.rs</code></div>
+
+<h2>标准 ACP 之外还有 <code>x.ai/*</code> 扩展</h2>
+<p>Agent mode 实现标准 session/prompt/cancel、流式回复、tool update 和 permission，同时用 <code>x.ai/*</code> 扩展暴露文件系统、Git/worktree、terminal、session fork、rewind 等 Grok 特性。WebSocket server 支持连接断开后重连到仍存活的会话。</p>
+<p>这保持了互操作底座，同时承认 coding agent 的 diff、终端和 worktree 能力超出最小 ACP。代价是第三方客户端若只实现标准面，会得到可用但不完整的体验。</p>
+<div class="src"><code>xai-grok-pager/docs/user-guide/15-agent-mode.md</code>；<code>xai-acp-lib</code>；<code>xai-grok-shell/src/leader/protocol.rs</code>；<code>xai-grok-shell/src/agent/ext_parsers.rs</code></div>
+
+<h2>Skills 与 project rules：按需进入上下文</h2>
+<p>Skills 提供名称、描述和指令资源，模型先看到目录信息，需要时再激活正文，避免所有领域说明常驻 system prompt。项目规则与 memory 提供仓库级和跨会话上下文；它们有发现优先级、容量和注入策略，不等同于任意文件自动成为指令。</p>
+<div class="src"><code>xai-grok-pager/docs/user-guide/08-skills.md</code>；<code>12-project-rules.md</code>；<code>13-memory.md</code>；<code>xai-grok-tools/src/implementations/skills/</code></div>
+
+<h2>Plugin 是分发容器，不是新的执行内核</h2>
+<p>Plugin 可捆绑 skills、commands、agents/personas、hooks 与 MCP 配置。加载器解析来源与优先级，把每类资源送回原有子系统；所以安装一个 plugin 不会绕过 tool permission、folder trust 或 hook 生命周期。用户可在 extensions UI 查看来源和状态。</p>
+<p>这比允许 plugin 注入任意 Rust 代码保守：扩展表达力来自声明式资源、外部命令/MCP 和既有 host contracts，故障与信任边界更清楚。</p>
+<div class="src"><code>xai-grok-pager/docs/user-guide/09-plugins.md</code>；<code>xai-grok-agent/src/plugins/</code>；<code>xai-grok-plugin-marketplace</code>；<code>xai-grok-pager/src/views/extensions_modal.rs</code></div>
+
+<h2>MCP 是动态能力面，并带继承与信任规则</h2>
+<p>MCP servers 可来自用户配置、项目或 plugin，支持 stdio/HTTP 等连接。工具定义在 turn 采样前解析：配置可选择阻塞等待或 progressive loading。项目级 MCP/LSP 与 hooks 共用 folder-trust store；未信任项目不能仅靠仓库文件启动本地代码。</p>
+<p>子 Agent 默认继承父会话已连接 MCP，但 frontmatter 可限制。权限系统还支持按 server 或精确 tool 记住 allow，避免把某一工具许可无意扩大为整个生态。</p>
+<div class="src"><code>xai-grok-pager/docs/user-guide/07-mcp-servers.md</code>；<code>xai-grok-mcp/src/servers.rs</code>；<code>xai-grok-shell/src/session/acp_session_impl/sampler_turn.rs</code></div>
+
+<h2>Hooks 能阻断，也明确规定失败语义</h2>
+<p>PreToolUse 可显式 deny，PostToolUse 记录/同步，SessionStart 注入环境，Stop/SubagentStop 可让模型继续直到验证成立。来源包括用户、项目、兼容配置、plugin 与受管配置；多层是 additive，重复项按权威来源去重，并在 UI 显示 provenance。</p>
+<p>项目 hooks 需要 folder trust。hook timeout、崩溃、无效输出默认 fail-open，只有显式 deny 阻断；Stop gate 最多连续推动 8 次，防止验证脚本把 turn 永久锁死。对强安全要求而言，hook 不能替代 policy deny 或 sandbox。</p>
+<div class="src"><code>xai-grok-pager/docs/user-guide/10-hooks.md:9-80, 152-166, 209-264</code>；<code>xai-grok-hooks</code></div>
+
+<h2>本章结论</h2><ul><li>TUI、headless、ACP 和 leader 共用 session 内核，ACP 也是内部 UI/runtime 接缝。</li><li><code>x.ai/*</code> 在标准协议之上补足 coding-agent 特性，互操作与完整体验分层。</li><li>Skills 按需披露；plugins 主要是声明式资源分发容器。</li><li>项目 MCP/LSP/hooks 共用 folder trust，但关闭这道机制会一起解除门禁。</li><li>Hook failures 默认 fail-open，因此安全拒绝必须落在 policy 或 sandbox。</li></ul>
+<footer>Grok Build 源码深读 · ⑤ 前端与扩展 · 基于 Git <code>8a14c91d8887</code></footer></div></body></html>
