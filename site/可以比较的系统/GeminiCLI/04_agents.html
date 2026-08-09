@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · 子 Agent</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
 <a class="back" href="../../index.html">← 返回总览</a>
-<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a class="cur" href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a class="cur" href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 优点与借鉴</a></nav>
 <header><h1>④ 子 Agent：一个工具入口，两种执行后端</h1><p class="sub"><code>invoke_agent</code> 对主模型只有统一 schema；registry 决定可选角色，local executor 跑独立 ReAct loop，remote invocation 把请求桥接到 A2A。</p></header>
 
 <h2>统一入口：模型只看到 agent_name + prompt</h2>

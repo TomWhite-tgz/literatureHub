@@ -18,18 +18,28 @@ blockquote{border-left:4px solid #ddb894;background:#fdf6ea;margin:12px 0;paddin
 a{color:var(--accent)}hr{border:none;border-top:1px solid var(--line);margin:26px 0}
 strong{color:#8f4208}
 footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-soft);font-size:12.3px}
-</style></head><body><div class="wrap"><a class="back" href="../../../index.html">← 返回总览</a><h1>可以比较的系统</h1>
-<p>这里放置处于相近抽象层、能够进行相对公平横向比较的 Agent 系统。</p>
-<p>当前收录：</p>
+</style></head><body><div class="wrap"><a class="back" href="../index.html">← 返回总览</a><h1>可以比较的系统</h1>
+<p>这里收录与 AutoResearch 有底层机制可比性的 Agent 系统。可比较不等于属于同一产品类别：本站先按类型分组，再做组内横向比较；跨组只讨论可迁移机制，不直接排功能高低。</p>
+<h2>当前分类与栏目</h2>
+<h3>Coding Agent</h3>
+<p>直接接受代码仓库任务并完成读取、编辑、命令执行与交付的交互式 Agent 产品 / 运行时。</p>
 <ul>
-<li><a href="AgentScope/index.html">AgentScope</a>：完整 Agent 应用框架，包含 Agent 运行循环、模型与工具接入、状态/记忆、权限、事件、工作区及服务化能力。详见<a href="AgentScope/index.html">架构精读</a>（源码版本 2.0.4.post1，分四部分）。</li>
+<li><a href="Codex/index.html">Codex (Rust) · Coding Agent</a>：事件流内核、分层执行治理、平台沙箱与 app-server；<a href="Codex/06_compare.html">第 ⑥ 页</a>集中总结其优点及 AutoResearch 可借鉴部分。</li>
+<li><a href="ClaudeCode/index.html">Claude Code · Coding Agent</a>：流式工具执行、权限来源、上下文减重、后台 Agent 与可恢复会话；<a href="ClaudeCode/06_compare.html">第 ⑥ 页</a>集中总结其优点及 AutoResearch 可借鉴部分。</li>
+<li><a href="Pi/index.html">Pi · Coding Agent</a>：极小可嵌入 loop、消息投影、会话树与高自由度扩展；<a href="Pi/06_compare.html">第 ⑥ 页</a>集中总结其优点及 AutoResearch 可借鉴部分。</li>
+<li><a href="GeminiCLI/index.html">Gemini CLI · Coding Agent</a>：Scheduler、可归因 policy、多前端协议与声明式扩展；<a href="GeminiCLI/06_compare.html">第 ⑥ 页</a>集中总结其优点及 AutoResearch 可借鉴部分。</li>
+</ul>
+<h3>通用 Agent 开发框架</h3>
+<p>为开发者提供 Agent / 多智能体应用的运行时、组件与服务化能力，本身不是面向代码仓库交付的 coding agent。后续 AgentScope 同类系统应加入本组比较。</p>
+<ul>
+<li><a href="AgentScope/index.html">AgentScope · 通用 Agent 开发框架</a>：包含 ReAct Agent、模型与工具接入、消息/记忆、工作区、服务化及多智能体应用组件。详见<a href="AgentScope/index.html">架构精读</a>（源码版本 2.0.4.post1，分四部分）。</li>
 </ul>
 <h2>收录标准</h2>
-<p>优先收录能够直接承担 Agent 应用开发与运行控制的完整框架，例如：</p>
+<p>优先收录有完整运行主链、能与 AutoResearch 做源码级机制映射的系统，例如：</p>
 <ul>
 <li>自身具有 Agent reasoning–acting loop；</li>
 <li>负责模型、工具和上下文/状态管理；</li>
 <li>能运行面向用户的完整任务；</li>
 <li>具有一定的可观测、权限、会话或部署能力。</li>
 </ul>
-<p>LDP 侧重 policy、rollout、trajectory 与训练优化；AgentENV 侧重 microVM sandbox 基础设施。它们与 AgentScope 所在层次不同，因此不放入这一组直接比较。</p><footer>由 <code>Literature项目或者系统/横向对比/可以比较的系统/README_先看这里.md</code> 转换生成 · Literature 文献调研档案分享包</footer></div></body></html>
+<p>LDP 侧重 policy、rollout、trajectory 与训练优化；AgentENV 侧重 microVM sandbox 基础设施。它们分别属于训练优化层和执行基础设施层，因此不放入上述两组直接比较。</p><footer>可以比较的系统 · 分类与阅读入口 · Literature 文献调研档案分享包</footer></div></body></html>

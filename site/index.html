@@ -264,7 +264,7 @@
     </div>
     <div class="map-col">
       <div class="map-title">③ Agent 调研 · 底座与同层框架</div>
-      <a class="map-item" href="#agent-survey">🧩 可以比较的系统<span>AgentScope / Codex / Claude Code / Pi 源码精读</span></a>
+      <a class="map-item" href="#agent-survey">🧩 可以比较的系统<span>Coding Agent：Codex / Claude Code / Pi / Gemini CLI；通用 Agent 开发框架：AgentScope</span></a>
     </div>
     <div class="map-col">
       <div class="map-title">④ 思考笔记 · 内容的源头</div>
@@ -1580,55 +1580,65 @@ return timeout_answer</div>
 <details class="sec-fold">
 <summary>  <div class="sec-head"><h2>🧩 可以比较的系统</h2><span class="count">可以比较的系统/</span></div><span class="open-hint">点开阅读 ▾</span></summary>
 <div class="sec-body">
-  <p class="sec-note">同层抽象、能做公平横向比较的 Agent 框架收录。</p>
+  <p class="sec-note">按系统类型分组比较：Coding Agent 与通用 Agent 开发框架不是同一产品类别，不直接混排能力高低；组内采用同口径，跨组只比较可迁移的底层机制。</p>
+
+  <div class="group"><span class="tag deep">Coding Agent</span><span class="desc">直接面向代码仓库任务的交互式 Agent 产品 / 运行时</span></div>
 
   <div class="grid">
     <div class="card">
-      <h4>AgentScope <span class="verdict v-ok">架构精读</span></h4>
-      <div class="meta">2.0.4.post1 · 阿里通义 · 通用多智能体框架</div>
-      <p class="blurb">把重量全压在单 agent 的深 ReAct loop 上，编排层和演化层几乎没有。本精读按源码解剖它的「重量分布」，并与 InternAgent 做同层对照。点开卡片进入精读（四部分）。</p>
+      <h4>Codex (Rust) · Coding Agent <span class="verdict v-ok">架构精读</span></h4>
+      <div class="meta">codex-rs · OpenAI · 命令行 coding agent</div>
+      <p class="blurb">对照 codex-rs 源码审计事件流内核、执行治理、app-server、持久化与 rollout trace；区分 Linux 默认 bwrap+seccomp 和 legacy Landlock，并修正“所有适配器都走 app-server”等过度概括。横向页现已加入 Claude Code 展开源码树的函数级对照；Cursor/Aider 仍按公开材料降级比较，并给出融合两套设计的 AutoResearch run/event/context/task/evidence 迁移方案（六篇）。</p>
+      <div class="links">
+        <a href="可以比较的系统/Codex/index.html">Codex (Rust) 架构精读 →</a>
+        <a class="md" href="可以比较的系统/Codex/06_compare.html">优点与 AutoResearch 借鉴</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Claude Code · Coding Agent <span class="verdict v-ok">源码深读</span></h4>
+      <div class="meta">TypeScript 展开源码树 · Anthropic · 命令行 coding agent</div>
+      <p class="blurb">沿 query agent loop 深挖流式工具并发、权限竞态、多级上下文减重、可恢复子 agent、JSONL 会话图与 SDK/REPL 边界；明确区分完整源码、仅接口可见的内部 feature 与外置 sandbox runtime，并和 Codex 同口径映射到 AutoResearch（六篇正文 + 总览）。</p>
+      <div class="links">
+        <a href="可以比较的系统/ClaudeCode/index.html">Claude Code 源码深读 →</a>
+        <a class="md" href="可以比较的系统/ClaudeCode/06_compare.html">优点与 AutoResearch 借鉴</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Pi · Coding Agent <span class="verdict v-ok">源码深读</span></h4>
+      <div class="meta">TypeScript monorepo · earendil-works · 极简可扩展 coding agent</div>
+      <p class="blurb">沿经典 Agent/AgentSession 主线审计 provider、工具并发、JSONL 会话树、压缩、扩展与 differential TUI；单列下一代 durable Harness，严格区分已经落地的 storage/protocol 与仍会抛 HarnessNotImplemented 的执行面，并与 Codex、Claude Code 同口径映射到 AutoResearch（六篇正文 + 总览）。</p>
+      <div class="links">
+        <a href="可以比较的系统/Pi/index.html">Pi 源码深读 →</a>
+        <a class="md" href="可以比较的系统/Pi/06_compare.html">优点与 AutoResearch 借鉴</a>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Gemini CLI · Coding Agent <span class="verdict v-ok">源码深读</span></h4>
+      <div class="meta">0.56.0 nightly · Google · TypeScript coding agent</div>
+      <p class="blurb">沿 GeminiClient/Turn/Scheduler 主链审计工具并行、分层 PolicyEngine、双层 sandbox、legacy 与图式上下文、JSONL 会话、local/A2A 子 Agent，以及 TUI、headless、ACP、SDK、A2A server、IDE MCP 和声明式扩展；严格标注 AgentSession/ContextManager 的默认关闭状态，并与 Codex、Claude Code、Pi 同口径映射到 AutoResearch（六篇正文 + 总览）。</p>
+      <div class="links">
+        <a href="可以比较的系统/GeminiCLI/index.html">Gemini CLI 源码深读 →</a>
+        <a class="md" href="可以比较的系统/GeminiCLI/06_compare.html">优点与 AutoResearch 借鉴</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="group"><span class="tag complex">通用 Agent 开发框架</span><span class="desc">供开发者构建 Agent / 多智能体应用的框架；后续同类系统在此组内扩展</span></div>
+  <div class="grid">
+    <div class="card">
+      <h4>AgentScope · 通用 Agent 开发框架 <span class="verdict v-ok">架构精读</span></h4>
+      <div class="meta">2.0.4.post1 · 阿里通义 · Agent / 多智能体应用开发框架</div>
+      <p class="blurb">它提供 ReAct Agent、模型与工具接入、消息/记忆、工作区、服务化及多智能体应用组件，本质是开发框架而非直接完成仓库任务的 coding agent。当前精读按源码解剖其「重量分布」，并与同类框架 InternAgent 对照（四部分）。</p>
       <div class="links">
         <a href="可以比较的系统/AgentScope/index.html">AgentScope 架构精读 →</a>
       </div>
     </div>
     <div class="card">
-      <h4>Codex (Rust) <span class="verdict v-ok">架构精读</span></h4>
-      <div class="meta">codex-rs · OpenAI · 命令行 coding agent</div>
-      <p class="blurb">对照 codex-rs 源码审计事件流内核、执行治理、app-server、持久化与 rollout trace；区分 Linux 默认 bwrap+seccomp 和 legacy Landlock，并修正“所有适配器都走 app-server”等过度概括。横向页现已加入 Claude Code 展开源码树的函数级对照；Cursor/Aider 仍按公开材料降级比较，并给出融合两套设计的 AutoResearch run/event/context/task/evidence 迁移方案（六篇）。</p>
-      <div class="links">
-        <a href="可以比较的系统/Codex/index.html">Codex (Rust) 架构精读 →</a>
-      </div>
-    </div>
-    <div class="card">
-      <h4>Claude Code <span class="verdict v-ok">源码深读</span></h4>
-      <div class="meta">TypeScript 展开源码树 · Anthropic · 命令行 coding agent</div>
-      <p class="blurb">沿 query agent loop 深挖流式工具并发、权限竞态、多级上下文减重、可恢复子 agent、JSONL 会话图与 SDK/REPL 边界；明确区分完整源码、仅接口可见的内部 feature 与外置 sandbox runtime，并和 Codex 同口径映射到 AutoResearch（六篇正文 + 总览）。</p>
-      <div class="links">
-        <a href="可以比较的系统/ClaudeCode/index.html">Claude Code 源码深读 →</a>
-      </div>
-    </div>
-    <div class="card">
-      <h4>Pi <span class="verdict v-ok">源码深读</span></h4>
-      <div class="meta">TypeScript monorepo · earendil-works · 极简可扩展 coding agent</div>
-      <p class="blurb">沿经典 Agent/AgentSession 主线审计 provider、工具并发、JSONL 会话树、压缩、扩展与 differential TUI；单列下一代 durable Harness，严格区分已经落地的 storage/protocol 与仍会抛 HarnessNotImplemented 的执行面，并与 Codex、Claude Code 同口径映射到 AutoResearch（六篇正文 + 总览）。</p>
-      <div class="links">
-        <a href="可以比较的系统/Pi/index.html">Pi 源码深读 →</a>
-      </div>
-    </div>
-    <div class="card">
-      <h4>Gemini CLI <span class="verdict v-ok">源码深读</span></h4>
-      <div class="meta">0.56.0 nightly · Google · TypeScript coding agent</div>
-      <p class="blurb">沿 GeminiClient/Turn/Scheduler 主链审计工具并行、分层 PolicyEngine、双层 sandbox、legacy 与图式上下文、JSONL 会话、local/A2A 子 Agent，以及 TUI、headless、ACP、SDK、A2A server、IDE MCP 和声明式扩展；严格标注 AgentSession/ContextManager 的默认关闭状态，并与 Codex、Claude Code、Pi 同口径映射到 AutoResearch（六篇正文 + 总览）。</p>
-      <div class="links">
-        <a href="可以比较的系统/GeminiCLI/index.html">Gemini CLI 源码深读 →</a>
-      </div>
-    </div>
-    <div class="card">
       <h4>不收录的层（仅说明）</h4>
       <div class="meta">AgentENV（sandbox 基建）· LDP（policy/训练层）</div>
-      <p class="blurb">与 AgentScope 所在层次不同，不放入「可以比较的系统」直接比较。说明见 README。</p>
+      <p class="blurb">它们分别位于执行基础设施层与 policy / 训练优化层，不与 Coding Agent 或通用 Agent 开发框架直接比较。说明见 README。</p>
       <div class="links">
-        <a class="md" href="可以比较的系统/README_先看这里.html">README 先看这里 (md)</a>
+        <a class="md" href="可以比较的系统/README_先看这里.html">分类说明</a>
         <a class="dir" href="_未包含的内容.html">目录 →</a>
       </div>
     </div>

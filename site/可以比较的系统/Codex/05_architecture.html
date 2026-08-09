@@ -68,7 +68,7 @@ footer{margin-top:50px;border-top:1px solid var(--line);padding-top:14px;color:v
   <a href="03_server.html">③ app-server & TUI</a>
   <a href="04_takeaway.html">④ 结论</a>
   <a class="cur" href="05_architecture.html">⑤ 总架构图</a>
-  <a href="06_compare.html">⑥ 横向对比</a>
+  <a href="06_compare.html">⑥ 优点与借鉴</a>
 </div>
 
 <header>
@@ -344,7 +344,7 @@ Foundation (protocol / config / login / utils / otel)</code></pre>
   leaf crate 是<b>可以最先编译完</b>的，也是<b>并行编译收益最大</b>的。Codex 把 linux-sandbox / process-hardening / keyring-store 这些跟平台强相关的逻辑切成 leaf crate，让它们可以独立测试和交叉编译。
 </div>
 
-<p style="margin-top:30px"><a href="06_compare.html">→ 继续 ⑥ 横向对比</a></p>
+<p style="margin-top:30px"><a href="06_compare.html">→ 继续 ⑥ 优点与 AutoResearch 借鉴</a></p>
 
 <footer>
   <b>Codex (Rust) 架构精读</b> · ⑤ 总架构图 · 源码版本 <code>0a0ebb8535</code> · 130 workspace member / 1,058,898 行 <code>src/**/*.rs</code><br>

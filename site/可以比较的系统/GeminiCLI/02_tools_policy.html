@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · 工具、策略与沙箱</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
 <a class="back" href="../../index.html">← 返回总览</a>
-<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a class="cur" href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a class="cur" href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 优点与借鉴</a></nav>
 <header><h1>② 工具、策略与沙箱：决策和执行是两条边界</h1><p class="sub">Tool schema 决定模型能请求什么，PolicyEngine 决定这次是否可做，SandboxManager 决定子进程实际上能碰到什么；三者不能互相替代。</p></header>
 
 <h2>工具抽象：definition 与 invocation 分离</h2>

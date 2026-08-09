@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · Agent loop</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
 <a class="back" href="../../index.html">← 返回总览</a>
-<nav class="nav"><a href="index.html">总览</a><a class="cur" href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<nav class="nav"><a href="index.html">总览</a><a class="cur" href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 优点与借鉴</a></nav>
 <header><h1>① Agent loop：模型 turn 与工具 batch 交替推进</h1><p class="sub">默认交互 loop 分跨 CLI hook、Core client、Turn 与 Scheduler 四层；理解它的关键是区分“模型的一次流”“工具的一批执行”和“用户的一次 prompt sequence”。</p></header>
 
 <h2>先把三个循环单位分开</h2>

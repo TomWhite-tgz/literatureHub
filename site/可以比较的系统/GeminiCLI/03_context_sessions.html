@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · 上下文与会话</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
 <a class="back" href="../../index.html">← 返回总览</a>
-<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a class="cur" href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
+<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a class="cur" href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 优点与借鉴</a></nav>
 <header><h1>③ 上下文与会话：三份历史，而不是一份 messages</h1><p class="sub">持久 transcript 是事实来源，工作图负责变换，API history 是一次请求的投影；另有 checkpoint 负责文件世界。理解这些边界，才能解释压缩、恢复和 rewind。</p></header>
 
 <h2>先建立正确模型：历史至少有四层</h2>

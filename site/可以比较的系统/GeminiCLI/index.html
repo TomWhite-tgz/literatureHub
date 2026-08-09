@@ -1,7 +1,7 @@
 <!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · 总览</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
 <a class="back" href="../../index.html">← 返回总览</a>
-<nav class="nav"><a class="cur" href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 比较与借鉴</a></nav>
-<header><h1>Gemini CLI · TypeScript 源码深读</h1><p class="sub">从 CLI 再执行边界进入 GeminiClient、Turn、Scheduler 与 function-response 回注循环，并追踪策略、沙箱、上下文、会话、子 agent 和多前端协议。</p><div class="meta"><b>审计对象</b> <code>/home/tomwhite/coding/gemini-cli</code> · <b>提交</b> <code>cf22ac7e86f3</code> · <b>包版本</b> <code>0.56.0-nightly.20260806.g761f604c1</code> · <b>复核日期</b> 2026-08-09</div></header>
+<nav class="nav"><a class="cur" href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a href="06_compare.html">⑥ 优点与借鉴</a></nav>
+<header><h1>Gemini CLI · TypeScript 源码深读</h1><p class="sub">从 CLI 再执行边界进入 GeminiClient、Turn、Scheduler 与 function-response 回注循环，并追踪策略、沙箱、上下文、会话、子 agent 和多前端协议。</p><div class="meta"><b>分类</b> Coding Agent · <b>审计对象</b> <code>/home/tomwhite/coding/gemini-cli</code> · <b>提交</b> <code>cf22ac7e86f3</code> · <b>包版本</b> <code>0.56.0-nightly.20260806.g761f604c1</code> · <b>复核日期</b> 2026-08-09</div></header>
 
 <h2>先说结论</h2>
 <p class="lead">Gemini CLI 的架构重心不是一个孤立的 while-loop，而是三层协作：<b><code>GeminiClient/Turn</code> 把模型流翻译成稳定事件，Core <code>Scheduler</code> 把工具调用推进为可确认、可并行、可取消的状态机，CLI 或 <code>LegacyAgentProtocol</code> 再把完成的 function responses 回注模型</b>。它正在迁往统一的 <code>AgentProtocol/AgentSession</code> 消费面，但默认路径仍保留既有 loop，因此当前源码应按“成熟内核 + 迁移适配层”来读。</p>
@@ -20,7 +20,7 @@
 <a href="03_context_sessions.html"><h3>③ 上下文与会话</h3><p>区分 legacy compression 与新 ContextManager，并分析 JSONL 会话恢复、checkpoint 和 tool pairing。</p></a>
 <a href="04_agents.html"><h3>④ 子 Agent</h3><p>梳理 local/remote/session 三种 invocation、agent registry、A2A 与并发 scheduler。</p></a>
 <a href="05_frontends_extensions.html"><h3>⑤ 前端与扩展</h3><p>比较 Ink TUI、headless 输出、ACP、SDK、A2A server、IDE companion、MCP、skills 与 hooks。</p></a>
-<a href="06_compare.html"><h3>⑥ 横向比较与 AutoResearch</h3><p>和 Codex、Claude Code、Pi 同口径对照，提取适合长期科研 agent 的机制。</p></a></div>
+<a href="06_compare.html"><h3>⑥ 优点与 AutoResearch 借鉴</h3><p>明确总结 Gemini CLI 的治理与协议优势，再提取适合长期科研 agent 的机制。</p></a></div>
 
 <h2>包切分与真实重心</h2>
 <table><tr><th>包/区域</th><th>职责</th><th>架构判断</th></tr>

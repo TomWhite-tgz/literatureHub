@@ -1,7 +1,7 @@
-<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI 源码深读 · 比较与借鉴</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow,noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gemini CLI · 优点与 AutoResearch 借鉴</title><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
 <a class="back" href="../../index.html">← 返回总览</a>
-<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a class="cur" href="06_compare.html">⑥ 比较与借鉴</a></nav>
-<header><h1>⑥ Gemini CLI × Codex × Claude Code × Pi</h1><p class="sub">Gemini CLI 最值得学的不是某个 prompt，而是 policy/Scheduler 的结构化治理、协议适配广度和正在形成的统一事件/上下文中间层。</p></header>
+<nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① Agent loop</a><a href="02_tools_policy.html">② 工具与策略</a><a href="03_context_sessions.html">③ 上下文与会话</a><a href="04_agents.html">④ 子 Agent</a><a href="05_frontends_extensions.html">⑤ 前端与扩展</a><a class="cur" href="06_compare.html">⑥ 优点与借鉴</a></nav>
+<header><h1>⑥ Gemini CLI 的优点与 AutoResearch 借鉴</h1><p class="sub">Gemini CLI 最值得学的不是某个 prompt，而是 policy/Scheduler 的结构化治理、协议适配广度和正在形成的统一事件/上下文中间层。</p></header>
 
 <h2>先给结论：它在哪些轴上最强</h2>
 <table><tr><th>架构轴</th><th>Gemini CLI</th><th>相对位置</th></tr><tr><td>工具治理</td><td>分层 first-match policy + safety checker + confirmation + native sandbox expansion</td><td><b>四者中最显式、最可归因</b></td></tr><tr><td>协议/产品面</td><td>TUI、headless、ACP、SDK、A2A server、IDE MCP</td><td><b>最广</b>，但编排尚未完全统一</td></tr><tr><td>并行工具</td><td>连续 wave、全组 ready barrier、确定性 response order</td><td>一致性设计优秀；没有 Claude 的流式 latency hiding</td></tr><tr><td>上下文</td><td>成熟 legacy summary + default-off 图式 pipeline</td><td>新设计有潜力，当前成熟度落后于接口野心</td></tr><tr><td>会话</td><td>线性 JSONL 追加日志 + current-view controls</td><td>恢复实用；分支/operation durability 弱于 Pi/Claude</td></tr><tr><td>子 Agent</td><td>声明式 local/A2A、一层并行 fan-out</td><td>隔离清楚；缺 durable background/fork/worktree/team</td></tr><tr><td>扩展</td><td>声明式能力包，分接 MCP/hooks/skills/policy/agents/themes</td><td>安全可治理；不如 Pi runtime extension 灵活</td></tr></table>
@@ -59,4 +59,4 @@
 <h2>最终判断</h2>
 <p>Gemini CLI 是一个<b>能力面极宽、治理层很成熟、运行时统一化正在进行</b>的系统。Scheduler/PolicyEngine/SandboxManager 的分工、局部 agent registries、A2A task approval、IDE MCP 和声明式 extension bundle 都值得直接研究；ContextManager 与 AgentSession 更适合作为方向性参考，而不是已验证完成品。</p>
 <p>对 AutoResearch，最有价值的组合不是“做一个 Gemini CLI for research”，而是：<b>Gemini 的可归因治理 + Claude 的流式/后台生命周期 + Pi 的分支与 durable operation 设计 + Codex 的执行隔离与副作用证据</b>。先把 operation journal 和 capability enforcement 建牢，再谈更聪明的多 Agent。</p>
-<footer>Gemini CLI 源码深读 · ⑥ 比较与借鉴 · 基于本地提交 <code>cf22ac7e86f3</code></footer></div></body></html>
+<footer>Gemini CLI 源码深读 · ⑥ 优点与 AutoResearch 借鉴 · 基于本地提交 <code>cf22ac7e86f3</code></footer></div></body></html>
