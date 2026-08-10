@@ -1,0 +1,52 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OpenCode · V1 Agent loop</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a class="cur" href="01_loop.html">① V1 主循环</a><a href="02_tools_permissions.html">② 工具与权限</a><a href="03_sessions_context.html">③ 会话与上下文</a><a href="04_v2_runtime.html">④ V2 持久运行时</a><a href="05_server_frontends.html">⑤ 服务与前端</a><a href="06_compare.html">⑥ 优点与借鉴</a><a href="07_v2_gaps.html">⑦ V2 缺口</a></nav>
+<header><h1>① 当前主循环：状态在库里，控制在 loop 里</h1><p class="sub"><code>SessionPrompt</code> 负责跨 step 编排，<code>SessionProcessor</code> 把一条 provider stream 归约为 message parts；<code>LLM</code> 则选择 AI SDK 或实验 native runtime。</p></header>
+
+<h2>入口和调用链</h2><div class="flow"><span class="step">SessionPrompt.prompt</span><span class="arr">→</span><span class="step">createUserMessage</span><span class="arr">→</span><span class="step">loop / RunState</span><span class="arr">→</span><span class="step">runLoop</span><span class="arr">→</span><span class="step">Processor.process</span><span class="arr">→</span><span class="step">LLM.stream</span></div>
+<p><code>prompt()</code> 先清理 revert、持久化用户 message/parts、更新 session 时间和临时 tool permissions；<code>noReply</code> 才只写不跑。否则进入 <code>loop()</code>，由 <code>RunState.ensureRunning</code> 保证同一 Session 的运行所有权，再调用 <code>runLoop()</code>。</p>
+<div class="src">证据：<code>packages/opencode/src/session/prompt.ts:1052-1071,1081-1347</code>；<code>session/run-state.ts</code>。</div>
+
+<h2><code>while (true)</code> 每轮到底做什么</h2>
+<pre><code>1. status = busy；从 SQLite 投影重载消息，并过滤已压缩历史
+2. 找 latest user / assistant / finished assistant / pending task
+3. 若上一 assistant 已正常结束且无待闭合 tool call：退出
+4. 首 step 异步生成 title；解析本轮 model
+5. 优先处理 synthetic subtask / compaction task
+6. 检查上一轮 token overflow，必要时插入 compaction task
+7. 选择 agent，应用 reminders，创建并持久化 assistant message
+8. 解析 builtin/custom/MCP tools，构造 system + model messages
+9. SessionProcessor.process(LLM stream)
+10. structured output / content filter / stop / compact / continue</code></pre>
+<p>这不是把历史读进来一次后在内存里反复追加：每个 step 顶部都会重新读取投影。这让工具结果、用户 steering、后台注入或 compaction 能在安全边界进入下一次模型请求。</p>
+<div class="note"><b>退出条件很谨慎：</b>某些 provider 会在含 tool call 时仍返回 <code>stop</code>。源码额外扫描 message parts，只要存在未由 provider 执行、也未被标成 interrupted orphan 的 tool call，就继续循环，避免把调用丢在半空。</div>
+<div class="src">证据：<code>prompt.ts:1088-1168,1295-1339</code>。</div>
+
+<h2>一条 provider stream 如何变成持久状态</h2>
+<p><code>SessionProcessor.create()</code> 在 stream 开始前先抓 snapshot，因为 AI SDK 可能在发出 step-start 事件前就执行工具。processor 为每个 tool call 保存 Deferred 和 part 引用，处理 text/reasoning/tool/usage/finish/error 事件，持续更新 message/part；结束时统一 cleanup 未闭合状态。</p>
+<pre><code>LLMEvent stream
+  → handleEvent(event)
+      ├─ text/reasoning delta → PartUpdated / PartDelta
+      ├─ tool input/call      → pending/running ToolPart
+      ├─ tool result/error    → completed/error ToolPart + settle Deferred
+      ├─ usage/finish         → assistant tokens/cost/finish
+      └─ provider error       → assistant error + Session.Error event
+  → cleanup() → status idle / snapshot diff / orphan settlement</code></pre>
+<p><code>process()</code> 通过 Effect Stream 的 <code>tap → takeUntil(needsCompaction) → runDrain</code> 消费事件；provider 错误走带状态公告的 retry policy，取消会生成标准 AbortError。结果只返回 <code>continue</code>、<code>compact</code> 或 <code>stop</code>，跨 step 决策仍归 <code>SessionPrompt</code>。</p>
+<div class="src">证据：<code>packages/opencode/src/session/processor.ts:98-240,539-692</code>。</div>
+
+<h2>LLM 层：默认 AI SDK，native 是显式 opt-in</h2>
+<p><code>LLM.run()</code> 并发解析 language model、config、provider 和 auth，再统一执行 request preparation。默认路径调用 AI SDK <code>streamText()</code>，配置 tools、toolChoice、provider options、abort、telemetry 和 tool-call repair；模型消息还经过 provider-specific transform。</p>
+<p>当 <code>experimentalNativeLlm</code> 打开时，系统先尝试 <code>@opencode-ai/llm</code> native adapter。它必须明确返回 <code>supported</code> 才接管；否则记录具体 fallback reason 并回到 AI SDK。这是一条有可观测降级的运行时 seam，不是已经完全替换 AI SDK。</p>
+<div class="note clever"><b>一个容易忽视的事实：</b>在默认 AI SDK 路径中，AI SDK 拥有 provider execution 和 tool dispatch；OpenCode 用 <code>LLMAISDK.toLLMEvents</code> 再把 fullStream 归一化。于是“调工具”的控制既不全在 provider，也不全在 processor：工具函数由 OpenCode 注入，调度触发由 AI SDK stream 驱动，状态闭合由 processor 负责。</div>
+<div class="src">证据：<code>packages/opencode/src/session/llm.ts:85-113,224-354</code>；<code>session/llm/ai-sdk.ts</code>。</div>
+
+<h2>并发、取消与 step 上限</h2><ul>
+<li>同一 session 的顶层 run 由 <code>RunState</code> 去重/持有；不同 session 可并行。</li>
+<li>单次 <code>streamText</code> 内的多个 tool execution 由 AI SDK 调度，OpenCode 用每 call Deferred 追踪闭合。</li>
+<li>取消会中断 stream，并补齐 assistant error；工具 orphan 有专门的 interrupted 标记和退出日志。</li>
+<li><code>agent.steps</code> 达到上限时，最后一次请求追加 <code>MAX_STEPS_PROMPT</code>；它不是粗暴地在上一 tool result 后直接截断。</li>
+<li>JSON Schema 输出通过临时 <code>StructuredOutput</code> tool 强制产生；模型正常 stop 却没调用它会得到显式 <code>StructuredOutputError</code>。</li></ul>
+
+<h2>这套 loop 的强项和代价</h2>
+<table><tr><th>强项</th><th>代价</th></tr><tr><td>消息、part、tool state 在流中持续持久化，UI 可精细订阅</td><td>processor 必须处理大量半成品状态与 provider quirks</td></tr><tr><td>每 step 重载投影，外部注入能在边界生效</td><td>数据库、event bridge、message conversion 都处于热路径</td></tr><tr><td>provider/runtime 可降级，模型差异集中在 transform</td><td>AI SDK 与 native 两套路由增加测试矩阵</td></tr><tr><td>compaction、subtask 是 loop 内显式任务</td><td>编排职责集中在 1600 行的 <code>prompt.ts</code></td></tr></table>
+<div class="key"><b>判断：</b>V1 loop 的本质是“数据库投影驱动的 ReAct 循环”。它不像 Pi 那样把 loop 做成极小纯内核，也不像 Codex 用显式 Op/Event thread；它以 Session message/part 的持久状态作为各层共同语言。</div>
+<footer><a href="02_tools_permissions.html">下一篇：工具与权限 →</a></footer></div></body></html>

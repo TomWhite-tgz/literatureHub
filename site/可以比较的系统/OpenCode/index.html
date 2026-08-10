@@ -1,0 +1,70 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OpenCode 源码深读 · 总览</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a class="cur" href="index.html">总览</a><a href="01_loop.html">① V1 主循环</a><a href="02_tools_permissions.html">② 工具与权限</a><a href="03_sessions_context.html">③ 会话与上下文</a><a href="04_v2_runtime.html">④ V2 持久运行时</a><a href="05_server_frontends.html">⑤ 服务与前端</a><a href="06_compare.html">⑥ 优点与借鉴</a><a href="07_v2_gaps.html">⑦ V2 缺口</a></nav>
+<header><h1>OpenCode · 双轨架构源码深读</h1><p class="sub">从当前产品实际使用的 V1 loop，追到事件溯源、durable inbox、Location-scoped runner 的 V2 新内核；同时审计工具权限、子 Agent、插件、MCP、HTTP/ACP 与多前端边界。</p><div class="meta"><b>分类</b> Coding Agent · <b>仓库</b> <code>anomalyco/opencode</code> · <b>提交</b> <code>d90532a595</code>（<code>github-v1.2.25-1644-gd90532a595</code>）· <b>提交日期/复核日期</b> 2026-08-10 · <b>版本</b> 1.18.16 · <b>许可证</b> MIT</div></header>
+
+<h2>先说结论</h2>
+<p class="lead">OpenCode 当前最值得研究的是<b>渐进式内核替换</b>：可用产品仍由 <code>packages/opencode</code> 的 <code>SessionPrompt.runLoop</code> 驱动；与此同时，<code>packages/core</code> 已经长出独立的 V2 会话运行时，用 durable event + projector + inbox 把“接受用户输入”和“执行模型调用”拆开。两套实现共享数据库、事件与部分类型，却有不同的调度不变量。</p>
+<div class="key"><b>一句话架构：</b>当前主线是 <code>CLI/TUI/App/ACP → HTTP API/SDK → SessionPrompt → SessionProcessor → LLM(AI SDK/native) → ToolRegistry</code>；新主线是 <code>Protocol → SessionV2.prompt(admit) → SessionExecution.wake → SessionRunner → EventV2 → Projector</code>。</div>
+
+<h2>证据边界：不要把 V1、V2 和产品 UI 混成一层</h2>
+<table><tr><th>层</th><th>当前证据</th><th>可以下的结论</th></tr>
+<tr><td><span class="tag full">V1 产品循环</span></td><td><code>packages/opencode/src/session/*</code>，默认 CLI 入口仍从 <code>packages/opencode/src/index.ts</code> 启动</td><td>可完整解释现有 prompt、tool、permission、compaction、subagent 行为</td></tr>
+<tr><td><span class="tag partial">V2 会话内核</span></td><td><code>packages/core/src/session/*</code> 已实现 durable prompt、runner、tool settlement、compaction、event projection</td><td>不是空设计；但 post-crash continuation、增量 snapshot/patch/retry、部分 shell/skill/wait API 尚未完成</td></tr>
+<tr><td><span class="tag external">新包边界</span></td><td><code>schema → core/protocol → server</code>，另有 client、sdk-next、cli、tui</td><td>仓库正在从旧的“大 opencode 包”向可嵌入分层迁移，不能把新 <code>cli</code> 包当成当前 <code>opencode</code> 二进制的唯一入口</td></tr></table>
+<div class="note warn"><b>关键审计结论：</b>V2 的 runner 注释逐项列出了已完成与未完成项；源码还让 <code>SessionV2.shell()</code>、<code>skill()</code> 直接返回 <code>OperationUnavailableError</code>。因此本系列只把 durable admission、event projection、provider/tool loop 等写成已实现，不把完整崩溃恢复和全部产品能力写成既成事实。</div>
+
+<h2>仓库重量与分层</h2>
+<p>快照含 6,509 个 tracked files、36 个 package manifest；<code>packages/</code> 下有 3,246 个 TS/TSX 文件、约 666,345 行（含测试与生成代码）。源码重量最大的几个 <code>src</code>：</p>
+<table><tr><th>包</th><th>TS/TSX 行数</th><th>职责</th></tr>
+<tr><td><code>app</code></td><td>152,195</td><td>Solid Web/桌面共享应用，时间线、文件审阅、终端、设置</td></tr>
+<tr><td><code>opencode</code></td><td>80,436</td><td>当前产品聚合包：CLI、V1 loop、provider、legacy server、ACP、MCP、插件</td></tr>
+<tr><td><code>ui</code></td><td>33,664</td><td>共享设计系统与消息/差异组件</td></tr>
+<tr><td><code>core</code></td><td>32,906</td><td>V2 domain/runtime、数据库、事件、工具、会话与 Location service</td></tr>
+<tr><td><code>tui</code></td><td>27,063</td><td>抽出的 OpenTUI/Solid 终端前端与 feature-plugin slots</td></tr>
+<tr><td><code>session-ui</code></td><td>21,420</td><td>跨前端会话呈现与投影</td></tr>
+<tr><td><code>llm</code></td><td>9,533</td><td>Effect-native provider/protocol 层，V2 与实验 native runtime 使用</td></tr></table>
+
+<h2>总架构图</h2>
+<pre><code>用户入口
+  ├─ opencode CLI / run / serve / web / ACP
+  ├─ OpenTUI TUI
+  ├─ Solid Web App + Desktop(Tauri)
+  └─ SDK / HTTP client
+          │ HTTP + SSE/WebSocket；in-process fetch 也走同一 API
+          ▼
+服务与路由
+  ├─ packages/opencode/src/server     当前聚合 server
+  ├─ packages/server + protocol       新 Effect HttpApi 边界
+  └─ directory/location middleware    请求映射到 project/location scope
+          │
+          ├──────── V1 当前产品执行 ────────────────────────┐
+          │ SessionPrompt.runLoop → SessionProcessor       │
+          │ → LLM.stream → AI SDK/native → ToolRegistry    │
+          │ → SQLite projection + EventV2Bridge            │
+          │                                                │
+          └──────── V2 新执行内核 ──────────────────────────┤
+            SessionV2.prompt → durable PromptAdmitted      │
+            → SessionExecution → SessionRunCoordinator     │
+            → Location-scoped SessionRunner                │
+            → LLMEvent → durable EventV2 → Projector       │
+                                                           ▼
+扩展与环境：Agent / Skills / Instructions / MCP / Plugins / LSP / PTY / Git / Snapshot</code></pre>
+
+<h2>阅读路线</h2><div class="hub">
+<a href="01_loop.html"><h3>① V1 Agent loop</h3><p>逐段解释 runLoop、SessionProcessor、流式事件、provider runtime 与退出条件。</p></a>
+<a href="02_tools_permissions.html"><h3>② 工具与权限</h3><p>工具注册、AI SDK 执行、last-match 权限、文件锁、子 Agent 与安全边界。</p></a>
+<a href="03_sessions_context.html"><h3>③ 会话与上下文</h3><p>SQLite 投影、消息/part、AGENTS.md 注入、压缩、prune、fork/revert。</p></a>
+<a href="04_v2_runtime.html"><h3>④ V2 持久运行时</h3><p>durable admission、steer/queue、coordinator、Location ownership、event sourcing 及未完成项。</p></a>
+<a href="05_server_frontends.html"><h3>⑤ 服务、前端与扩展</h3><p>HTTP/SDK/ACP、TUI/Web/Desktop、MCP、插件与新 package 依赖方向。</p></a>
+<a href="06_compare.html"><h3>⑥ 优点与 AutoResearch 借鉴</h3><p>与 Codex、Claude Code、Pi、Gemini CLI、Grok Build 同口径比较。</p></a>
+<a href="07_v2_gaps.html"><h3>⑦ V2 未完成项与实施路线</h3><p>逐项审计官方 parity 表、runner TODO、工具差距、恢复边界与推荐完成顺序。</p></a></div>
+
+<h2>最值得记住的五个判断</h2><ul>
+<li><b>OpenCode 是 server-first，而不是 TUI-first。</b>TUI、本地 run、远程 attach、Web 和 ACP 最终都围绕同一会话 API/事件面组织。</li>
+<li><b>当前 V1 也不再只是 JSON 文件存储。</b>Session 更新先发布事件，再由 projector 写 SQLite；旧 <code>Storage</code> 主要承担迁移和其他遗留数据。</li>
+<li><b>权限是语义准入，不是 OS 沙箱。</b>默认 build agent 大体允许工具，但敏感路径、外部目录与 doom loop 会 ask；进程本身仍继承宿主权限。</li>
+<li><b>V2 把“收到任务”做成 durable fact。</b>prompt 先产生 <code>PromptAdmitted</code> 和 inbox 行，再 advisory wake；这比把用户输入直接塞进内存队列更适合可靠服务。</li>
+<li><b>双轨迁移也是主要复杂度来源。</b>V1/V2 类型、桥接事件、旧/新 server 和 plugin runtime 同时存在，阅读时必须始终问：这条代码属于当前产品路径，还是目标内核？</li></ul>
+<div class="src">主要证据：<code>packages/opencode/src/session/prompt.ts</code>、<code>processor.ts</code>、<code>llm.ts</code>；<code>packages/core/src/session.ts</code>、<code>session/runner/llm.ts</code>、<code>session/projector.ts</code>；根目录与 <code>packages/opencode/AGENTS.md</code>。</div>
+<footer>OpenCode 源码深读 · 总览 · 源码位置均为仓库相对路径</footer></div></body></html>

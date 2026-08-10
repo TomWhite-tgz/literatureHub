@@ -1,0 +1,60 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OpenCode · V2 持久运行时</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① V1 主循环</a><a href="02_tools_permissions.html">② 工具与权限</a><a href="03_sessions_context.html">③ 会话与上下文</a><a class="cur" href="04_v2_runtime.html">④ V2 持久运行时</a><a href="05_server_frontends.html">⑤ 服务与前端</a><a href="06_compare.html">⑥ 优点与借鉴</a><a href="07_v2_gaps.html">⑦ V2 缺口</a></nav>
+<header><h1>④ V2：先可靠接单，再安排执行</h1><p class="sub">V2 的核心升级不是换 Effect 写法，而是把 prompt admission、执行所有权、provider turn 与事件投影切成可恢复边界。</p></header>
+
+<h2>Durable admission</h2>
+<p><code>SessionV2.prompt()</code> 在 uninterruptible 区域内完成四件事：验证 session、解析 prompt、生成/接收 message ID、发布 <code>PromptAdmitted</code>。projector 同步把它投影到 <code>session_input</code>，带 <code>admitted_seq</code>；只有 durable fact 成立后，才调用 <code>SessionExecution.wake()</code>。</p>
+<pre><code>HTTP prompt
+  → SessionV2.prompt
+  → PromptAdmitted (durable aggregate sequence)
+  → session_input(admitted_seq, delivery, promoted_seq=NULL)
+  → advisory wake
+  → runner 在安全边界发布 Prompted
+  → projector 生成用户 message 并写 promoted_seq</code></pre>
+<p>相同 message ID 重试时，<code>SessionInput.admit()</code> 返回已有记录；上层比较 session、prompt、delivery 是否完全等价，不等价则 <code>PromptConflictError</code>。这把网络重试从“可能重复发消息”变成有条件幂等。</p>
+<div class="src">证据：<code>packages/core/src/session.ts:360-386</code>；<code>session/input.ts:41-81</code>；<code>session/projector.ts:350-375</code>。</div>
+
+<h2>steer 和 queue 的 durable 语义</h2>
+<table><tr><th>delivery</th><th>何时 promote</th><th>循环行为</th></tr>
+<tr><td><code>steer</code>（默认）</td><td>当前 provider/tool 边界后的下一次可见点；批量 promote 截止序号前所有 steers</td><td>重置 step 为 1，并在当前 drain 仍需 continuation 时优先进入上下文</td></tr>
+<tr><td><code>queue</code></td><td>当前工作本可 idle 时，每次只 promote 一个 queue，再合并此前 steers</td><td>形成下一段任务；处理完再检查下一 queue</td></tr></table>
+<p>这比内存数组更严谨：pending、promoted、顺序和 delivery 都可在 SQLite 中审计。<code>resume:false</code> 允许只 admit 不 wake，用于批处理或外部调度。</p>
+<div class="src">证据：<code>packages/core/src/session/input.ts:245-287</code>；<code>session/runner/llm.ts:173-203,383-405</code>。</div>
+
+<h2>SessionRunCoordinator：同 session 串行，不同 session 并行</h2>
+<p>coordinator 的 <code>active: Map&lt;SessionID, Entry&gt;</code> 为每个 session 持有 owner fiber 和 done Deferred。显式 <code>resume</code> 若已有执行就 join；<code>wake</code> 在执行中只设置一个 <code>pendingWake</code>，多次通知合并；当前 drain 成功后若 pendingWake 为真，启动 successor。interrupt 只打断本进程拥有的 active fiber，idle/missing 是 no-op。</p>
+<p>执行层拿到 session 后才从 <code>SessionStore</code> 读取 location，再通过 <code>LocationServiceMap.get(session.location)</code> 注入 runner 服务。这为未来远端 placement 留了 seam；当前注释明确说 local coordinator 仍是 process-local，不应声称已经有集群 lease。</p>
+<div class="src">证据：<code>packages/core/src/session/run-coordinator.ts:5-104</code>；<code>session/execution/local.ts:10-44</code>。</div>
+
+<h2>V2 provider/tool loop</h2>
+<p><code>SessionRunner.runTurnAttempt()</code> 每次都检查 Location ownership、选择 agent、初始化/刷新 Context Epoch、重载 runner history、解析 model 和 tool definitions，然后严格调用一次 <code>llm.stream(request)</code>。LLMEvent 先按顺序 durable publish；非 provider-executed tool call 在记录完成后立即 fork 本地 settlement，所有 tool fibers settle 才能进入下一 provider turn。</p>
+<pre><code>runTurnAttempt
+  → promote durable input
+  → ContextEpoch + History + Model + Tools
+  → compactIfNeeded
+  → capture start snapshot
+  → exactly one llm.stream(request)
+  → ordered EventV2 publication
+  → tool call durable record → eager local settle fibers
+  → await all tools → Step.Ended + snapshot/files
+  → needsContinuation ? next provider turn : boundary check</code></pre>
+<p>工具可以并发完成，但 publish 由一个 Semaphore 串行化，避免 message projector 接收乱序生命周期事件。中断、provider error、用户拒绝都会补失败尚未 settle 的工具；step 上限时直接不 materialize tools，并把 toolChoice 设为 none。</p>
+<div class="src">证据：<code>packages/core/src/session/runner/llm.ts:173-348,383-405</code>。</div>
+
+<h2>System Context Epoch：把环境变化也做成可比较状态</h2>
+<p>V2 不再只在每轮拼字符串。每个 context source 有稳定 key、typed codec、load、baseline、update 和可选 removed rendering；首次生成同时持久化 exact baseline 与 structured snapshot。后续 reconcile 可产生：</p><ul>
+<li><code>Unchanged</code>：继续沿用当前 generation；</li><li><code>Updated</code>：以明确 update text 追加变化并保存新 snapshot；</li><li><code>ReplacementReady</code>：schema 不兼容时建立全新 baseline；</li><li><code>ReplacementBlocked</code>：旧 source 暂时不可用时不静默丢失上下文。</li></ul>
+<p>这很适合 AGENTS.md、skills、references、工作区状态：模型看到的不只是“最新字符串”，系统还能证明这个 turn 基于哪一版环境事实。</p>
+<div class="src">证据：<code>packages/core/src/system-context/index.ts:5-89,134-214,217-290</code>；<code>session/context-epoch.ts</code>。</div>
+
+<h2>实现完成度审计</h2>
+<table><tr><th>已实现</th><th>尚未完整实现</th></tr>
+<tr><td>durable prompt admission 与幂等冲突检测</td><td>进程崩溃后的 provider continuation 自动恢复策略</td></tr>
+<tr><td>steer/queue promotion 与 per-session coordinator</td><td>集群级 execution ownership / remote placement</td></tr>
+<tr><td>LLM event、reasoning、tool lifecycle 的增量持久化</td><td>snapshot、patch、retry notice 的全面增量持久化</td></tr>
+<tr><td>本地 tool eager execution、settlement、continuation</td><td>完整 plugin/progress/attachment/cancellation context</td></tr>
+<tr><td>自动/overflow compaction 与 context epoch</td><td>全部 post-run title/summary/cleanup 和 durable output API</td></tr>
+<tr><td>prompt、history、events、revert 等 server API</td><td><code>SessionV2.shell/skill</code>；部分 wait/operation 路径仍报 unavailable</td></tr></table>
+<div class="note warn"><b>恢复边界：</b>durable admission 保证“任务已被系统接受”，不自动保证崩溃在任意 provider/tool side effect 中间后都 exactly-once 恢复。源码明确把 post-crash continuation recovery 留给后续设计；当前 coordinator 的 drain identity 也不是 durable record。</div>
+<div class="key"><b>判断：</b>V2 已经是可运行的新内核切片，不是 PPT；但它的可靠性承诺目前止于 durable acceptance、投影和受控 continuation，尚未覆盖任意崩溃点的完整恢复。</div>
+<div class="note"><b>继续阅读：</b>本篇解释 V2 已有运行语义；所有未完成项、测试锁定证据和建议实现顺序见 <a href="07_v2_gaps.html">⑦ V2 缺口与实施路线</a>。</div>
+<footer><a href="05_server_frontends.html">下一篇：服务与前端 →</a></footer></div></body></html>

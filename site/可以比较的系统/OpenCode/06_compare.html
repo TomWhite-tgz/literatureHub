@@ -1,0 +1,60 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OpenCode · 比较与借鉴</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① V1 主循环</a><a href="02_tools_permissions.html">② 工具与权限</a><a href="03_sessions_context.html">③ 会话与上下文</a><a href="04_v2_runtime.html">④ V2 持久运行时</a><a href="05_server_frontends.html">⑤ 服务与前端</a><a class="cur" href="06_compare.html">⑥ 优点与借鉴</a><a href="07_v2_gaps.html">⑦ V2 缺口</a></nav>
+<header><h1>⑥ OpenCode 的突出优点与 AutoResearch 借鉴</h1><p class="sub">按同一口径比较 loop、执行治理、持久化、多 Agent、上下文和接入层；把可迁移机制与不该照抄的迁移复杂度分开。</p></header>
+
+<h2>七个突出优点</h2>
+<ol><li><b>Server-first 的多前端一致性。</b>本地 in-process fetch 和远程 HTTP 共用 API；TUI、run、Web、Desktop、ACP 不各自重写 agent loop。</li><li><b>流式状态足够细。</b>message/part/tool lifecycle 持续投影，权限、question、reasoning、diff 和 token 都可被 UI/插件观察。</li><li><b>工具生态开放。</b>builtin、目录工具、plugin tools、MCP 和 code mode 汇入同一 schema/execute 边界。</li><li><b>权限规则可组合。</b>agent、用户、session 临时规则按顺序 merge，last-match 使特例覆盖通配规则，ask/once/always/reject 有明确状态机。</li><li><b>子 Agent 是真正的会话树。</b>独立历史、模型、权限、深度控制和后台生命周期，比往父 transcript 塞角色前缀更清楚。</li><li><b>V2 durable admission 很扎实。</b>先记录接单事实，再 wake；重试用稳定 ID 对账，steer/queue 也是数据库状态，而非易丢内存队列。</li><li><b>System Context 可审计。</b>baseline、typed snapshot、update/removal 与 unavailable 语义，让环境变化成为 durable context epoch。</li></ol>
+
+<h2>同层系统比较</h2>
+<table><tr><th>维度</th><th>OpenCode</th><th>Codex</th><th>Claude Code</th><th>Pi</th><th>Gemini CLI</th></tr>
+<tr><td>内核抽象</td><td>V1 message/part loop；V2 durable event runner</td><td>CodexThread Op/Event</td><td>query async generator</td><td>极小 Agent loop + AgentSession</td><td>GeminiClient/Turn/Scheduler</td></tr>
+<tr><td>持久化</td><td>SQLite projections + V2 aggregate events/inbox</td><td>rollout JSONL + state</td><td>JSONL 会话图</td><td>append-only JSONL tree</td><td>JSONL session</td></tr>
+<tr><td>工具并发</td><td>AI SDK/V2 eager fibers；事件顺序闭合</td><td>同 step 并发</td><td>流式工具并发</td><td>批并发、结果按调用序写回</td><td>Scheduler 并行</td></tr>
+<tr><td>权限</td><td>last-match wildcard rules + Deferred ask</td><td>approval policy + exec policy</td><td>permission race/state</td><td>主要靠扩展/容器</td><td>PolicyEngine</td></tr>
+<tr><td>OS 沙箱</td><td>无内建强制 sandbox</td><td>bwrap/seccomp、Seatbelt 等</td><td>外置 sandbox runtime</td><td>无内建</td><td>容器/Seatbelt 等双层</td></tr>
+<tr><td>多 Agent</td><td>child sessions，实验后台任务</td><td>动态协作原语</td><td>可恢复子 Agent</td><td>经典内核不内建</td><td>local/A2A agent</td></tr>
+<tr><td>接入层</td><td>HTTP/SSE/WS + SDK + ACP，多 UI</td><td>app-server JSON-RPC</td><td>CLI/SDK/IDE</td><td>CLI/SDK/JSON-RPC；新 server 实验</td><td>TUI/headless/ACP/A2A/SDK</td></tr></table>
+
+<h2>OpenCode 特别适合借鉴的地方</h2>
+<h3>1. 把任务接受与任务执行拆开</h3>
+<p>AutoResearch 的实验请求应先写 <code>run_input_admitted</code>，返回稳定 input ID，再由 scheduler wake。客户端重试必须携带同一 ID；内容、run、delivery 任一冲突就拒绝。这样“用户是否成功提交实验”不依赖模型进程是否恰好在线。</p>
+
+<h3>2. 区分 steer 与 queue</h3>
+<p>科研任务中，“立即修正当前假设”和“等本轮实验后再做新分析”不是同一种消息。采用 OpenCode 的 durable delivery：</p>
+<pre><code>steer: 下一安全边界进入当前 run，重置 decision-step budget
+queue: 当前 run 本可结束时一次提升一个，成为后续工作单元</code></pre>
+
+<h3>3. Event 与 Projection 分层</h3>
+<p>把模型调用、检索、代码改动、实验、指标、人工审批写成 immutable run events；再投影成 timeline、artifact table、cost summary、paper evidence graph。UI 或查询模型变化时重建 projection，不篡改原始实验事实。</p>
+
+<h3>4. Context Epoch</h3>
+<p>把 dataset version、代码 commit、环境 lockfile、检索语料 cutoff、实验设备和 rubric 做成 typed context sources。每轮记录 baseline snapshot；发生变化时产生明确 update 或 replacement generation。它比在 prompt 里默默塞“当前环境”更适合可复现科研。</p>
+
+<h3>5. 子任务用 child run/session</h3>
+<p>文献检索、代码实现、实验执行、统计审计各自拥有 child run、权限、artifact 和预算；父 run 只接收结构化 summary + evidence refs。后台完成通知应成为 synthetic durable input，而不是 UI 内存 toast。</p>
+
+<h3>6. 工具输出双通道</h3>
+<p>小摘要进入模型上下文，完整日志/表格/checkpoint 写 artifact store，并把 content hash、path、mime、producer event ID 放入 metadata。OpenCode 的 truncate/outputPath 已有雏形；科研系统还应增加不可变 hash 和 lineage。</p>
+
+<h2>不要直接照抄的部分</h2><ul>
+<li><b>不要同时维护两套长期内核。</b>OpenCode 的双轨是迁移现实，不是理想终态。AutoResearch 应先定义 event/inbox 不变量，再让旧入口通过 adapter 进入同一 runner。</li>
+<li><b>不要把 permission 当 sandbox。</b>危险实验、外网、凭据和数据删除要有容器/VM、网络策略和只读挂载；应用层 ask 只负责意图准入。</li>
+<li><b>不要把 UI schema 当科学证据 schema。</b>message/part 很适合呈现，但 claim、dataset、metric、artifact、negative result、review decision 应是独立 domain types。</li>
+<li><b>不要默认所有插件可信。</b>研究插件应声明 capabilities；无签名的本地 JS/TS 插件不能直接继承宿主 secret 与 shell。</li>
+<li><b>不要只做 process-local coordinator。</b>单机可用 per-run fiber map；跨节点需要 durable lease、heartbeat、fencing token 与幂等 side-effect protocol。</li></ul>
+
+<h2>建议的 AutoResearch 映射</h2>
+<table><tr><th>OpenCode 机制</th><th>AutoResearch 对应</th><th>必须补强</th></tr>
+<tr><td><code>PromptAdmitted</code> + inbox</td><td><code>ResearchRequestAdmitted</code></td><td>数据/代码版本、预算与审批快照</td></tr>
+<tr><td>aggregate EventV2</td><td>run event journal</td><td>hash chain、schema version、artifact lineage</td></tr>
+<tr><td>SessionProjector</td><td>timeline/evidence/cost projections</td><td>可重建校验与 projection version</td></tr>
+<tr><td>LocationServiceMap</td><td>execution environment placement</td><td>durable lease 与 remote worker attestation</td></tr>
+<tr><td>ToolRegistry + permission</td><td>experiment/search/code tool catalog</td><td>capability tokens、sandbox、network/data policy</td></tr>
+<tr><td>Context Epoch</td><td>reproducibility envelope</td><td>dataset/model/container immutable digest</td></tr>
+<tr><td>child session</td><td>literature/code/experiment/reviewer child runs</td><td>evidence contracts 与 budget propagation</td></tr>
+<tr><td>compaction + outputPath</td><td>working summary + artifact store</td><td>摘要不能覆盖负面证据；原始结果永久可追溯</td></tr></table>
+
+<h2>最终评价</h2>
+<p class="lead">OpenCode 是目前这组系统里最鲜明的“<b>产品型 coding agent 向 durable service runtime 演进</b>”案例。它的 V1 已有成熟工具、权限、多 provider、多前端和会话体验；V2 则把可靠接单、event sourcing、Location ownership 与上下文版本化推进到代码层。最应借鉴的是这些不变量，而不是 36 个 package、双插件系统和 V1/V2 并存本身。</p>
+<div class="note clever"><b>一句话：</b>如果 Codex 最强的是事件流内核与执行隔离，Pi 最强的是小内核，OpenCode 最有启发性的地方就是：把一个已经很重的本地产品，逐步改造成“输入先落盘、执行可调度、状态可投影、多客户端共享”的服务内核。</div>
+<div class="src">审计基线：<code>d90532a595</code>；主要证据覆盖 V1 loop/tool/session、V2 session runner/event projector、server/protocol/client、plugin/MCP/TUI/app package。</div>
+<footer><a href="07_v2_gaps.html">下一篇：V2 未完成项与实施路线 →</a></footer></div></body></html>

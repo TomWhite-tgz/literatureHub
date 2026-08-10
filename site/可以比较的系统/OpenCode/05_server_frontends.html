@@ -1,0 +1,54 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OpenCode · 服务、前端与扩展</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① V1 主循环</a><a href="02_tools_permissions.html">② 工具与权限</a><a href="03_sessions_context.html">③ 会话与上下文</a><a href="04_v2_runtime.html">④ V2 持久运行时</a><a class="cur" href="05_server_frontends.html">⑤ 服务与前端</a><a href="06_compare.html">⑥ 优点与借鉴</a><a href="07_v2_gaps.html">⑦ V2 缺口</a></nav>
+<header><h1>⑤ Server-first 产品壳与扩展面</h1><p class="sub">OpenCode 的 CLI 只是入口集合；真正稳定的产品形状是 HTTP/事件服务、目录或 Location scope，以及多个可替换客户端。</p></header>
+
+<h2>当前二进制入口</h2>
+<p><code>packages/opencode/src/index.ts</code> 用 yargs 注册默认 TUI、run、serve、web、attach、ACP、MCP、models、agent、session、GitHub 等命令。无论本地还是远程，客户端都尽量复用 SDK/API：</p>
+<table><tr><th>模式</th><th>server 位置</th><th>客户端</th></tr>
+<tr><td>默认 TUI</td><td>可启动本地 listener/worker，也可连接外部 server</td><td>OpenTUI/Solid TUI</td></tr>
+<tr><td><code>run</code></td><td>默认 in-process fetch；<code>--attach</code> 走远程 HTTP</td><td>非交互流式 renderer 或 mini interactive</td></tr>
+<tr><td><code>serve</code></td><td>独立 Node HTTP listener；默认 4096 回退随机端口</td><td>任意 SDK/HTTP client</td></tr>
+<tr><td><code>web</code></td><td>同 headless server，并打开浏览器 app</td><td>Solid Web App</td></tr>
+<tr><td><code>acp</code></td><td>复用 SDK session API</td><td>实现 Agent Client Protocol 的 IDE/client</td></tr></table>
+<div class="src">证据：<code>packages/opencode/src/index.ts:33-141</code>；<code>cli/cmd/run.ts</code>、<code>tui.ts</code>、<code>serve.ts</code>；<code>acp/agent.ts:24-93</code>。</div>
+
+<h2>Server 生命周期与请求 scope</h2>
+<p>server 基于 Effect HttpApi/NodeHttpServer。<code>Server.Default()</code> 提供无需 TCP 的 in-process <code>fetch</code>；<code>listen()</code> 才建真实 socket、WebSocket tracker、mDNS 和 scope finalizer。stop 可先停止发布，再关闭 active HTTP/WebSocket 连接与 scope。</p>
+<p>服务启动不固定某个项目目录；请求经 directory/location middleware 映射到对应 InstanceState 或 Location services。于是一个 server 能服务多个项目，资源清理随 scoped cache/Location 生命周期发生。</p>
+<div class="src">证据：<code>packages/opencode/src/server/server.ts:20-137,172-226</code>；<code>server/routes/instance/httpapi/middleware</code>。</div>
+
+<h2>新 package 依赖方向</h2>
+<pre><code>@opencode-ai/schema          纯协议/domain schemas
+       ↓
+core (domain/runtime)   protocol (HttpApi declarations)
+       ↓                    ↓
+       └──────── server (handlers + middleware)
+                         ↓
+client (generated fetch/effect clients；不得依赖 core/server)
+                         ↓
+sdk-next = client + core + server 的嵌入式组合
+                         ↓
+cli / tui / app / desktop</code></pre>
+<p>根 <code>AGENTS.md</code> 把这条依赖纪律写成硬约束：runtime dependencies 从 Schema 指向 Core/Protocol，再到 Server；Client 只能依赖 Schema/Protocol。它解决旧 <code>packages/opencode</code> 同时承载 domain、server、CLI、provider 和 UI glue 的耦合问题。</p>
+<p>但迁移尚未结束：当前真正发布的 <code>opencode</code> bin 仍来自旧聚合包；新 <code>@opencode-ai/cli</code> 的 bin 名甚至还是 <code>lildax</code>。所以新依赖图是已落地的目标边界，不等于旧包已经退出。</p>
+
+<h2>前端：同一事件事实，不同呈现</h2>
+<ul><li><b>TUI：</b><code>packages/tui</code> 抽出 OpenTUI/Solid runtime、session route、permission/question dialog、diff viewer、plugin slots；旧聚合包仍保留 CLI TUI glue。</li><li><b>Web App：</b><code>packages/app</code> 是最大源码包，负责多 session tabs、时间线投影、文件树/review、终端和设置；它不是简单把 TUI 搬到浏览器。</li><li><b>Desktop：</b><code>packages/desktop</code> 用 Tauri/native shell 包装 app，并处理更新、菜单、文件系统与平台集成。</li><li><b>Session UI：</b>独立 <code>packages/session-ui</code> 把消息/tool/reasoning 的展示投影从具体前端拆出。</li><li><b>ACP：</b>把 initialize/auth/session/prompt/cancel/fork/model/mode 映射到 SDK，适合 IDE 以标准协议嵌入。</li></ul>
+
+<h2>MCP：客户端能力被物化为模型工具</h2>
+<p>OpenCode 可连接 local stdio 与 remote HTTP MCP server，管理 OAuth，并把 server tools 合入 ToolRegistry。资源能力则按连接状态动态增加 <code>list_mcp_resources</code>、<code>list_mcp_resource_templates</code> 和 <code>read_mcp_resource</code>；访问资源仍走 read permission，pattern 精确到 <code>mcp:server:uri</code>。</p>
+<p>大文本统一截断；PDF/图片等支持的 blob 可变成 session attachments，并有 10 MiB 上限。这里的 MCP 是 OpenCode 作为 client 消费外部能力；ACP 是前端控制 OpenCode，方向不要混淆。</p>
+<div class="src">证据：<code>packages/opencode/src/mcp/index.ts</code>；<code>session/tools.ts:27-39,136+</code>；<code>cli/cmd/mcp.ts</code>。</div>
+
+<h2>插件：V1 任意代码 hooks，V2 scoped capability host</h2>
+<table><tr><th>运行时</th><th>模型</th><th>关键语义</th></tr>
+<tr><td>V1 plugin</td><td>加载 internal/npm/local JS/TS，返回 Hooks</td><td>可拿 SDK client、目录、worktree、Bun shell；hooks 顺序加载/顺序触发，支持 auth/provider/tool/message/compaction/event</td></tr>
+<tr><td>V2 plugin</td><td><code>Plugin.add(id, effect(host))</code></td><td>每 plugin 独立 child Scope；同 ID 加载加锁，可替换/移除/等待，host 提供注册 capability</td></tr>
+<tr><td>TUI feature plugin</td><td>slots、commands、sidebar/system UI</td><td>扩展呈现层，不与 server hook 假装是同一 API</td></tr></table>
+<p>V1 external plugin hook 按序执行，能修改工具参数/输出和模型消息，且 <code>PluginInput.$</code> 可直接用 Bun shell。它是强扩展面，也意味着插件等同受信任代码。<code>--pure</code> 可禁用 external plugins，但默认 internal auth plugins 仍按 flags 加载。</p>
+<p>V2 plugin host 用 Effect Scope 管理生命周期，并把 Agent、Catalog、Command、Integration、Reference、Skill 等注册能力集中到 host；这是更可组合的资源所有权模型，但与 V1 hooks 并存。</p>
+<div class="src">证据：<code>packages/opencode/src/plugin/index.ts:65-123,125-306</code>；<code>packages/plugin/src/index.ts</code>；<code>packages/core/src/plugin.ts:23-167</code>。</div>
+
+<h2>配置也是运行时组合层</h2>
+<p>配置会合并 global、项目、环境内容、远端 well-known 配置与插件来源；instructions 数组做去重拼接，普通字段 deep merge。JSONC 支持变量替换，远端配置做认证错误识别。每个目录的 Config/Agent/MCP/Plugin 等通过 InstanceState 或 Location layer 隔离，而 process-global 服务（database、events、execution coordinator）只保留真正全局的职责。</p>
+<div class="key"><b>判断：</b>OpenCode 的产品架构比 loop 本身更有辨识度：API server 是中心，目录/Location 是资源边界，TUI/Web/Desktop/ACP 是客户端，插件与 MCP 是两种不同信任级别的扩展面。</div>
+<footer><a href="06_compare.html">下一篇：优点与 AutoResearch 借鉴 →</a></footer></div></body></html>

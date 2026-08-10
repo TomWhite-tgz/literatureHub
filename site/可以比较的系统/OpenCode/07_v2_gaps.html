@@ -1,0 +1,106 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OpenCode · V2 未完成项与实施路线</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① V1 主循环</a><a href="02_tools_permissions.html">② 工具与权限</a><a href="03_sessions_context.html">③ 会话与上下文</a><a href="04_v2_runtime.html">④ V2 持久运行时</a><a href="05_server_frontends.html">⑤ 服务与前端</a><a href="06_compare.html">⑥ 优点与借鉴</a><a class="cur" href="07_v2_gaps.html">⑦ V2 缺口</a></nav>
+<header><h1>⑦ V2 尚未完成什么，以及应该怎样完成</h1><p class="sub">这里的“未完成”特指 OpenCode 上游 V2 新内核尚未达到 V1 产品能力与生产可靠性的部分，不代表前六篇文档遗漏。以下逐项对照源码 TODO、官方规格和测试。</p><div class="meta"><b>证据优先级</b> 运行代码 ＞ 测试 ＞ <code>specs/v2/session.md</code> parity 表 ＞ <code>specs/v2/todo.md</code> 路线图 · <b>快照</b> <code>d90532a595</code></div></header>
+
+<h2>结论：不是一个 TODO，而是五类缺口</h2>
+<p class="lead">V2 已经能可靠接收 prompt、执行 provider/tool loop、投影 durable history、自动压缩并处理中断；但它还不能完全替代 V1。缺口集中在五个层面：<b>模型可见上下文 parity、完整工具生态、运行状态与背压、崩溃/集群恢复、产品 API 与后台维护</b>。</p>
+<div class="key"><b>量化：</b><code>specs/v2/session.md</code> 的 V1 Runtime Context Parity 表共有 21 项：3 项 complete、8 项 partial、10 项 missing。这个表只统计 model-visible context；再加上 runner、工具、恢复和 API TODO，距离切换默认产品路径仍有明显工作量。</div>
+
+<h2>一、V1 Runtime Context Parity：21 项逐项审计</h2>
+<table><tr><th>边界</th><th>能力</th><th>状态</th><th>还缺什么</th></tr>
+<tr><td>Context Source</td><td>环境事实、日期</td><td><span class="tag partial">partial</span></td><td>加入本 turn 的 provider/model identity，避免错误缓存成 Location 全局值</td></tr>
+<tr><td>Context Source</td><td>全局与向上项目 instructions</td><td><span class="tag partial">partial</span></td><td>决定是否兼容 <code>CLAUDE.md</code>、废弃 <code>CONTEXT.md</code></td></tr>
+<tr><td>Context Source</td><td>配置文件/glob/远程 URL instructions</td><td><span class="tag external">missing</span></td><td>每个来源独立 key、优先级、unavailable 与 removal 语义</td></tr>
+<tr><td>Context Source</td><td>读文件后发现附近 nested instructions</td><td><span class="tag external">missing</span></td><td>持久化 discovery，并在下一 provider 安全边界注入</td></tr>
+<tr><td>Context Source</td><td>skill guidance/body</td><td><span class="tag partial">partial</span></td><td>request materialization 时删除全局 deny 的 skill definitions</td></tr>
+<tr><td>Request</td><td>placement/model/history/canonical lowering</td><td><span class="tag full">complete</span></td><td>—</td></tr>
+<tr><td>Request</td><td>agent prompt/effective permissions</td><td><span class="tag partial">partial</span></td><td>完整应用 agent system 与 request policy</td></tr>
+<tr><td>Request</td><td>provider/model 专用 base instructions</td><td><span class="tag external">missing</span></td><td>按 provider family 选择 baseline，并允许 agent override</td></tr>
+<tr><td>Request</td><td>builtin/MCP/plugin/structured tools</td><td><span class="tag partial">partial</span></td><td>完成针对 agent/request 的统一 materialization</td></tr>
+<tr><td>Request</td><td>per-prompt system text/tool overrides</td><td><span class="tag external">missing</span></td><td>先定义 durable admission/replay schema</td></tr>
+<tr><td>Request</td><td>steering、plan/build switch、final reminder</td><td><span class="tag external">missing</span></td><td>筛选 V2 仍需保留的 reminder，并做成明确 turn policy</td></tr>
+<tr><td>Request</td><td>plugin message/system/parameter/header transforms</td><td><span class="tag external">missing</span></td><td>先完成 V2 plugin hook 与 scoped reload 生命周期</td></tr>
+<tr><td>Request</td><td>model variants/settings</td><td><span class="tag partial">partial</span></td><td>合并 agent options 和未来 plugin request mutation</td></tr>
+<tr><td>Request</td><td>structured output</td><td><span class="tag external">missing</span></td><td>format schema、generated tool、toolChoice、错误语义一并设计</td></tr>
+<tr><td>Request</td><td>自动与 overflow compaction</td><td><span class="tag full">complete</span></td><td>—；手动 compact API 仍未完成，但不属于自动请求组装</td></tr>
+<tr><td>Expansion</td><td>durable typed attachments</td><td><span class="tag full">complete</span></td><td>—</td></tr>
+<tr><td>Expansion</td><td>template 与 <code>@</code> mention</td><td><span class="tag external">missing</span></td><td>在 durable admission 前解析为 native V2 prompt input</td></tr>
+<tr><td>Expansion</td><td>file/directory/media/MCP resource materialization</td><td><span class="tag partial">partial</span></td><td>解析并规范化来源；不能把未解析 URI 直接降给 provider</td></tr>
+<tr><td>Expansion</td><td>agent reference</td><td><span class="tag external">missing</span></td><td>生成 permission-aware task guidance</td></tr>
+<tr><td>Expansion</td><td>configured reference</td><td><span class="tag external">missing</span></td><td>alias 解析和 durable context/failure event</td></tr>
+<tr><td>Expansion</td><td>synthetic expansion replay</td><td><span class="tag partial">partial</span></td><td>V2 能 replay，但目前主要仍由 V1 compatibility path 创建</td></tr></table>
+<div class="src">权威表：<code>specs/v2/session.md:123-151</code>。状态计数按快照逐行复算，不从 TODO 数量推断。</div>
+
+<h2>二、Runner 运行控制还缺什么</h2>
+<table><tr><th>缺口</th><th>为什么现在不能简单补一行代码</th><th>建议完成条件</th></tr>
+<tr><td>durable busy/retry/idle/interrupted/failed</td><td><code>active()</code> 目前只是进程内 fiber map；重启即空</td><td>状态事件与 lease 分离；投影必须能识别 stale owner</td></tr>
+<tr><td>provider timeout/retry/watchdog</td><td>不同 provider 的 stream、hosted tools 和幂等性不同，统一硬超时会误杀</td><td>provider policy + retry budget + backoff + visible failure + drain release</td></tr>
+<tr><td>重复相同 tool-call/无限调用</td><td>当前只有 agent step limit，eager local calls 每 turn 无统一上限</td><td>per-turn call budget、doom-loop signature、可配置拒绝/询问</td></tr>
+<tr><td>tool/backlog 背压</td><td>本地工具 eager 并发当前故意 unbounded；SQLite publication 仍串行</td><td>并发 semaphore、queue 上限、输出/内存预算、指标与 overload error</td></tr>
+<tr><td>stream delta 合并与索引</td><td>durable boundary 和 live-only delta 语义不同，不能把每 token 都持久化</td><td>按 message/block 批量 flush；为 context/history 添加 covering indexes</td></tr>
+<tr><td>post-run maintenance</td><td>title、summary、cleanup 不能拖住 durable prompt acceptance</td><td>有界后台 jobs、失败可见、幂等重试、不改变 terminal transcript</td></tr></table>
+<div class="src">证据：<code>packages/core/src/session/runner/llm.ts:43-90</code>；<code>specs/v2/session.md:153+</code>。</div>
+
+<h2>三、工具 parity：V2 已能运行，但体验和生态未齐</h2>
+<p>V2 core 已有 read、write、edit、apply_patch、grep/glob、bash、web、skill、question、todo 等 canonical tool leaves，并实现 scoped registration、stale-call rejection、permission、typed output 和统一 bounding。但“工具存在”不等于已达到 V1 产品体验：</p>
+<table><tr><th>区域</th><th>当前缺口</th><th>风险/影响</th></tr>
+<tr><td>注册生态</td><td>V2 plugin boot 尚未通过 <code>Tools.Service</code> 注册 canonical tools；MCP 与 Session-scoped registration 未定</td><td>默认切 V2 会丢插件/MCP 工具或产生第二套 registry</td></tr>
+<tr><td>edit</td><td>没有 V1 fuzzy correction、formatter、watcher event、snapshot/undo、LSP diagnostics</td><td>模型精确匹配失败率和修改后反馈退化</td></tr>
+<tr><td>write</td><td>没有 formatter、watcher、snapshot/undo、LSP</td><td>文件可写，但产品时间线和 IDE 反馈不完整</td></tr>
+<tr><td>bash</td><td>缺 tree-sitter/PowerShell approval reduction、prefix approvals、跨平台细节、plugin env、progress、durable background jobs</td><td>审批过粗，Windows parity 弱，长任务不可可靠观察/恢复</td></tr>
+<tr><td>附件</td><td>remote/managed URI 在 provider history lowering 前尚未统一 materialize</td><td>部分 provider 无法读取，或重放语义不稳定</td></tr>
+<tr><td>输出封装</td><td>Session 公共结果仍暴露 managed <code>outputPaths</code></td><td>存储路径泄漏到 domain/API，未来迁移困难</td></tr></table>
+<div class="note warn"><b>源码测试故意锁住这些 TODO。</b><code>tool-bash.test.ts</code>、<code>tool-edit.test.ts</code>、<code>tool-write.test.ts</code> 会读取源码并断言 TODO 文本仍在；这说明维护者把它们视为明确的 deferred parity contract，而不是随手注释。完成相应能力时，需要连同测试和语义文档一起更新。</div>
+<div class="src">证据：<code>packages/core/src/tool/AGENTS.md:54-60</code>；<code>tool/edit.ts:83-88</code>；<code>tool/write.ts:41-45</code>；<code>tool/bash.ts:66-77</code>；对应三份测试。</div>
+
+<h2>四、四个明确返回 unavailable 的 Session API</h2>
+<table><tr><th>API</th><th>当前行为</th><th>真正需要的实现</th></tr>
+<tr><td><code>SessionV2.shell</code></td><td>直接抛 <code>OperationUnavailableError("shell")</code></td><td>durable Shell.Started/Ended、Location process ownership、interrupt/replay、输出 retention</td></tr>
+<tr><td><code>SessionV2.skill</code></td><td>直接 unavailable</td><td>skill ID 解析、权限、body/reference materialization、durable synthetic/context event</td></tr>
+<tr><td><code>SessionV2.compact</code></td><td>手动 API unavailable；自动/overflow compaction 已实现</td><td>显式 compact admission、与 active run 串行、幂等 attempt、失败不移动 history boundary</td></tr>
+<tr><td><code>SessionV2.wait</code></td><td>直接 unavailable</td><td>定义等待的是 process drain、durable terminal state 还是指定 admission；跨重启语义不能含糊</td></tr></table>
+<p>server 已把 compact/wait 的 unavailable 映射为 503，并返回 <code>Session ... is not available yet</code>；测试 <code>session-create.test.ts</code> 直接验证 shell/skill 返回 unavailable，而 compact/wait 则由实现中的显式错误分支确认。因此 API surface 已预留，但行为没有被伪造。</p>
+<div class="src">证据：<code>packages/core/src/session.ts:387-423</code>；<code>packages/server/src/handlers/session.ts:172-218</code>；<code>packages/core/test/session-create.test.ts:308-323</code>。</div>
+
+<h2>五、最难的部分：崩溃恢复不能靠“再 wake 一次”</h2>
+<p>进程崩溃时至少有五种不同事实：</p>
+<pre><code>A. prompt 已 admit，尚未 promote                 → 可安全继续
+B. prompt 已 promote，尚未 dispatch provider      → 理论可继续，但要有准备标记
+C. provider request 可能已发出、无 durable output  → 结果未知，盲重试可能重复计费/副作用
+D. tool call 已 durable，tool side effect 状态未知 → 不能自动 replay 非幂等工具
+E. tool result 已 durable，缺下一 provider turn    → 可恢复 continuation，但要证明边界</code></pre>
+<p>当前 runner 会在显式继续前把旧的 pending/running tools 标成 interrupted，避免静默重放；但不会在启动时自动推断 C/D/E。官方规格要求把 retry 与 abandon 变成显式决定，并同时设计 provider-dispatch ambiguity、required continuation、queued/steer assignment、retry budget、backoff、visible recovery status 和 startup discovery。</p>
+<div class="note clever"><b>正确目标不是笼统 exactly-once。</b>网络模型调用和外部工具无法普遍 exactly-once。可证明的语义应是：durable input at-least-once admitted；每次 side-effect attempt 有稳定 identity；幂等操作可受限自动 retry；未知结果进入 <code>recovery_required</code>，由用户或策略选择 retry/abandon/reconcile。</div>
+
+<h2>六、集群所有权需要 lease + fencing，而不只是分布式锁</h2>
+<p>当前 <code>SessionRunCoordinator</code> 只保证同一进程内每 session 一个 drain。若两个 server 指向同一 SQLite/远端数据库，各自都可能认为自己是 owner。完整多节点方案至少需要：</p><ol>
+<li>按 Session 获取带期限的 durable lease，记录 <code>owner_id</code>、<code>epoch/fencing_token</code>、expires；</li>
+<li>所有 provider attempt、tool settlement、promotion 在提交前校验 fencing token；</li>
+<li>续租失败立即中断本地 fiber，旧 owner 的迟到写入被 projector/store 拒绝；</li>
+<li>replay consumer claim 与 execution ownership 使用不同表/namespace，不能混用；</li>
+<li>Location move 或 runtime replacement 提升 epoch，使旧 Location 的执行失效。</li></ol>
+<p>这也解释了源码为何只写“future remote placement”：<code>LocationServiceMap</code> 提供服务注入边界，但不是调度器、lease manager 或远程 RPC 本身。</p>
+
+<h2>七、推荐完成顺序</h2>
+<table><tr><th>阶段</th><th>先完成什么</th><th>验收证据</th></tr>
+<tr><td>0. 定义切换门槛</td><td>把 21 项 parity 表和 runner TODO 变成 release checklist；确定哪些 V1 特性允许废弃</td><td>每项 owner、状态、测试链接；默认路径切换不能靠“基本可用”</td></tr>
+<tr><td>1. 单机语义闭合</td><td>durable status、wait 语义、retry/watchdog、tool/backlog limits、manual compact</td><td>重启前后状态投影一致；并发/中断/超载测试通过</td></tr>
+<tr><td>2. 请求 parity</td><td>provider base prompt、agent options、structured output、reminders、prompt/reference expansion</td><td>同 fixture 下 V1/V2 model-visible request 做语义 diff</td></tr>
+<tr><td>3. 工具 parity</td><td>plugin/MCP canonical registration、edit/write UX、bash progress/background、attachments</td><td>删除 TODO-lock tests，替换为行为测试；V1 tool conformance fixtures 通过</td></tr>
+<tr><td>4. 产品 API</td><td>shell/skill/compact/wait、durable cursor SDK、后台 title/summary/cleanup</td><td>HTTP 503 占位消失；断线重连可仅靠 durable cursor 恢复</td></tr>
+<tr><td>5. 崩溃恢复</td><td>attempt ambiguity、retry/abandon、startup discovery、idempotency policy</td><td>在 provider dispatch/tool side effect 各故障点做 kill -9 矩阵</td></tr>
+<tr><td>6. 集群化</td><td>lease、fencing、remote placement、cross-process wake/poll fallback</td><td>双 owner 竞争、网络分区、lease expiry、迟到写入测试</td></tr>
+<tr><td>7. 默认切换与删除</td><td>让现有客户端走 V2；观测 canary；移除 V1 bridge/兼容包</td><td>真实 telemetry、数据迁移回滚方案、旧入口无隐藏依赖</td></tr></table>
+
+<h2>八、已有测试证明了什么，没证明什么</h2>
+<p>当前测试面相当扎实：</p><ul>
+<li><code>session-prompt.test.ts</code> 覆盖 durable admission、精确重试、冲突、并发 promote、resume=false；</li>
+<li><code>session-run-coordinator.test.ts</code> 覆盖 join、wake coalescing、interrupt race、不同 session 并发；</li>
+<li><code>session-runner.test.ts</code> 覆盖 context epoch、自动/overflow compaction、tool settlement、steer/queue、provider failure 和中断；</li>
+<li><code>session-projector/history</code> 覆盖 aggregate 顺序、cursor pagination 和 projection；</li>
+<li><code>session-runner-tool-registry.test.ts</code> 覆盖 scoped overlay、stale call、codec 和 output bounding。</li></ul>
+<p>它们能证明当前单进程 V2 slice 的局部不变量，不能证明多进程 ownership、kill -9 恢复、远端 placement、所有 V1 context parity、插件/MCP parity 或真实 provider 全矩阵。绿色测试不能把规格中明确的 missing 变成 complete。</p>
+
+<h2>最终判断</h2>
+<p class="lead">V2 的剩余工作并不是“把四个 unavailable 函数接上线”这么简单。真正的切换门槛是：<b>请求语义与工具生态达到可接受 parity；单机运行状态闭合；未知 side effect 有显式恢复策略；最后才引入集群 ownership</b>。现有 durable inbox、EventV2、projector、Location scope 和 canonical Tool Registry 已经打好了底座，后续最忌讳的是绕回 V1 loop 或为了快速上线再造第二套临时抽象。</p>
+<div class="src">主要证据：<code>specs/v2/session.md</code>、<code>specs/v2/todo.md</code>、<code>specs/v2/tools.md</code>、<code>packages/core/src/session/runner/llm.ts</code>、<code>packages/core/src/session.ts</code>、<code>packages/core/src/tool/*</code> 及相应测试。</div>
+<footer><a href="index.html">← 回到 OpenCode 总览</a></footer></div></body></html>

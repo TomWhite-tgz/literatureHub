@@ -1,0 +1,49 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OpenCode · 会话与上下文</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① V1 主循环</a><a href="02_tools_permissions.html">② 工具与权限</a><a class="cur" href="03_sessions_context.html">③ 会话与上下文</a><a href="04_v2_runtime.html">④ V2 持久运行时</a><a href="05_server_frontends.html">⑤ 服务与前端</a><a href="06_compare.html">⑥ 优点与借鉴</a><a href="07_v2_gaps.html">⑦ V2 缺口</a></nav>
+<header><h1>③ 会话、事件投影与上下文治理</h1><p class="sub">V1 的对象名没变，但底层已经从分散 JSON 迁到 SQLite + event projector；上下文则由 history filter、instructions 和 compaction 三条管线共同决定。</p></header>
+
+<h2>当前 V1 存储不是“每条消息一个 JSON”</h2>
+<p><code>Session.updateMessage()</code> 与 <code>updatePart()</code> 不直接写表，而是发布 <code>SessionV1.Event.MessageUpdated/PartUpdated</code>。全局 <code>SessionProjector</code> 消费事件并 upsert <code>message</code>/<code>part</code>/<code>session</code> 表，同时维护 cost/token 汇总；读取则直接查询 Drizzle SQLite 表。</p>
+<pre><code>业务修改
+  → EventV2Bridge.publish(V1 event)
+  → EventV2 durable/event bus
+  → SessionProjector
+  → session / message / part / session_message / session_input tables
+  → API list/messages/context 查询投影</code></pre>
+<p><code>packages/opencode/src/storage/storage.ts</code> 仍有 JSON 文件锁与迁移代码，但不能再据此概括当前会话主存储。它的重要角色是把旧数据迁入数据库及承载尚未迁移的遗留资源。</p>
+<div class="src">证据：<code>packages/opencode/src/session/session.ts:488-645</code>；<code>packages/core/src/session/projector.ts:211-458</code>；<code>opencode/src/storage/storage.ts:213-300</code>。</div>
+
+<h2>消息模型：Message 和 Part 分离</h2>
+<p>用户/assistant 是 message；文本、reasoning、文件、tool state、step markers、compaction、subtask 等是 part。流式 delta 可以只更新某个 part 字段，UI 不必等待整条消息完成。工具 part 还保留 pending/running/completed/error、输入、输出、时间、附件、metadata 和 providerExecuted 信息。</p>
+<p><code>MessageV2.toModelMessagesEffect()</code> 才负责把丰富产品态降维为 provider 的 <code>ModelMessage[]</code>；<code>filterCompacted()</code> 为模型消费重新排序/隐藏历史。产品时间线和模型上下文不是同一个数组视图。</p>
+<div class="src">证据：<code>packages/opencode/src/session/message-v2.ts:131-417,521-578</code>；<code>packages/core/src/v1/session.ts</code>。</div>
+
+<h2>Instruction 注入分两级</h2>
+<table><tr><th>阶段</th><th>来源</th><th>语义</th></tr>
+<tr><td>每次模型请求的 system</td><td>全局 <code>AGENTS.md</code>；可选 <code>~/.claude/CLAUDE.md</code>；项目向上查找的第一类 instruction；配置 glob/URL</td><td>文件并发读取、URL 限时拉取，组成 system parts</td></tr>
+<tr><td>读文件时的局部发现</td><td>目标文件到项目根之间的最近 <code>AGENTS.md/CLAUDE.md/CONTEXT.md</code></td><td>每个 assistant message claim 一次，并跳过 system 已注入或历史 read 已加载的文件</td></tr></table>
+<p>“第一类 instruction”有细节：项目层按文件名优先级寻找，找到一种后就不再把每个祖先的不同命名全部叠加；但同名文件的向上结果可以有多项。局部发现则随着 agent 实际读取子目录文件动态补充。</p>
+<div class="src">证据：<code>packages/opencode/src/session/instruction.ts:60-169,179-223</code>。</div>
+
+<h2>压缩不是简单 summarize-all</h2>
+<p>V1 有两个互补动作：</p><ul>
+<li><b>prune tool output：</b>从后向前累计已完成工具输出；保护最近两 turn、最近 40k token、skill 输出和已有 summary 边界。真正超过 20k token 的可清理量才把旧结果标成 compacted。</li>
+<li><b>生成 compaction message：</b>在可用上下文的 25%（默认夹在 2k～8k）预算内保留最近最多两 turn；更老 head 交给隐藏 compaction agent，总结时可带 previous summary，并记录 tail start。</li></ul>
+<p>overflow compaction 还会尝试把触发溢出的上一用户 turn 取出、先总结更旧历史，再 replay；这避免把一个本身很大的新任务硬塞进摘要。插件可通过 <code>experimental.session.compacting</code> 注入 context 或替换 prompt。</p>
+<div class="src">证据：<code>packages/opencode/src/session/compaction.ts:28-185,204-323,325-440</code>。</div>
+
+<h2>fork、child session 与 revert 是不同机制</h2>
+<table><tr><th>机制</th><th>做什么</th><th>不做什么</th></tr>
+<tr><td><code>fork</code></td><td>创建新 session，并复制截止指定 message 的历史</td><td>不让两个分支继续共享可变 transcript</td></tr>
+<tr><td><code>TaskTool child</code></td><td>用 parentID 建独立子 session，结果回流父 session</td><td>不是同 session 内的角色标签</td></tr>
+<tr><td><code>revert</code></td><td>stage 目标、基于 snapshot 恢复文件，commit 后裁剪边界之后投影</td><td>不等价于 Git commit/branch，也不保证任意外部副作用回滚</td></tr></table>
+<p>删除 parent 会递归删除 children，并尝试取消其 background jobs。V2 projector 在 revert commit 时会删除边界之后的 <code>session_message</code> 和 inbox 行，并 reset context epoch。</p>
+<div class="src">证据：<code>packages/opencode/src/session/session.ts:598-629,693+</code>；<code>packages/core/src/session/projector.ts:396-453</code>。</div>
+
+<h2>上下文的四种“真相”</h2>
+<pre><code>完整审计事实：durable events
+产品查询事实：SQLite projections
+用户界面事实：message + parts 时间线
+模型可见事实：filterCompacted → toModelMessages + system instructions</code></pre>
+<p>这四层刻意不同。比如旧 tool output 可以继续存在于事件与 UI metadata 中，但 model view 只看到清理标记；新的 instruction 文件能在后续 turn 注入，却不必伪装成用户消息。</p>
+<div class="key"><b>判断：</b>OpenCode 已从“保存聊天记录”走向“维护多种派生视图”。这为可靠恢复和多前端提供基础，也要求所有重放、revert、compaction 逻辑明确自己操作的是 event、projection、timeline 还是 model context。</div>
+<footer><a href="04_v2_runtime.html">下一篇：V2 持久运行时 →</a></footer></div></body></html>

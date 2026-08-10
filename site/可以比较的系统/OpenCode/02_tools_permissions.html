@@ -1,0 +1,57 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OpenCode · 工具与权限</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_loop.html">① V1 主循环</a><a class="cur" href="02_tools_permissions.html">② 工具与权限</a><a href="03_sessions_context.html">③ 会话与上下文</a><a href="04_v2_runtime.html">④ V2 持久运行时</a><a href="05_server_frontends.html">⑤ 服务与前端</a><a href="06_compare.html">⑥ 优点与借鉴</a><a href="07_v2_gaps.html">⑦ V2 缺口</a></nav>
+<header><h1>② 工具、权限与子 Agent</h1><p class="sub">工具注册是开放的，权限规则是 last-match；但它们提供的是应用层准入，不等于 OS 级隔离。</p></header>
+
+<h2>工具从哪里来</h2>
+<p><code>ToolRegistry</code> 把四类来源合并：内建工具、配置目录下 <code>{tool,tools}/*.{js,ts}</code>、外部 plugin hooks、MCP tools/resources。内建主集合包括 shell、read、glob、grep、edit/write 或 apply_patch、task、webfetch/search、todo、skill、question；LSP、plan、code mode 受 feature flag/client 条件控制。</p>
+<p>模型也会改变工具面：GPT 新模型偏向 <code>apply_patch</code>，这时隐藏 edit/write；web search 是否可见取决于 provider/flag；code mode 只有存在可见 MCP catalog 时才物化。注册表还允许 <code>tool.definition</code> plugin hook 改写描述和 schema。</p>
+<div class="src">证据：<code>packages/opencode/src/tool/registry.ts:58-114,116-253,260-319</code>。</div>
+
+<h2>执行包装器：hook、状态、附件和截断</h2>
+<pre><code>ToolRegistry.tools()
+  → SessionTools.resolve()
+  → ProviderTransform.schema(model, tool schema)
+  → AI SDK tool({ execute })
+      → tool.execute.before hook
+      → item.execute(args, Tool.Context)
+      → attachments 赋予 part/session/message ID
+      → tool.execute.after hook
+      → processor 更新 ToolPart</code></pre>
+<p><code>Tool.Context</code> 带 session/message/call ID、AbortSignal、agent、历史消息，并提供 <code>metadata()</code> 与 <code>ask()</code>。所以工具不仅返回文本，也能在执行途中更新 title、diff、diagnostics、附件等 UI 元数据。</p>
+<p>插件工具仍兼容 Zod 参数，但 registry 在边界保留原始 JSON Schema；输出统一经过 truncate，大结果写到持久输出文件，再在上下文中留下摘要和 <code>outputPath</code>。</p>
+<div class="src">证据：<code>packages/opencode/src/session/tools.ts:41-134</code>；<code>tool/registry.ts:116-175</code>；<code>tool/truncate.ts</code>。</div>
+
+<h2>权限算法：多个 ruleset 展平，最后匹配者获胜</h2>
+<pre><code>evaluate(permission, pattern, ...rulesets)
+  = rulesets.flat().findLast(
+      rule => wildcard(permission) && wildcard(pattern)
+    )
+  ?? { action: "ask", pattern: "*" }</code></pre>
+<p>这意味着规则顺序就是优先级。一次工具调用可以提交多个 pattern；任一 pattern 命中 deny 立即失败，全部 allow 直接执行，只要出现 ask 就发布 <code>permission.asked</code> 并等待 Deferred。用户回复 <code>once</code> 只放行当前请求；<code>always</code> 把规则加入当前 instance 的内存 approved 集合，并自动放行同 session 中已 pending、现在全部匹配的请求；<code>reject</code> 还会拒绝同 session 其他 pending 请求。</p>
+<div class="note"><b>“always”不是无条件永久配置。</b>这里的 <code>approved</code> 存在 InstanceState 内存中；V2 另有 <code>PermissionSaved</code> 数据模型。阅读 UI 的“总是允许”文字时，必须分清当前 runtime 和持久规则来源。</div>
+<div class="src">证据：<code>packages/opencode/src/permission/index.ts:28-37,67-167</code>。</div>
+
+<h2>默认 Agent 权限</h2>
+<table><tr><th>Agent</th><th>默认策略</th><th>用途</th></tr>
+<tr><td><code>build</code></td><td><code>* allow</code>；doom_loop、外部目录、敏感 .env 读取 ask；question/plan_enter allow</td><td>默认可修改仓库的主 Agent</td></tr>
+<tr><td><code>plan</code></td><td>edit deny，仅计划目录例外；限制 general task；plan_exit allow</td><td>只读分析与写计划</td></tr>
+<tr><td><code>general</code></td><td>继承默认，作为 subagent；自身 task/todo 有额外约束</td><td>多步通用子任务</td></tr>
+<tr><td><code>explore</code></td><td>先 <code>* deny</code>，再允许 grep/glob/list/bash/web/read 等只读探索面</td><td>快速代码库探索</td></tr>
+<tr><td><code>compaction/title/summary</code></td><td><code>* deny</code></td><td>隐藏的内部模型任务</td></tr></table>
+<p>用户配置最后 merge，因此可以覆盖默认项。外部目录默认 ask；skill、reference 和 truncate 输出目录被白名单化。敏感 env 文件默认 ask，而 <code>*.env.example</code> allow。</p>
+<div class="src">证据：<code>packages/opencode/src/agent/agent.ts:98-310</code>。</div>
+
+<h2>文件写入的并发与反馈</h2>
+<p><code>EditTool</code> 对规范化绝对路径使用进程级 <code>Semaphore(1)</code>，在锁内读取、精确/模糊替换、生成 diff、询问权限、写文件和格式化，避免同一进程两个 edit 互相覆盖。写后发布 filesystem/watcher event，并触发 LSP；诊断随 tool result 回给模型。</p>
+<p>这是很好的同路径串行化，但不是事务：权限批准后到写入期间仍可能有外部进程修改文件；snapshot 用于 diff/revert 证据，不把任意多工具批变成原子提交。</p>
+<div class="src">证据：<code>packages/opencode/src/tool/edit.ts:35-45,69-213</code>。</div>
+
+<h2>Task 工具：子 Agent 是子 Session</h2>
+<p><code>TaskTool</code> 先沿 <code>parentID</code> 计算深度，默认上限 1；权限通过后选择 subagent，并创建带 parentID 的 child session。子会话继承经过推导的权限，还会默认禁用递归 task 和部分 primary-only tools。同步任务直接 await 子 session prompt，后台任务则注册 <code>BackgroundJob</code>，完成后向父 session 注入 synthetic prompt。</p>
+<p>后台 subagent 受实验 flag 控制；已有 child session ID 可以继续任务。它不是共享同一 transcript 的“函数调用”，而是有独立消息历史、模型、权限和可导航 UI 的会话树节点。</p>
+<div class="src">证据：<code>packages/opencode/src/tool/task.ts:81-300</code>；<code>background/job.ts</code>。</div>
+
+<h2>安全边界的准确说法</h2>
+<div class="note warn"><b>OpenCode 源码没有内建 Codex 那样的 bwrap/seccomp/Seatbelt 执行层。</b>“project sandboxes”在这里主要指 worktree/workspace 隔离与远端 workspace routing，不应理解为本地 shell 的 OS 强制沙箱。shell、插件和自定义工具继承 OpenCode 进程权限；权限 popup 能防止合规路径上的误执行，但恶意插件或绕过工具层的代码不受它约束。</div>
+<p>因此风险从低到高可分为：工具 schema 校验 → wildcard permission admission → external-directory/path checks → 同路径锁/snapshot → 宿主 OS/容器。OpenCode 原生覆盖前四层的一部分，真正强隔离需要容器、远端 workspace 或外围运行环境。</p>
+<div class="key"><b>判断：</b>OpenCode 的工具系统强在“开放注册 + 细粒度状态 + 可组合准入”；安全模型则更接近 Claude Code/Pi 的进程内治理，而不是 Codex/Gemini CLI 的显式 OS sandbox 层。</div>
+<footer><a href="03_sessions_context.html">下一篇：会话与上下文 →</a></footer></div></body></html>
