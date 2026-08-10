@@ -229,6 +229,35 @@
   details.sec-fold[open] > summary .open-hint { visibility: hidden; }
   .sec-body { padding: 4px 20px 20px; border-top: 1px dashed var(--line); }
 
+  /* ---------- 站内全文搜索 ---------- */
+  .site-search { position: relative; margin-top: 18px; }
+  .search-input-wrap { position: relative; display: flex; align-items: center; }
+  .search-icon { position: absolute; left: 15px; color: var(--accent); pointer-events: none; }
+  #site-search-input {
+    width: 100%; border: 1px solid #d9bf9d; border-radius: 10px; background: var(--card);
+    color: var(--ink); font: inherit; font-size: 14px; padding: 11px 46px 11px 42px;
+    outline: none; box-shadow: 0 1px 3px rgba(120,90,50,.06); transition: border-color .15s, box-shadow .15s;
+  }
+  #site-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(180,83,10,.12); }
+  #site-search-input::placeholder { color: #9a8b79; }
+  #site-search-clear {
+    position: absolute; right: 10px; border: 0; background: transparent; color: var(--ink-soft);
+    padding: 5px 8px; cursor: pointer; font-size: 16px; line-height: 1;
+  }
+  #site-search-clear:hover { color: var(--accent); }
+  #site-search-status { min-height: 20px; margin: 5px 2px 0; color: var(--ink-soft); font-size: 12px; }
+  #site-search-results {
+    position: absolute; z-index: 20; top: 68px; left: 0; right: 0; max-height: min(62vh, 560px);
+    overflow-y: auto; background: var(--card); border: 1px solid #d9bf9d; border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(74,55,35,.18); padding: 6px;
+  }
+  .search-result { display: block; color: var(--ink); text-decoration: none; padding: 10px 12px; border-radius: 7px; }
+  .search-result + .search-result { border-top: 1px solid var(--line); }
+  .search-result:hover, .search-result:focus { background: var(--accent-soft); outline: none; }
+  .search-result strong { display: block; font-size: 14px; color: var(--accent); }
+  .search-result-meta { display: block; margin: 1px 0 3px; color: var(--sage); font-size: 11.5px; }
+  .search-result-snippet { display: block; color: var(--ink-soft); font-size: 12.5px; line-height: 1.5; }
+
   footer { margin-top: 60px; border-top: 1px solid var(--line); padding-top: 16px; color: var(--ink-soft); font-size: 12.5px; }
   footer code { background: #f1e9d8; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
 </style>
@@ -244,6 +273,15 @@
   所有<b>精读页面、审计结论、配图、笔记、论文 PDF</b> 都已包含，论文链接点开即可阅读原文。<br>
   源码仓库与数据集未打包（原始档案 107 GB）：相应链接指向官方仓库，或跳到 <a href="_未包含的内容.html" style="color:#b4530a">未包含内容说明</a>。
 </div>
+  <div class="site-search" role="search" aria-label="站内全文搜索">
+    <div class="search-input-wrap">
+      <span class="search-icon" aria-hidden="true">⌕</span>
+      <input id="site-search-input" type="search" autocomplete="off" spellcheck="false" placeholder="搜索全部精读、源码分析与思考笔记…" aria-controls="site-search-results" aria-describedby="site-search-status">
+      <button id="site-search-clear" type="button" aria-label="清空搜索" hidden>×</button>
+    </div>
+    <p id="site-search-status" aria-live="polite">输入中文、英文标题或正文关键词；按 / 可快速聚焦。</p>
+    <div id="site-search-results" hidden></div>
+  </div>
   <div class="map">
     <div class="map-col">
       <div class="map-title">① 选题讨论 · 我要做什么</div>
@@ -1758,6 +1796,8 @@ return timeout_answer</div>
 </footer>
 
 </div>
+<script src="search-index.js"></script>
+<script src="search.js"></script>
 <script>
 function openHashTarget() {
   var h = location.hash;
