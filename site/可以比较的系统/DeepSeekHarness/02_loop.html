@@ -1,0 +1,66 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DSH · Agent loop</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_boot_plugins.html">① 启动与插件树</a><a class="cur" href="02_loop.html">② Agent loop</a><a href="03_models_tools.html">③ 模型与工具</a><a href="04_sessions_context.html">④ 会话与上下文</a><a href="05_capabilities_surfaces.html">⑤ 能力与前端</a><a href="06_typescript.html">⑥ TypeScript</a><a href="07_compare_pi.html">⑦ 对比 Pi</a></nav>
+<header><h1>② Agent loop：一个 turn 可以有多个 step</h1><p class="sub"><code>ReactLoopAgent</code> 是驱动器；inbox 决定输入在哪个 checkpoint 可见；Session 事件给每条路径建立持久边界。</p></header>
+
+<h2>三个 phase，不是一个 running 布尔值</h2>
+<pre><code>type Phase =
+  | { kind: 'idle'; lastTurn: number }
+  | { kind: 'maintenance'; abort: AbortController; lastTurn: number; wakeRequested: boolean }
+  | { kind: 'running'; abort: AbortController; turn: number; step: number }</code></pre>
+<p>这是 discriminated union（可辨识联合）：先检查 <code>phase.kind</code>，TypeScript 就知道该分支是否有 <code>abort/turn/step</code>。maintenance 用于压缩等需要独占但对外仍呈 idle 的工作；若此时消息唤醒，只记 <code>wakeRequested</code>，维护结束再启动 driver。<code>whenIdle()</code> 反复比较 activity Promise，避免等待旧 activity 后恰好又启动新 activity 的竞态。</p>
+<div class="src">证据：<code>packages/core/agent-loop/src/agent.ts:38-47,99-181</code>。</div>
+
+<h2>四种送信方式，两个队列，两个维度</h2>
+<table><tr><th>API</th><th>目标</th><th>唤醒？</th><th>含义</th></tr><tr><td><code>followup()</code></td><td><code>next-turn</code></td><td>是</td><td>下一个独立 turn 的直接输入</td></tr><tr><td><code>steer()</code></td><td><code>next-step</code></td><td>是</td><td>当前 turn 下一次模型请求前改变方向</td></tr><tr><td><code>inject()</code></td><td><code>next-step</code></td><td>否</td><td>加入上下文但不单独触发模型请求</td></tr><tr><td><code>send(m,t,w)</code></td><td>显式</td><td>显式</td><td>底层统一入口</td></tr></table>
+<p>所以“在哪一层可见”和“是否启动执行”是正交的。已中止 activity 收到 waking input 时会强制转入 <code>next-turn</code>，防止新消息被塞进注定 abort 的 turn。Inbox 的 inserted/claimed/discarded 都发 Agent 事件，队列操作不是隐形状态。</p>
+<div class="src">证据：<code>packages/core/agent-loop/src/agent.ts:113-139</code>；<code>packages/core/agent/src/inbox.ts</code>。</div>
+
+<h2>一个 turn 的真实状态机</h2>
+<pre><code>'turn/start'
+  → claim(next-turn) + assemble system/context
+  → agent/pre-step waterfall
+  → reject? 'turn/end(blocked)'
+  → 'step/start'
+  → 每条输入各写一个 'user/message'
+  → buildRequest + LLM stream
+  → 'assistant/chunk'* → 'assistant/message'
+  → tool/call* → execute → tool/result*
+  → 'step/end'
+  → next-step inbox 非空，或工具要求继续？回到 pre-step
+  → agent/turn-stopping serial barrier，再检查一次 inbox
+  → 'turn/end'
+  → next-turn inbox 非空？开下一 turn；否则 idle</code></pre>
+<p>turn 在 claim 和 pre-step 之前就打开。因此 listener reject、输入被改空、早期取消也会留下一个没有 step 的闭合 turn。step 则只有确实进入模型调用时才打开。<code>finally</code> 强制写 <code>step/end</code> 与 <code>turn/end</code>；取消变成 <code>aborted</code>，已知 LLM 错误保留结构化 failure，其余错误压成 <code>UNKNOWN</code>。</p>
+<div class="src">证据：<code>packages/core/agent-loop/src/agent.ts:191-307</code>。</div>
+
+<h2>preStep 是上下文汇合点</h2>
+<p><code>preStep()</code> 先 claim inbox，再组装 system prompt/tool schemas，把运行时 context 投影成消息，最后进入 <code>agent/pre-step</code> waterfall。默认决策是 <code>{ kind:'enter', messages:[...claimed, context] }</code>；插件可以 reject，或保留/替换消息。重要的是 claim 已经发生：reject 不会自动把消息塞回队列。</p>
+<pre><code>const decision = await dispatch.waterfall(
+  'agent/pre-step',
+  { messages: claimed, turn, step, signal },
+  () =&gt; Promise.resolve({ kind: 'enter', messages: ... }),
+)</code></pre>
+<p>workspace context、压缩压力检查等都挂在这个边界，因此 loop 不需要 import 它们。这里展示 DSH 的核心扩展哲学：稳定状态机保留少数语义钩子，功能包通过 typed event 组合。</p>
+<div class="src">证据：<code>packages/core/agent-loop/src/agent.ts:204-222</code>；<code>packages/compact/compact-basic/src/index.ts:132-221</code>。</div>
+
+<h2>请求在每个 step 冻结，而不是整个会话冻结</h2>
+<p><code>buildRequest()</code> 从 Agent 声明 route 和上一个持久 request header 得到 seed config，经过 <code>agent/request</code> waterfall，再调用 <code>llm.prepareCall()</code> 固定 adapter registration、模型默认值与 context capacity。它将规范化 header 写入日志：首请求标 initial/resume，变化才标 change；route/capacity 变化另写 <code>request/context</code>。最后用 <code>deepFreeze()</code> 生成本 step 的请求。</p>
+<p>这允许“下一 step 切模型”，但禁止“同一流式回复途中因配置热更新换 provider”。恢复时又能从 header 区分显式值和 adapter default：默认值会先删掉，下一请求重新解析，而用户显式 reasoning effort 会保留。</p>
+<div class="src">证据：<code>packages/core/agent-loop/src/agent.ts:309-377,380-472</code>。</div>
+
+<h2>LLM 流与失败恢复</h2>
+<p>每个 stream chunk 先写 <code>assistant/chunk</code>，<code>BlockAssembler</code> 同时收束内容、usage、finish 和 replay state。只有成功/length 才提交 <code>assistant/message</code>；error/aborted chunk 不生成半条 assistant message，而是进入 <code>agent/request-error</code>。listener 若返回 <code>{kind:'retry'}</code>，使用同一冻结 prompt 在同 step 重试，否则抛结构化 <code>LlmError</code>。</p>
+<p><code>for await (const chunk of stream)</code> 是异步迭代器语法：每次 await 下一个网络分片，但调用方仍用普通循环处理背压和取消。chunk 原样持久化服务 UI/回放，assembled message 服务下一次模型请求。</p>
+<div class="src">证据：<code>packages/core/agent-loop/src/agent.ts:316-368</code>。</div>
+
+<h2>工具并发：执行可以乱序，提交必须有序</h2>
+<p>模型返回多个 tool calls 后，scheduler 动态读取每个工具的 <code>executionMode</code>。exclusive 形成 barrier；parallel 进入上限为 <code>maxParallelToolCalls</code> 的 rolling pool。后续 call 在真正 start 前重新分类，所以前一个工具动态改变 registry 后，新 call 可以转成 barrier。</p>
+<p><code>pre-execute</code> 依模型顺序准备，只有工具 body 并行；完成结果进入按 index 的 slots，<code>commitReady()</code> 只提交从当前游标开始的连续结果。于是慢的 call 0 会挡住 call 1 的 session result，即使 call 1 已结束；模型上下文、policy finalize 和 additional context 都保持源顺序。</p>
+<pre><code>model order:   call0 ───────── done
+               call1 ── done
+runtime done:          1       0
+session commit:                result0 → result1</code></pre>
+<p>取消停止补充 pool、等待已启动 calls 排空，并为未启动 calls 合成 <code>ABORTED_BEFORE_DISPATCH</code> call/result 对，保持重放协议闭合；scheduler 自身故障则不伪造结果，而是保留已经记录的 call 供诊断。</p>
+<div class="src">证据：<code>packages/core/agent-loop/src/tool-calls.ts:59-289</code>。</div>
+
+<div class="key"><b>与 Pi 的预告：</b>两者都把“并发完成顺序”与“模型上下文顺序”分开。Pi 的经典 loop 更短，steering 在整个 tool batch 后才可见；DSH 把每次模型请求显式命名为 step，工具的 additional context 和 steer 进入同一 <code>next-step</code> inbox，并用更重的事件/取消/持久化协议包围全过程。</div>
+<footer><a href="03_models_tools.html">下一篇：模型与工具 →</a></footer></div></body></html>

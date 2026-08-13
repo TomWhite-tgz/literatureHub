@@ -1,0 +1,32 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DSH · 能力、安全与前端</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_boot_plugins.html">① 启动与插件树</a><a href="02_loop.html">② Agent loop</a><a href="03_models_tools.html">③ 模型与工具</a><a href="04_sessions_context.html">④ 会话与上下文</a><a class="cur" href="05_capabilities_surfaces.html">⑤ 能力与前端</a><a href="06_typescript.html">⑥ TypeScript</a><a href="07_compare_pi.html">⑦ 对比 Pi</a></nav>
+<header><h1>⑤ 能力、安全与前端：接口、实现、消费方</h1><p class="sub">DSH 把“大功能”拆成 capability seam；安全决定与 OS enforcement 分层；前端驱动同一 Agent/Session，而不是各自复制 loop。</p></header>
+
+<h2>三包模式：接口 / 实现 / 模型工具</h2>
+<p>Bash 是最清楚的范本：</p>
+<div class="flow"><span class="step"><code>dsh-bash</code> 定义服务契约</span><span class="arr">→</span><span class="step"><code>dsh-bash-local</code> 实现进程</span><span class="arr">→</span><span class="step"><code>dsh-bash-sandbox</code> 包装策略</span><span class="arr">→</span><span class="step"><code>dsh-tool-bash</code> 暴露模型 schema</span></div>
+<p>同一形状用于 subprocess、PTY、filesystem、LSP、skill、web、subagent 等。consumer 不把 UI schema 或 model wording 塞进底层 provider；实现也不偷加默认参数，默认值在拥有 deployment config 的 resolve 边界显式完成。这样远程/容器实现可替换 local 实现。</p>
+
+<h2>权限不是一个 allowShell 布尔值</h2>
+<table><tr><th>层</th><th>回答的问题</th><th>默认 base 接线</th></tr><tr><td>Tool visibility/restriction</td><td>模型能看到/调用哪些工具？</td><td>ToolRegistry 全局 + scoped 视图</td></tr><tr><td>pre-execute/guard</td><td>这次具体调用 allow、deny 还是 ask？</td><td>policy listeners + monotonic guards</td></tr><tr><td>ApprovalService</td><td>人或自动化通道是否对该操作一次性授权？</td><td><code>ask</code>；无通道 fail closed</td></tr><tr><td>Sandbox policy</td><td>子进程能读写哪些文件？</td><td><code>workspace-write</code></td></tr><tr><td>OS backend</td><td>谁真正强制 argv 的文件效果？</td><td>Linux bwrap/Landlock，macOS Seatbelt</td></tr></table>
+<p><code>ctx.sandbox.confine(argv, policy)</code> 返回包装后的 argv；受限模式若无可用 backend 会抛 <code>SANDBOX_UNAVAILABLE</code>，不允许静默透传。容器、microVM、远程执行被视为完整 capability 的替代实现，不是假装成 local sandbox provider。审批 outcome 是闭合联合：只有 <code>allowed-once</code> 放行，rejected/cancelled/unavailable 都拒绝；<code>never</code> policy 在 responder waterfall 之前执行，prepend listener 也绕不过。</p>
+<div class="note warn"><b>边界：</b>DSH 的默认 sandbox 主要约束进程 argv/file effects，不等于网络、内核、凭据和所有 in-process JavaScript 都隔离。插件本身运行在宿主进程；信任第三方 bundle 仍是代码执行信任。</div>
+<div class="src">证据：<code>docs/core-data-structures/sandbox.zh.md</code>；<code>docs/core-data-structures/approval.zh.md</code>；<code>packages/bundle/base/cordis.patch.yml:151-203</code>。</div>
+
+<h2>Subagent：统一 provider seam 下的多种身份语义</h2>
+<table><tr><th>provider</th><th>child 从哪里开始</th><th>边界</th></tr><tr><td><code>spawn</code></td><td>新 session，新 Agent</td><td>进程内，可设 persona/tool filter/depth</td></tr><tr><td><code>fork</code></td><td>父 session 的已完成 turn 前缀</td><td>进程内，child 有独立后续历史</td></tr><tr><td><code>acp</code></td><td>外部 ACP agent</td><td>受管子进程与协议</td></tr><tr><td><code>codex</code>/<code>claude-code</code></td><td>真实产品的一次完整委托</td><td>外部 SDK/CLI provider</td></tr><tr><td><code>dsh-sdk</code></td><td>独立 DSH runtime</td><td>JSON-RPC SDK child</td></tr></table>
+<p>服务先检查 provider 声明的 capabilities（output schema、depthLimit、toolFilter、persona），再接受启动；delegation depth 同时写入 session header，不能靠 prompt 自律。continuable child 具有持久 descriptor 和 activation，父 Agent 可 list/send/继续；one-shot provider 只返回一次结果。<code>subagent/descriptor</code> 是权威事实，UI/list query 从日志投影，不从临时 Map 猜。</p>
+<div class="src">证据：<code>packages/subagent/subagent/src/{types,descriptor,continuation,depth}.ts</code>；<code>packages/subagent/subagent-{spawn,fork,acp,codex,claude-code,dsh-sdk}/src</code>；<code>docs/core-data-structures/subagent.zh.md</code>。</div>
+
+<h2>Workflow 与普通 subagent 的区别</h2>
+<p>workflow 让模型提交一段可 top-level await 的 JavaScript 编排脚本，由 worker-thread engine 执行，通过受限桥接调用 subagent provider；它适合 fan-out/fan-in、多轮结构化流程。普通 subagent tool 是一次声明式启动。两者都不把并发编排塞进 Agent loop，终态和 fatal/nonfatal failure 由各自 seam 表达。</p>
+
+<h2>一个内核，多种进程/传输边界</h2>
+<table><tr><th>入口</th><th>职责</th><th>是否另有 loop</th></tr><tr><td>Web</td><td>API gateway + SSE/fetch connection + React browser plugin roster</td><td>否，远程驱动 host 的 Agents/Sessions</td></tr><tr><td>Headless</td><td>one-shot task，仍叠加 Web composition 供浏览器观察</td><td>否</td></tr><tr><td>ACP</td><td>编辑器/自动化 Agent Client Protocol server</td><td>否</td></tr><tr><td>JSON-RPC</td><td>SDK 进程桥</td><td>否</td></tr><tr><td>Python SDK</td><td>启动/连接打包 runtime，提供 Python 客户端</td><td>否</td></tr></table>
+<p>Web 自己也遵循插件模型：node half 扫描带 <code>dshClient</code> 的 rows，生成 boot roster；browser half 建自己的 Cordis context，加载 connection/runtime/theme/layout/conversation/tool/goal/plan 等插件。TypeRT 则从 TypeScript 类型图生成 runtime schema 和 RPC remote，使 gateway 不必手写每个 DTO。</p>
+<div class="src">证据：<code>packages/bundle/web-app/cordis.patch.yml:38-198</code>；<code>packages/api</code>、<code>packages/ui</code>、<code>packages/client</code>、<code>packages/acp</code>、<code>python/sdk</code>。</div>
+
+<h2>默认 composition 的几个现实取舍</h2><ul><li>默认开启原生 DeepSeek adapter，pi-ai adapter 以零 route dormant mount，用户 settings 加 profiles 后动态注册。</li><li>默认 JSONL persistence；session-query SQLite 默认内存且 first-search 才打开，不等于 durable session 用 SQLite。</li><li>默认 telemetry 挂载并有 OTLP endpoint；任意非空 <code>DSH_TELEMETRY_DISABLED</code>（包括字符串 <code>"false"</code>）关闭。base 注释明确当前没有 record redaction，部署时要审查。</li><li>默认 web search 走 DeepSeek server-side retrieval，fetch 关闭；这体现“存在 provider 包”与“安全默认挂载”不同。</li><li>plan/goal/todo/skills/subagent 都是插件与 session events，不是 AgentLoop 的硬编码 mode。</li></ul>
+<div class="src">证据：<code>packages/bundle/base/cordis.patch.yml:71-149,210-389</code>。</div>
+
+<div class="key"><b>架构判断：</b>DSH 的能力面更像一个可组装平台：同一核心可以变成 Web 产品、自动化 server 或 SDK child。Pi 的 coding-agent 产品也有多前端和强扩展，但它倾向于让扩展直接操作高层 AgentSession/UI；DSH 更强调每项能力有服务所有者、持久事件和可释放 registration。</div>
+<footer><a href="06_typescript.html">下一篇：TypeScript 导读 →</a></footer></div></body></html>

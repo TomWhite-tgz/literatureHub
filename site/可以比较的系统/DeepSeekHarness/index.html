@@ -1,0 +1,29 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DeepSeek Harness 源码深读 · 总览</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回总览</a>
+<nav class="nav"><a class="cur" href="index.html">总览</a><a href="01_boot_plugins.html">① 启动与插件树</a><a href="02_loop.html">② Agent loop</a><a href="03_models_tools.html">③ 模型与工具</a><a href="04_sessions_context.html">④ 会话与上下文</a><a href="05_capabilities_surfaces.html">⑤ 能力与前端</a><a href="06_typescript.html">⑥ TypeScript</a><a href="07_compare_pi.html">⑦ 对比 Pi</a></nav>
+<header><h1>DeepSeek Harness · TypeScript monorepo 源码深读</h1><p class="sub">从 profile patch 与 Cordis 插件树进入，沿真实 turn/step/request/tool 调用链，追到事件溯源会话、压缩、权限、subagent、SDK 与 Web；每章同步解释代码里的 TypeScript。</p><div class="meta"><b>审计对象</b> DeepSeek Harness SDK · <b>提交</b> <code>4dcc965536b4</code> · <b>快照</b> <code>internal/batch_20260808T121140954Z_7f25d3e98c/0202</code> · <b>提交日期</b> 2026-08-08 · <b>复核日期</b> 2026-08-13 · <b>许可证</b> BSD-3-Clause</div></header>
+
+<h2>先说结论</h2>
+<p class="lead">DeepSeek Harness（下文简称 DSH）不是 Pi loop 的换皮，也不是“DeepSeek API + shell”。它的核心是一个<b>可热替换的插件化 Agent 操作系统</b>：Cordis 负责服务依赖、作用域、事件与可逆生命周期；<code>dsh-agent-loop</code> 只拥有 turn/step 状态机；模型、工具策略、持久化、压缩、权限、subagent、目标和 UI 都在循环外通过服务与事件接入。</p>
+<div class="key"><b>一句话调用链：</b><code>dsh argv → profile patch stack → Cordis Loader → AgentLoop.create/resume → ReactLoopAgent.turn → preStep → buildRequest → LlmService/adapter → tool scheduler → Session.append → deriveMessages → 下一 step</code>。</div>
+
+<h2>它与 Pi 的关系，先避免一个误区</h2>
+<p>DSH 既借用了 Pi，也超出了 Pi。<code>@deepseek-ai/dsh-llm-pi-ai</code> 直接依赖 <code>@earendil-works/pi-ai ^0.82.1</code>，把 Pi 的多 provider/model/stream 层适配成 DSH 的 <code>LlmAdapter</code>；但 DSH 没有复用 Pi 的经典 <code>pi-agent-core</code> loop、<code>AgentSession</code> 或 JSONL 树。也就是说，<b>Pi 在 DSH 内是可选模型后端，不是运行时母体</b>。</p>
+<table><tr><th>层</th><th>DSH</th><th>Pi</th></tr><tr><td>模型接入</td><td>自有 LLM seam；可挂原生 DeepSeek adapter 或 pi-ai adapter</td><td><code>pi-ai</code> 是产品主模型层</td></tr><tr><td>Agent loop</td><td>DSH 自研的 Cordis 服务、作用域 inbox 与持久事件状态机</td><td>极小的函数式 loop，由高层 <code>Agent</code>/<code>AgentSession</code> 包装</td></tr><tr><td>会话</td><td>append-only event log + 可替换 model-visible surface</td><td>经典产品线是 append-only JSONL entry tree</td></tr><tr><td>扩展</td><td>插件是所有能力和生命周期的统一机制</td><td>coding-agent extension API 很强，但内核与扩展层仍分明</td></tr></table>
+
+<h2>审计边界与代码体量</h2>
+<p>本次以源码快照为准，不把 README 中的愿景当作实现。仓库有 6,332 个 tracked files、2,217 个 TS/TSX 文件，约 107,831 行 tracked TypeScript；源码还包含 vendored Cordis、Python SDK 和原生 Landlock launcher。下面的“已实现”结论均追到具体调用点、事件或 bundle 接线。</p>
+<table><tr><th>区域</th><th>重点</th><th>为什么重要</th></tr><tr><td><code>apps/cli</code> + <code>packages/bundle</code></td><td>profile、patch 层、启动与 shutdown</td><td>决定实际挂载什么，不能只看包是否存在</td></tr><tr><td><code>packages/core</code></td><td>agent/session/prompt/tools/loop</td><td>产品语义主干</td></tr><tr><td><code>packages/llm</code></td><td>adapter registry、原生 DeepSeek、pi-ai twin、retry/token</td><td>模型行为与 loop 解耦</td></tr><tr><td><code>session-persistence</code>/<code>compact</code></td><td>持久事件、surface replacement、恢复</td><td>解释 DSH 如何重放与缩短上下文</td></tr><tr><td><code>subagent</code>/<code>sandbox</code>/<code>ui</code>/<code>client</code></td><td>多 Agent、安全边界、多前端</td><td>DSH 相比 Pi 扩张最大的区域</td></tr></table>
+
+<h2>推荐阅读路线</h2><div class="hub">
+<a href="01_boot_plugins.html"><h3>① 启动与插件树</h3><p>profile layer 如何变成活的 Cordis 服务图；Service、inject、effect 与 waterfall。</p></a>
+<a href="02_loop.html"><h3>② Agent loop</h3><p>send/followup/steer/inject、turn/step、请求冻结、取消和并行工具调度。</p></a>
+<a href="03_models_tools.html"><h3>③ 模型与工具</h3><p>LLM adapter 所有权、DeepSeek/pi-ai 双后端、工具 policy pipeline 与确定性提交。</p></a>
+<a href="04_sessions_context.html"><h3>④ 会话与上下文</h3><p>事件日志、surface 投影、header 重建、持久化 checkpoint、fork 与 compaction。</p></a>
+<a href="05_capabilities_surfaces.html"><h3>⑤ 能力与前端</h3><p>权限/沙箱、subagent/workflow、Web/ACP/JSON-RPC/Python SDK 的边界。</p></a>
+<a href="06_typescript.html"><h3>⑥ TypeScript 导读</h3><p>用 DSH 实例讲联合类型、泛型条件参数、声明合并、品牌类型、async iterator 与资源管理。</p></a>
+<a href="07_compare_pi.html"><h3>⑦ DSH vs Pi</h3><p>同一证据口径逐层比较，并指出各自更适合的系统规模。</p></a></div>
+
+<h2>贯穿全文的三个判断</h2><ul><li><b>权威状态不是 Agent 对象，而是 Session 日志。</b>Agent 是活跃驱动器；恢复、模型历史、UI、token 统计、遥测和 fork 都从事件投影。</li><li><b>扩展点不是 callback 大杂烩，而是 Service + typed event + scope。</b>插件既能提供能力，也能用 waterfall 拦截决策，还能在 agent 私有 context 中覆盖全局注册。</li><li><b>复杂度换来了明确的失败与恢复边界。</b>创建前准备、发布、反向 teardown、请求 header、工具 call/result、压缩替换和审批问答都被结构化记录；代价是包图、事件顺序和生命周期学习成本很高。</li></ul>
+<div class="src">主要证据：<code>apps/cli/src/bin.ts</code>、<code>apps/cli/src/profile-boot.ts</code>、<code>packages/bundle/base/cordis.patch.yml</code>、<code>packages/core/agent-loop/src/{index,agent,tool-calls}.ts</code>、<code>packages/core/session/src/{index,surface,types}.ts</code>、<code>packages/llm/llm-pi-ai/src/adapter.ts</code>。</div>
+<footer>DeepSeek Harness 源码深读 · 总览 · 源码位置均使用 DSH 仓库相对路径</footer></div></body></html>

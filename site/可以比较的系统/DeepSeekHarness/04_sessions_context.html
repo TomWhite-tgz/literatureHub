@@ -1,0 +1,47 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DSH · 会话与上下文</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_boot_plugins.html">① 启动与插件树</a><a href="02_loop.html">② Agent loop</a><a href="03_models_tools.html">③ 模型与工具</a><a class="cur" href="04_sessions_context.html">④ 会话与上下文</a><a href="05_capabilities_surfaces.html">⑤ 能力与前端</a><a href="06_typescript.html">⑥ TypeScript</a><a href="07_compare_pi.html">⑦ 对比 Pi</a></nav>
+<header><h1>④ 会话与上下文：日志不变，表面可替换</h1><p class="sub">DSH 同时保留完整事件历史和一个可压缩的模型可见 surface；这比“messages 数组”多一层，却把审计与上下文缩减统一起来。</p></header>
+
+<h2>Session 是普通对象，SessionStore 才是服务</h2>
+<p><code>Session</code> 是 append-only event log；<code>SessionStore</code> 作为 <code>ctx.sessions</code> 管活实例、作用域通知和 flush。持久化故意不写进 Session：backend 订阅同步 <code>session/event</code>，异步批量写，在 <code>session/flush</code> checkpoint 等待落盘。</p>
+<p>Session header 保存 id、version、cwd、parent lineage、seed length、delegation depth 等创建元数据，不混入 replayable 对话事件。恢复 seed 必须从 seq 0 连续，逐条通过与 live append 相同的 JSON 与 surface invariant；构造完会写 <code>session/end-seed</code> 标记内存/持久历史边界。</p>
+<div class="src">证据：<code>packages/core/session/src/index.ts:430-563,801-903</code>。</div>
+
+<h2><code>append()</code> 的类型把错误提前到编译期</h2>
+<pre><code>append&lt;T extends SessionEventType&gt;(
+  type: T,
+  data: SessionEventMap[T],
+  ...opts: T extends SurfaceEventType ? [opts: SurfaceIntent] : []
+): SessionEvent&lt;T&gt;</code></pre>
+<p>若 <code>type</code> 是 <code>user/message</code>、<code>assistant/message</code> 或 <code>tool/result</code> 这类能进入模型历史的事件，条件 tuple 强制第三个参数存在；若是 <code>turn/start</code> 或 chunk，第三参反而禁止。<code>SessionEventMap[T]</code> 又保证 event type 与 payload 对应。这是很典型的 TypeScript：不是只给编辑器提示，而是把领域不变量编码进函数签名。</p>
+<p>运行时仍要验证，因为持久化 seed、JSON、插件和 wire 是不可信边界。append 拒绝 BigInt、NaN、循环引用、稀疏数组、Map/Set/Date/class instance 等不能无损 JSON 化的值；接纳后深冻结，旧的 events snapshot 不随新 append 长大。</p>
+<div class="src">证据：<code>packages/core/session/src/index.ts:565-670</code>。</div>
+
+<h2>原始日志与模型 surface 是两条不同视图</h2>
+<p>每个 message-producing event 必须带 <code>surfaceOp</code>：</p>
+<ul><li><code>'append'</code>：加入 surface 尾部；</li><li><code>{op:'replace', start, end}</code>：用当前事件替换 surface 上一个连续范围。</li></ul>
+<p>replace 不删除旧事件，只让新节点遮蔽它们，并通过 <code>sourceEventSeqs</code> 记录来源。SurfaceManager 验证范围存在、顺序正确、所有被遮蔽节点都在 provenance 中；tool-result 的单节点替换还限制只能改 content。于是完整 transcript/chunks/压缩过程可审计，而发给模型的 history 可以变短。</p>
+<pre><code>event log:  user₀ assistant₁ tool₂ result₃ ... compact/summaryₙ
+surface:    [user₀ assistant₁ tool₂ result₃ ...]
+replace:    [summaryₙ ...retained tail...]   // 旧事件仍在 log</code></pre>
+<div class="src">证据：<code>packages/core/session/src/types.ts:208-393</code>；<code>packages/core/session/src/surface.ts:22-397</code>。</div>
+
+<h2><code>deriveMessages()</code> 是增量投影</h2>
+<p>模型历史不从 raw log 简单 filter，而是遍历 surface 的 seq 列表，对每个节点运行同一个 <code>deriveEventMessage()</code>。普通 append 后只投影新节点；replaceGeneration 改变时才清空缓存重建。返回的是新数组，但 Message 对象共享深冻结的事件数据，既避免重复 clone，也不让调用方篡改历史。</p>
+<p>这实现仓库强调的规则“model-visible ⇔ logged”：system prompt 和 tools 不是 message event，因此单独折进持久 <code>request/header</code>；route/capacity 是 <code>request/context</code>。给定日志前缀，可以重建当时每次请求的 messages + header，而不依赖进程内对象。</p>
+<div class="src">证据：<code>packages/core/session/src/index.ts:672-773</code>；<code>packages/core/agent-loop/src/agent.ts:435-470</code>。</div>
+
+<h2>持久化：热路径同步提交，I/O 在 checkpoint 对齐</h2>
+<p>append 一旦进入内存日志就算提交；observer 错误被隔离，不能回滚事实。persistence plugin 将 <code>session/event</code> 复制进有界写批次。<code>SessionStore.flush()</code> 收集 scoped listeners，以 <code>Promise.allSettled</code> 等全部完成后报告第一个失败。默认 checkpoint policy 在每次模型请求与顶层工具 dispatch 前 flush，在 turn/end 后、下一 turn/idle 前再 flush。</p>
+<p>默认 backend 是 JSONL，但仓库同时提供 SQLite backend；二者实现同一 persistence seam。JSONL 使用带校验和的 Zstandard packed session，不能把文件扩展名理解为“一行可随便 append 的裸文本”。</p>
+<div class="src">证据：<code>packages/core/session/src/index.ts:584-670,1023-1060</code>；<code>packages/session-persistence/</code>；<code>packages/bundle/base/cordis.patch.yml:97-100,328-330</code>。</div>
+
+<h2>fork 与 resume 不是同一种操作</h2>
+<p>resume 从 persistence 恢复同一 id 的完整历史与 header；fork 复制一个已闭合 turn 边界以前的前缀，生成带 parentSession/seedLength 的新 session。fork 拒绝不存在或非 live source、重复 child id、非法边界以及落在 open turn 内的切点。subagent-fork 在创建时只捕获一次父前缀；后续激活沿用 child 自己的 session，不会重新吸入父亲的新历史。</p>
+
+<h2>compaction 是一次持久 surface transaction</h2>
+<p><code>compact-basic</code> 在 <code>agent/pre-step</code> 检查正常压力，在 <code>agent/request-error</code> 识别 provider-confirmed context overflow。一次摘要以 <code>compact/start → compact/summary(replace) → compact/end</code> 闭合；模型无关的 oversized tool-result prune 先发生。overflow retry 只有 surface 取得持久进展才有意义，并受计数限制，避免“同样的上下文无限重试”。手动压缩通过 maintenance 与 turn 串行化。</p>
+<p>与截断最不同的是：摘要节点知道自己遮蔽了哪些 seq、当时 token shadow price 是什么，完整旧历史仍可供 replay/审计。缺点是 surface balance、turn closure、孤儿 compaction 修复都必须维护严格 invariant。</p>
+<div class="src">证据：<code>packages/compact/compact/src/{index,types,invariant}.ts</code>；<code>packages/compact/compact-basic/src/index.ts:122-221</code>。</div>
+
+<div class="key"><b>架构判断：</b>Pi 的 JSONL entry tree 擅长人类分支与 session navigation；DSH 的 event log + replaceable surface 更像 event-sourced runtime，擅长让压缩、工具结果改写、请求重建、UI 和遥测共享同一事实流。DSH 的语义更严格，也更难手工编辑和理解。</div>
+<footer><a href="05_capabilities_surfaces.html">下一篇：能力与前端 →</a></footer></div></body></html>

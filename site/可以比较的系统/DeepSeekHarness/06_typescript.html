@@ -1,0 +1,88 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DSH · TypeScript 源码导读</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_boot_plugins.html">① 启动与插件树</a><a href="02_loop.html">② Agent loop</a><a href="03_models_tools.html">③ 模型与工具</a><a href="04_sessions_context.html">④ 会话与上下文</a><a href="05_capabilities_surfaces.html">⑤ 能力与前端</a><a class="cur" href="06_typescript.html">⑥ TypeScript</a><a href="07_compare_pi.html">⑦ 对比 Pi</a></nav>
+<header><h1>⑥ 用 DSH 学 TypeScript：类型在表达协议</h1><p class="sub">这一章不从“number/string 是什么”开始，而是解释阅读 DSH 最常遇到、也最能体现 TypeScript 价值的语法。</p></header>
+
+<h2>先认清编译环境</h2>
+<p>仓库是 ESM：<code>package.json</code> 有 <code>"type":"module"</code>，源码相对 import 明写 <code>.ts</code>；编译器用 <code>target: es2024</code>、<code>module: esnext</code>、<code>strict: true</code>。三个严格选项尤其影响阅读：</p>
+<ul><li><code>noUncheckedIndexedAccess</code>：<code>array[i]</code> 推导为 <code>T | undefined</code>，所以在已证明边界后常见 <code>group[index]!</code>。</li><li><code>exactOptionalPropertyTypes</code>：<code>x?: string</code> 表示“属性可缺失”，不自动等于“属性存在且值为 undefined”。因此源码大量用条件 spread 省略字段。</li><li><code>noImplicitOverride</code>：子类覆盖父类方法必须写 <code>override</code>，例如 adapter 的 <code>override providerInfo()</code>。</li></ul>
+<div class="src">证据：<code>package.json</code>；<code>tsconfig.base.json</code>。</div>
+
+<h2><code>interface</code>、<code>type</code> 与 <code>class</code></h2>
+<table><tr><th>语法</th><th>适合表达</th><th>DSH 示例</th></tr><tr><td><code>interface</code></td><td>可扩展的对象契约</td><td><code>Agent</code>、<code>SessionHeader</code>、<code>ContentBlockMap</code></td></tr><tr><td><code>type</code></td><td>联合、交叉、映射、别名</td><td><code>Phase</code>、<code>ToolExecutionResult</code>、<code>SessionId</code></td></tr><tr><td><code>class</code></td><td>有运行时状态和方法的实现</td><td><code>ReactLoopAgent</code>、<code>Session</code>、<code>LlmService</code></td></tr></table>
+<p>interface 和 type 大多只存在于编译期，构建后不会成为 JS 对象；class 则有 constructor/prototype。<code>import type { Agent }</code> 明确只导入类型，避免产生运行时依赖和循环加载；普通 <code>import { BlockAssembler }</code> 会保留为 JS import。</p>
+
+<h2>可辨识联合：先看 tag，再得到精确类型</h2>
+<pre><code>type PreparedStep =
+  | { kind: 'reject' }
+  | { kind: 'enter'; messages: UserMessage[]; assembly: PromptAssembly }
+
+if (decision.kind === 'reject') return false
+// 这里 TS 已知道 decision.messages 和 decision.assembly 存在</code></pre>
+<p>DSH 对 phase、finish reason、tool preparation、approval result 等都用这种结构。tag 既是运行时数据，也是编译器的 narrowing 依据。闭合联合的 switch 在 default 调 <code>assertNever(value)</code>：若将来新增 variant，旧 switch 里的 value 就不再是 <code>never</code>，编译失败。可被插件声明合并扩展的联合则不能假装闭合，应保留 documented fallback。</p>
+<div class="src">证据：<code>packages/core/agent-loop/src/agent.ts:38-52</code>；<code>packages/core/agent-loop/src/tool-calls.ts:171-195</code>。</div>
+
+<h2>泛型让参数之间保持关系</h2>
+<p>若写成 <code>append(type: string, data: object)</code>，编译器不知道不同 type 要什么 payload。DSH 用泛型索引：</p>
+<pre><code>append&lt;T extends SessionEventType&gt;(
+  type: T,
+  data: SessionEventMap[T],
+  ...opts: T extends SurfaceEventType ? [SurfaceIntent] : []
+): SessionEvent&lt;T&gt;</code></pre>
+<p><code>T extends ...</code> 不是 class inheritance，而是约束 T 必须来自事件名集合；<code>SessionEventMap[T]</code> 按 key 取对应 payload；条件类型决定 rest tuple 是必需一个还是空。调用 <code>append('turn/start', {turn:1})</code> 可以，传 message payload 或 surface opts 都会报错。</p>
+<p><code>runMaintenance&lt;T&gt;(task: ... =&gt; Promise&lt;T&gt;): Promise&lt;T&gt;</code> 则把 callback 的结果类型原样传回，调用方无需 cast。</p>
+
+<h2>声明合并：插件如何扩展全局类型图</h2>
+<pre><code>declare module 'cordis' {
+  interface Context { agentLoop: AgentLoop }
+  interface Events {
+    'agent/pre-step'(...): Promise&lt;PreStepDecision&gt;
+  }
+}
+
+declare module '@deepseek-ai/dsh-session' {
+  interface SessionEventMap {
+    'agent/inbox/spliced': { target: InboxTarget; ... }
+  }
+}</code></pre>
+<p>这叫 module augmentation。多个包对同名 interface 的字段会合并，所以安装新插件后，<code>ctx.agentLoop</code>、事件名/payload 和 Session event map 都得到静态类型，而核心包不用提前 import 所有插件。它非常适合 plugin ecosystem，但也意味着类型可见性依赖某个模块是否被 import；源码中的 <code>import type {} from '@deepseek-ai/dsh-tools'</code> 有时纯粹是为了让 augmentation 进入当前编译图。</p>
+<div class="src">证据：<code>packages/core/agent-loop/src/index.ts:159-183</code>；<code>packages/core/agent/src/types.ts:141-304</code>。</div>
+
+<h2>品牌类型：运行时都是 string，编译期不能串线</h2>
+<pre><code>type SessionId = Branded&lt;'SessionId'&gt;
+type CallId = Branded&lt;'CallId'&gt;
+
+function SessionId(id: string): SessionId { return id as SessionId }</code></pre>
+<p>TypeScript 默认采用 structural typing：两个同结构的 string 别名会互相赋值。brand 加一个只在类型层可见的独特标记，让 SessionId 不能误传到 CallId。转换函数没有运行时验证或包装成本，所以它只表达“此边界已经认定该字符串具有此身份”；真正格式校验仍应在 parser/storage/wire 边界完成。</p>
+<div class="src">证据：<code>packages/core/session/src/types.ts:1-26</code>；<code>packages/llm/llm/src/brand.ts</code>。</div>
+
+<h2>可选属性、空值运算与条件 spread</h2>
+<pre><code>const requestContext = {
+  provider: config.provider,
+  model: config.model,
+  ...contextWindow === undefined ? {} : { contextWindow },
+}
+
+const cap = value ?? DEFAULT_CAP</code></pre>
+<p><code>?.</code> 是 optional chaining；<code>??</code> 只在 null/undefined 时取右侧，和 <code>||</code> 不同：0、空串、false 不会被当成缺省。条件 spread 在条件成立时加入字段，否则真的省略字段，满足 exact optional semantics，也让 JSON wire 不带无意义的 <code>undefined</code>。</p>
+
+<h2>异步：Promise、异步生成器与取消</h2>
+<pre><code>async * stream(options): AsyncIterable&lt;StreamChunk&gt; {
+  for await (const event of upstream) yield translate(event)
+}
+
+const fused = AbortSignal.any([caller, owner, factory])
+signal.throwIfAborted()</code></pre>
+<p><code>async function</code> 总返回 Promise；<code>async *</code> 返回异步迭代器，可以多次 yield。<code>for await...of</code> 每次消费一个异步元素。AbortSignal 不是 Promise cancellation 魔法：底层操作必须显式监听/传递它；DSH 在 await 后频繁 <code>throwIfAborted()</code>，防止已取消操作继续提交状态。</p>
+<p><code>Promise.withResolvers&lt;T&gt;()</code> 返回 <code>{promise, resolve, reject}</code>，适合 driver/lifecycle 的外部结算；<code>Promise.allSettled</code> 用于“所有资源都要排空，即使其中一个失败”。</p>
+
+<h2><code>using</code> 与显式资源管理</h2>
+<pre><code>using watchdog = idleWatchdog(signal, timeoutMs, 'LLM_STREAM_IDLE_TIMEOUT')
+using preparation = SessionPreparation.create(session)</code></pre>
+<p>对象实现 <code>Symbol.dispose</code> 后，<code>using</code> 会在当前作用域离开时自动调用，类似 try/finally；异步资源可用 <code>await using</code> + <code>Symbol.asyncDispose</code>。DSH 用它确保 timer、watchdog、未发布 SessionPreparation 在成功、throw、cancel 路径都清理。</p>
+<div class="src">证据：<code>packages/llm/llm-deepseek/src/adapter.ts:206-248</code>；<code>packages/core/agent-loop/src/index.ts:550-605</code>。</div>
+
+<h2>静态类型不等于运行时验证</h2>
+<p><code>interface Config</code> 只约束 TypeScript 调用者，YAML/JSON 进来时类型已擦除。因此 Service 常同时提供 <code>static Config = z.object(...)</code> 的 Schemastery schema；Session 又在 JSON 边界手工验证 lossless shape；API 用 TypeRT 生成 runtime registry。规则是：同进程 typed seam 信任 TS，配置、模型 JSON、持久化、worker、process、wire 边界做运行时验证。</p>
+<div class="note"><b>阅读建议：</b>遇到复杂类型先找 runtime tag 和真正消费点；遇到 <code>as</code>/<code>!</code> 则问“前面哪条 invariant 证明它安全”。DSH 的注释通常会明确指出这个证明，例如 scheduler 的 index 已受 loop bound 限制。</div>
+
+<div class="key"><b>TypeScript 在 DSH 中的真正价值：</b>它不只是给 JavaScript 加类型，而是把 event name→payload、provider→adapter、phase tag→可用字段、surface event→必需 metadata、opaque id→所属域这些协议关系做成可编译约束；运行时验证再守住静态系统无法覆盖的外部边界。</div>
+<footer><a href="07_compare_pi.html">下一篇：与 Pi 的系统对比 →</a></footer></div></body></html>

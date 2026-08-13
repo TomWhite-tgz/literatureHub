@@ -1,0 +1,54 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DSH · 启动与插件树</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a class="cur" href="01_boot_plugins.html">① 启动与插件树</a><a href="02_loop.html">② Agent loop</a><a href="03_models_tools.html">③ 模型与工具</a><a href="04_sessions_context.html">④ 会话与上下文</a><a href="05_capabilities_surfaces.html">⑤ 能力与前端</a><a href="06_typescript.html">⑥ TypeScript</a><a href="07_compare_pi.html">⑦ 对比 Pi</a></nav>
+<header><h1>① 启动与插件树：配置就是运行时拓扑</h1><p class="sub">理解 DSH 的第一步不是找 main loop，而是先看 profile 最终挂载了哪些服务，以及这些服务何时生效、何时撤销。</p></header>
+
+<h2>从命令行到 Cordis Loader</h2>
+<div class="flow"><span class="step"><code>bin.ts</code> 解析 argv</span><span class="arr">→</span><span class="step">动态 import 对应 mode</span><span class="arr">→</span><span class="step"><code>composeProfile()</code></span><span class="arr">→</span><span class="step"><code>boot()</code></span><span class="arr">→</span><span class="step">Loader 挂插件树</span></div>
+<p><code>bin.ts:27-66</code> 的 switch 分派 <code>profile/run/web/plugin/dump-config</code>。这里用动态 <code>import()</code>，所以 headless 不会先加载 Web，plugin 管理也不会把 Agent 运行时拖进来。<code>invocation satisfies never</code> 是编译期穷尽检查：将来给联合类型新增 mode 却忘记补 case，TypeScript 会报错。</p>
+<pre><code>switch (invocation.mode) {
+  case 'run': {
+    const { runProfile } = await import('./profile-boot.ts')
+    await runProfile({ ... })
+    break
+  }
+  default:
+    invocation satisfies never
+}</code></pre>
+<div class="src">证据：<code>apps/cli/src/bin.ts:27-66</code>。</div>
+
+<h2>profile 不是一份配置，而是有优先级的 patch 栈</h2>
+<p><code>composeProfile()</code> 按固定顺序合成：bundle layers → profile 自己的 <code>cordis.patch.yml</code> → <code>$DSH_HOME/cordis.patch.yml</code> → 多个 <code>--patch</code> → CLI flag patch → telemetry 开关。后出现的层覆盖前面的同 id row。注意 patch 替换的是该 row 的整个 <code>config</code>，不是深合并。</p>
+<pre><code>return [
+  ...bundlePatches,
+  ...profile.patches,
+  ...homePatches,
+  ...overlayAndFlags,
+]</code></pre>
+<p>启动时会把 profile 根 <code>cordis.yml</code> 重写成空数组，因为真正的树完全由 patch 构造；否则 Loader 的 tree write-back 可能把已组合行烘焙进根文件，下一次启动重复插入。长运行 profile 又通过 HMR 重新读取用户层，并在每代 <code>structuredClone()</code>，防止 Loader 就地修改 insert 对象导致“删除 override 后默认值回不来”。这是配置系统中很具体的引用别名防御。</p>
+<div class="src">证据：<code>apps/cli/src/profile-boot.ts:53-61,92-96,120-152,208-273</code>。</div>
+
+<h2>base bundle 才是默认产品</h2>
+<p>包存在不代表默认启用；<code>packages/bundle/base/cordis.patch.yml</code> 才是 shipped composition 的权威入口。它挂载核心 <code>llm/session/agent/tools/system-prompt/agent-loop</code>，同时装上 JSONL persistence、sandbox/approval、filesystem、skills、goals、plan、compaction、subagents、workflow、web search、timeout、spill 与 telemetry。Web bundle 再叠加 API gateway、webserver 和几十个 browser plugins；headless bundle 叠在 base + web 上，只增加 one-shot runner 并把 webserver 设为随机端口。</p>
+<div class="note warn"><b>审计要点：</b>仓库中有 MCP、LSP、PTY、多个 web fetch provider，并不等于默认 profile 全部开启。比如 base 明确只开 <code>web_search</code>，关闭 fetch；注释说明 fetch 的 SSRF 防护仍待解决。判断能力必须看最终 row，而不是目录名。</div>
+<div class="src">证据：<code>packages/bundle/base/cordis.patch.yml:15-425</code>；<code>packages/bundle/web-app/cordis.patch.yml</code>；<code>packages/bundle/headless/cordis.patch.yml</code>。</div>
+
+<h2>Cordis 的五个概念如何落在源码里</h2>
+<table><tr><th>概念</th><th>DSH 写法</th><th>运行含义</th></tr><tr><td>Service</td><td><code>class AgentLoop extends Service</code></td><td>构造后占据稳定的 <code>ctx.agentLoop</code></td></tr><tr><td>依赖注入</td><td><code>static inject = ['agents','sessions','llm','tools','systemPrompt']</code></td><td>依赖没就绪就不激活，不靠 YAML 行顺序</td></tr><tr><td>Context</td><td><code>ctx.tools</code>、<code>ctx.llm</code>、<code>agent.ctx</code></td><td>服务容器，也承载作用域与事件分派</td></tr><tr><td>Effect</td><td><code>ctx.effect(() =&gt; disposer)</code></td><td>注册与撤销绑定，插件 reload 时能清理</td></tr><tr><td>Typed event</td><td><code>emit / waterfall / serial / parallel</code></td><td>观察、拦截、串行 barrier、并行 fan-out 是不同契约</td></tr></table>
+<p>最容易读错的是 waterfall。监听器不是收到一个“最终值”再改，而是环绕中间件：调用 <code>next()</code> 才委托下游；直接 return 就短路。工具审批可用它 deny/ask，请求事件可用它改模型 route，<code>agent/pre-step</code> 可 reject 或重写进入步骤的消息。</p>
+<div class="src">证据：<code>docs/cordis-primer.zh.md:7-48</code>；<code>packages/core/agent-loop/src/index.ts:276-315</code>。</div>
+
+<h2>生命周期不是“new 完就算成功”</h2>
+<p>Agent 创建被拆成 prepare → setup → publish。prepare 先融合 caller cancel、owner fiber unload 与 factory teardown 三个 AbortSignal，再建立一个 memoized 反向 disposer；setup 可异步给私有 <code>agent.ctx</code> 装工具/提示词；publish 才依次进入 session registry、agent registry，发 created/session-start。失败会按反序停止 machine、等待 idle、释放 scope、退出 registry。</p>
+<pre><code>prepare resources
+  → setup(agent.ctx)
+  → enter session
+  → enter agent
+  → announce session
+  → announce agent
+  → agent/session-start
+
+dispose: cancel → whenIdle → scope.dispose → detach agent → detach session</code></pre>
+<p>这比普通 DI 容器多做了一层“未发布资源事务”：异步 setup 期间外界还看不到半成品 Agent，而 owner 在 setup 中途销毁也不会泄漏。<code>Promise.withResolvers()</code> 用来显式持有 promise 的 resolve/reject；<code>??=</code> 把多方 teardown 收敛到同一个 Promise。</p>
+<div class="src">证据：<code>packages/core/agent-loop/src/index.ts:38-89,414-539,567-670</code>。</div>
+
+<div class="key"><b>架构判断：</b>DSH 的真正“主程序”是组合结果，不是某个巨大类。Cordis 使一个部署可以通过替换 row 改后端、通过事件加策略、通过 agent scope 加私有能力；代价是控制流同时分布在 YAML、Service 构造器、event listener 和 disposer 中，阅读时必须从最终 composition 反向追服务。</div>
+<footer><a href="02_loop.html">下一篇：Agent loop →</a></footer></div></body></html>

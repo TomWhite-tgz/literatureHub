@@ -1,0 +1,50 @@
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DSH · 模型与工具</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap"><a class="back" href="index.html">← 返回总览</a><nav class="nav"><a href="index.html">总览</a><a href="01_boot_plugins.html">① 启动与插件树</a><a href="02_loop.html">② Agent loop</a><a class="cur" href="03_models_tools.html">③ 模型与工具</a><a href="04_sessions_context.html">④ 会话与上下文</a><a href="05_capabilities_surfaces.html">⑤ 能力与前端</a><a href="06_typescript.html">⑥ TypeScript</a><a href="07_compare_pi.html">⑦ 对比 Pi</a></nav>
+<header><h1>③ 模型与工具：loop 只消费契约</h1><p class="sub">模型 route 属于 adapter registry；工具能力、策略、审批、执行与结果整形属于 ToolRegistry；Agent loop 不知道 DeepSeek HTTP 或 Bash 的细节。</p></header>
+
+<h2>LLM seam：provider 名称映射到注册实例</h2>
+<p><code>LlmService</code> 内部维护 <code>Map&lt;provider, AdapterRegistration&gt;</code>。adapter 只必须实现 <code>stream()</code>，也可提供 provider display metadata、retry policy、model catalog 与 exact-model capabilities。注册是 all-or-nothing，并返回同时可调用的 disposer；handle 上的 <code>replace()</code> 原子替换 route 集合，使动态 settings 更新不会出现短暂的“无 adapter”窗口。</p>
+<pre><code>abstract class LlmAdapter {
+  providerInfo(provider: string): LlmProviderInfo
+  listModels(provider: string): Promise&lt;readonly LlmModelInfo[]&gt;
+  resolveModel(provider: string, model: string, signal?: AbortSignal): Promise&lt;...&gt;
+  abstract stream(options: GenerateOptions): AsyncIterable&lt;StreamChunk&gt;
+}</code></pre>
+<p><code>abstract</code> 表示基类规定接口但不能直接完成核心行为；<code>readonly</code> 约束调用方不可改返回数组；<code>AsyncIterable</code> 让 adapter 自然表达流式 chunk，而无需把网络事件塞进 callback。</p>
+<div class="src">证据：<code>packages/llm/llm/src/index.ts:182-292,338-430,768-918</code>。</div>
+
+<h2><code>prepareCall()</code> 是注册绑定点</h2>
+<p>直接 <code>llm.stream(request)</code> 会在 dispatch 时按 provider 查 adapter；Agent loop 则先用 <code>prepareCall(config)</code>。后者在解析模型默认值和 context window 时就捕获当前 registration，返回 one-shot <code>PreparedLlmCall</code>；其 <code>stream()</code> 要求请求 config 精确匹配且不能复用。这样热更新 adapter 时，已记录的 header 和真正发请求的 adapter 不会分裂。</p>
+<p>模型默认 <code>maxTokens</code> 与 reasoning effort 在 seam 中解析：显式不支持的 effort 会拒绝，不做静默 clamp；catalog 缺少模型只代表“不展示”，不能被调用方误用作 routing deny。</p>
+<div class="src">证据：<code>packages/llm/llm/src/index.ts:170-180,207-240,720-918</code>；<code>packages/core/agent-loop/src/agent.ts:394-471</code>。</div>
+
+<h2>两个 adapter，故意验证同一契约的两条路径</h2>
+<table><tr><th></th><th><code>dsh-llm-deepseek</code></th><th><code>dsh-llm-pi-ai</code></th></tr><tr><td>底层</td><td>直接 <code>fetch</code> OpenAI-compatible <code>/chat/completions</code></td><td><code>@earendil-works/pi-ai</code> 的 Models/provider 层</td></tr><tr><td>序列化</td><td>自有 <code>serialize.ts</code></td><td><code>toPiContext()</code> 转 Pi vocabulary</td></tr><tr><td>流解析</td><td>字节级 SSE parser + DeepSeek delta translator</td><td>Pi event stream → DSH StreamChunk</td></tr><tr><td>provider 范围</td><td>原生 DeepSeek route</td><td>配置的多 provider profiles</td></tr><tr><td>共同约束</td><td colspan="2">每次调用冻结 config/key；带 attribution headers；adapter 内部不做可见重试；遵守 AbortSignal 与 idle watchdog</td></tr></table>
+<p>原生 adapter 能处理任意位置切开的 UTF-8/SSE frame，并要求 <code>[DONE]</code>；内容、reasoning 与 tool-call delta 被转成带状态的 block chunks。pi-ai adapter 每次操作先捕获 immutable snapshot：profiles identity 未变则复用 Models，变了就新建 collection，绝不修改旧 collection。原因是 Pi 的 <code>streamSimple()</code> 是 lazy 的，若就地改 Models，请求可能在拿 credential 之后才解析到新 provider。</p>
+<div class="src">证据：<code>packages/llm/llm-deepseek/src/{adapter,serialize,sse,translate}.ts</code>；<code>packages/llm/llm-pi-ai/src/adapter.ts:1-20,54-75,177-300</code>。</div>
+
+<h2>DSH 如何把自己的消息翻译给 Pi</h2>
+<p><code>toPiContext()</code> 将 DSH 单个 system option 映射到 Pi 的 <code>systemPrompt</code>；历史中的 system message 因 Pi 只有单一槽位，被折成 user text 以保序。DSH tool-result block 不带工具名，所以转换器先扫描 assistant tool-call，以 <code>CallId → name</code> Map 恢复 Pi 所需的 <code>toolName</code>。这正说明二者的消息协议相似但不相同。</p>
+<div class="note"><b>重要边界：</b>DSH 的 <code>llm-pi-ai</code> 包是“design-verification twin”。它复用 Pi 的 provider 生态，但 DSH 的 session event、tool policy、loop retry 和 UI 都留在 DSH 侧；不能据此说 DSH 运行 Pi Agent。</div>
+<div class="src">证据：<code>packages/llm/llm-pi-ai/src/context.ts:12-85</code>；<code>packages/llm/llm-pi-ai/package.json:36-38</code>。</div>
+
+<h2>工具定义同时服务模型、执行器与 UI</h2>
+<p><code>ToolDefinition</code> 不只是 <code>name + execute</code>。它包含模型 schema、execution mode、timeout、结果内容 finalizer，以及展示意图（generic/terminal/diff、locations）。注册表又支持全局与 agent-scoped 两层工具；<code>ToolRestriction</code> 对全局层做 allow/deny 交集，本地 scoped 工具仍可覆盖。prompt assembler 读取当前视图产生模型 schema，executor 在调用点重新读取，避免只靠“没告诉模型”做安全控制。</p>
+<div class="src">证据：<code>packages/core/tools/src/index.ts:196-424,613-739,739-1058</code>；<code>docs/core-data-structures/tools.zh.md:9-170</code>。</div>
+
+<h2>工具执行是分阶段、单调收紧的 pipeline</h2>
+<pre><code>lossless JSON snapshot + deepFreeze(arguments)
+  → tools/pre-execute waterfall: allow | deny | ask
+  → approval service（只有 allowed-once 放行）
+  → monotonic guards（只能再 deny，不能反向 allow）
+  → tools/execute waterfall（环绕真正 body）
+  → tools/post-execute: accept | block
+  → definition.finalizeContent
+  → deep-frozen tools/result notification</code></pre>
+<p>参数只在入口做一次 lossless-JSON 物化，随后冻结；policy 不能偷改模型看到的参数。<code>ask</code> 若没有 approval service、没有 Agent/session 或通道不可用，一律降为 deny。guard 返回 <code>undefined</code> 只能保持已有决策，返回 string 只能拒绝，因此后注册插件不能撤销前面的安全限制。</p>
+<p>工具 body 和 listener 抛错通常被 materialize 为 <code>isError</code> result，仍进入 post-execute 并闭合 call/result。只有 scheduler 基础设施失败才上抛到 turn。工具还可 <code>deferContext()</code>，将结构化上下文交给下一 step，而不是把所有机器信息混入用户可见输出。</p>
+<div class="src">证据：<code>packages/core/tools/src/index.ts:1086-1460</code>；<code>docs/core-data-structures/tools.zh.md:170-395</code>。</div>
+
+<h2>Code Mode 不是另一套工具实现</h2>
+<p>工具 registry 支持 native/code/both presentation。Code Mode 让模型写一段程序，通过桥接调用已注册工具；每个 sub-dispatch 仍经过同一 ToolRegistry policy、timeout、scope 与 result pipeline，并记录 <code>tool/code-dispatch</code>。所以它改变模型调用工具的表示和批处理方式，不应绕过原有权限边界。</p>
+<div class="key"><b>设计判断：</b>DSH 比 Pi 多出来的不是“更多工具名”，而是一条正式的工具治理管线：schema 可见性、运行时 scope、审批、单调 guard、并发分类、结果整形、持久配对和 UI intent 有各自 owner。复杂度更高，但策略不需要侵入每个工具 body。</div>
+<footer><a href="04_sessions_context.html">下一篇：会话与上下文 →</a></footer></div></body></html>
