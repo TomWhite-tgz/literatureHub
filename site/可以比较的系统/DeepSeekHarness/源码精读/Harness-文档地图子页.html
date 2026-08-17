@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="DeepSeek Harness 文档地图：四条平行的 Cordis 学习线、中文版分布规律、生成物与校验 gate 的对应关系，以及一条无需 API key 的动手路线。">
+<title>文档地图子页 · DeepSeek Harness 学习</title>
+<style>
+:root{
+--ink:#1f2421;--muted:#5c635d;--paper:#f7f4ef;--panel:#fbf9f5;--white:#fff;
+--line:#e7e1d7;--accent:#c4612f;--accent-dark:#a94e22;--accent-pale:#f2e3d6;
+--green:#315b45;--green-pale:#edf2ee;--blue:#355f78;--blue-pale:#edf4f7;
+--warning:#8a641c;--warning-pale:#fff7e6;--danger:#934958;--danger-pale:#fff0f2;
+--shadow:0 2px 8px rgba(31,36,33,.06);--figure-shadow:0 4px 14px rgba(31,36,33,.11);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{color:var(--ink);background:var(--paper);
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+font-size:16px;line-height:1.72;overflow-x:hidden}
+.container{width:min(1000px,calc(100% - 44px));margin:0 auto;padding:52px 18px 76px}
+header{margin-bottom:34px;padding-bottom:34px;border-bottom:1px solid var(--line);text-align:center}
+.status-row,.resource-row,.tag-list{display:flex;flex-wrap:wrap;gap:8px}
+.status-row,.resource-row{justify-content:center}
+.status-row{margin-bottom:18px}
+.resource-row{margin-top:22px}
+.badge,.tag,.evidence{display:inline-flex;align-items:center;width:fit-content;border-radius:999px;white-space:nowrap}
+.badge{padding:4px 11px;color:var(--accent-dark);background:var(--accent-pale);font-size:.79rem;font-weight:650}
+h1{margin-bottom:12px;font-size:clamp(2.1rem,6vw,3rem);font-weight:670;letter-spacing:-.035em;line-height:1.08}
+.subtitle{max-width:760px;margin:0 auto;color:var(--muted);font-size:1.08rem;font-weight:360}
+.meta{margin-top:12px;color:var(--muted);font-size:.91rem;font-weight:360}
+h2{margin:60px 0 24px;padding-bottom:11px;border-bottom:2px solid var(--accent);font-size:1.78rem;font-weight:630;line-height:1.3}
+h3{margin:32px 0 14px;color:var(--accent);font-size:1.25rem;font-weight:630}
+h4{margin:22px 0 8px;color:var(--accent-dark);font-size:1.01rem;font-weight:650}
+p{margin-bottom:17px;font-weight:360}
+strong{font-weight:660}
+a{color:var(--accent-dark)}
+.lead{color:#343b37;font-size:1.02rem}
+.eyebrow{display:block;margin-bottom:7px;color:var(--muted);font-size:.75rem;font-weight:720;letter-spacing:.08em;text-transform:uppercase}
+.toc{position:sticky;top:10px;z-index:20;display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin:24px 0 34px;padding:10px;
+border:1px solid rgba(231,225,215,.9);border-radius:16px;background:rgba(247,244,239,.93);box-shadow:0 8px 24px rgba(31,36,33,.06);backdrop-filter:blur(10px)}
+.toc a{padding:6px 10px;border-radius:999px;color:var(--muted);font-size:.8rem;font-weight:620;text-decoration:none}
+.toc a:hover{color:var(--accent-dark);background:var(--accent-pale)}
+.highlight-box,.source-note,.warning-note,.critical-note,.code-note{margin:26px 0;padding:21px 25px;border-left:4px solid var(--accent);border-radius:5px;background:var(--panel);box-shadow:var(--shadow)}
+.source-note{border-left-color:var(--green);background:var(--green-pale)}
+.code-note{border-left-color:var(--blue);background:var(--blue-pale)}
+.warning-note{border-left-color:var(--warning);background:var(--warning-pale)}
+.critical-note{border-left-color:var(--danger);background:var(--danger-pale)}
+.highlight-box p:last-child,.source-note p:last-child,.warning-note p:last-child,.critical-note p:last-child,.code-note p:last-child{margin-bottom:0}
+.key-insight{margin:32px 0;padding:28px 31px;border-radius:8px;color:var(--white);background:linear-gradient(135deg,var(--accent),var(--accent-dark));box-shadow:0 4px 12px rgba(196,97,47,.22)}
+.key-insight h3,.key-insight p{color:var(--white)}
+.key-insight h3{margin-top:0}
+.key-insight p:last-child{margin-bottom:0}
+.key-insight code{color:#fff;background:rgba(255,255,255,.18)}
+.card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:24px 0}
+.card-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card{padding:21px 23px;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:var(--shadow)}
+.card h3,.card h4{margin-top:0;font-size:1.05rem}
+.card p:last-child,.card ul:last-child{margin-bottom:0}
+.evidence{margin-bottom:10px;padding:3px 9px;font-size:.72rem;font-weight:700;letter-spacing:.02em}
+.evidence.paper{color:var(--accent-dark);background:var(--accent-pale)}
+.evidence.code{color:var(--blue);background:var(--blue-pale)}
+.evidence.inference{color:var(--warning);background:var(--warning-pale)}
+.evidence.audit{color:var(--danger);background:var(--danger-pale)}
+.figure{margin:30px 0;text-align:center}
+.figure-wide{width:min(1320px,calc(100vw - 36px));margin-left:50%;transform:translateX(-50%)}
+.figure-frame{display:block;overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--white);box-shadow:var(--figure-shadow);padding:18px 14px}
+.figure svg{display:block;margin:0 auto;max-width:100%;height:auto}
+.figure figcaption{max-width:820px;margin:11px auto 0;color:var(--muted);font-size:.86rem;font-style:italic;line-height:1.55}
+.comparison-table{width:100%;margin:26px 0;border-collapse:collapse;border-radius:8px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden}
+.comparison-table th{padding:12px 14px;color:var(--white);background:var(--accent);font-size:.86rem;font-weight:620;text-align:left}
+.comparison-table td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:.87rem;font-weight:360;vertical-align:top}
+.comparison-table tr:last-child td{border-bottom:0}
+.comparison-table .focus-row td{background:#f8ede4;font-weight:590}
+.table-scroll{width:100%;margin:26px 0;border-radius:8px;overflow-x:auto}
+.table-scroll .comparison-table{min-width:700px;margin:0}
+.flow-diagram{margin:29px 0;padding:27px 31px;border-radius:8px;background:var(--panel);box-shadow:var(--shadow)}
+.flow-step{position:relative;margin:16px 0;padding:16px 20px;border-left:4px solid var(--accent);border-radius:4px;background:var(--white)}
+.flow-step::before{content:"▼";position:absolute;bottom:-28px;left:50%;color:var(--accent);font-size:18px;transform:translateX(-50%)}
+.flow-step:last-child::before{content:""}
+.flow-step p{margin-bottom:0}
+.formula{margin:25px 0;padding:18px 22px;border-radius:7px;color:var(--paper);background:var(--ink);
+font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:.92rem;overflow-x:auto;text-align:center;white-space:nowrap}
+ul{margin:15px 0 19px 2px;list-style:none}
+li{position:relative;margin-bottom:9px;padding-left:22px;font-weight:360}
+li::before{content:"•";position:absolute;left:2px;color:var(--accent);font-size:1.2rem;font-weight:700}
+ol{margin:15px 0 19px 22px}
+ol li{padding-left:4px}
+ol li::before{content:""}
+details{margin:16px 0;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden}
+summary{display:flex;align-items:center;gap:12px;padding:15px 20px;cursor:pointer;font-weight:630;list-style:none;font-size:.97rem}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"＋";margin-left:auto;color:var(--accent);font-size:1.1rem}
+details[open] summary::after{content:"−"}
+.details-body{padding:18px 22px 22px;border-top:1px solid var(--line)}
+.details-body>:last-child{margin-bottom:0}
+code{padding:2px 5px;border-radius:4px;color:var(--accent-dark);background:var(--accent-pale);font-size:.86em;word-break:break-word}
+pre{margin:22px 0;padding:18px 20px;border:1px solid #343b37;border-radius:8px;color:#edf2ee;background:var(--ink);
+font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:.815rem;line-height:1.62;overflow-x:auto}
+pre code{padding:0;color:inherit;background:transparent;font-size:1em}
+.code-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:22px 0}
+.code-item{padding:14px 16px;border:1px solid var(--line);border-radius:7px;background:var(--white)}
+.code-item code{display:inline-block;margin-bottom:6px;color:var(--blue);background:var(--blue-pale);font-weight:660}
+.code-item p{margin-bottom:0;color:var(--muted);font-size:.85rem}
+.tag-list{margin:13px 0 22px}
+.tag{padding:4px 10px;color:var(--green);background:var(--green-pale);font-size:.78rem;font-weight:630}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:26px 0}
+.stat{padding:16px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);text-align:center;box-shadow:var(--shadow)}
+.stat b{display:block;color:var(--accent-dark);font-size:1.55rem;font-weight:680;line-height:1.2}
+.stat span{display:block;margin-top:4px;color:var(--muted);font-size:.79rem}
+footer{margin-top:72px;padding-top:28px;border-top:1px solid var(--line);color:var(--muted);font-size:.86rem;font-weight:360;text-align:center}
+.t{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.t.s{font-size:12px}
+.t.m{font-size:13px;font-weight:600}
+.t.l{font-size:14px;font-weight:660}
+.t.xs{font-size:10.5px}
+.mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace}
+@media (max-width:860px){
+.container{width:min(100% - 28px,1000px);padding:34px 8px 56px}
+.card-grid,.card-grid.three,.code-list{grid-template-columns:1fr}
+.toc{position:static}
+.flow-diagram{padding:20px 16px}
+h2{margin-top:46px;font-size:1.5rem}
+.highlight-box,.key-insight{padding:22px}
+}
+@media print{.toc{display:none}body{background:#fff}.container{width:100%;max-width:none;padding:24px}.card,details,.figure-frame{box-shadow:none}}
+</style>
+</head>
+<body>
+<main class="container">
+
+<p><a href="index.html">← 返回源码精读目录</a> · <a href="../index.html">源码泛读</a></p>
+
+<header>
+  <div class="status-row">
+    <span class="badge">Private snapshot · 4dcc9655</span>
+    <span class="badge">docs/ 顶层 18 篇 + 6 个子目录</span>
+    <span class="badge">手写全双语 · 生成全英文</span>
+  </div>
+  <h1>文档地图子页</h1>
+  <p class="subtitle">这个仓库有<strong>四条互不引用的 Cordis 学习线</strong>、一批和手写文档长得一模一样的生成物、以及一条不需要 API key 就能跑的动手路线。这一页专门解决"该读哪份、哪份有中文、哪份不能改"。</p>
+  <p class="meta">全部条目都经 <code>ls</code> / <code>head</code> / <code>package.json</code> 逐一核对 · 行数与字节数为快照实测值</p>
+  <div class="resource-row">
+    <a class="badge" style="text-decoration:none" href="DeepSeek-Harness-深度导读.html">↩ 返回主导读</a>
+    <a class="badge" style="text-decoration:none" href="DeepSeek-Harness-深度导读.html#s13">↩ 主导读 §13 · 学习路径</a>
+    <a class="badge" style="text-decoration:none" href="Cordis-深度子页.html">↗ Cordis 内核子页</a>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#s0">0 · 这页解决什么</a>
+  <a href="#s1">1 · 四条 Cordis 学习线</a>
+  <a href="#s2">2 · 中文版地图</a>
+  <a href="#s3">3 · 生成物与 gate</a>
+  <a href="#s4">4 · 无 key 动手路线</a>
+  <a href="#s5">5 · 速查</a>
+  <a href="DeepSeek-Harness-深度导读.html" style="color:var(--accent-dark);background:var(--accent-pale)">↩ 主导读</a>
+  <a href="Cordis-深度子页.html" style="color:var(--accent-dark);background:var(--accent-pale)">↗ Cordis 子页</a>
+</nav>
+
+<!-- ══════════════════ 0 ══════════════════ -->
+<h2 id="s0">0 · 这页解决什么</h2>
+
+<p class="lead">主导读 <a href="DeepSeek-Harness-深度导读.html#s13">§13 学习路径</a> 已经给了一条读代码的路线。这一页补的是另一件事：<strong>在读代码之前，先看清仓库自己的文档地形</strong>。因为 <code>docs/</code> 有三个非直觉之处，不知道会白走路。</p>
+
+<div class="card-grid three">
+  <div class="card">
+    <span class="evidence audit">陷阱 1</span>
+    <h4>中文版存在，但不显眼</h4>
+    <p>所有<strong>手写</strong>文档都有 <code>.zh.md</code>。主导读全篇引用的是英文名（<code>docs/architecture.md</code>），很容易以为没有中文版——其实 <code>architecture.zh.md</code> 就在同一目录，内容对等。</p>
+  </div>
+  <div class="card">
+    <span class="evidence audit">陷阱 2</span>
+    <h4>生成物和手写物混放</h4>
+    <p><code>docs/</code> 顶层 18 篇 <code>.md</code> 里，<strong>9 篇是机器生成的</strong>，和手写的并排躺着、扩展名一样。改错了会被 gate 打回，而且下一次 <code>gen-*</code> 直接覆盖你的编辑。</p>
+  </div>
+  <div class="card">
+    <span class="evidence audit">陷阱 3</span>
+    <h4>四条学习线互不引用</h4>
+    <p>Cordis 在这个仓库里被讲了<strong>四遍</strong>，四份材料风格、体量、语言、可执行性全不同，而且彼此几乎不交叉引用。不知道有四条，就会以为自己读的那条是全部。</p>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat"><b>18</b><span><code>docs/</code> 顶层 md<br>（9 手写 / 9 生成）</span></div>
+  <div class="stat"><b>6</b><span>子目录<br>catalog/tutorial/…</span></div>
+  <div class="stat"><b>4</b><span>条 Cordis<br>学习线</span></div>
+  <div class="stat"><b>6</b><span>生成脚本<br>各带 <code>--check</code></span></div>
+  <div class="stat"><b>0</b><span>生成物有中文版<br>（一个都没有）</span></div>
+  <div class="stat"><b>1</b><span>无需 key 的<br>动手入口</span></div>
+</div>
+
+<!-- ══════════════════ 1 ══════════════════ -->
+<h2 id="s1">1 · 四条平行的 Cordis 学习线</h2>
+
+<p>这是这一页最重要的一节。同一个 Cordis，仓库里有四份材料在讲，<strong>其中第 ④ 条主导读完全没有提到</strong>。</p>
+
+<figure class="figure figure-wide">
+<div class="figure-frame">
+<svg viewBox="0 0 1000 360" role="img" aria-label="四条 Cordis 学习线的体量、语言与性质对比">
+<text class="t l" x="12" y="26" fill="#1f2421">四条学习线</text>
+<text class="t s" x="175" y="26" fill="#5c635d">体量（条宽 ≈ 阅读量）</text>
+<text class="t s" x="665" y="26" fill="#5c635d">什么时候用它</text>
+<line x1="12" y1="36" x2="988" y2="36" stroke="#e7e1d7" stroke-width="1"/>
+
+<!-- ① primer -->
+<text class="t m" x="160" y="66" text-anchor="end" fill="#1f2421">① 概念速查</text>
+<text class="t xs mono" x="160" y="81" text-anchor="end" fill="#5c635d">cordis-primer.md</text>
+<rect x="175" y="52" width="70" height="34" rx="4" fill="#6f9c85"/>
+<text class="t xs" x="210" y="73" text-anchor="middle" fill="#fff">44 行</text>
+<rect x="253" y="59" width="42" height="20" rx="10" fill="#edf2ee" stroke="#6f9c85"/>
+<text class="t xs" x="274" y="73" text-anchor="middle" fill="#315b45">✓ 中文</text>
+<text class="t s" x="665" y="66" fill="#1f2421">半小时建立全部词汇</text>
+<text class="t xs" x="665" y="81" fill="#5c635d">五个概念 + 分发模式 + !!js 陷阱</text>
+
+<!-- ② tutorial -->
+<text class="t m" x="160" y="131" text-anchor="end" fill="#1f2421">② 动手教程</text>
+<text class="t xs mono" x="160" y="146" text-anchor="end" fill="#5c635d">cordis-tutorial/</text>
+<rect x="175" y="117" width="230" height="34" rx="4" fill="#6f9c85"/>
+<text class="t xs" x="290" y="138" text-anchor="middle" fill="#fff">8 篇 × 双语 · 7 章递进</text>
+<rect x="413" y="124" width="42" height="20" rx="10" fill="#edf2ee" stroke="#6f9c85"/>
+<text class="t xs" x="434" y="138" text-anchor="middle" fill="#315b45">✓ 中文</text>
+<rect x="461" y="124" width="86" height="20" rx="10" fill="#fff7e6" stroke="#8a641c"/>
+<text class="t xs" x="504" y="138" text-anchor="middle" fill="#8a641c">★ 无需 API key</text>
+<text class="t s" x="665" y="131" fill="#1f2421">唯一能跑起来的一条</text>
+<text class="t xs" x="665" y="146" fill="#5c635d">每章一个可运行示例</text>
+
+<!-- ③ catalog -->
+<text class="t m" x="160" y="196" text-anchor="end" fill="#1f2421">③ 穷尽字典</text>
+<text class="t xs mono" x="160" y="211" text-anchor="end" fill="#5c635d">cordis-catalog/</text>
+<rect x="175" y="182" width="470" height="34" rx="4" fill="#6f92ab"/>
+<text class="t xs" x="410" y="203" text-anchor="middle" fill="#fff">services 144 KB · events 58 KB · core/ 5 页</text>
+<text class="t s" x="665" y="190" fill="#1f2421">查签名、查 dispatch mode</text>
+<text class="t xs" x="665" y="205" fill="#934958">仅英文 · 生成物 · 不要通读</text>
+<text class="t xs" x="665" y="219" fill="#5c635d">core/ 带 vendor 源码行级回链</text>
+
+<!-- ④ framework -->
+<text class="t m" x="160" y="261" text-anchor="end" fill="#1f2421">④ 框架三讲</text>
+<text class="t xs mono" x="160" y="276" text-anchor="end" fill="#5c635d">user/develop/framework/</text>
+<rect x="175" y="247" width="150" height="34" rx="4" fill="#6f9c85"/>
+<text class="t xs" x="250" y="268" text-anchor="middle" fill="#fff">3 篇 · 427 行</text>
+<rect x="333" y="254" width="42" height="20" rx="10" fill="#edf2ee" stroke="#6f9c85"/>
+<text class="t xs" x="354" y="268" text-anchor="middle" fill="#315b45">✓ 中文</text>
+<rect x="381" y="254" width="118" height="20" rx="10" fill="#fff0f2" stroke="#934958"/>
+<text class="t xs" x="440" y="268" text-anchor="middle" fill="#934958">⚠ 主导读未提及</text>
+<text class="t s" x="665" y="261" fill="#1f2421">生命周期 / 服务 / 事件 三讲</text>
+<text class="t xs" x="665" y="276" fill="#5c635d">中文原生、密度高、有精确语义</text>
+
+<!-- 图例 + 建议顺序 -->
+<line x1="12" y1="300" x2="988" y2="300" stroke="#e7e1d7" stroke-width="1"/>
+<rect x="12" y="312" width="14" height="14" rx="3" fill="#6f9c85"/>
+<text class="t xs" x="32" y="323" fill="#5c635d">手写（人写给人读，全双语）</text>
+<rect x="205" y="312" width="14" height="14" rx="3" fill="#6f92ab"/>
+<text class="t xs" x="225" y="323" fill="#5c635d">生成（机器投影，仅英文，不可手改）</text>
+<text class="t m" x="470" y="324" fill="#a94e22">建议顺序：① → ④ → ② → ③</text>
+<text class="t xs" x="700" y="324" fill="#5c635d">先建词汇 → 中文补深度 → 动手验证 → 按需查字典</text>
+</svg>
+</div>
+<figcaption>图 1 · 四条学习线的对比。注意<strong>颜色即性质</strong>：绿色是手写的，一定有中文版；蓝色是生成的，一定只有英文、一定不能手改。第 ③ 条那么宽不是因为它更重要，而是因为它<strong>是给检索用的字典</strong>——240 KB 通读是浪费。真正值得完整读的是 ① ④ ②，加起来不到 900 行。</figcaption>
+</figure>
+
+<h3>1.1 ④ 号线：被漏掉的那条中文原生材料</h3>
+
+<p><code>docs/user/develop/</code> 是一条<strong>面向插件开发者的完整教程</strong>，9 篇、1,211 行、全部双语，分三组：</p>
+
+<div class="table-scroll">
+<table class="comparison-table">
+<thead><tr><th style="width:30%">路径</th><th style="width:12%">行数</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><code>develop/basic/index</code></td><td>141</td><td>插件开发入门</td></tr>
+<tr><td><code>develop/basic/tool</code></td><td>52</td><td>写一个工具</td></tr>
+<tr><td><code>develop/basic/config</code></td><td>106</td><td>配置与 schema</td></tr>
+<tr><td><code>develop/basic/publish</code></td><td>140</td><td>发布插件</td></tr>
+<tr class="focus-row"><td><code>develop/framework/index</code></td><td>136</td><td><strong>插件与生命周期</strong>：Fiber 六态、依赖驱动加载、自动清理、嵌套上下文、dispose 语义、HMR</td></tr>
+<tr class="focus-row"><td><code>develop/framework/service</code></td><td>148</td><td><strong>服务与依赖</strong></td></tr>
+<tr class="focus-row"><td><code>develop/framework/events</code></td><td>143</td><td><strong>事件系统</strong></td></tr>
+<tr><td><code>develop/practice/index</code></td><td>155</td><td>实践索引</td></tr>
+<tr><td><code>develop/practice/llm-adapter</code></td><td>190</td><td>写一个 LLM 适配器</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><code>framework/</code> 那三篇（427 行）和 <a href="Cordis-深度子页.html">Cordis 内核子页</a> 讲的是同一批概念，但角度不同：子页是<strong>拆源码</strong>，它是<strong>给使用者的精确说明</strong>。而且它有一处比我在子页里写得更准——</p>
+
+<div class="critical-note">
+  <p><strong>一条值得单独记住的语义，出自 <code>develop/framework/index.zh.md:63</code>：</strong></p>
+  <p>「插件卸载时，处置器<strong>按注册顺序的逆序开始调用</strong>，但多个异步处置器会<strong>并发执行，不保证逐个完成</strong>。存在顺序依赖的清理步骤必须放进<strong>同一个</strong> <code>ctx.effect()</code> 返回的处置器中，由该处置器负责串行等待。」</p>
+  <p>我回源码核对过，这句是对的，而且比常见的说法"disposer 逆序执行"精确得多。证据在两处：<code>vendor/cordis/src/utils.ts:28-32</code>——<code>DisposableList.clear()</code> 返回 <code>values.reverse()</code>，所以确实是逆序；<code>vendor/cordis/src/fiber.ts:674</code>——<code>await Promise.all(this._disposables.clear().map(async dispose => …))</code>，<strong><code>Promise.all</code> 意味着全部并发等待，没有任何东西让第 N 个等第 N-1 个跑完</strong>。</p>
+  <p>顺带还有第三个事实：<code>fiber.ts:675-683</code> 每个 disposer 各自包在 <code>try/catch</code> 里，异常只 <code>ctx.logger.error(reason)</code>。所以<strong>一个 disposer 抛异常既不会中断其他 disposer，也不会让卸载失败</strong>。这是"卸载必须永远成功"的实现代价：错误被降级成日志。</p>
+  <p>⚠ 这一条已回填到 <a href="Cordis-深度子页.html#s3">Cordis 子页 §3.2</a>，原先那里写的"逆序跑 disposer"不够准确。</p>
+</div>
+
+<h3>1.2 ③ 号线：字典的内部结构，以及它唯一的独门价值</h3>
+
+<div class="table-scroll">
+<table class="comparison-table">
+<thead><tr><th style="width:34%">文件</th><th style="width:14%">体量</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><code>cordis-catalog/services.md</code></td><td>144 KB</td><td>每一个 <code>ctx.&lt;key&gt;</code> 服务的公开接口 + 原始 JSDoc。分两层：<strong>harness tier</strong>（<code>@deepseek-ai/dsh-*</code>，本仓库自有词汇）与 <strong>inherited tier</strong>（cordis 内核 + loader/hmr/timer，pinned vendor 源，写得很简）</td></tr>
+<tr><td><code>cordis-catalog/events.md</code></td><td>58 KB</td><td>每一个可监听事件的签名 + <strong>dispatch mode</strong> + 原始声明 JSDoc，按 scope 分组（<code>agent/*</code>、<code>session/*</code>…）。开头就有五种模式的一句话定义</td></tr>
+<tr class="focus-row"><td><code>cordis-catalog/core/</code> 5 页</td><td>39 KB</td><td><code>context</code> / <code>events</code> / <code>fiber</code> / <code>registry</code> / <code>service</code>。<strong>每页带 <code>[Source](../../../vendor/cordis/src/*.ts#L42)</code> 行级回链</strong></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="source-note">
+  <p><strong><code>core/</code> 那五页的行级回链，是整个 <code>docs/</code> 里唯一把文档句子和 vendored 源码行号绑在一起的地方。</strong>例如 <code>core/context.md</code> 的开头写着"A context is a proxy: normal property reads go through the service resolver, while <code>extend()</code>, <code>isolate()</code>, and <code>intercept()</code> create scoped child contexts without mutating their parent."——紧接着就是 <code>[Source](../../../vendor/cordis/src/context.ts#L42)</code>。</p>
+  <p>这对"理解原理"特别顺手：<strong>它就是 <a href="Cordis-深度子页.html">Cordis 子页</a>的官方生成版对照物</strong>。子页说某个机制在 <code>fiber.ts</code> 第几行，你可以拿 <code>core/fiber.md</code> 的回链交叉验证。两边对不上就说明快照变了。</p>
+</div>
+
+<!-- ══════════════════ 2 ══════════════════ -->
+<h2 id="s2">2 · 中文版地图：一条零例外的规律</h2>
+
+<div class="key-insight">
+  <h3>手写的一定有中文，生成的一定没有</h3>
+  <p>我把 <code>docs/</code> 顶层 18 篇 <code>.md</code> 逐一核对过：<strong>9 篇手写的，9 篇全部有 <code>.zh.md</code>；9 篇生成的，9 篇一个都没有。</strong>子目录同样成立——<code>core-data-structures/</code> 32 篇英文对 32 篇中文，<code>cordis-tutorial/</code> 8 对 8，<code>cookbook/</code> 7 对 7，<code>postmortem/</code> 4+README 全双语，<code>user/</code> 整棵树全双语；而 <code>cordis-catalog/</code> 一篇中文都没有。</p>
+  <p>规律背后是制度：仓库的 i18n 契约要求<strong>双语成对更新并重新录制</strong>（<code>docs/i18n/README.md</code>，由 <code>verify-translation-pairing</code> 把关），机制是 <code>.md</code> / <code>.zh.md</code> / <code>.i18n.yaml</code> <strong>三元组</strong>——第三个文件记录录制状态。生成物没有"翻译源"这个概念，所以整个机制不适用于它们。</p>
+</div>
+
+<h3>2.1 顶层 18 篇逐一对照</h3>
+
+<div class="table-scroll">
+<table class="comparison-table">
+<thead><tr><th style="width:32%">文件</th><th style="width:11%">中文</th><th style="width:11%">性质</th><th style="width:10%">行数</th><th>说明</th></tr></thead>
+<tbody>
+<tr class="focus-row"><td><code>architecture.md</code></td><td>✓ zh</td><td>手写</td><td>191</td><td>全仓骨架 + 服务全景表 + Turn Flow。<strong>读中文版即可</strong></td></tr>
+<tr class="focus-row"><td><code>cordis-primer.md</code></td><td>✓ zh</td><td>手写</td><td>44</td><td>① 号学习线</td></tr>
+<tr class="focus-row"><td><code>glossary.md</code></td><td>✓ zh</td><td>手写</td><td>41</td><td>turn / step / round 三级词汇</td></tr>
+<tr><td><code>development.md</code></td><td>✓ zh</td><td>手写</td><td>160</td><td>TS 工程布局、TODO 语义</td></tr>
+<tr><td><code>api-gateway.md</code></td><td>✓ zh</td><td>手写</td><td>170</td><td>TypeRT RPC 网关</td></tr>
+<tr><td><code>testing.md</code></td><td>✓ zh</td><td>手写</td><td>49</td><td>测试策略与 key 政策</td></tr>
+<tr><td><code>defensive-patterns.md</code></td><td>✓ zh</td><td>手写</td><td>29</td><td>每条都对应一次真实缺陷</td></tr>
+<tr><td><code>web-styling.md</code></td><td>✓ zh</td><td>手写</td><td>25</td><td>前端样式约定</td></tr>
+<tr><td><code>AGENTS.md</code></td><td>—</td><td>手写</td><td>75</td><td>文档规约本身（指令文件，不翻译）</td></tr>
+<tr><td><code>agent-lifecycle.md</code></td><td>—</td><td>生成</td><td>82</td><td>turn/step Mermaid 时序（<strong>见 §3 警告</strong>）</td></tr>
+<tr><td><code>tool-execution-pipeline.md</code></td><td>—</td><td>生成</td><td>62</td><td>工具流水线时序</td></tr>
+<tr><td><code>event-producer-consumer.md</code></td><td>—</td><td>生成</td><td>81</td><td>谁发谁听的映射</td></tr>
+<tr><td><code>graph-atlas.md</code></td><td>—</td><td>生成</td><td>24</td><td>图索引</td></tr>
+<tr><td><code>capability-seams.md</code></td><td>—</td><td>生成</td><td>412</td><td>能力缝全景</td></tr>
+<tr><td><code>persistence-catalog.md</code></td><td>—</td><td>生成</td><td>773</td><td>持久化格式</td></tr>
+<tr><td><code>module-graph.md</code></td><td>—</td><td>生成</td><td>1357</td><td>包依赖图</td></tr>
+<tr><td><code>tool-catalog.md</code></td><td>—</td><td>生成</td><td>1518</td><td>全部模型可见工具</td></tr>
+<tr><td><code>config-catalog.md</code></td><td>—</td><td>生成</td><td>2653</td><td>全部配置字段</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="highlight-box">
+  <p><strong>实用结论：你要读的手写文档，全都可以直接把 <code>.md</code> 换成 <code>.zh.md</code>。</strong>主导读 §13 里列的 <code>docs/cordis-primer.md</code>、<code>docs/architecture.md</code>、<code>docs/glossary.md</code>，以及 §13.3 各支线提到的 <code>core-data-structures/compaction.md</code>、<code>core-data-structures/subagent.md</code>、<code>cookbook/adding-a-tool.md</code> ——统统有中文版。</p>
+  <p>唯一读不到中文的是<strong>生成物</strong>（含 <code>cordis-catalog/</code>），但生成物几乎都是表格和签名，英文阅读负担很低。</p>
+</div>
+
+<!-- ══════════════════ 3 ══════════════════ -->
+<h2 id="s3">3 · 生成物清单：脚本、gate、以及"生成 ≠ 正确"</h2>
+
+<p>9 篇顶层生成文档由 <strong>5 个脚本</strong>产出，<code>cordis-catalog/</code> 由第 6 个产出。每个脚本都同时是自己的校验器：</p>
+
+<div class="table-scroll">
+<table class="comparison-table">
+<thead><tr><th style="width:30%">产出</th><th style="width:26%">生成命令</th><th>校验命令（= 生成 + <code>--check</code>）</th></tr></thead>
+<tbody>
+<tr><td><code>agent-lifecycle.md</code><br><code>tool-execution-pipeline.md</code><br><code>event-producer-consumer.md</code><br><code>capability-seams.md</code><br><code>graph-atlas.md</code></td><td><code>pnpm run gen-doc-graphs</code></td><td><code>pnpm run verify-doc-graphs</code><br><span class="tag">一个脚本产 5 个文件</span></td></tr>
+<tr><td><code>config-catalog.md</code></td><td><code>pnpm run gen-config-catalog</code></td><td><code>pnpm run verify-config-catalog</code></td></tr>
+<tr><td><code>module-graph.md</code></td><td><code>pnpm run gen-module-graph</code></td><td><code>pnpm run verify-module-graph</code></td></tr>
+<tr><td><code>persistence-catalog.md</code></td><td><code>pnpm run gen-persistence-catalog</code></td><td><code>pnpm run verify-persistence-catalog</code></td></tr>
+<tr><td><code>tool-catalog.md</code></td><td><code>pnpm run gen-tool-catalog</code></td><td><code>pnpm run verify-tool-catalog</code></td></tr>
+<tr class="focus-row"><td><code>cordis-catalog/**</code><br>（+ 生成的 API 模块）</td><td><code>pnpm run gen-cordis-catalog</code></td><td><code>pnpm run verify-cordis-catalog</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>3.1 <code>verify-*</code> 就是 <code>gen-* --check</code></h3>
+
+<p>看 <code>package.json:97-115</code> 会发现一个统一的形状：</p>
+
+<pre><code>"gen-cordis-catalog":    "tsx scripts/gen-cordis-catalog.ts",
+"verify-cordis-catalog": "tsx scripts/gen-cordis-catalog.ts --check",
+"gen-tool-catalog":      "tsx scripts/gen-tool-catalog.ts",
+"verify-tool-catalog":   "tsx scripts/gen-tool-catalog.ts --check",
+"gen-doc-graphs":        "tsx scripts/gen-doc-graphs.ts",
+"verify-doc-graphs":     "tsx scripts/gen-doc-graphs.ts --check",</code></pre>
+
+<p><strong>校验的方式就是重新生成一遍再比对。</strong>这意味着生成物<em>不可能</em>相对生成器漂移——只要 <code>pnpm run doc-sync</code> 过了，磁盘上的内容必然等于当前代码投影出来的内容。这是这套文档体系可信度的来源。</p>
+
+<div class="code-note">
+  <p><strong>一个容易记错的细节：<code>gen-cordis-api</code> 不是另一个生成器。</strong><code>scripts/gen-cordis-api.ts</code> 全文只有 9 行，是个<strong>兼容入口</strong>——<code>import { main } from './gen-cordis-catalog.ts'</code> 然后调用。它自己的 JSDoc 写着 "Compatibility entry point for the unified Typert-backed Cordis catalog projection… all extraction, validation, and rendering live in one implementation."</p>
+  <p>所以 <code>docs/cordis-catalog/**</code> 和运行时那个 API 模块<strong>出自同一次 Typert FaceModel 投影</strong>。这就是为什么 <code>cordis_inspect</code> 工具可以拿"提交进仓库的 catalog"去和"运行时真实的 service store"求交集——两边不可能对不上。</p>
+</div>
+
+<h3>3.2 但是：生成 ≠ 正确</h3>
+
+<div class="critical-note">
+  <p><strong>生成器只保证"文档与生成器一致"，不保证"生成器与代码语义一致"。</strong></p>
+  <p>仓库里有一个现成的反例，主导读 <a href="DeepSeek-Harness-深度导读.html#s5">§5.4</a> 已经抓出来了：<code>docs/agent-lifecycle.md</code> 把 <code>turn/start</code> 画在 <code>agent/pre-step</code> <em>之后</em>，并写着 "claimed batch stays removed, no turn opens"。而代码是反的——<code>agent.ts:234</code> 早于 <code>:245</code>，pre-step 拒绝时照样写 <code>turn/end.reason = {kind:'blocked'}</code>。</p>
+  <p>这个错误<strong>能通过所有 gate</strong>，因为 <code>verify-doc-graphs</code> 只检查"文件内容 == 生成器输出"。要修得改 <code>scripts/gen-doc-graphs.ts</code> 里那段手工维护的 Mermaid（该文件末尾自己写着 <em>"Maintenance mode: curated Mermaid sequence"</em>——<strong>curated 意思就是人手写的</strong>）。</p>
+  <p><strong>因此读法是：生成物当索引和签名字典可以完全信任（它们是机械提取的）；生成物里的"叙事性内容"（时序图、顺序、因果）要回代码核对。</strong></p>
+</div>
+
+<div class="source-note">
+  <p><strong>怎么一眼分辨？</strong>看第一行。所有生成物都以注释横幅开头，例如：</p>
+  <p><code>&lt;!-- Generated by scripts/gen-doc-graphs.ts - do not edit by hand. Run `pnpm run gen-doc-graphs` to regenerate. --&gt;</code></p>
+  <p>看到这行就三件事：<strong>别手改</strong>、<strong>没有中文版</strong>、<strong>叙事部分存疑</strong>。</p>
+</div>
+
+<!-- ══════════════════ 4 ══════════════════ -->
+<h2 id="s4">4 · 无 API key 的动手路线</h2>
+
+<p>主导读 §13.4 给的三个动手入口（<code>demo:headless</code> / <code>demo:acp</code> / <code>demo:cordis</code>）<strong>全都需要 <code>DEEPSEEK_API_KEY</code></strong>。而 <code>cordis-tutorial</code> 这条线不需要——<code>docs/cordis-tutorial/index.zh.md:13-34</code> 明确写了准备工作只有 clone + <code>pnpm install</code>。</p>
+
+<pre><code># 一次性准备
+cd test-skyllwt
+pnpm install                       # node ^22.19 || >=24
+mkdir -p tmp/cordis-tutorial       # tmp/ 已被 gitignore，可以随便写
+cd tmp/cordis-tutorial
+
+# 每一章都是同一条命令
+node --import tsx ../../vendor/cordis/bin.js</code></pre>
+
+<h3>4.1 那个启动器只有 16 行，全文如下</h3>
+
+<p>它值得整篇贴出来，因为<strong>这 16 行就是"一个 Cordis 应用的最小可能形态"</strong>——<code>vendor/cordis/bin.js</code>：</p>
+
+<pre><code>#!/usr/bin/env node
+
+import { Context } from 'cordis'
+import { pathToFileURL } from 'node:url'
+import Loader from '@cordisjs/plugin-loader'
+
+const ctx = new Context()
+ctx.baseUrl = pathToFileURL(process.cwd()).href + '/'
+
+await ctx.plugin(Loader)
+await ctx.loader.create({
+  name: '@cordisjs/plugin-include',
+  config: {
+    path: './cordis.yml',
+  },
+})</code></pre>
+
+<div class="card-grid">
+  <div class="card">
+    <span class="evidence code">CODE-CONFIRMED</span>
+    <h4>逐行看它做了什么</h4>
+    <p><strong>①</strong> <code>new Context()</code> —— 建根上下文，也就是你在 <a href="Cordis-深度子页.html#s2">子页 §2</a> 读到的那个 Proxy。<strong>②</strong> <code>ctx.baseUrl</code> = 当前工作目录 —— 所以"从哪跑"决定"加载谁"，这也是为什么每章都要先 <code>cd</code> 进去。</p>
+    <p><strong>③</strong> <code>await ctx.plugin(Loader)</code> —— Loader 自己就是个普通插件，装完 <code>ctx.loader</code> 这个服务才存在。<strong>④</strong> <code>ctx.loader.create(...)</code> 挂 <code>@cordisjs/plugin-include</code> 去读 <code>./cordis.yml</code>。</p>
+    <p>注意第 ④ 步的形状：<strong>连"读配置文件"本身都是一个插件</strong>（<code>plugin-include</code>），不是启动器的内建能力。</p>
+  </div>
+  <div class="card">
+    <span class="evidence code">CODE-CONFIRMED</span>
+    <h4>为什么它不需要 API key</h4>
+    <p>这 16 行里<strong>没有任何 harness 内容</strong>——没有 <code>ctx.llm</code>、没有 <code>ctx.agents</code>、没有 <code>ctx.tools</code>。它只装了 Cordis 内核 + Loader。</p>
+    <p>整个 harness（<code>@deepseek-ai/dsh-*</code> 那 194 个包）在这条路径上<strong>一个都没加载</strong>，所以既没有模型请求，也就不需要凭据。你在 tmp 目录里跑的是<strong>纯净的 Cordis</strong>。</p>
+    <p><code>--import tsx</code> 则让 Node 无构建步骤直接执行配置指向的 TS 文件——和 <code>dsh</code> CLI 的源码启动（<code>node --import tsx/esm</code>）同一条路子，因此途中模块<strong>必须是 ESM</strong>。</p>
+  </div>
+</div>
+
+<h3>4.2 七章顺序，以及每章对应 Cordis 子页哪一节</h3>
+
+<p>教程的章序几乎和 <a href="Cordis-深度子页.html">Cordis 内核子页</a>一一对应。<strong>建议对照读：教程给能跑的最小例子，子页给源码级的"为什么"。</strong></p>
+
+<div class="table-scroll">
+<table class="comparison-table">
+<thead><tr><th style="width:30%">章</th><th style="width:34%">教你什么</th><th>对照子页</th></tr></thead>
+<tbody>
+<tr><td><code>01-first-plugin</code></td><td>插件就是一个函数，由 loader 挂载</td><td><a href="Cordis-深度子页.html#s6">§6 Registry</a></td></tr>
+<tr class="focus-row"><td><code>02-lifecycle-and-effects</code></td><td>Cordis 管理的注册会在插件卸载时撤销；<code>ctx.effect()</code> 包裹外部资源</td><td><a href="Cordis-深度子页.html#s3">§3 Fiber / effect</a></td></tr>
+<tr><td><code>03-services</code></td><td>在 <code>ctx</code> 上公开能力，用 <code>inject</code> 依赖它</td><td><a href="Cordis-深度子页.html#s4">§4 Service</a></td></tr>
+<tr><td><code>04-events</code></td><td>类型化事件、广播分发、waterfall 短路</td><td><a href="Cordis-深度子页.html#s5">§5 Events</a></td></tr>
+<tr><td><code>05-config</code></td><td>读 <code>cordis.yml</code> 校验后的配置，输错要明确报错</td><td>—（子页未覆盖）</td></tr>
+<tr><td><code>06-composition-and-hmr</code></td><td>配置文件即插件树、热重载、诊断"永远加载不上"的插件</td><td><a href="Cordis-深度子页.html#s7">§7 级联唤醒</a></td></tr>
+<tr><td><code>07-into-the-harness</code></td><td>基于真实 harness 服务注册可被模型调用的工具</td><td><a href="Cordis-深度子页.html#s8">§8 接回 dsh</a></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="highlight-box">
+  <p><strong>第 2 章的例子值得单独看一眼</strong>，因为它演示的正是仓库那条铁律「Registrations are effects」。它让你写一个 <code>heartbeat</code> 插件用 <code>ctx.effect()</code> 包一个 <code>setInterval</code>，然后——关键在这里——<strong>把 demo 自己用来触发卸载的那个 <code>setTimeout</code> 也包成 effect</strong>，注释说明了原因：如果<em>这个</em>插件先被卸载，待执行的回调会被取消，而不是在一个已死的 app 上触发。</p>
+  <p>这就是"为什么连一次性定时器也要走 effect"的完整答案，而且是能跑出来看的。</p>
+</div>
+
+<div class="warning-note">
+  <p><strong>第 7 章之后如果想接着玩 <code>demo:cordis</code>（它需要 key），先明白一件事。</strong>原文在 <code>packages/cordis/tool-cordis/README.zh.md:87</code>：</p>
+  <p>「<strong>沙箱只用于约束诚实代码，并非安全边界</strong>：可以访问沙箱全局变量上的 host realm helper，因此挂载代码可以触达 Node；加载该插件时，<strong>应当像授予 bash 工具一样慎重</strong>。」</p>
+  <p>同一份 README 的 <code>:21</code> 补充了机制：Node 全局变量不存在或被重定向到 <code>ctx.fs</code> / <code>ctx.web</code> / <code>ctx.bash</code>，写入 <code>globalThis</code> 保持局部，<strong>但 host realm helper 使逃逸成为可能</strong>；已挂载插件拿到的是不含框架内部的 façade，<strong>而获准的服务仍会影响存活运行时</strong>。这句话也硬编码在工具描述里给模型看（<code>tool-cordis/src/index.ts:116</code>）。</p>
+  <p>换句话说：那个沙箱防的是"模型写错代码"，不是"代码有恶意"。<strong>别在不该有 shell 的环境里挂它。</strong></p>
+</div>
+
+<!-- ══════════════════ 5 ══════════════════ -->
+<h2 id="s5">5 · 速查：按"我想干什么"选文档族</h2>
+
+<p>主导读 <a href="DeepSeek-Harness-深度导读.html#s13">§13.5</a> 有一张"按问题找答案"的速查表。这里补的是<strong>另外两个维度</strong>——中文版在哪、能不能改。</p>
+
+<div class="table-scroll">
+<table class="comparison-table">
+<thead><tr><th style="width:30%">我想…</th><th style="width:34%">去哪</th><th style="width:11%">中文</th><th>能改吗</th></tr></thead>
+<tbody>
+<tr class="focus-row"><td>建立 Cordis 词汇（最快）</td><td><code>docs/cordis-primer.zh.md</code></td><td>✓</td><td>可改，须同步英文版</td></tr>
+<tr class="focus-row"><td>看懂 harness 全景与服务拓扑</td><td><code>docs/architecture.zh.md</code></td><td>✓</td><td>可改；<strong>改 agent-loop 必须同时改它</strong></td></tr>
+<tr><td>搞清 turn / step / round</td><td><code>docs/glossary.zh.md</code></td><td>✓</td><td>可改，须同步</td></tr>
+<tr class="focus-row"><td>中文深入生命周期 / 服务 / 事件</td><td><code>docs/user/develop/framework/*.zh.md</code></td><td>✓</td><td>可改，须同步</td></tr>
+<tr class="focus-row"><td>动手跑起来（无需 key）</td><td><code>docs/cordis-tutorial/*.zh.md</code></td><td>✓</td><td>可改，须同步</td></tr>
+<tr><td>查某个事件是什么 dispatch mode</td><td><code>docs/cordis-catalog/events.md</code></td><td>✗</td><td><strong>不可改</strong>（生成）</td></tr>
+<tr><td>查某个 <code>ctx.x</code> 服务的方法签名</td><td><code>docs/cordis-catalog/services.md</code></td><td>✗</td><td><strong>不可改</strong>（生成）</td></tr>
+<tr><td>拿 Cordis 内核 API 的源码行号</td><td><code>docs/cordis-catalog/core/*.md</code> 的 <code>[Source]</code> 回链</td><td>✗</td><td><strong>不可改</strong>（生成）</td></tr>
+<tr><td>了解某个数据结构</td><td><code>docs/core-data-structures/*.zh.md</code>（32 篇）</td><td>✓</td><td>可改，须同步</td></tr>
+<tr><td>照着步骤加一个工具 / 包 / 适配器</td><td><code>docs/cookbook/*.zh.md</code>（7 篇）</td><td>✓</td><td>可改，须同步</td></tr>
+<tr><td>知道某次事故的根因与修复</td><td><code>docs/postmortem/000*.zh.md</code>（4 篇）</td><td>✓</td><td>可改，须同步</td></tr>
+<tr><td>查工具清单 / 配置字段 / 包依赖</td><td><code>tool-catalog.md</code> / <code>config-catalog.md</code> / <code>module-graph.md</code></td><td>✗</td><td><strong>不可改</strong>（生成）</td></tr>
+<tr><td>知道某个设计当初为什么这么定</td><td><code>.agents/notes/implemented/</code></td><td>✗</td><td><strong>归档即冻结</strong>，永不作现行权威</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="key-insight">
+  <h3>压成三句话</h3>
+  <p><strong>一、</strong>看到文件头有 <code>Generated by</code> 横幅：别改、没中文、叙事内容回代码核对。</p>
+  <p><strong>二、</strong>没有那行横幅：一定有 <code>.zh.md</code>，直接读中文；改的话必须双语成对更新并重新录制。</p>
+  <p><strong>三、</strong>Cordis 有四条学习线，按 <strong>① primer → ④ framework 三讲 → ② tutorial 动手 → ③ catalog 按需查</strong> 走。前三条加起来不到 900 行，全部有中文，且第 ② 条不需要 API key。</p>
+</div>
+
+<footer>
+  <p>文档地图子页 · 基于私有快照 <code>4dcc9655</code> · 条目经 <code>ls</code> / <code>head</code> / <code>package.json:66-115</code> 实测核对</p>
+  <p>配套阅读：<a href="DeepSeek-Harness-深度导读.html">↩ DeepSeek Harness 深度导读</a> · <a href="Cordis-深度子页.html">↗ Cordis 内核深度子页</a> · <a href="DeepSeek-Harness-深度导读.html#s13">↩ 主导读 §13 学习路径</a></p>
+</footer>
+
+</main>
+</body>
+</html>

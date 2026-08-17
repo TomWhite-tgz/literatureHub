@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="DeepSeek Harness 学习资料：一份主导读 + 两个深度子页，讲清 194 个包的插件化架构与其 Cordis 底座。">
+<title>DeepSeek Harness 源码精读</title>
+<style>
+:root{
+--ink:#1f2421;--muted:#5c635d;--paper:#f7f4ef;--panel:#fbf9f5;--white:#fff;
+--line:#e7e1d7;--accent:#c4612f;--accent-dark:#a94e22;--accent-pale:#f2e3d6;
+--green:#315b45;--green-pale:#edf2ee;--blue:#355f78;--blue-pale:#edf4f7;
+--shadow:0 2px 8px rgba(31,36,33,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{color:var(--ink);background:var(--paper);
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+font-size:16px;line-height:1.72}
+.container{width:min(880px,calc(100% - 44px));margin:0 auto;padding:64px 18px 80px}
+header{margin-bottom:40px;padding-bottom:34px;border-bottom:1px solid var(--line);text-align:center}
+.status-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:18px}
+.badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:999px;
+color:var(--accent-dark);background:var(--accent-pale);font-size:.79rem;font-weight:650;white-space:nowrap}
+h1{margin-bottom:12px;font-size:clamp(2rem,6vw,2.8rem);font-weight:670;letter-spacing:-.035em;line-height:1.1}
+.subtitle{max-width:680px;margin:0 auto;color:var(--muted);font-size:1.06rem;font-weight:360}
+h2{margin:52px 0 20px;padding-bottom:10px;border-bottom:2px solid var(--accent);font-size:1.5rem;font-weight:630}
+p{margin-bottom:16px;font-weight:360}
+strong{font-weight:660}
+a{color:var(--accent-dark)}
+.entry{display:block;margin:18px 0;padding:24px 27px;border:1px solid var(--line);border-left:5px solid var(--accent);
+border-radius:9px;background:var(--panel);box-shadow:var(--shadow);text-decoration:none;color:inherit;transition:transform .12s,box-shadow .12s}
+.entry:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(31,36,33,.11)}
+.entry.sub{border-left-color:var(--green)}
+.entry .kicker{display:block;margin-bottom:5px;color:var(--muted);font-size:.74rem;font-weight:720;letter-spacing:.08em;text-transform:uppercase}
+.entry h3{margin-bottom:7px;color:var(--accent-dark);font-size:1.22rem;font-weight:650}
+.entry.sub h3{color:var(--green)}
+.entry p{margin-bottom:10px;font-size:.94rem}
+.entry p:last-child{margin-bottom:0}
+.entry .facts{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.entry .facts span{padding:3px 9px;border-radius:999px;background:var(--white);border:1px solid var(--line);
+color:var(--muted);font-size:.76rem;font-weight:500}
+.note{margin:26px 0;padding:20px 24px;border-left:4px solid var(--green);border-radius:5px;
+background:var(--green-pale);box-shadow:var(--shadow)}
+.note p:last-child{margin-bottom:0}
+ol{margin:16px 0 20px 22px}
+ol li{margin-bottom:9px;padding-left:4px;font-weight:360}
+code{padding:2px 5px;border-radius:4px;color:var(--accent-dark);background:var(--accent-pale);font-size:.86em}
+footer{margin-top:64px;padding-top:26px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;text-align:center;font-weight:360}
+@media (max-width:700px){.container{width:calc(100% - 28px);padding:40px 8px 56px}h2{margin-top:40px}}
+</style>
+</head>
+<body>
+<main class="container">
+
+<p><a href="../index.html">← 返回源码泛读</a></p>
+
+<header>
+  <div class="status-row">
+    <span class="badge">私有快照 · 4dcc9655</span>
+    <span class="badge">194 packages / 165,177 LOC</span>
+    <span class="badge">离线可读 · 无需联网</span>
+  </div>
+  <h1>DeepSeek Harness 源码精读</h1>
+  <p class="subtitle">一份主导读 + 两个深度子页。所有结论都带 <code>路径:行号</code> 出处，可以回源核对。</p>
+</header>
+
+<h2>从这里开始</h2>
+
+<a class="entry" href="DeepSeek-Harness-深度导读.html">
+  <span class="kicker">主文档 · 先读这份</span>
+  <h3>DeepSeek Harness 深度导读</h3>
+  <p>从宏观骨架走到局部机制，再回到设计思想。十四章：全景 → Cordis 底座 → 架构 → Session 数据骨架 → Agent 循环 → 工具流水线 → Prompt 装配 → 能力缝 → Scope/Subagent → 组合部署 → 工程纪律 → 设计思想 → 学习路径。</p>
+  <p><strong>核心问题：</strong>一个必然会长到 165,000 行的系统，怎么维持在「每一处都能被单独理解」的状态？</p>
+  <div class="facts"><span>14 章</span><span>2264 行</span><span>含 §13 完整学习路径</span></div>
+</a>
+
+<h2>两个深度子页</h2>
+
+<a class="entry sub" href="Cordis-深度子页.html">
+  <span class="kicker">子页 · 拆内核源码</span>
+  <h3>Cordis 内核深度导读</h3>
+  <p>把 <code>vendor/cordis</code> 的 9 个文件 2676 行拆开讲：Context 为什么必须是 Proxy、Fiber 六态状态机、effect 与自动清理、五种事件分发、Registry 插件归一、级联唤醒与 epoch 哈希。</p>
+  <p><strong>适合：</strong>想搞懂「一切皆插件」在代码层面到底靠什么成立。</p>
+  <div class="facts"><span>9 节</span><span>含逆序启动/并发完成的源码级订正</span></div>
+</a>
+
+<a class="entry sub" href="Harness-文档地图子页.html">
+  <span class="kicker">子页 · 别读错文档</span>
+  <h3>文档地图与无 API key 动手路线</h3>
+  <p>这个仓库有<strong>四条互不引用的 Cordis 学习线</strong>、一批和手写文档长得一模一样的生成物。这页讲清：哪份有中文（规律零例外）、哪份是生成的不能手改、以及一条完全不需要 API key 的动手路线。</p>
+  <p><strong>适合：</strong>开读之前先花十分钟，避免整份读完英文才发现旁边躺着中文版。</p>
+  <div class="facts"><span>6 节</span><span>18 篇中文对照表</span><span>7 章教程零 key 跑通</span></div>
+</a>
+
+<h2>建议顺序</h2>
+
+<ol>
+  <li>先扫<strong>文档地图子页</strong>（十分钟）—— 知道有中文版、知道哪些文件不能改。</li>
+  <li>读<strong>主导读</strong>第 0–3 章建立全景，然后按兴趣跳读第 4–12 章。</li>
+  <li>想深入底座时，从主导读 §2 跳进 <strong>Cordis 子页</strong>。</li>
+  <li>回到主导读 <strong>§13 学习路径</strong>，按那条 1144 行的路线读真实源码。</li>
+</ol>
+
+<div class="note">
+  <p><strong>三份文档互相链接</strong>，页内导航栏和页脚都有跳转，可以随时来回。三个文件必须放在同一目录下，链接才有效。</p>
+  <p>全部为纯 HTML，无脚本、无外链资源，<strong>双击即可打开，不需要联网，也不需要装任何东西</strong>。</p>
+</div>
+
+<div class="note" style="border-left-color:var(--blue);background:var(--blue-pale)">
+  <p><strong>关于证据标注：</strong>文中结论分三档 —— <strong>CODE-CONFIRMED</strong> 已第一手核对源码；<strong>DOC-CLAIM</strong> 来自仓库自己的文档；<strong>INFERENCE</strong> 是作者推断。看到第三档请自行判断。</p>
+</div>
+
+<footer>
+  <p>基于 DeepSeek Harness 私有快照 <code>4dcc9655</code>（2026-08-08）整理 · 仅供学习交流</p>
+</footer>
+
+</main>
+</body>
+</html>

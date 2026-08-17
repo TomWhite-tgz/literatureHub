@@ -1,7 +1,7 @@
-<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DeepSeek Harness 源码深读 · 总览</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap">
-<a class="back" href="../../index.html">← 返回总览</a>
-<nav class="nav"><a class="cur" href="index.html">总览</a><a href="01_boot_plugins.html">① 启动与插件树</a><a href="02_loop.html">② Agent loop</a><a href="03_models_tools.html">③ 模型与工具</a><a href="04_sessions_context.html">④ 会话与上下文</a><a href="05_capabilities_surfaces.html">⑤ 能力与前端</a><a href="06_typescript.html">⑥ TypeScript</a><a href="07_compare_pi.html">⑦ 对比 Pi</a></nav>
-<header><h1>DeepSeek Harness · TypeScript monorepo 源码深读</h1><p class="sub">从 profile patch 与 Cordis 插件树进入，沿真实 turn/step/request/tool 调用链，追到事件溯源会话、压缩、权限、subagent、SDK 与 Web；每章同步解释代码里的 TypeScript。</p><div class="meta"><b>审计对象</b> DeepSeek Harness SDK · <b>提交</b> <code>4dcc965536b4</code> · <b>快照</b> <code>internal/batch_20260808T121140954Z_7f25d3e98c/0202</code> · <b>提交日期</b> 2026-08-08 · <b>复核日期</b> 2026-08-13 · <b>许可证</b> BSD-3-Clause</div></header>
+<!doctype html><html lang="zh-CN"><head><meta name="robots" content="noindex, nofollow, noarchive"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DeepSeek Harness 源码泛读</title><link rel="stylesheet" href="../ClaudeCode/style.css"></head><body><div class="wrap">
+<a class="back" href="../../index.html">← 返回站点总览</a>
+<nav class="nav"><a class="cur" href="index.html">泛读</a><a href="源码精读/index.html">精读</a><a href="01_boot_plugins.html">① 启动与插件树</a><a href="02_loop.html">② Agent loop</a><a href="03_models_tools.html">③ 模型与工具</a><a href="04_sessions_context.html">④ 会话与上下文</a><a href="05_capabilities_surfaces.html">⑤ 能力与前端</a><a href="06_typescript.html">⑥ TypeScript</a><a href="07_compare_pi.html">⑦ 对比 Pi</a></nav>
+<header><h1>DeepSeek Harness · TypeScript monorepo 源码泛读</h1><p class="sub">从 profile patch 与 Cordis 插件树进入，沿真实 turn/step/request/tool 调用链，追到事件溯源会话、压缩、权限、subagent、SDK 与 Web；每章同步解释代码里的 TypeScript。</p><div class="meta"><b>审计对象</b> DeepSeek Harness SDK · <b>提交</b> <code>4dcc965536b4</code> · <b>快照</b> <code>internal/batch_20260808T121140954Z_7f25d3e98c/0202</code> · <b>提交日期</b> 2026-08-08 · <b>复核日期</b> 2026-08-13 · <b>许可证</b> BSD-3-Clause</div></header>
 
 <h2>先说结论</h2>
 <p class="lead">DeepSeek Harness（下文简称 DSH）不是 Pi loop 的换皮，也不是“DeepSeek API + shell”。它的核心是一个<b>可热替换的插件化 Agent 操作系统</b>：Cordis 负责服务依赖、作用域、事件与可逆生命周期；<code>dsh-agent-loop</code> 只拥有 turn/step 状态机；模型、工具策略、持久化、压缩、权限、subagent、目标和 UI 都在循环外通过服务与事件接入。</p>
@@ -26,4 +26,4 @@
 
 <h2>贯穿全文的三个判断</h2><ul><li><b>权威状态不是 Agent 对象，而是 Session 日志。</b>Agent 是活跃驱动器；恢复、模型历史、UI、token 统计、遥测和 fork 都从事件投影。</li><li><b>扩展点不是 callback 大杂烩，而是 Service + typed event + scope。</b>插件既能提供能力，也能用 waterfall 拦截决策，还能在 agent 私有 context 中覆盖全局注册。</li><li><b>复杂度换来了明确的失败与恢复边界。</b>创建前准备、发布、反向 teardown、请求 header、工具 call/result、压缩替换和审批问答都被结构化记录；代价是包图、事件顺序和生命周期学习成本很高。</li></ul>
 <div class="src">主要证据：<code>apps/cli/src/bin.ts</code>、<code>apps/cli/src/profile-boot.ts</code>、<code>packages/bundle/base/cordis.patch.yml</code>、<code>packages/core/agent-loop/src/{index,agent,tool-calls}.ts</code>、<code>packages/core/session/src/{index,surface,types}.ts</code>、<code>packages/llm/llm-pi-ai/src/adapter.ts</code>。</div>
-<footer>DeepSeek Harness 源码深读 · 总览 · 源码位置均使用 DSH 仓库相对路径</footer></div></body></html>
+<footer>DeepSeek Harness 源码泛读 · 源码位置均使用 DSH 仓库相对路径</footer></div></body></html>
