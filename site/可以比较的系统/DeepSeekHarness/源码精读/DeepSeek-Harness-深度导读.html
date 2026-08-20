@@ -80,6 +80,7 @@ border:1px solid rgba(231,225,215,.9);border-radius:16px;background:rgba(247,244
 .flow-step::before{content:"▼";position:absolute;bottom:-28px;left:50%;color:var(--accent);font-size:18px;transform:translateX(-50%)}
 .flow-step:last-child::before{content:""}
 .flow-step p{margin-bottom:0}
+.flow-warning{width:100%;margin-top:14px;padding:11px 14px;border:1px solid #ead6a8;border-radius:6px;color:var(--warning);background:var(--warning-pale);overflow-wrap:anywhere;white-space:normal}
 .formula{margin:25px 0;padding:18px 22px;border-radius:7px;color:var(--paper);background:var(--ink);
 font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:.92rem;overflow-x:auto;text-align:center;white-space:nowrap}
 ul{margin:15px 0 19px 2px;list-style:none}
@@ -1155,7 +1156,7 @@ type PreStepDecision =
 <div class="flow-diagram">
   <div class="flow-step"><p><strong><code>turn/start</code></strong> —— 在认领输入和跑 pre-step <em>之前</em>就开。为什么这么早？因为"一个被拒绝的 turn"也是一个真实发生过的 turn，它必须在日志里留痕。</p></div>
   <div class="flow-step"><p><strong>claim → <code>agent/inbox/claimed</code> × N → pre-step 判决</strong>。若 reject / 输入为空 / 被取消 / 监听器抛异常：认领的那批消息<strong>保持已删除</strong>，关掉这个"零 step 的 turn"，停掉 driver。</p>
-  <p class="tag">⚠ 这里仓库<strong>自己的生成文档画错了</strong>：<code>docs/agent-lifecycle.md:29-32</code> 把 <code>turn/start</code> 画在 pre-step <em>之后</em>，并写着 "claimed batch stays removed, no turn opens"。代码是反的——<code>agent.ts:234</code> 早于 <code>:245</code>，reject 照样写 <code>turn/end.reason = {kind:'blocked'}</code>。该文件是生成物，改它要改 <code>scripts/gen-doc-graphs.ts</code>。<strong>以代码为准。</strong></p></div>
+  <p class="flow-warning">⚠ 这里仓库<strong>自己的生成文档画错了</strong>：<code>docs/agent-lifecycle.md:29-32</code> 把 <code>turn/start</code> 画在 pre-step <em>之后</em>，并写着 "claimed batch stays removed, no turn opens"。代码是反的——<code>agent.ts:234</code> 早于 <code>:245</code>，reject 照样写 <code>turn/end.reason = {kind:'blocked'}</code>。该文件是生成物，改它要改 <code>scripts/gen-doc-graphs.ts</code>。<strong>以代码为准。</strong></p></div>
   <div class="flow-step"><p><strong><code>step/start</code></strong> → 把 entered 批次作为<strong>各自独立的 <code>user/message</code> 事件</strong>追加（不是合并成一条）→ 装配 prompt 和工具 schema → 快照 derived messages。</p></div>
   <div class="flow-step"><p><strong><code>agent/request</code>（仅 config）→ 落实 adapter 默认值与上下文容量 → 记 <code>request/header</code>（路由变了再加 <code>request/context</code>）→ <code>llm/stream</code></strong>（冻结的、绑定注册的）。</p></div>
   <div class="flow-step"><p><strong><code>assistant/chunk</code> × N → <code>assistant/message</code></strong> —— 每一次成功的调用都记录 assistant/message，即使它只有 usage 没有内容（max-tokens 的情况）。</p></div>
